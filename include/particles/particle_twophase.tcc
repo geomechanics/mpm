@@ -1134,6 +1134,15 @@ std::vector<uint8_t> mpm::TwoPhaseParticle<Tdim>::serialize() {
   MPI_Pack(deformation_gradient_.data(), 9, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
 
+  // Mapping matrix
+  bool initialise_mapping = (this->mapping_matrix_.size() != 0);
+  MPI_Pack(&initialise_mapping, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+  if (initialise_mapping) {
+    MPI_Pack(mapping_matrix_.data(), Tdim * Tdim, MPI_DOUBLE, data_ptr,
+             data.size(), &position, MPI_COMM_WORLD);
+  }
+
   // Cell id
   MPI_Pack(&cell_id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -1273,6 +1282,16 @@ void mpm::TwoPhaseParticle<Tdim>::deserialize(
   // Deformation gradient
   MPI_Unpack(data_ptr, data.size(), &position, deformation_gradient_.data(), 9,
              MPI_DOUBLE, MPI_COMM_WORLD);
+
+  // Mapping matrix
+  bool initialise_mapping = false;
+  MPI_Unpack(data_ptr, data.size(), &position, &initialise_mapping, 1,
+             MPI_C_BOOL, MPI_COMM_WORLD);
+  if (initialise_mapping) {
+    if (mapping_matrix_.cols() != Tdim) mapping_matrix_.resize(Tdim, Tdim);
+    MPI_Unpack(data_ptr, data.size(), &position, mapping_matrix_.data(),
+               Tdim * Tdim, MPI_DOUBLE, MPI_COMM_WORLD);
+  }
 
   // cell id
   MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,

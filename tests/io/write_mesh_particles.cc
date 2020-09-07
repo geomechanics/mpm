@@ -113,6 +113,125 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   return true;
 }
 
+// Write JSON Configuration file for xmpm
+bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
+                     const std::string& stress_update,
+                     const std::string& file_name) {
+  // Make json object with input files
+  // 2D
+  std::string dimension = "2d";
+  auto particle_type = "P2DXMPM";
+  auto node_type = "N2D";
+  auto cell_type = "ED2Q4";
+  auto io_type = "Ascii2D";
+  auto discontinuity_file = "discontinuity-2d.txt";
+  std::string material = "LinearElastic2D";
+  std::vector<double> gravity{{0., -9.81}};
+  unsigned material_id = 0;
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    particle_type = "P3DXMPM";
+    node_type = "N3D";
+    cell_type = "ED3H8";
+    io_type = "Ascii3D";
+    material = "LinearElastic3D";
+    gravity.clear();
+    gravity = {0., 0., -9.81};
+    discontinuity_file = "discontinuity-3d.txt";
+  }
+
+  Json json_file = {
+      {"title", "Example JSON Input for MPM"},
+      {"mesh",
+       {{"mesh", "mesh-" + dimension + ".txt"},
+        {"entity_sets", "entity_sets_0.json"},
+        {"io_type", io_type},
+        {"check_duplicates", true},
+        {"isoparametric", false},
+        {"node_type", node_type},
+        {"boundary_conditions",
+         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
+          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+        {"cell_type", cell_type}}},
+      {"particles",
+       {{{"group_id", 0},
+         {"generator",
+          {{"type", "file"},
+           {"material_id", material_id},
+           {"pset_id", 0},
+           {"io_type", io_type},
+           {"particle_type", particle_type},
+           {"check_duplicates", true},
+           {"location", "particles-" + dimension + ".txt"}}}}}},
+      {"discontinuity",
+       {{{"id", 0},
+         {"type", "tri3d"},
+         {"io_type", "Ascii3D"},
+         {"file", discontinuity_file},
+         {"frictional_coefficient", 0.3}}}},
+      {"materials",
+       {{{"id", 0},
+         {"type", material},
+         {"density", 1000.},
+         {"youngs_modulus", 1.0E+8},
+         {"poisson_ratio", 0.495}},
+        {{"id", 1},
+         {"type", material},
+         {"density", 2300.},
+         {"youngs_modulus", 1.5E+6},
+         {"poisson_ratio", 0.25}}}},
+      {"material_sets",
+       {{{"material_id", 1}, {"phase_id", 0}, {"pset_id", 2}}}},
+      {"external_loading_conditions",
+       {{"gravity", gravity},
+        {"particle_surface_traction",
+         {{{"math_function_id", 0},
+           {"pset_id", -1},
+           {"dir", 1},
+           {"traction", 10.5}}}},
+        {"concentrated_nodal_forces",
+         {{{"math_function_id", 0},
+           {"nset_id", -1},
+           {"dir", 1},
+           {"force", 10.5}}}}}},
+      {"math_functions",
+       {{{"id", 0},
+         {"type", "Linear"},
+         {"xvalues", xvalues},
+         {"fxvalues", fxvalues}}}},
+      {"analysis",
+       {{"type", analysis},
+        {"stress_update", stress_update},
+        {"locate_particles", true},
+        {"dt", 0.001},
+        {"uuid", file_name + "-" + dimension},
+        {"nsteps", 10},
+        {"boundary_friction", 0.5},
+        {"resume",
+         {{"resume", resume},
+          {"uuid", file_name + "-" + dimension},
+          {"step", 5}}},
+        {"damping", {{"type", "Cundall"}, {"damping_ratio", 0.02}}},
+        {"newmark", {{"newmark", true}, {"gamma", 0.5}, {"beta", 0.25}}}}},
+      {"post_processing",
+       {{"path", "results/"},
+        {"vtk", {"stresses", "strains", "velocities"}},
+        {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
+        {"output_steps", 5}}}};
+
+  // Dump JSON as an input file to be read
+  std::ofstream file;
+  file.open((file_name + "-" + dimension + ".json").c_str());
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
 // Write JSON Entity Set
 bool write_entity_set() {
   // JSON Entity Sets
@@ -417,4 +536,73 @@ bool write_particles_3d() {
   return true;
 }
 
+// Write mesh file in 3D
+bool write_discontinuity_3d() {
+
+  // Dimension
+  const unsigned dim = 3;
+
+  // Vector of nodal coordinates
+  std::vector<Eigen::Matrix<double, dim, 1>> coordinates;
+
+  // Nodal coordinates
+  Eigen::Matrix<double, dim, 1> point;
+
+  // point 0
+  point << 0., 0., 0.25;
+  coordinates.emplace_back(point);
+  // point 1
+  point << 0.5, 0., 0.25;
+  coordinates.emplace_back(point);
+  // point 2
+  point << 1.0, 0., 0.25;
+  coordinates.emplace_back(point);
+  // point 3
+  point << 1.0, 0.5, 0.25;
+  coordinates.emplace_back(point);
+  // point 4
+  point << 0.5, 0.5, 0.25;
+  coordinates.emplace_back(point);
+  // point 5
+  point << 0., 0.5, 0.25;
+  coordinates.emplace_back(point);
+
+  // surfaces with point ids
+  std::vector<std::vector<unsigned>> surfs{// surface #0
+                                           {0, 1, 5},
+                                           // surface #1
+                                           {1, 4, 5},
+                                           // surface #2
+                                           {1, 3, 4},
+                                           // surface #3
+                                           {1, 2, 3}};
+
+  // Dump discontinuity file as an input file to be read
+  std::ofstream file;
+  file.open("discontinuity-3d.txt");
+  file << "! surfaceShape triangle\n";
+  file << coordinates.size() << "\t" << surfs.size() << "\n";
+
+  // Write point coordinates
+  for (const auto& coord : coordinates) {
+    for (unsigned i = 0; i < coord.size(); ++i) file << coord[i] << "\t";
+    file << "\n";
+  }
+
+  // Write cell node ids
+  for (const auto& surf : surfs) {
+    for (auto pid : surf) file << pid << "\t";
+    file << "\n";
+  }
+
+  file.close();
+
+  // Dump mesh velocity constraints
+  std::ofstream file_constraints;
+  file_constraints.open("velocity-constraints.txt");
+  file_constraints << 0 << "\t" << 0 << "\t" << 0 << "\n";
+  file_constraints.close();
+
+  return true;
+}
 }  // namespace mpm_test

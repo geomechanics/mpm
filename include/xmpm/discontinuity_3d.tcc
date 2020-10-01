@@ -2,18 +2,6 @@ template <unsigned Tdim>
 mpm::Discontinuity3D<Tdim>::Discontinuity3D(unsigned id,
                                             const Json& discontinuity_props)
     : DiscontinuityBase<Tdim>(id, discontinuity_props) {
-
-  try {
-    // assign friction_coef_ if it's given in input file
-    friction_coef_ = 0;
-    if (discontinuity_props.contains("friction_coefficient"))
-      friction_coef_ =
-          discontinuity_props.at("friction_coefficient").template get<double>();
-
-  } catch (Json::exception& except) {
-    console_->error("discontinuity parameter not set: {} {}\n", except.what(),
-                    except.id);
-  }
 }
 
 // initialization
@@ -97,6 +85,7 @@ bool mpm::Discontinuity3D<3>::initialize_center_normal() {
       normal = three_cross_product(points_[points[0]].coordinates(),
                                    points_[points[1]].coordinates(),
                                    points_[points[2]].coordinates());
+
       if (normal.norm() > std::numeric_limits<double>::epsilon())
         normal.normalize();
       else
@@ -127,16 +116,25 @@ void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
                                                   double& phi_particle) {
   // find the nearest distance from particle to cell: need to do by global
   // searching and local searching
-  double distance = std::numeric_limits<double>::max();
+  double min_distance = std::numeric_limits<double>::max();
+  double vertical_distance = std::numeric_limits<double>::max();
   for (const auto& surf : surfaces_) {
-    double vertical_distance =
-        surf.vertical_distance(coordinates);  // vertical_distance(coor);
-    distance = std::abs(distance) < std::abs(vertical_distance)
-                   ? distance
-                   : vertical_distance;
-    if (!distance) distance = 1e-16;
+    double distance = surf.ptocenter_distance(coordinates);
+    if (std::abs(distance) < std::abs(min_distance)) {
+      min_distance = distance;
+      vertical_distance = surf.vertical_distance(coordinates);
+    }
+    if (!vertical_distance) vertical_distance = 1e-16;
   }
-  phi_particle = distance;
+  //need to check
+  VectorDim circle {28.238, 27.216, circle[2]};
+  double r = 22.5339;
+  double test_r =r -  (coordinates - circle).norm();
+  if(abs(test_r - vertical_distance)>1){
+    test_r = 0;
+  }
+
+  phi_particle = vertical_distance;
 }
 
 // return the normal vectors of given coordinates
@@ -145,12 +143,11 @@ void mpm::Discontinuity3D<Tdim>::compute_normal(const VectorDim& coordinates,
                                                 VectorDim& normal_vector) {
   // find the nearest distance from particle to cell: need to do better by
   // global searching and local searching
-  double distance = std::numeric_limits<double>::max();
+  double min_distance = std::numeric_limits<double>::max();
   for (const auto& surf : surfaces_) {
-    double vertical_distance =
-        surf.vertical_distance(coordinates);  // vertical_distance(coor);
-    if (std::abs(distance) > std::abs(vertical_distance)) {
-      distance = vertical_distance;
+    double distance = surf.ptocenter_distance(coordinates);
+    if (std::abs(distance) < std::abs(min_distance)) {
+      min_distance = distance;
       normal_vector = surf.normal();
     }
   }

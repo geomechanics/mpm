@@ -22,7 +22,6 @@ class DiscontinuityBase {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
-
   //! Constructor with id
   //! \param[in] discontinuity id
   //! \param[in] discontinuity properties json
@@ -104,6 +103,9 @@ class DiscontinuityBase {
 
   //! friction coefficient
   double friction_coef_;
+
+  //! the influence length of the discontinuity
+  double width_{std::numeric_limits<double>::max()};
 
 };  // DiscontinuityBase class
 
@@ -227,6 +229,12 @@ struct discontinuity_surface {
     return (coor[0] - center_[0]) * normal_[0] +
            (coor[1] - center_[1]) * normal_[1] +
            (coor[2] - center_[2]) * normal_[2];
+  };
+
+  //! Return the vertical distance to the surface
+  //! \param[in]  coor coordinates
+  double ptocenter_distance(const VectorDim& coor) const {
+    return (coor - center_).norm();
   };
 
  private:

@@ -7,6 +7,21 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
 
   std::string logger = "discontinuity::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+
+  try {
+    // assign friction_coef_ if it's given in input file
+    if (discontinuity_props.contains("friction_coefficient"))
+      friction_coef_ =
+          discontinuity_props.at("friction_coefficient").template get<double>();
+    // assign width if it's given in input file
+    if (discontinuity_props.contains("width"))
+      width_ =
+          discontinuity_props.at("width").template get<double>();
+
+  } catch (Json::exception& except) {
+    console_->error("discontinuity parameter not set: {} {}\n", except.what(),
+                    except.id);
+  }
 }
 
 //! create points from file

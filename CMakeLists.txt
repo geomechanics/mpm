@@ -223,6 +223,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/nodal_properties_test.cc
     ${mpm_SOURCE_DIR}/tests/node_map_test.cc
     ${mpm_SOURCE_DIR}/tests/node_test.cc
+    ${mpm_SOURCE_DIR}/tests/node_xmpm_test.cc
     ${mpm_SOURCE_DIR}/tests/node_vector_test.cc
     ${mpm_SOURCE_DIR}/tests/particle_cell_crossing_test.cc
     ${mpm_SOURCE_DIR}/tests/particle_serialize_deserialize_test.cc

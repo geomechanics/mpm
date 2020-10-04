@@ -86,11 +86,13 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   // Initialise discontinuity
   this->initialise_discontinuities();
 
-  // Initialise the levelset values for particles
-  if (discontinuity_) mesh_->initialise_levelset_discontinuity();
+  if (discontinuity_) {
+    // Initialise the levelset values for particles
+    mesh_->initialise_levelset_discontinuity();
 
-  // Create nodal properties for discontinuity
-  if (discontinuity_) mesh_->create_nodal_properties_discontinuity();
+    // Create nodal properties for discontinuity
+    mesh_->create_nodal_properties_discontinuity();
+  }
   // Compute mass
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));

@@ -1,8 +1,7 @@
 template <unsigned Tdim>
 mpm::Discontinuity3D<Tdim>::Discontinuity3D(unsigned id,
                                             const Json& discontinuity_props)
-    : DiscontinuityBase<Tdim>(id, discontinuity_props) {
-}
+    : DiscontinuityBase<Tdim>(id, discontinuity_props) {}
 
 // initialization
 template <unsigned Tdim>
@@ -126,15 +125,10 @@ void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
     }
     if (!vertical_distance) vertical_distance = 1e-16;
   }
-  //need to check
-  VectorDim circle {28.238, 27.216, circle[2]};
-  double r = 22.5339;
-  double test_r =r -  (coordinates - circle).norm();
-  if(abs(test_r - vertical_distance)>1){
-    test_r = 0;
-  }
-
-  phi_particle = vertical_distance;
+  if (abs(min_distance) < width_)
+    phi_particle = vertical_distance;
+  else
+    phi_particle = 0;
 }
 
 // return the normal vectors of given coordinates

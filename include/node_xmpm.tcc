@@ -85,14 +85,14 @@ void mpm::Node<Tdim, Tdof,
       this->internal_force_(direction, phase) = 0;
       this->external_force_(direction, phase) = 0;
 
-      Eigen::Matrix<double, 1, 1> momentum;
-      momentum.setZero();
+      Eigen::Matrix<double, 1, 1> zero_force;
+      zero_force.setZero();
       property_handle_->assign_property(
           "internal_force_enrich", discontinuity_prop_id_ * Tdim + direction, 0,
-          momentum, 1);
+          zero_force, 1);
       property_handle_->assign_property(
           "external_force_enrich", discontinuity_prop_id_ * Tdim + direction, 0,
-          momentum, 1);
+          zero_force, 1);
     } else {  // need to be done
       // Velocity constraints on general boundaries
       // Compute inverse rotation matrix
@@ -155,10 +155,8 @@ void mpm::Node<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
   auto force_contact = momentum_contact / dt;
 
   // friction_coef < 0: move together without slide
-  // need to be done
   double friction_coef = property_handle_->property(
       "friction_coef", discontinuity_prop_id_, 0, 1)(0, 0);
-
   if (friction_coef < 0) {
     property_handle_->update_property("momenta_enrich", discontinuity_prop_id_,
                                       0, momentum_contact.col(phase), Tdim);

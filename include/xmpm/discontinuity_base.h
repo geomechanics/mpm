@@ -147,6 +147,9 @@ struct discontinuity_point {
   //! \param[in] cellptr Pointer to a cell
   bool assign_cell(const std::shared_ptr<Cell<Tdim>>& cellptr);
 
+  //! Assign the discontinuity enrich to node
+  void assign_discontinuity_enrich();
+
   //! Compute reference coordinates in a cell
   bool compute_reference_location() noexcept;
 

@@ -57,6 +57,8 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   using mpm::DiscontinuityBase<Tdim>::console_;
   //! friction coefficient
   using mpm::DiscontinuityBase<Tdim>::friction_coef_;
+  //! width
+  using mpm::DiscontinuityBase<Tdim>::width_;
 
  private:
   // vector of surfaces

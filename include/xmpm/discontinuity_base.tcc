@@ -15,8 +15,7 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
           discontinuity_props.at("friction_coefficient").template get<double>();
     // assign width if it's given in input file
     if (discontinuity_props.contains("width"))
-      width_ =
-          discontinuity_props.at("width").template get<double>();
+      width_ = discontinuity_props.at("width").template get<double>();
 
   } catch (Json::exception& except) {
     console_->error("discontinuity parameter not set: {} {}\n", except.what(),

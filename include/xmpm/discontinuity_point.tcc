@@ -4,20 +4,12 @@ bool mpm::discontinuity_point<Tdim>::assign_cell_xi(
     const std::shared_ptr<Cell<Tdim>>& cellptr,
     const Eigen::Matrix<double, Tdim, 1>& xi) {
   bool status = true;
-  Eigen::Matrix<double, 1, 1> friction_coef;
-  friction_coef(0, 0) = friction_coef_;
   try {
     // Assign cell to the new cell ptr, if point can be found in new cell
     if (cellptr != nullptr) {
 
       cell_ = cellptr;
       cell_id_ = cellptr->id();
-      nodes_ = cell_->nodes();
-      for (unsigned i = 0; i < nodes_.size(); ++i) {
-        nodes_[i]->assign_discontinuity_enrich(true);
-        nodes_[i]->update_discontinuity_property(true, "friction_coef",
-                                                 friction_coef, 0, 1);
-      }
       // Assign the reference location of particle
       bool xi_nan = false;
 
@@ -44,8 +36,6 @@ template <unsigned Tdim>
 bool mpm::discontinuity_point<Tdim>::assign_cell(
     const std::shared_ptr<Cell<Tdim>>& cellptr) {
   bool status = true;
-  Eigen::Matrix<double, 1, 1> friction_coef;
-  friction_coef(0, 0) = friction_coef_;
   try {
     Eigen::Matrix<double, Tdim, 1> xi;
     // Assign cell to the new cell ptr, if point can be found in new cell
@@ -53,13 +43,7 @@ bool mpm::discontinuity_point<Tdim>::assign_cell(
 
       cell_ = cellptr;
       cell_id_ = cellptr->id();
-      nodes_ = cell_->nodes();
-      // assign discontinuity_enrich
-      for (unsigned i = 0; i < nodes_.size(); ++i) {
-        nodes_[i]->assign_discontinuity_enrich(true);
-        nodes_[i]->update_discontinuity_property(true, "friction_coef",
-                                                 friction_coef, 0, 1);
-      }
+      assign_discontinuity_enrich();
     } else {
       console_->warn("Points of discontinuity cannot be found in cell!");
     }
@@ -95,6 +79,9 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
   if (cell_id() != std::numeric_limits<mpm::Index>::max()) {
     // If a cell id is present, but not a cell locate the cell from map
     if (!cell_ptr()) assign_cell(map_cells[cell_id()]);
+
+    assign_discontinuity_enrich();
+
     if (compute_reference_location()) return;
 
     // Check if discontinuity point is in any of its nearest neighbours
@@ -170,4 +157,18 @@ void mpm::discontinuity_point<Tdim>::compute_shapefn() noexcept {
   Eigen::Matrix<double, 1, Tdim> natural_size_;
   natural_size_.setZero();
   shapefn_ = element->shapefn(this->xi_, natural_size_, zero);
+}
+
+//! Assign the discontinuity enrich to node
+template <unsigned Tdim>
+void mpm::discontinuity_point<Tdim>::assign_discontinuity_enrich() {
+  Eigen::Matrix<double, 1, 1> friction_coef;
+  friction_coef(0, 0) = friction_coef_;
+  nodes_ = cell_->nodes();
+  // assign discontinuity_enrich
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->assign_discontinuity_enrich(true);
+    nodes_[i]->update_discontinuity_property(true, "friction_coef",
+                                             friction_coef, 0, 1);
+  }
 }

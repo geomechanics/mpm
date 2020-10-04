@@ -42,7 +42,8 @@ class ParticleXMPM : public Particle<Tdim> {
 
   //! Delete assignment operator
   ParticleXMPM& operator=(const ParticleXMPM<Tdim>&) = delete;
-
+  //! Initialise properties
+  void initialise() override;
   //! Map particle mass and momentum to nodes
   void map_mass_momentum_to_nodes() noexcept override;
 

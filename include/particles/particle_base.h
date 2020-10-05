@@ -318,6 +318,9 @@ class ParticleBase {
   //! \param[in] phivalue Signed distance function
   virtual void assign_levelsetphi(double phivalue){};
 
+  //! Compute the principal stress and strain
+  virtual void compute_principal_stress_strain(){};
+
  protected:
   //! particleBase id
   Index id_{std::numeric_limits<Index>::max()};

@@ -131,6 +131,10 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       // Initialise nodal properties
       mesh_->initialise_nodal_properties();
 
+      // Iterate over each particle to compute the principal stress and strain
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::compute_principal_stress_strain,
+                    std::placeholders::_1));
       // locate points of discontinuity
       mesh_->locate_discontinuity();
 

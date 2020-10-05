@@ -25,6 +25,13 @@ mpm::ParticleXMPM<Tdim>::ParticleXMPM(Index id, const VectorDim& coord,
 template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::initialise() {
   this->scalar_properties_["levelset"] = [&]() { return levelset_phi_; };
+  this->scalar_properties_["first_principal_stress"] = [&]() {
+    return first_principal_stress_;
+  };
+  this->scalar_properties_["first_principal_strain"] = [&]() {
+    return first_principal_strain_;
+  };
+  this->scalar_properties_["energy"] = [&]() { return energy_; };
 }
 
 //! Map particle mass and momentum to nodes
@@ -242,4 +249,40 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
   this->coordinates_ += nodal_velocity * dt;
   // Update displacement (displacement is initialized from zero)
   this->displacement_ += nodal_velocity * dt;
+}
+
+//! Compute the principal stress and strain
+template <unsigned Tdim>
+void mpm::ParticleXMPM<Tdim>::compute_principal_stress_strain() {
+
+  Eigen::Matrix3d strain_tensor;
+  strain_tensor(0, 0) = strain_[0];
+  strain_tensor(0, 1) = strain_[3] * 0.5;
+  strain_tensor(0, 2) = strain_[5] * 0.5;
+  strain_tensor(1, 0) = strain_[3] * 0.5;
+  strain_tensor(1, 1) = strain_[1];
+  strain_tensor(1, 2) = strain_[4] * 0.5;
+  strain_tensor(2, 0) = strain_[5] * 0.5;
+  strain_tensor(2, 1) = strain_[4] * 0.5;
+  strain_tensor(2, 2) = strain_[2];
+
+  Eigen::Matrix3d stress_tensor;
+  stress_tensor(0, 0) = stress_[0];
+  stress_tensor(0, 1) = stress_[3];
+  stress_tensor(0, 2) = stress_[5];
+  stress_tensor(1, 0) = stress_[3];
+  stress_tensor(1, 1) = stress_[1];
+  stress_tensor(1, 2) = stress_[4];
+  stress_tensor(2, 0) = stress_[5];
+  stress_tensor(2, 1) = stress_[4];
+  stress_tensor(2, 2) = stress_[2];
+
+  Eigen::EigenSolver<Eigen::Matrix3d> estrain(strain_tensor);
+  Eigen::EigenSolver<Eigen::Matrix3d> estress(stress_tensor);
+
+  first_principal_strain_ = estrain.pseudoEigenvalueMatrix()(0);
+  first_principal_stress_ = estress.pseudoEigenvalueMatrix()(0);
+  auto strain_value = estrain.pseudoEigenvectors();
+  auto stress_value = estress.pseudoEigenvectors();
+  energy_ = 0.5 * first_principal_strain_ * first_principal_stress_;
 }

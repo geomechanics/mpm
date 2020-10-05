@@ -54,6 +54,9 @@ class ParticleXMPM : public Particle<Tdim> {
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
+  //! Compute the principal stress and strain
+  void compute_principal_stress_strain();
+
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Update particle velocity from nodal vel
@@ -153,6 +156,13 @@ class ParticleXMPM : public Particle<Tdim> {
  private:
   //! level set value： phi for discontinuity
   double levelset_phi_{0.};
+
+  //! first principal stress
+  double first_principal_stress_{0.};
+  //! first principal strain
+  double first_principal_strain_{0.};
+  //! energy:first_principal_stress_*first_principal_strain_*0.5
+  double energy_{0.};
 };  // ParticleXMPM class
 }  // namespace mpm
 

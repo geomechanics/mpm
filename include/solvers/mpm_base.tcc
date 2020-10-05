@@ -1157,10 +1157,6 @@ void mpm::MPMBase<Tdim>::mpi_domain_decompose(bool initial_step) {
     auto mpi_domain_begin = std::chrono::steady_clock::now();
     console_->info("Rank {}, Domain decomposition started\n", mpi_rank);
 
-    // Check if mesh has cells to partition
-    if (mesh_->ncells() == 0)
-      throw std::runtime_error("Container of cells is empty");
-
 #ifdef USE_GRAPH_PARTITIONING
     // Create graph object if empty
     if (initial_step || graph_ == nullptr)

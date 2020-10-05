@@ -168,7 +168,7 @@ void mpm::discontinuity_point<Tdim>::assign_discontinuity_enrich() {
   // assign discontinuity_enrich
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->assign_discontinuity_enrich(true);
-    nodes_[i]->update_discontinuity_property(true, "friction_coef",
+    nodes_[i]->assign_discontinuity_property(true, "friction_coef",
                                              friction_coef, 0, 1);
   }
 }

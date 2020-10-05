@@ -287,6 +287,17 @@ class NodeBase {
       const Eigen::MatrixXd& property_value, unsigned discontinuity_id,
       unsigned nprops) noexcept = 0;
 
+  //! Assign nodal property at the nodes from particle for discontinuity
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] property Property name
+  //! \param[in] property_value Property quantity from the particles in the cell
+  //! \param[in] discontinuity_id Id of the material within the property data
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  virtual void assign_discontinuity_property(
+      bool update, const std::string& property,
+      const Eigen::MatrixXd& property_value, unsigned discontinuity_id,
+      unsigned nprops) noexcept = 0;
+
   //! Compute momentum for discontinuity
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis

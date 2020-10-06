@@ -208,6 +208,8 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
   }
   // Acceleration update
   if (!velocity_update) {
+    nodal_velocity.setZero();
+    double shapefn_enrich = 0;
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
@@ -219,14 +221,13 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
                 nodes_[i]->discontinuity_property("mass_enrich", 1)(0, 0);
         if (nodal_mass < tolerance) continue;
 
-        auto force = nodes_[i]->internal_force(phase) +
-                     sgn(levelset_phi_) * nodes_[i]->discontinuity_property(
-                                              "internal_force_enrich", 3) +
-                     nodes_[i]->external_force(phase) +
-                     sgn(levelset_phi_) * nodes_[i]->discontinuity_property(
-                                              "external_force_enrich", 3);
-
-        nodal_acceleration += shapefn_[i] * force / nodal_mass;
+        nodal_velocity +=
+            shapefn_[i] *
+            (nodes_[i]->momentum(phase) +
+             sgn(levelset_phi_) *
+                 nodes_[i]->discontinuity_property("momenta_enrich", 3)) /
+            nodal_mass;
+        shapefn_enrich += shapefn_[i];
       } else {
         double nodal_mass = nodes_[i]->mass(phase);
         if (nodal_mass < tolerance) continue;
@@ -239,7 +240,8 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
     }
 
     // Update particle velocity from interpolated nodal acceleration
-    this->velocity_ += nodal_acceleration * dt;
+    this->velocity_ = nodal_velocity + (1 - shapefn_enrich) * this->velocity_ +
+                      nodal_acceleration * dt;
   }
   // Update particle velocity using interpolated nodal velocity
   else

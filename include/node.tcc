@@ -36,10 +36,9 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   material_ids_.clear();
 }
 
-//! Initialise nodal mass and momentum (only for musl)
+//! Initialise nodal momentum (only for musl)
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-void mpm::Node<Tdim, Tdof, Tnphases>::initialise_mass_momentum() noexcept {
-  mass_.setZero();
+void mpm::Node<Tdim, Tdof, Tnphases>::initialise_momentum() noexcept {
   momentum_.setZero();
 }
 

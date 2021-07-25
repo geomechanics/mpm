@@ -51,19 +51,19 @@ inline void mpm::MPMSchemeMUSL<Tdim>::compute_particle_updated_position(
 
 #pragma omp parallel sections
   {
-    // Spawn a task for initialising nodes and cells
+    // Spawn a task for initialising nodal momentum
 #pragma omp section
     {
-      // Initialise nodes
+      // Initialise nodal momentum
       mesh_->iterate_over_nodes_predicate(
-          std::bind(&mpm::NodeBase<Tdim>::initialise_mass_momentum, std::placeholders::_1),
+          std::bind(&mpm::NodeBase<Tdim>::initialise_momentum, std::placeholders::_1),
           std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
     }
   }
 
-  // Assign mass and momentum to nodes
+  // Assign momentum to nodes
   mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
+      std::bind(&mpm::ParticleBase<Tdim>::map_momentum_to_nodes,
                 std::placeholders::_1));
 
 #ifdef USE_MPI

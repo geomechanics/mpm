@@ -61,6 +61,9 @@ class NodeBase {
   //! Initialise properties
   virtual void initialise() noexcept = 0;
 
+  //! Initialise nodal mass and momentum (only for musl)
+  virtual void initialise_mass_momentum() noexcept = 0;
+
   //! Return degrees of freedom
   virtual unsigned dof() const = 0;
 

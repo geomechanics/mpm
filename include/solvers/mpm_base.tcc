@@ -251,7 +251,7 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Create cells from file
   bool cell_status =
       mesh_->create_cells(gid,                                  // global id
-                          element,                              // element tyep
+                          element,                              // element type
                           mesh_io->read_mesh_cells(mesh_file),  // Node ids
                           check_duplicates);                    // Check dups
 
@@ -264,6 +264,12 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign cell sets
   this->cell_entity_sets(mesh_props, check_duplicates);
+
+  // Use Nonlocal basis
+  if (cell_type.back() == 'B') {
+    nonlocal_basis_ == true;
+    this->initialise_nonlocal_mesh(mesh_props);
+  }
 
   auto cells_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Read cells: {} ms", mpi_rank,
@@ -1426,5 +1432,39 @@ void mpm::MPMBase<Tdim>::initialise_linear_solver(
             std::string,
             std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>(
             dof, lin_solver));
+  }
+}
+
+//! Initialise nonlocal mesh
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
+  //! Shape function name
+  const auto cell_type = mesh_props["cell_type"].template get<std::string>();
+
+  if (cell_type.back() == 'B') {
+    mesh_->iterate_over_nodes(std::bind(
+        &mpm::NodeBase<Tdim>::initialise_nonlocal_node, std::placeholders::_1));
+
+    //! Read nodal type from entity sets
+    if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end() &&
+        mesh_props["nonlocal_mesh_properties"].find("node_types") !=
+            mesh_props["nonlocal_mesh_properties"].end()) {
+
+      // Iterate over node type
+      for (const auto& node_type :
+           mesh_props["nonlocal_mesh_properties"]["node_types"]) {
+        // Set id
+        int nset_id = node_type.at("nset_id").template get<int>();
+        // Direction
+        unsigned dir = node_type.at("dir").template get<unsigned>();
+        // Type
+        unsigned type = node_type.at("type").template get<unsigned>();
+        // Assign nodal nonlocal type
+        mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+      }
+    }
+
+    //! Update number of nodes in cell
+    mesh_->upgrade_cells_to_nonlocal(cell_type);
   }
 }

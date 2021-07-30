@@ -188,6 +188,10 @@ class MPMBase : public MPM {
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);
 
+  //! Initialise nonlocal mesh
+  //! \param[in] mesh_prop Mesh properties
+  void initialise_nonlocal_mesh(const Json& mesh_prop);
+
  protected:
   // Generate a unique id for the analysis
   using mpm::MPM::uuid_;
@@ -242,6 +246,8 @@ class MPMBase : public MPM {
   double damping_factor_{0.};
   //! Locate particles
   bool locate_particles_{true};
+  //! Using Nonlocal basis
+  bool nonlocal_basis_{false};
 
 #ifdef USE_GRAPH_PARTITIONING
   // graph pass the address of the container of cell

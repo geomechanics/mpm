@@ -677,3 +677,10 @@ void mpm::Node<Tdim, Tdof,
   }
   node_mutex_.unlock();
 }
+
+//! Function that initialise variables for nonlocal MPM
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {
+  nonlocal_node_type_.resize(Tdim);
+  std::fill(nonlocal_node_type_.begin(), nonlocal_node_type_.end(), 0);
+}

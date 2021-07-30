@@ -302,7 +302,9 @@ class Node : public NodeBase<Tdim> {
   //! Assign free surface
   //! \ingroup MultiPhase
   void assign_free_surface(bool free_surface) override {
+    node_mutex_.lock();
     free_surface_ = free_surface;
+    node_mutex_.unlock();
   }
 
   //! Return free surface bool
@@ -434,17 +436,6 @@ class Node : public NodeBase<Tdim> {
   VectorDim correction_force(unsigned phase) const override {
     return correction_force_.col(phase);
   }
-
-  //! Compute nodal correction force term
-  //! \ingroup MultiPhase
-  void compute_nodal_correction_force(
-      const VectorDim& correction_force) override;
-
-  //! Compute nodal correction force term for two phase
-  //! \ingroup MultiPhase
-  void compute_nodal_correction_force(
-      const VectorDim& solid_correction_force,
-      const VectorDim& liquid_correction_force) override;
 
   /**@}*/
 

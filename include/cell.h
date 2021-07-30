@@ -368,6 +368,30 @@ class Cell {
 
   /**@}*/
 
+  /**
+   * \defgroup Nonlocal Functions dealing with MPM with nonlocal shape function
+   */
+  /**@{*/
+
+  //! Function that check and return the status whether the cell is upgradable
+  //! \ingroup Nonlocal
+  //! \param[in] new_nnodes New number of nodes to be assigned
+  bool upgrade_status(unsigned new_nnodes);
+
+  //! Assign a new elementptr for nonlocal element with a specific node size
+  //! \ingroup Nonlocal
+  //! \param[in] elementptr New element pointer associated with nonlocal type
+  bool assign_nonlocal_elementptr(
+      const std::shared_ptr<Element<Tdim>>& elementptr);
+
+  //! Initialising nonlocal cell-element properties
+  //! \ingroup Nonlocal
+  //! \brief Assign a specific connectivity properties to the assigned nonlocal
+  //! elements
+  bool initialiase_nonlocal();
+
+  /**@}*/
+
  private:
   //! Approximately check if a point is in a cell
   //! \param[in] point Coordinates of point

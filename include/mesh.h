@@ -544,7 +544,6 @@ class Mesh {
 
   //! Get free surface particle set
   //! \ingroup MultiPhase
-  //! \retval status Status of compute_free_surface
   //! \retval id_set Set of free surface particle ids
   std::set<mpm::Index> free_surface_particles();
 
@@ -580,9 +579,38 @@ class Mesh {
 
   //! Compute correction force in the node for twophase
   //! \ingroup MultiPhase
+  //! \param[in] correction_matrix Matrix to be multiplied with the pressure
+  //! vector
+  //! \param[in] pressure_increment vector of pressure increment solved from PPE
+  //! \param[in] dt time step size
   bool compute_nodal_correction_force_twophase(
       const Eigen::SparseMatrix<double>& correction_matrix,
       const Eigen::VectorXd& pressure_increment, double dt);
+
+  /**@}*/
+
+  /**
+   * \defgroup Nonlocal Functions dealing with MPM with nonlocal shape function
+   */
+  /**@{*/
+
+  //! Upgrade cells to nonlocal cells
+  //! \ingroup Nonlocal
+  //! \param[in] cell_type string indicating the cell type
+  bool upgrade_cells_to_nonlocal(const std::string& cell_type);
+
+  //! Assign nonlocal node type
+  //! \ingroup Nonlocal
+  //! \param[in] set_id Set ID of the boundary and intermediate nodes
+  //! \param[in] dir Direction of the boundary
+  //! \param[in] node_type Type id of the node
+  //! \brief: The following should be defined in the .json file
+  //! Regular = 0 (Default),
+  //! LowerBoundary = 1,
+  //! LowerIntermediate = 2,
+  //! UpperIntermediate = 3
+  //! UpperBoundary = 4
+  bool assign_nodal_nonlocal_type(int set_id, unsigned dir, unsigned node_type);
 
   /**@}*/
 

@@ -2113,43 +2113,47 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type) {
   try {
     // Construct cell-additional-node vector
     std::vector<std::set<mpm::Index>> cell_node_vector(cells_.size());
-    for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-      std::set<mpm::Index> nodes_id = (*citr)->nodes_id();
-      std::set<mpm::Index> neighbour_nodes_id;
-      for (const auto& neighbour_cell_id : (*citr)->neighbours()) {
-        const auto& node_id = map_cells_[neighbour_cell_id]->nodes_id();
-        neighbour_nodes_id.insert(node_id.begin(), node_id.end());
-      }
-      std::set<mpm::Index> additional_nodes_id;
-      std::set_difference(
-          neighbour_nodes_id.begin(), neighbour_nodes_id.end(),
-          nodes_id.begin(), nodes_id.end(),
-          std::inserter(additional_nodes_id, additional_nodes_id.end()));
-
-      cell_node_vector[(*citr)->id()] = additional_nodes_id;
-    }
-
-#pragma omp parallel for schedule(runtime)
-    for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-      // Add new nodes in cell
-      unsigned nnodes = (*citr)->nnodes();
-      unsigned new_nnodes = nnodes + cell_node_vector[(*citr)->id()].size();
-      if ((*citr)->upgrade_status(new_nnodes)) {
-        // Reassign cell element
-        std::shared_ptr<mpm::Element<Tdim>> element =
-            Factory<mpm::Element<Tdim>>::instance()->create(cell_type);
-        status = (*citr)->assign_nonlocal_elementptr(element);
-
-        // Add nodes to cell
-        for (auto nid : cell_node_vector[(*citr)->id()]) {
-          (*citr)->add_node(nnodes, map_nodes_[nid]);
-          ++nnodes;
+#pragma omp parallel
+    {
+#pragma omp for schedule(runtime)
+      for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+        std::set<mpm::Index> nodes_id = (*citr)->nodes_id();
+        std::set<mpm::Index> neighbour_nodes_id;
+        for (const auto& neighbour_cell_id : (*citr)->neighbours()) {
+          const auto& node_id = map_cells_[neighbour_cell_id]->nodes_id();
+          neighbour_nodes_id.insert(node_id.begin(), node_id.end());
         }
+        std::set<mpm::Index> additional_nodes_id;
+        std::set_difference(
+            neighbour_nodes_id.begin(), neighbour_nodes_id.end(),
+            nodes_id.begin(), nodes_id.end(),
+            std::inserter(additional_nodes_id, additional_nodes_id.end()));
+
+        cell_node_vector[(*citr)->id()] = additional_nodes_id;
       }
 
-      if ((*citr)->nnodes() == new_nnodes) {
-        // Reinitialise cell
-        (*citr)->initialiase_nonlocal();
+#pragma omp for schedule(runtime)
+      for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+        // Add new nodes in cell
+        unsigned nnodes = (*citr)->nnodes();
+        unsigned new_nnodes = nnodes + cell_node_vector[(*citr)->id()].size();
+        if ((*citr)->upgrade_status(new_nnodes)) {
+          // Reassign cell element
+          std::shared_ptr<mpm::Element<Tdim>> element =
+              Factory<mpm::Element<Tdim>>::instance()->create(cell_type);
+          status = (*citr)->assign_nonlocal_elementptr(element);
+
+          // Add nodes to cell
+          for (auto nid : cell_node_vector[(*citr)->id()]) {
+            (*citr)->add_node(nnodes, map_nodes_[nid]);
+            ++nnodes;
+          }
+        }
+
+        if ((*citr)->nnodes() == new_nnodes) {
+          // Reinitialise cell
+          (*citr)->initialiase_nonlocal();
+        }
       }
     }
 

@@ -458,19 +458,19 @@ inline Eigen::MatrixXi
   //clang-format on
   return indices;
 }
-  
+
 //! Return indices of a face of the element
 //! 4-noded quadrilateral
 template <>
 inline Eigen::VectorXi
     mpm::QuadrilateralElement<2, 4>::face_indices(unsigned face_id) const {
-  
+
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 2, 1>>
       face_indices_quadrilateral{{0, Eigen::Matrix<int, 2, 1>(0, 1)},
                                  {1, Eigen::Matrix<int, 2, 1>(1, 2)},
                                  {2, Eigen::Matrix<int, 2, 1>(2, 3)},
-                                 {3, Eigen::Matrix<int, 2, 1>(3, 0)}}; 
+                                 {3, Eigen::Matrix<int, 2, 1>(3, 0)}};
 
   return face_indices_quadrilateral.at(face_id);
 }
@@ -480,7 +480,7 @@ inline Eigen::VectorXi
 template <>
 inline Eigen::VectorXi
     mpm::QuadrilateralElement<2, 8>::face_indices(unsigned face_id) const {
-  
+
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 3, 1>>
       face_indices_quadrilateral{{0, Eigen::Matrix<int, 3, 1>(0, 1, 4)},
@@ -496,7 +496,7 @@ inline Eigen::VectorXi
 template <>
 inline Eigen::VectorXi
     mpm::QuadrilateralElement<2, 9>::face_indices(unsigned face_id) const {
-  
+
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 3, 1>>
       face_indices_quadrilateral{{0, Eigen::Matrix<int, 3, 1>(0, 1, 4)},
@@ -845,4 +845,15 @@ inline Eigen::Matrix<double, 2, 1> mpm::QuadrilateralElement<2, 9>::natural_coor
   xi.fill(std::numeric_limits<double>::max());
   throw std::runtime_error("Analytical solution for Quad<2, 9> has not been implemented");
   return xi;
+}
+
+//! Assign nodal connectivity property for bspline elements
+template <unsigned Tdim, unsigned Tnfunctions>
+void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
+    initialise_bspline_connectivity_properties(
+        const Eigen::MatrixXd& nodal_coordinates,
+        const std::vector<std::vector<unsigned>>& nodal_properties) {
+  throw std::runtime_error(
+      "Function to initialise nonlocal connectivity is not implemented for "
+      "Quad<Tdim, Tnfunctions> ");
 }

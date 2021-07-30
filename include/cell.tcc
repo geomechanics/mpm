@@ -1,7 +1,7 @@
 //! Constructor with cell id, number of nodes and element
 template <unsigned Tdim>
 mpm::Cell<Tdim>::Cell(Index id, unsigned nnodes,
-                      const std::shared_ptr<const Element<Tdim>>& elementptr,
+                      const std::shared_ptr<Element<Tdim>>& elementptr,
                       bool isoparametric)
     : id_{id}, nnodes_{nnodes}, isoparametric_{isoparametric} {
   // Check if the dimension is between 1 & 3

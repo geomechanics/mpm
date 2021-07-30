@@ -39,7 +39,7 @@ class Cell {
   //! \param[in] elementptr Pointer to an element type
   //! \param[in] isoparametric Cell type is isoparametric
   Cell(Index id, unsigned nnodes,
-       const std::shared_ptr<const Element<Tdim>>& elementptr,
+       const std::shared_ptr<Element<Tdim>>& elementptr,
        bool isoparametric = true);
 
   //! Default destructor
@@ -108,7 +108,7 @@ class Cell {
   void activate_nodes();
 
   //! Return a pointer to element type of a cell
-  std::shared_ptr<const Element<Tdim>> element_ptr() { return element_; }
+  std::shared_ptr<Element<Tdim>> element_ptr() { return element_; }
 
   //! Return the number of shape functions, returns zero if the element type is
   //! not set.
@@ -356,6 +356,7 @@ class Cell {
                                        double pvolume) noexcept;
 
   //! Compute local correction matrix for two phase (Used to correct velocity)
+  //! \ingroup MultiPhase
   //! \param[in] phase Phase identifier
   //! \param[in] shapefn shape function
   //! \param[in] grad_shapefn shape function gradient
@@ -402,7 +403,7 @@ class Cell {
   //! Container of cell neighbour ids
   std::set<mpm::Index> neighbours_;
   //! Shape function
-  std::shared_ptr<const Element<Tdim>> element_{nullptr};
+  std::shared_ptr<Element<Tdim>> element_{nullptr};
   //! Quadrature
   std::shared_ptr<Quadrature<Tdim>> quadrature_{nullptr};
   //! dN/dx

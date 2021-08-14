@@ -278,6 +278,20 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
                      .count());
 }
 
+// Initialise particle types
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_particle_types() {
+  // Get particles properties
+  auto json_particles = io_->json_object("particles");
+
+  for (const auto& json_particle : json_particles) {
+    // Gather particle types
+    auto particle_type =
+        json_particle["generator"]["particle_type"].template get<std::string>();
+    particle_types_.insert(particle_type);
+  }
+}
+
 // Initialise particles
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_particles() {
@@ -313,11 +327,10 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
     if (!gen_status)
       std::runtime_error(
           "mpm::base::init_particles() Generate particles failed");
-    // Gather particle types
-    auto particle_type =
-        json_particle["generator"]["particle_type"].template get<std::string>();
-    particle_types_.insert(particle_type);
   }
+
+  // Gather particle types
+  this->initialise_particle_types();
 
   auto particles_gen_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Generate particles: {} ms", mpi_rank,
@@ -372,11 +385,10 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
                      .count());
 
   // Particle entity sets
-  auto particles_sets_begin = std::chrono::steady_clock::now();
-  this->particle_entity_sets(mesh_props, check_duplicates);
-  auto particles_sets_end = std::chrono::steady_clock::now();
+  this->particle_entity_sets(check_duplicates);
 
-  this->particle_velocity_constraints(mesh_props, particle_io);
+  // Read and assign particles velocity constraints
+  this->particle_velocity_constraints();
 
   console_->info("Rank {} Create particle sets: {} ms", mpi_rank,
                  std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -467,7 +479,7 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
               .string();
 
       // Load particle information from file
-      mesh_->read_particles_hdf5(particles_file, attribute);
+      mesh_->read_particles_hdf5(particles_file, attribute, ptype);
     }
 
     // Clear all particle ids
@@ -1101,9 +1113,13 @@ void mpm::MPMBase<Tdim>::particles_volumes(
 
 // Particle velocity constraints
 template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::particle_velocity_constraints(
-    const Json& mesh_props,
-    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+void mpm::MPMBase<Tdim>::particle_velocity_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
   try {
     if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
         mesh_props["boundary_conditions"].find(
@@ -1229,8 +1245,9 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
 
 //! Particle entity sets
 template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::particle_entity_sets(const Json& mesh_props,
-                                              bool check_duplicates) {
+void mpm::MPMBase<Tdim>::particle_entity_sets(bool check_duplicates) {
+  // Get mesh properties
+  auto mesh_props = io_->json_object("mesh");
   // Read and assign particle sets
   try {
     if (mesh_props.find("entity_sets") != mesh_props.end()) {
@@ -1297,10 +1314,6 @@ void mpm::MPMBase<Tdim>::mpi_domain_decompose(bool initial_step) {
 
     auto mpi_domain_begin = std::chrono::steady_clock::now();
     console_->info("Rank {}, Domain decomposition started\n", mpi_rank);
-
-    // Check if mesh has cells to partition
-    if (mesh_->ncells() == 0)
-      throw std::runtime_error("Container of cells is empty");
 
 #ifdef USE_GRAPH_PARTITIONING
     // Create graph object if empty

@@ -7,6 +7,8 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
   //! Stress update
   if (this->stress_update_ == "usl")
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSL<Tdim>>(mesh_, dt_);
+  else if (this->stress_update_ == "musl")
+    mpm_scheme_ = std::make_shared<mpm::MPMSchemeMUSL<Tdim>>(mesh_, dt_);
   else
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSF<Tdim>>(mesh_, dt_);
 
@@ -74,25 +76,42 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Initialise mesh
   this->initialise_mesh();
 
-  // Initialise particles
-  this->initialise_particles();
+  // Check point resume
+  if (resume) {
+    this->initialise_particle_types();
+    bool check_resume = this->checkpoint_resume();
+    if (!check_resume) resume = false;
+  }
 
-  // Initialise loading conditions
-  this->initialise_loads();
+  // Resume or Initialise
+  if (resume) {
+    mesh_->resume_domain_cell_ranks();
+#ifdef USE_MPI
+#ifdef USE_GRAPH_PARTITIONING
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+#endif
+    //! Particle entity sets and velocity constraints
+    this->particle_entity_sets(false);
+    this->particle_velocity_constraints();
+  } else {
+    // Initialise particles
+    this->initialise_particles();
+
+    // Compute mass
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
+
+    // Domain decompose
+    bool initial_step = (resume == true) ? false : true;
+    this->mpi_domain_decompose(initial_step);
+  }
 
   // Create nodal properties
   if (interface_) mesh_->create_nodal_properties();
 
-  // Compute mass
-  mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
-
-  // Check point resume
-  if (resume) this->checkpoint_resume();
-
-  // Domain decompose
-  bool initial_step = (resume == true) ? false : true;
-  this->mpi_domain_decompose(initial_step);
+  // Initialise loading conditions
+  this->initialise_loads();
 
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
@@ -133,6 +152,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
                                              damping_factor_);
+
+    // Mass momentum and compute velocity at nodes
+    mpm_scheme_->postcompute_nodal_kinematics(phase);
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);

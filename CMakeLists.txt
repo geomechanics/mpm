@@ -190,6 +190,15 @@ SET(mpm_src
 )
 add_executable(mpm ${mpm_SOURCE_DIR}/src/main.cc ${mpm_src} ${mpm_vtk})
 
+# Git revision
+set(PRE_CONFIGURE_FILE "${CMAKE_SOURCE_DIR}/include/git.cc.in")
+set(POST_CONFIGURE_FILE "${CMAKE_SOURCE_DIR}/include/git.cc")
+include("${CMAKE_SOURCE_DIR}/cmake/git_watcher.cmake")
+add_library(git STATIC ${POST_CONFIGURE_FILE})
+target_include_directories(git PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_dependencies(git check_git)
+target_link_libraries(mpm git)
+
 # Unit test
 if(MPM_BUILD_TESTING)
   SET(test_src
@@ -243,6 +252,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_musl_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_musl_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usf_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usl_test.cc

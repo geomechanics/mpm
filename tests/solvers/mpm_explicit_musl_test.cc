@@ -7,16 +7,16 @@ using Json = nlohmann::json;
 #include "mpm_explicit.h"
 #include "write_mesh_particles.h"
 
-// Check MPM Explicit USL
-TEST_CASE("MPM 2D Explicit USL implementation is checked",
-          "[MPM][2D][Explicit][USL][1Phase]") {
+// Check MPM Explicit MUSL
+TEST_CASE("MPM 2D Explicit MUSL implementation is checked",
+          "[MPM][2D][Explicit][MUSL][1Phase]") {
   // Dimension
   const unsigned Dim = 2;
 
   // Write JSON file
-  const std::string fname = "mpm-explicit-usl";
+  const std::string fname = "mpm-explicit-musl";
   const std::string analysis = "MPMExplicit2D";
-  const std::string mpm_scheme = "usl";
+  const std::string mpm_scheme = "musl";
 
   // Write JSON Entity Sets file
   REQUIRE(mpm_test::write_entity_set() == true);
@@ -32,7 +32,7 @@ TEST_CASE("MPM 2D Explicit USL implementation is checked",
   // clang-format off
   char* argv[] = {(char*)"./mpm",
                   (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"mpm-explicit-usl-2d.json"};
+                  (char*)"-i",  (char*)"mpm-explicit-musl-2d.json"};
   // clang-format on
 
   SECTION("Check initialisation") {
@@ -72,9 +72,9 @@ TEST_CASE("MPM 2D Explicit USL implementation is checked",
 
   SECTION("Check resume") {
     // Write JSON file
-    const std::string fname = "mpm-explicit-usl";
+    const std::string fname = "mpm-explicit-musl";
     const std::string analysis = "MPMExplicit2D";
-    const std::string mpm_scheme = "usl";
+    const std::string mpm_scheme = "musl";
     bool resume = true;
     REQUIRE(mpm_test::write_json(2, resume, analysis, mpm_scheme, fname) ==
             true);
@@ -100,16 +100,16 @@ TEST_CASE("MPM 2D Explicit USL implementation is checked",
   }
 }
 
-// Check MPM Explicit USL
-TEST_CASE("MPM 3D Explicit USL implementation is checked",
-          "[MPM][3D][Explicit][USL][1Phase]") {
+// Check MPM Explicit MUSL
+TEST_CASE("MPM 3D Explicit MUSL implementation is checked",
+          "[MPM][3D][Explicit][MUSL][1Phase]") {
   // Dimension
   const unsigned Dim = 3;
 
   // Write JSON file
-  const std::string fname = "mpm-explicit-usl";
+  const std::string fname = "mpm-explicit-musl";
   const std::string analysis = "MPMExplicit3D";
-  const std::string mpm_scheme = "usl";
+  const std::string mpm_scheme = "musl";
 
   // Write JSON Entity Sets file
   REQUIRE(mpm_test::write_entity_set() == true);
@@ -125,7 +125,7 @@ TEST_CASE("MPM 3D Explicit USL implementation is checked",
   // clang-format off
   char* argv[] = {(char*)"./mpm",
                   (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"mpm-explicit-usl-3d.json"};
+                  (char*)"-i",  (char*)"mpm-explicit-musl-3d.json"};
   // clang-format on
 
   SECTION("Check initialisation") {
@@ -158,9 +158,9 @@ TEST_CASE("MPM 3D Explicit USL implementation is checked",
 
   SECTION("Check resume") {
     // Write JSON file
-    const std::string fname = "mpm-explicit-usl";
+    const std::string fname = "mpm-explicit-musl";
     const std::string analysis = "MPMExplicit3D";
-    const std::string mpm_scheme = "usl";
+    const std::string mpm_scheme = "musl";
     bool resume = true;
     REQUIRE(mpm_test::write_json(3, resume, analysis, mpm_scheme, fname) ==
             true);

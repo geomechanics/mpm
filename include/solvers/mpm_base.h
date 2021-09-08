@@ -18,13 +18,13 @@
 #endif
 
 #include "constraints.h"
-#include "contact.h"
-#include "contact_friction.h"
+#include "contact_interface.h"
+#include "interface.h"
 #include "mpm.h"
-#include "mpm_scheme.h"
-#include "mpm_scheme_usf.h"
-#include "mpm_scheme_usl.h"
 #include "particle.h"
+#include "stress_update.h"
+#include "stress_update_usf.h"
+#include "stress_update_usl.h"
 #include "vector.h"
 
 namespace mpm {
@@ -34,6 +34,14 @@ namespace mpm {
 //! Vector: Vector of size 3
 //! Tensor: Symmetric tensor arranged in voigt notation
 enum class VariableType { Scalar, Vector, Tensor };
+extern tsl::robin_map<std::string, VariableType> variables;
+
+//! Stress update method
+//! USF: Update Stress First
+//! USL: Update Stress Last
+//! MUSL: Modified Stress Last
+enum class StressUpdate { USF, USL, MUSL };
+extern std::map<std::string, StressUpdate> stress_update;
 
 //! Damping type
 //! None: No damping is specified
@@ -70,8 +78,6 @@ class MPMBase : public MPM {
 
   //! Checkpoint resume
   bool checkpoint_resume() override;
-
-  void initialise_particle_sets(){};
 
 #ifdef USE_VTK
   //! Write VTK files
@@ -156,7 +162,6 @@ class MPMBase : public MPM {
   //! Particle entity sets
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] check Check duplicates
- public:
   void particle_entity_sets(const Json& mesh_prop, bool check);
 
   //! Initialise damping
@@ -186,11 +191,11 @@ class MPMBase : public MPM {
   using mpm::MPM::console_;
 
   //! Stress update method
-  std::string stress_update_{"usf"};
+  std::string stress_update_;
   //! Stress update scheme
-  std::shared_ptr<mpm::MPMScheme<Tdim>> mpm_scheme_{nullptr};
+  std::shared_ptr<mpm::StressUpdate<Tdim>> stress_update_scheme_{nullptr};
   //! Interface scheme
-  std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
+  std::shared_ptr<mpm::Interface<Tdim>> interface_scheme_{nullptr};
   //! velocity update
   bool velocity_update_{false};
   //! Gravity

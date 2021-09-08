@@ -50,8 +50,8 @@ if (MPI_CXX_FOUND)
     HINTS ${KAHIP_ROOT}/deploy $ENV{KAHIP_ROOT}/deploy /usr/local/KaHIP/deploy
     NO_DEFAULT_PATH
     DOC "Directory where the KaHIP library is located"
-  )
-
+    )
+  
   find_library(KAHIP_LIBRARY kahip
     DOC "Directory where the KaHIP library is located"
   )

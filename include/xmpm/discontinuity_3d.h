@@ -15,7 +15,7 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
 
   //! Constructor with id
   //! \param[in] discontinuity_props discontinuity properties
-  Discontinuity3D(unsigned id, const Json& discontinuity_props);
+  Discontinuity3D(const Json& discontinuity_props);
 
   //! initialization
   //! \param[in] the coordinates of all points
@@ -50,6 +50,10 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   //! Assign point friction coefficient
   void assign_point_friction_coef() noexcept override;
 
+  //! Compute updated position
+  //! \param[in] dt Time-step
+  void compute_updated_position(const double dt) noexcept;
+
  protected:
   //! vector of points
   using mpm::DiscontinuityBase<Tdim>::points_;
@@ -59,6 +63,8 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   using mpm::DiscontinuityBase<Tdim>::friction_coef_;
   //! width
   using mpm::DiscontinuityBase<Tdim>::width_;
+
+  using mpm::DiscontinuityBase<Tdim>::move_direction_;
 
  private:
   // vector of surfaces

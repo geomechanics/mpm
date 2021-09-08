@@ -28,6 +28,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
       {"levelset", VariableType::Scalar},
+      {"minimum_acoustic_eigenvalue", VariableType::Scalar},
+      {"discontinuity_angle", VariableType::Scalar},
       {"first_principal_stress", VariableType::Scalar},
       {"first_principal_strain", VariableType::Scalar},
       {"energy", VariableType::Scalar},
@@ -457,7 +459,8 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
             .string();
 
     // Load particle information from file
-    mesh_->read_particles_hdf5(phase, particles_file);
+    const std::string particle_type = (Tdim == 2) ? "P2D" : "P3D";
+    mesh_->read_particles_hdf5(phase, particles_file, particle_type);
 
     // Clear all particle ids
     mesh_->iterate_over_cells(

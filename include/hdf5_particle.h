@@ -44,6 +44,8 @@ typedef struct HDF5Particle {
   unsigned nstate_vars;
   // State variables (init to zero)
   double svars[20] = {0};
+  // level set values
+  double levelset_phi{0};
 } HDF5Particle;
 
 namespace hdf5 {

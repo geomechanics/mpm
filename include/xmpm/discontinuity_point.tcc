@@ -10,6 +10,7 @@ bool mpm::discontinuity_point<Tdim>::assign_cell_xi(
 
       cell_ = cellptr;
       cell_id_ = cellptr->id();
+      nodes_ = cell_->nodes();
       // Assign the reference location of particle
       bool xi_nan = false;
 
@@ -43,7 +44,7 @@ bool mpm::discontinuity_point<Tdim>::assign_cell(
 
       cell_ = cellptr;
       cell_id_ = cellptr->id();
-      assign_discontinuity_enrich();
+      nodes_ = cell_->nodes();
     } else {
       console_->warn("Points of discontinuity cannot be found in cell!");
     }
@@ -80,9 +81,10 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
     // If a cell id is present, but not a cell locate the cell from map
     if (!cell_ptr()) assign_cell(map_cells[cell_id()]);
 
-    assign_discontinuity_enrich();
-
-    if (compute_reference_location()) return;
+    if (compute_reference_location()) {
+      assign_cell_enrich(map_cells);
+      return;
+    }
 
     // Check if discontinuity point is in any of its nearest neighbours
     const auto neighbours = map_cells[cell_id()]->neighbours();
@@ -90,6 +92,7 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
     for (auto neighbour : neighbours) {
       if (map_cells[neighbour]->is_point_in_cell(coordinates_, &xi)) {
         assign_cell_xi(map_cells[neighbour], xi);
+        assign_cell_enrich(map_cells);
         return;
       }
     }
@@ -102,6 +105,7 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
     Eigen::Matrix<double, Tdim, 1> xi;
     if ((*citr)->is_point_in_cell(coordinates(), &xi)) {
       assign_cell_xi(*citr, xi);
+      assign_cell_enrich(map_cells);
     }
   }
 }
@@ -109,7 +113,7 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::discontinuity_point<Tdim>::compute_updated_position(
-    const double dt) noexcept {
+    const double dt, int move_direction) noexcept {
   // Check if point has a valid cell ptr
   if (cell_ == nullptr) return;
   // Get interpolated nodal velocity
@@ -118,19 +122,18 @@ void mpm::discontinuity_point<Tdim>::compute_updated_position(
   const double tolerance = 1.E-16;
   unsigned int phase = 0;
   // need to do, points move with which side
-  int move_direction = -1;
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     if (nodes_[i]->discontinuity_enrich()) {
-      double nodal_mass =
-          nodes_[i]->mass(phase) -
-          nodes_[i]->discontinuity_property("mass_enrich", 1)(0, 0);
+      double nodal_mass = nodes_[i]->mass(phase) +
+                          move_direction * nodes_[i]->discontinuity_property(
+                                               "mass_enrich", 1)(0, 0);
       if (nodal_mass < tolerance) continue;
 
-      nodal_velocity +=
-          shapefn_[i] *
-          (nodes_[i]->momentum(phase) -
-           nodes_[i]->discontinuity_property("momenta_enrich", 3)) /
-          nodal_mass;
+      nodal_velocity += shapefn_[i] *
+                        (nodes_[i]->momentum(phase) +
+                         move_direction * nodes_[i]->discontinuity_property(
+                                              "momenta_enrich", 3)) /
+                        nodal_mass;
     } else {
       double nodal_mass = nodes_[i]->mass(phase);
       if (nodal_mass < tolerance) continue;
@@ -159,16 +162,56 @@ void mpm::discontinuity_point<Tdim>::compute_shapefn() noexcept {
   shapefn_ = element->shapefn(this->xi_, natural_size_, zero);
 }
 
+//! Assign the discontinuity enrich type to cell
+template <unsigned Tdim>
+void mpm::discontinuity_point<Tdim>::assign_cell_enrich(
+    const Map<Cell<Tdim>>& map_cells) {
+  if (cell_->nparticles() == 0) return;
+  cell_->assign_type_discontinuity(mpm::EnrichType::Crossed);
+  const auto neighbours_1 = cell_->neighbours();
+  for (auto neighbour_1 : neighbours_1) {
+    if (map_cells[neighbour_1]->element_type_discontinuity() ==
+        mpm::EnrichType::Crossed)
+      continue;
+    map_cells[neighbour_1]->assign_type_discontinuity(
+        mpm::EnrichType::NeighbourTip_1);
+    const auto neighbours_2 = map_cells[neighbour_1]->neighbours();
+    for (auto neighbour_2 : neighbours_2) {
+      if (map_cells[neighbour_2]->element_type_discontinuity() ==
+              mpm::EnrichType::Regular ||
+          map_cells[neighbour_2]->element_type_discontinuity() ==
+              mpm::EnrichType::NeighbourTip_3)
+        map_cells[neighbour_2]->assign_type_discontinuity(
+            mpm::EnrichType::NeighbourTip_2);
+
+      const auto neighbours_3 = map_cells[neighbour_2]->neighbours();
+      for (auto neighbour_3 : neighbours_3) {
+        if (map_cells[neighbour_3]->element_type_discontinuity() ==
+            mpm::EnrichType::Regular)
+          map_cells[neighbour_3]->assign_type_discontinuity(
+              mpm::EnrichType::NeighbourTip_3);
+      }
+    }
+  }
+}
+
 //! Assign the discontinuity enrich to node
 template <unsigned Tdim>
-void mpm::discontinuity_point<Tdim>::assign_discontinuity_enrich() {
+void mpm::discontinuity_point<Tdim>::assign_node_enrich(
+    const Map<Cell<Tdim>>& map_cells) {
+  if (cell_->element_type_discontinuity() != mpm::EnrichType::Crossed) return;
   Eigen::Matrix<double, 1, 1> friction_coef;
   friction_coef(0, 0) = friction_coef_;
+
+  Eigen::Matrix<double, 1, 1> cohesion;
+  cohesion(0, 0) = cohesion_;
   nodes_ = cell_->nodes();
-  // assign discontinuity_enrich
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->assign_discontinuity_enrich(true);
     nodes_[i]->assign_discontinuity_property(true, "friction_coef",
                                              friction_coef, 0, 1);
+    nodes_[i]->assign_discontinuity_property(true, "cohesion", cohesion, 0, 1);
   }
+  std::ofstream test("cor.txt", std::ios::app);
+  test << coordinates_;
 }

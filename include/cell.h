@@ -1,6 +1,7 @@
 #ifndef MPM_CELL_H_
 #define MPM_CELL_H_
 
+#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
@@ -12,6 +13,7 @@
 #include "Eigen/LU"
 
 #include "affine_transform.h"
+#include "discontinuity_element.h"
 #include "element.h"
 #include "geometry.h"
 #include "logger.h"
@@ -217,6 +219,79 @@ class Cell {
   //! Return previous mpi rank
   unsigned previous_mpirank() const;
 
+  //! Assign discontinuity element type
+  void assign_type_discontinuity(mpm::EnrichType type);
+
+  //! Initialize discontinuity element properties
+  void initialise_element_properties_discontinuity();
+
+  //! assign the normal direction of the discontinuity in the cell
+  //! \param[in] the normal direction
+  void assign_normal_discontinuity(VectorDim normal);
+
+  //! assign the constant parameters of the discontinuity in the cell
+  //! \param[in] the constant parameters
+  void assign_d_discontinuity(double d) {
+    this->discontinuity_element_->assign_d(d);
+  };
+
+  //! assign the normal direction of the discontinuity in the cell
+  //! \param[in] the normal direction
+  //! \param[in] the plane constant
+  void assign_normal_discontinuity(VectorDim normal, double d);
+
+  //! return the normal direction of the discontinuity in the cell
+  VectorDim normal_discontinuity() {
+    return discontinuity_element_->normal_discontinuity();
+  };
+
+  //! Return discontinuity element type
+  unsigned element_type_discontinuity();
+
+  //! potential tip element
+  void potential_tip_element();
+
+  //! determine tip element
+  void tip_element();
+  //   //! change the nodal discontinuity enrich to true for the TIP cell
+  //   void assign_tipcell_nodal_discontinuity(bool status);
+
+  //! compute normal vector of discontinuity by the nodal level set values
+  void compute_normal_vector_discontinuity();
+
+  //! compute gradient of the nodal level set values
+  VectorDim compute_gradient_levelset();
+
+  //! compute the discontinuity plane by the nodal level set values
+  //! \param[in] from the enriched nodes
+  void compute_plane_discontinuity(bool enrich);
+
+  //! update nodal nodal level set
+  void compute_discontinuity_point(std::vector<VectorDim>& coordinates);
+
+  // product of the nodal level set value
+  double product_levelset();
+
+  // Initialise the cells in node
+  void add_cell_in_node();
+
+  // return the constant value of the discontinuity plane
+  double d_discontinuity() {
+    return this->discontinuity_element_->d_discontinuity();
+  }
+  // determine the celltype by the nodal level set
+  void determine_crossed();
+
+  // compute the nodal level set values by plane equations
+  void compute_nodal_levelset_equation();
+
+  // compute the area of the crossed cell
+  void compute_area_discontinuity();
+
+  double discontinuity_area() { return this->discontinuity_element_->area(); }
+
+  void assign_cohesion_area();
+
  private:
   //! Approximately check if a point is in a cell
   //! \param[in] point Coordinates of point
@@ -266,6 +341,8 @@ class Cell {
   std::map<unsigned, Eigen::VectorXd> face_normals_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  //! discontinuity element
+  std::shared_ptr<DiscontinuityElement<Tdim>> discontinuity_element_{nullptr};
 };  // Cell class
 }  // namespace mpm
 

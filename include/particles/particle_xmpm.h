@@ -11,6 +11,9 @@
 #include "logger.h"
 #include "particle_base.h"
 
+#include <fstream>
+#include <iostream>
+
 namespace mpm {
 
 //! ParticleXMPM class
@@ -42,8 +45,22 @@ class ParticleXMPM : public Particle<Tdim> {
 
   //! Delete assignment operator
   ParticleXMPM& operator=(const ParticleXMPM<Tdim>&) = delete;
+
+  //! Initialise particle from HDF5 data
+  //! \param[in] particle HDF5 data of particle
+  //! \retval status Status of reading HDF5 particle
+  bool initialise_particle(const HDF5Particle& particle) override;
+
+  //! Retrun particle data as HDF5
+  //! \retval particle HDF5 data of the particle
+  HDF5Particle hdf5() const override;
+
   //! Initialise properties
   void initialise() override;
+  //! Type of particle
+  std::string type() const override {
+    return (Tdim == 2) ? "P2DXMPM" : "P3DXMPM";
+  }
   //! Map particle mass and momentum to nodes
   void map_mass_momentum_to_nodes() noexcept override;
 
@@ -51,11 +68,27 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;
 
+  //! Map traction force
+  void map_traction_force() noexcept override;
+
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
   //! Compute the principal stress and strain
   void compute_principal_stress_strain();
+
+  //! Map particle levelset to nodes
+  void map_levelset_to_nodes() noexcept override;
+
+  //! Map particle frictional_coef to nodes
+  //! \param[in] friction_coef of the discontinuity
+  void map_friction_coef_to_nodes(
+      double discontinuity_friction_coef) noexcept override;
+  //! Compute dudx
+  //! \param[in] dt Analysis time step
+  void compute_dudx(double dt) noexcept;
+
+  //   virtual void check_levelset() noexcept override;
 
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
@@ -69,6 +102,19 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \retval strain rate at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
+  //! Map levelset from nodes to particles
+  void map_levelset_to_particle();
+
+  //! return levelset values
+  double levelset_phi() { return levelset_phi_; }
+
+  //! compute the minimum eigenvalue of the acoustic tensor
+  //! \param[in] the normal direction of the discontinuity
+  bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation);
+
+  //! compute the gradient of displacement dot direction
+  void compute_initiation_normal(VectorDim& normal);
 
  private:
   //! Assign the level set function values
@@ -152,6 +198,8 @@ class ParticleXMPM : public Particle<Tdim> {
   using Particle<Tdim>::tensor_properties_;
   //! Pack size
   using Particle<Tdim>::pack_size_;
+  //! du/dx at particles
+  Eigen::Matrix<double, 3, 3> du_dx_;
 
  private:
   //! level set value： phi for discontinuity
@@ -163,6 +211,12 @@ class ParticleXMPM : public Particle<Tdim> {
   double first_principal_strain_{0.};
   //! energy:first_principal_stress_*first_principal_strain_*0.5
   double energy_{0.};
+
+  //! the minimum eigenvalue of the acoustic tensor
+  double minimum_acoustic_eigenvalue_{1e16};
+
+  //! angle
+  double discontinuity_angle_{0.};
 };  // ParticleXMPM class
 }  // namespace mpm
 

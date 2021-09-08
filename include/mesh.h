@@ -401,8 +401,10 @@ class Mesh {
   //! Read HDF5 particles
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] filename Name of HDF5 file to write particles data
+  //! \param[in] particle type of HDF5 file to generate particles class
   //! \retval status Status of reading HDF5 output
-  bool read_particles_hdf5(unsigned phase, const std::string& filename);
+  bool read_particles_hdf5(unsigned phase, const std::string& filename,
+                           const std::string& particle_type);
 
   //! Return HDF5 particles
   //! \retval particles_hdf5 Vector of HDF5 particles
@@ -468,12 +470,11 @@ class Mesh {
   // Create the nodal properties' map for discontinuity
   void create_nodal_properties_discontinuity();
 
-  //! Initialise discontinuities
-  //! \param[in] discontinuities List of discontinuities
-  void initialise_discontinuities(
-      const std::map<unsigned, std::shared_ptr<mpm::DiscontinuityBase<Tdim>>>&
-          discontinuities) {
-    discontinuities_ = discontinuities;
+  //! Initialise discontinuity
+  //! \param[in] discontinuity List of discontinuity
+  void initialise_discontinuity(
+      const std::shared_ptr<mpm::DiscontinuityBase<Tdim>>& discontinuity) {
+    discontinuity_ = discontinuity;
   }
 
   //! Locate points of discontinuity in a cell
@@ -486,11 +487,66 @@ class Mesh {
   //! Update the discontinuity position
   void compute_shapefn_discontinuity();
 
+  //! compute the normal vector of cells
+  void compute_cell_normal_vector_discontinuity();
+
   //! compute the normal vector of enriched nodes at the discontinuity
-  void compute_normal_vector_discontinuity();
+  void compute_nodal_normal_vector_discontinuity();
 
   //! Initialise the level set function values
   void initialise_levelset_discontinuity();
+
+  //! Initialise the nodal level set function values
+  void initialise_nodal_levelset_discontinuity();
+
+  //! solve nodal levelset values
+  void update_node_levelset();
+
+  // discontinuity growth
+  void update_discontinuity();
+
+  // find next tip element
+  void next_tip_element_discontinuity();
+  // Initialise the cells in node
+  void add_cell_in_node();
+
+  //! remove spurious potential tip element
+  void spurious_potential_tip_element();
+
+  // assign_node_enrich
+  void assign_node_enrich(bool friction_coef_average, bool enrich_all);
+
+  // update_node_enrich
+  void update_node_enrich();
+  // the initiation of discontinuity
+  bool initiation_discontinuity();
+  // modify the nodal levelset_phi by mls
+  void modify_nodal_levelset_mls();
+
+  void selfcontact_detection();
+
+  void output_discontinuity(int step) {
+    this->discontinuity_->output_markpoints(step);
+  };
+
+  void compute_error();
+  void output_celltype(int step);
+  void output_force(int step);
+  void output_nodal_levelset(int step);
+  void change_mat();
+  void define_levelset();
+  void update_nodal_levelset(double dt);
+
+  void output_surface();
+
+  void check_particle_levelset(bool particle_levelset);
+
+  int step_{0};
+  void assign_step(int step) {
+    step_ = step;
+    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+      (*nitr)->step_ = step;
+  };
 
  private:
   // Read particles from file
@@ -560,9 +616,9 @@ class Mesh {
   unsigned nhalo_nodes_{0};
   //! Maximum number of halo nodes
   unsigned ncomms_{0};
-  //! discontinuities
-  std::map<unsigned, std::shared_ptr<mpm::DiscontinuityBase<Tdim>>>
-      discontinuities_;
+  //! discontinuity
+  std::shared_ptr<mpm::DiscontinuityBase<Tdim>> discontinuity_;
+
 };  // Mesh class
 }  // namespace mpm
 

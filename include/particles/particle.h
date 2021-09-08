@@ -149,6 +149,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Map multimaterial domain gradients to nodes
   void map_multimaterial_domain_gradients_to_nodes() noexcept override;
 
+  //! Map particle volume to nodes
+  void map_volume_to_nodes() noexcept override;
+
   //! Assign nodal mass to particles
   //! \param[in] mass Mass from the particles in a cell
   //! \retval status Assignment status

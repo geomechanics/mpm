@@ -1,7 +1,6 @@
 template <unsigned Tdim>
-mpm::Discontinuity3D<Tdim>::Discontinuity3D(unsigned id,
-                                            const Json& discontinuity_props)
-    : DiscontinuityBase<Tdim>(id, discontinuity_props) {}
+mpm::Discontinuity3D<Tdim>::Discontinuity3D(const Json& discontinuity_props)
+    : DiscontinuityBase<Tdim>(discontinuity_props) {}
 
 // initialization
 template <unsigned Tdim>
@@ -123,8 +122,9 @@ void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
       min_distance = distance;
       vertical_distance = surf.vertical_distance(coordinates);
     }
-    if (!vertical_distance) vertical_distance = 1e-16;
   }
+  if (!vertical_distance)
+    vertical_distance = std::numeric_limits<double>::min();
   if (abs(min_distance) < width_)
     phi_particle = vertical_distance;
   else
@@ -151,4 +151,13 @@ void mpm::Discontinuity3D<Tdim>::compute_normal(const VectorDim& coordinates,
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::assign_point_friction_coef() noexcept {
   for (auto& point : points_) point.assign_friction_coef(friction_coef_);
+}
+
+// Compute updated position of the particle
+template <unsigned Tdim>
+void mpm::Discontinuity3D<Tdim>::compute_updated_position(double dt) noexcept {
+  for (auto& point : this->points_)
+    point.compute_updated_position(dt, move_direction_);
+
+  initialize_center_normal();
 }

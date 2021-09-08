@@ -3,11 +3,13 @@
 
 #include "cell.h"
 #include "data_types.h"
+#include "discontinuity_element.h"
 #include "io_mesh.h"
 #include "logger.h"
 #include "memory.h"
 #include "node_base.h"
 #include "vector.h"
+#include <iostream>
 
 namespace mpm {
 
@@ -25,7 +27,7 @@ class DiscontinuityBase {
   //! Constructor with id
   //! \param[in] discontinuity id
   //! \param[in] discontinuity properties json
-  DiscontinuityBase(unsigned id, const Json& discontinuity_props);
+  DiscontinuityBase(const Json& discontinuity_props);
 
   //! Destructor
   virtual ~DiscontinuityBase(){};
@@ -72,6 +74,18 @@ class DiscontinuityBase {
   //! return the friction coefficient
   double friction_coef() const { return friction_coef_; };
 
+  //! return the cohesion
+  double cohesion() const { return cohesion_; };
+
+  //! return the width
+  double width() const { return width_; }
+
+  //! return the contact_distance
+  double contact_distance() const { return contact_distance_; }
+
+  //! return the maximum_pdstrain
+  double maximum_pdstrain() const { return maximum_pdstrain_; }
+
   //! return the number of the points
   mpm::Index npoints() const { return points_.size(); };
 
@@ -83,13 +97,19 @@ class DiscontinuityBase {
 
   //! Compute updated position
   //! \param[in] dt Time-step
-  void compute_updated_position(const double dt) noexcept;
+  virtual void compute_updated_position(const double dt) noexcept;
 
   //! Compute shape function
   void compute_shapefn() noexcept;
 
   //! Assign point friction coefficient
   virtual void assign_point_friction_coef() noexcept = 0;
+
+  //! Insert new point
+  void insert_particles(VectorDim& point, const Vector<Cell<Tdim>>& cells,
+                        const Map<Cell<Tdim>>& map_cells);
+
+  void output_markpoints(int step);
 
  protected:
   //! Logger
@@ -104,8 +124,20 @@ class DiscontinuityBase {
   //! friction coefficient
   double friction_coef_;
 
+  //! cohesion
+  double cohesion_;
+
   //! the influence length of the discontinuity
   double width_{std::numeric_limits<double>::max()};
+
+  //! move_direction
+  int move_direction_{1};
+
+  //! contact distance
+  double contact_distance_{std::numeric_limits<double>::max()};
+
+  //! maximum pdstrain
+  double maximum_pdstrain_{0};
 
 };  // DiscontinuityBase class
 
@@ -120,6 +152,7 @@ struct discontinuity_point {
   discontinuity_point(const VectorDim& coordinate) {
 
     friction_coef_ = 0;
+    cohesion_ = 0;
     coordinates_ = coordinate;
     cell_ = nullptr;
     //! Logger
@@ -147,9 +180,13 @@ struct discontinuity_point {
   //! \param[in] cellptr Pointer to a cell
   bool assign_cell(const std::shared_ptr<Cell<Tdim>>& cellptr);
 
-  //! Assign the discontinuity enrich to node
-  void assign_discontinuity_enrich();
+  //! Assign the discontinuity type to cell
+  //! \param[in] map_cells map of cells
+  void assign_cell_enrich(const Map<Cell<Tdim>>& map_cells);
 
+  //! Assign the discontinuity enrich to node
+  //! \param[in] map_cells map of cells
+  void assign_node_enrich(const Map<Cell<Tdim>>& map_cells);
   //! Compute reference coordinates in a cell
   bool compute_reference_location() noexcept;
 
@@ -160,7 +197,7 @@ struct discontinuity_point {
                                  const Map<Cell<Tdim>>& map_cells) noexcept;
 
   //! Compute updated position
-  void compute_updated_position(double dt) noexcept;
+  void compute_updated_position(double dt, int move_direction) noexcept;
 
   //! Compute shape function
   void compute_shapefn() noexcept;
@@ -169,7 +206,15 @@ struct discontinuity_point {
   //! \param[in] friction_coef
   void assign_friction_coef(double friction_coef) noexcept {
     friction_coef_ = friction_coef;
-  };
+  }
+
+  //! Assign cohesion
+  //! \param[in] friction_coef
+  void assign_cohesion(double cohesion) noexcept { cohesion_ = cohesion; }
+
+  //! Assign tip
+  //! \param[in] tip
+  void assign_tip(bool tip) { tip_ = tip; }
 
  private:
   //! point coordinates
@@ -188,6 +233,10 @@ struct discontinuity_point {
   std::shared_ptr<spdlog::logger> console_;
   //! friction coefficient
   double friction_coef_{0.};
+  //! cohesion
+  double cohesion_{0.};
+  //! tip
+  bool tip_{false};
 };
 
 //! struct of discontinuity line: for 2d, need to be done

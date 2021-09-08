@@ -5,6 +5,7 @@
 #include "mutex.h"
 #include "nodal_properties.h"
 #include "node_base.h"
+#include <fstream>
 
 namespace mpm {
 
@@ -313,17 +314,33 @@ class Node : public NodeBase<Tdim> {
   //! Compute momentum for discontinuity
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
-  virtual bool compute_momentum_discontinuity(unsigned phase,
-                                              double dt) noexcept override;
+  bool compute_momentum_discontinuity(unsigned phase,
+                                      double dt) noexcept override;
+
+  //! Compute momentum for discontinuity with cundall damping factor
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Damping factor
+  virtual bool compute_momentum_discontinuity_cundall(
+      unsigned phase, double dt, double damping_factor) noexcept override;
 
   //! Apply self-contact of the discontinuity
   //! \param[in] dt Time-step
   void self_contact_discontinuity(double dt) noexcept override;
 
   //! Return the discontinuity_prop_id
-  virtual unsigned discontinuity_prop_id() const noexcept override {
+  unsigned discontinuity_prop_id() const noexcept override {
     return discontinuity_prop_id_;
   };
+
+  //! update the nodal levelset values
+  void update_levelset() noexcept override;
+
+  //! Add a cell id
+  void add_cell_id(Index id) noexcept override;
+
+  //! Return cells_
+  std::vector<Index> cells() const { return cells_; }
 
  private:
   //! Mutex
@@ -385,6 +402,8 @@ class Node : public NodeBase<Tdim> {
   //! discontinuity enrich
   // need to be done
   bool discontinuity_enrich_{false};
+  //! cells ids including the node
+  std::vector<Index> cells_;
 };  // Node class
 }  // namespace mpm
 

@@ -85,6 +85,25 @@ class MohrCoulomb : public Material<Tdim> {
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
                      double* softening);
 
+  //！ return Plastic stiffness matrix
+  //! \param[in] stress Stress
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] the yield status
+  virtual Matrix6x6 dp(const Vector6d& stress, mpm::dense_map* state_vars,
+                       bool& status) {
+    status = compute_plastic_tensor(stress, state_vars);
+    return dp_;
+  }
+
+  //! Compute plastic tensor
+  //! \param[in] stress Stress
+  //! \param[in] state_vars History-dependent state variables
+  bool compute_plastic_tensor(const Vector6d& stress,
+                              mpm::dense_map* state_vars);
+
+  //！ return Elastic stiffness matrix
+  Matrix6x6 de() { return de_; }
+
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -99,6 +118,8 @@ class MohrCoulomb : public Material<Tdim> {
 
   //! Elastic stiffness matrix
   Matrix6x6 de_;
+  //! Plastic stiffness matrix
+  Matrix6x6 dp_;
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Youngs modulus

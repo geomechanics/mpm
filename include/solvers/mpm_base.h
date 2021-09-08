@@ -71,6 +71,8 @@ class MPMBase : public MPM {
   //! Checkpoint resume
   bool checkpoint_resume() override;
 
+  void initialise_particle_sets(){};
+
 #ifdef USE_VTK
   //! Write VTK files
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
@@ -154,6 +156,7 @@ class MPMBase : public MPM {
   //! Particle entity sets
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] check Check duplicates
+ public:
   void particle_entity_sets(const Json& mesh_prop, bool check);
 
   //! Initialise damping

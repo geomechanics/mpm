@@ -321,6 +321,34 @@ class ParticleBase {
   //! Compute the principal stress and strain
   virtual void compute_principal_stress_strain(){};
 
+  //! Map particle volume to nodes
+  virtual void map_volume_to_nodes() noexcept = 0;
+
+  //! Map particle levelset to nodes
+  virtual void map_levelset_to_nodes(){};
+
+  //! Map particle frictional_coef to nodes
+  virtual void map_friction_coef_to_nodes(double discontinuity_friction_coef){};
+
+  //! Map levelset from nodes to particles
+  virtual void map_levelset_to_particle(){};
+
+  //! Compute dudx
+  //! \param[in] dt Analysis time step
+  virtual void compute_dudx(double dt){};
+
+  //   virtual void check_levelset(){};
+
+  //! return levelset values
+  virtual double levelset_phi() { return 0; }
+
+  //! compute the minimum eigenvalue of the acoustic tensor
+  //! \param[in] the normal direction of the discontinuity
+  virtual bool minimum_acoustic_tensor(VectorDim& normal_cell,
+                                       bool initiation) {
+    return false;
+  };
+
  protected:
   //! particleBase id
   Index id_{std::numeric_limits<Index>::max()};

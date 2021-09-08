@@ -17,6 +17,8 @@ namespace mpm {
 template <unsigned Tdim>
 class XMPMExplicit : public MPMBase<Tdim> {
  public:
+  //! Define a vector of size dimension
+  using VectorDim = Eigen::Matrix<double, Tdim, 1>;
   //! Default constructor
   XMPMExplicit(const std::shared_ptr<IO>& io);
 
@@ -27,11 +29,22 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! \param[in] phase Phase to smooth pressure
   void compute_stress_strain(unsigned phase);
 
-  //! Initialise discontinuities
-  void initialise_discontinuities();
+  //! Initialise discontinuity
+  void initialise_discontinuity();
 
-  // return the number of discontinuities
-  mpm::Index ndiscontinuities() { return discontinuities_.size(); };
+  //! Checkpoint resume
+  bool checkpoint_resume() override;
+
+  void initialise_particle_sets() {
+    // Get mesh properties
+    auto mesh_props = io_->json_object("mesh");
+    // Check duplicates default set to true
+    bool check_duplicates = true;
+    if (mesh_props.find("check_duplicates") != mesh_props.end())
+      check_duplicates = mesh_props["check_duplicates"].template get<bool>();
+
+    this->particle_entity_sets(mesh_props, check_duplicates);
+  };
 
  protected:
   // Generate a unique id for the analysis
@@ -89,10 +102,21 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! Interface
   bool interface_{false};
   //! discontinuities statue
-  bool discontinuity_{false};
+  bool setdiscontinuity_{false};
   //! discontinuities
-  std::map<unsigned, std::shared_ptr<mpm::DiscontinuityBase<Tdim>>>
-      discontinuities_;
+  std::shared_ptr<mpm::DiscontinuityBase<Tdim>> discontinuity_;
+
+  bool surfacemesh_{false};
+
+  bool particle_levelet_{false};
+
+  bool propagation_{false};
+
+  bool initiation_{false};
+
+  std::string nodal_levelset_{"shepard"};
+
+  bool friction_coef_average_{false};
 
 };  // XMPMExplicit class
 }  // namespace mpm

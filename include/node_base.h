@@ -24,6 +24,7 @@ namespace mpm {
 template <unsigned Tdim>
 class NodeBase {
  public:
+  double step_{0};
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
@@ -304,12 +305,27 @@ class NodeBase {
   virtual bool compute_momentum_discontinuity(unsigned phase,
                                               double dt) noexcept = 0;
 
+  //! Compute momentum for discontinuity with cundall damping factor
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Damping factor
+  virtual bool compute_momentum_discontinuity_cundall(
+      unsigned phase, double dt, double damping_factor) noexcept = 0;
+
   //! Apply self-contact of the discontinuity
   //! \param[in] dt Time-step
   virtual void self_contact_discontinuity(double dt) noexcept = 0;
 
   //! Return the discontinuity_prop_id
   virtual unsigned discontinuity_prop_id() const noexcept = 0;
+
+  //! update the nodal levelset values
+  virtual void update_levelset() = 0;
+  //! Add a cell id
+  virtual void add_cell_id(Index id) = 0;
+
+  //! Return cells_
+  virtual std::vector<Index> cells() const = 0;
 
 };  // NodeBase class
 }  // namespace mpm

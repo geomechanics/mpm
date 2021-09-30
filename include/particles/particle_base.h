@@ -348,6 +348,92 @@ class ParticleBase {
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) = 0;
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Map particle mass, momentum and inertia to nodes
+  //! \ingroup Implicit
+  virtual void map_mass_momentum_inertia_to_nodes() {
+    throw std::runtime_error(
+        "Calling the base class function (map_mass_momentum_inertia_to_nodes) "
+        "in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Map inertial force
+  //! \ingroup Implicit
+  virtual void map_inertial_force() {
+    throw std::runtime_error(
+        "Calling the base class function (map_inertial_force) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Return acceleration
+  //! \ingroup Implicit
+  virtual VectorDim acceleration() const {
+    auto error = VectorDim::Zero();
+    throw std::runtime_error(
+        "Calling the base class function (acceleration) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return error;
+  }
+
+  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  virtual inline bool map_material_stiffness_matrix_to_cell() {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(map_material_stiffness_matrix_to_cell) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  }
+
+  //! Compute B matrix
+  virtual inline Eigen::MatrixXd compute_bmatrix() {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_bmatrix) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Map mass matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  virtual inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (map_mass_matrix_to_cell) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  }
+
+  //! Compute strain using nodal displacement
+  //! \ingroup Implicit
+  virtual void compute_strain_newmark() {
+    throw std::runtime_error(
+        "Calling the base class function (compute_strain_newmark) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Compute updated position by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] dt Analysis time step
+  virtual void compute_updated_position_newmark(double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (compute_updated_position_newmark) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+  /**@}*/
+
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle
   //! \param[in] pressure parameter determining type of projection

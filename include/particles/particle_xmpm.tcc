@@ -393,13 +393,6 @@ void mpm::ParticleXMPM<Tdim>::map_levelset_to_particle() {
     levelset_phi_ += shapefn_[i] *
                      nodes_[i]->discontinuity_property("levelset_phi", 1)(0, 0);
   }
-  // for oso
-  if (this->material_id() == 1 || this->material_id() == 2 || this->material_id() == 2 ||
-      this->material_id() == 4)
-    levelset_phi_ = levelset_phi_ > 1e-10 ? levelset_phi_ : 1e-10;
-  else if (this->material_id() == 3 || this->material_id() == 5 ||
-           this->material_id() == 5)
-    levelset_phi_ = levelset_phi_ > -1e-10 ? -1e-10 : levelset_phi_;
 }
 
 //! compute the mininum eigenvalue of the acoustic tensor

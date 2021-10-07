@@ -54,7 +54,6 @@ void mpm::NodalProperties::initialise_nodal_properties() {
     // rows = number of nodes * size of property (1 if property is scalar, Tdim
     // if property is vector)
     // cols = number of materials
-    if (prop_itr->first == "levelset_phi") continue;
 
     Eigen::MatrixXd zeroed_property =
         Eigen::MatrixXd::Zero(prop_itr->second.rows(), prop_itr->second.cols());

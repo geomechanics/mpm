@@ -18,13 +18,13 @@
 #endif
 
 #include "constraints.h"
-#include "contact_interface.h"
-#include "interface.h"
+#include "contact.h"
+#include "contact_friction.h"
 #include "mpm.h"
+#include "mpm_scheme.h"
+#include "mpm_scheme_usf.h"
+#include "mpm_scheme_usl.h"
 #include "particle.h"
-#include "stress_update.h"
-#include "stress_update_usf.h"
-#include "stress_update_usl.h"
 #include "vector.h"
 
 namespace mpm {

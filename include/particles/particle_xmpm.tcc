@@ -586,7 +586,7 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   double det_dp_n;
 
   double mininum_ratio = std::numeric_limits<double>::max();
-  
+
   for (int i = 0; i < std::floor(360 / dtheta); i++) {
     for (int j = 0; j < 1; j++) {
       double theta = i * dtheta * PI;

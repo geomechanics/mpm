@@ -79,7 +79,6 @@ class MPMBase : public MPM {
   //! Checkpoint resume
   bool checkpoint_resume() override;
 
-
   //! Particle entity sets
   //! \param[in] check Check duplicates
   void particle_entity_sets(bool check);

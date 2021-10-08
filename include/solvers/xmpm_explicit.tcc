@@ -75,8 +75,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   this->initialise_mesh();
 
   // Initialise particles
-  if (!resume)
-    this->initialise_particles();
+  if (!resume) this->initialise_particles();
 
   // Initialise the cells in node
   mesh_->add_cell_in_node();
@@ -160,7 +159,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     mpm_scheme_->initialise();
 
     if (step_ == 0 || resume == true) {
-      //predefine level set values
+      // predefine level set values
       mesh_->define_levelset();
       resume = false;
     }
@@ -196,8 +195,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       }
 
       // modify the nodal levelset_phi by mls
-      if (nodal_levelset_ == "mls")
-        mesh_->modify_nodal_levelset_mls();
+      if (nodal_levelset_ == "mls") mesh_->modify_nodal_levelset_mls();
 
       // obtain nodal frictional_coefficient
       if (friction_coef_average_)

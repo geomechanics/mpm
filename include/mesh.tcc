@@ -2707,7 +2707,6 @@ void mpm::Mesh<Tdim>::update_node_enrich() {
   }
 }
 
-
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::define_levelset() {
   // for oso
@@ -2861,7 +2860,6 @@ bool mpm::Mesh<Tdim>::initiation_discontinuity() {
       for (int i = 0; i < coordinates_dis_neigh.size(); i++) {
         discontinuity_->insert_particles(coordinates_dis_neigh[i], cells_,
                                          map_cells_);
-
       }
     }
     // initialise level set values
@@ -3214,4 +3212,3 @@ void mpm::Mesh<Tdim>::output_celltype(int step) {
                << std::endl;
   }
 }
-

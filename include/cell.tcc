@@ -901,7 +901,6 @@ void mpm::Cell<Tdim>::tip_element() {
   }
 }
 
-
 //! potential tip element
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_discontinuity_point(
@@ -1056,7 +1055,7 @@ double mpm::Cell<Tdim>::product_levelset() {
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::determine_crossed() {
 
-  //if (this->nparticles() == 0) return;
+  // if (this->nparticles() == 0) return;
 
   double max_phi = -1e15, min_phi = 1e15;
 
@@ -1212,5 +1211,4 @@ void mpm::Cell<Tdim>::assign_cohesion_area() {
     nodes_[i]->update_discontinuity_property(true, "cohesion_area", node_area,
                                              0, 1);
   }
-
 }

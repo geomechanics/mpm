@@ -88,12 +88,10 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_momentum_discontinuity_cundall(
       this->external_force_.col(phase) -=
           damping_factor * unbalanced_force.norm() *
           this->momentum_.col(phase).normalized();
-
     }
 
   } else {
 
-    
     // obtain the enriched values of enriched nodes
     Eigen::Matrix<double, 1, 1> mass_enrich =
         property_handle_->property("mass_enrich", discontinuity_prop_id_, 0, 1);
@@ -203,7 +201,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
 
   Eigen::Matrix<double, Tdim, 1> normal_vector = property_handle_->property(
       "normal_unit_vectors_discontinuity", discontinuity_prop_id_, 0, Tdim);
-  
+
   if (contact_distance >= 0) return;
   //  single phase for solid
   unsigned phase = 0;
@@ -242,7 +240,6 @@ void mpm::Node<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
   // friction_coef < 0: move together without slide
   double friction_coef = property_handle_->property(
       "friction_coef", discontinuity_prop_id_, 0, 1)(0, 0);
-
 
   if (friction_coef < 0) {
     property_handle_->update_property("momenta_enrich", discontinuity_prop_id_,

@@ -78,70 +78,22 @@ template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::compute_momentum_discontinuity_cundall(
     unsigned phase, double dt, double damping_factor) noexcept {
   const double tolerance = 1.0E-15;
-  // std::ofstream force("force.txt", std::ios::app);
-  // force << discontinuity_enrich_ <<":"<<"damping factor:"<< damping_factor<<
-  // std::endl;
+
   if (!discontinuity_enrich_) {
 
     if (mass_.col(phase)(0, 0) > tolerance) {
 
-      // acceleration = (unbalaced force / mass)
-      //   force << "external force:"<<std::endl <<
-      //   this->external_force_.col(phase)[0]<<"  "
-      //         << this->external_force_.col(phase)[1]<<"  "
-      //         << this->external_force_.col(phase)[2] << std::endl;
-      //   force << "internal force:"<<std::endl <<
-      //   this->internal_force_.col(phase)[0]<<"  "
-      //         << this->internal_force_.col(phase)[1]<<"  "
-      //         << this->internal_force_.col(phase)[2] << std::endl;
       auto unbalanced_force =
           this->external_force_.col(phase) + this->internal_force_.col(phase);
       this->external_force_.col(phase) -=
           damping_factor * unbalanced_force.norm() *
           this->momentum_.col(phase).normalized();
-      //   force <<"unbalanced force:"<<std::endl<< damping_factor
-      //   *unbalanced_force[0] <<"  "<< damping_factor *unbalanced_force[1] <<"
-      //   "<< damping_factor *unbalanced_force[2]
-      //         << std::endl;
-      //   force <<"external force:"<<std::endl<<
-      //   this->external_force_.col(phase)[0]<<"  "
-      //         << this->external_force_.col(phase)[1]<<"  "
-      //         << this->external_force_.col(phase)[2] << std::endl;
-      //   force << std::endl;
+
     }
 
   } else {
 
-    // force <<"external force:"<<std::endl<<
-    // this->external_force_.col(phase)[0]<<"  "
-    //       << this->external_force_.col(phase)[1]<<"  "
-    //       << this->external_force_.col(phase)[2] << std::endl;
-    // force <<"internal force:"<<std::endl<<
-    // this->internal_force_.col(phase)[0]<<"  "
-    //       << this->internal_force_.col(phase)[1]<<"  "
-    //       << this->internal_force_.col(phase)[2] << std::endl;
-    // force <<"enriched external force:"<<std::endl<<
-    // property_handle_->property("external_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(0,
-    //                                     0)<<"  "
-    //       << property_handle_->property("external_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(1,
-    //                                     0)<<"  "
-    //       << property_handle_->property("external_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(2,
-    //                                     0)
-    //       << std::endl;
-    // force <<"enriched internal force:"<<std::endl<<
-    // property_handle_->property("internal_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(0,
-    //                                     0)<<"  "
-    //       << property_handle_->property("internal_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(1,
-    //                                     0)<<"  "
-    //       << property_handle_->property("internal_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(2,
-    //                                     0)
-    //       << std::endl;
+    
     // obtain the enriched values of enriched nodes
     Eigen::Matrix<double, 1, 1> mass_enrich =
         property_handle_->property("mass_enrich", discontinuity_prop_id_, 0, 1);
@@ -177,31 +129,6 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_momentum_discontinuity_cundall(
     property_handle_->update_property(
         "external_force_enrich", discontinuity_prop_id_, 0,
         0.5 * (damp_force_positive - damp_force_negative), Tdim);
-
-    // force <<"unbalanced positive force:"<<std::endl<<
-    // damp_force_positive[0]<< "  "<< damp_force_positive[1]<< "  " <<
-    // damp_force_positive[2]
-    //       << std::endl;
-    // force <<"unbalanced negative force:"<<std::endl<<
-    // damp_force_negative[0]<< "  "<< damp_force_negative[1]<< "  " <<
-    // damp_force_negative[2]
-    //       << std::endl;
-    // force <<"external force:"<<std::endl<<
-    // this->external_force_.col(phase)[0]<<"  "
-    //       << this->external_force_.col(phase)[1]<<"  "
-    //       << this->external_force_.col(phase)[2] << std::endl;
-    // force <<"enriched external force:"<<std::endl<<
-    // property_handle_->property("external_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(0,
-    //                                     0)<<"  "
-    //       << property_handle_->property("external_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(1,
-    //                                     0)<<"  "
-    //       << property_handle_->property("external_force_enrich",
-    //                                     discontinuity_prop_id_, 0, Tdim)(2,
-    //                                     0)
-    //       << std::endl;
-    // force << std::endl;
   }
 
   compute_momentum_discontinuity(phase, dt);
@@ -276,14 +203,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
 
   Eigen::Matrix<double, Tdim, 1> normal_vector = property_handle_->property(
       "normal_unit_vectors_discontinuity", discontinuity_prop_id_, 0, Tdim);
-  std::ofstream testnormal("testnormal.txt", std::ios::app);
-  testnormal << coordinates_[0] << "  " << coordinates_[1] << "    "
-             << coordinates_[2] << "    " << normal_vector[0] << "    "
-             << normal_vector[1] << "    " << normal_vector[2] << "    "
-             << contact_distance << std::endl;
-  //   normal_vector[0] = 0;
-  //   normal_vector[1] = -1;
-  //   normal_vector[2] = 0;
+  
   if (contact_distance >= 0) return;
   //  single phase for solid
   unsigned phase = 0;
@@ -323,8 +243,6 @@ void mpm::Node<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
   double friction_coef = property_handle_->property(
       "friction_coef", discontinuity_prop_id_, 0, 1)(0, 0);
 
-  //   std::ofstream testnormal("test_coef.txt", std::ios::app);
-  //   testnormal << coordinates_[0] << "  " << friction_coef << std::endl;
 
   if (friction_coef < 0) {
     property_handle_->update_property("momenta_enrich", discontinuity_prop_id_,
@@ -392,9 +310,6 @@ void mpm::Node<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
     double force_friction = force_tangential_value < max_friction_force
                                 ? force_tangential_value
                                 : max_friction_force;
-
-    // std::ofstream cohesion_force("cohesion_force.txt",std::ios::app);
-    // cohesion_force<<id()<<"  "<<force_friction<<std::endl;
 
     // adjust the momentum and force
     property_handle_->update_property(

@@ -403,8 +403,6 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
 
   minimum_acoustic_eigenvalue_ = std::numeric_limits<double>::max();
   // compute the acoustic tensor
-  // std::ofstream testa("acoustic.txt", std::ios::app);
-
   bool yield_status = true;
   Eigen::Matrix<double, 6, 6> dp =
       (this->material())
@@ -588,7 +586,7 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   double det_dp_n;
 
   double mininum_ratio = std::numeric_limits<double>::max();
-  // std::ofstream test("test.txt", std::ios::app);
+  
   for (int i = 0; i < std::floor(360 / dtheta); i++) {
     for (int j = 0; j < 1; j++) {
       double theta = i * dtheta * PI;
@@ -738,8 +736,6 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
            3, 1, 4,
            5, 4, 2;
 
-  //std::ofstream test("test.txt", std::ios::app);
-  //std::ofstream testdp("testdp.txt", std::ios::app);
   for (int i = 0; i < std::floor(360 / dtheta); i++) {
     for (int j = 0; j < 180; j++) {
       double theta = i * dtheta * PI;

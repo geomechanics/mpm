@@ -79,6 +79,11 @@ class MPMBase : public MPM {
   //! Checkpoint resume
   bool checkpoint_resume() override;
 
+
+  //! Particle entity sets
+  //! \param[in] check Check duplicates
+  void particle_entity_sets(bool check);
+
 #ifdef USE_VTK
   //! Write VTK files
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
@@ -99,6 +104,11 @@ class MPMBase : public MPM {
   //! Pressure smoothing
   //! \param[in] phase Phase to smooth pressure
   void pressure_smoothing(unsigned phase);
+
+  //! Particle velocity constraints
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particle_velocity_constraints();
 
  private:
   //! Return if a mesh will be isoparametric or not
@@ -145,24 +155,12 @@ class MPMBase : public MPM {
   void particles_volumes(const Json& mesh_prop,
                          const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
-  //! Particle velocity constraints
-  //! \param[in] mesh_prop Mesh properties
-  //! \param[in] particle_io Particle IO handle
-  void particle_velocity_constraints(
-      const Json& mesh_prop,
-      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
-
   //! Particles stresses
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle
   void particles_stresses(
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
-
-  //! Particle entity sets
-  //! \param[in] mesh_prop Mesh properties
-  //! \param[in] check Check duplicates
-  void particle_entity_sets(const Json& mesh_prop, bool check);
 
   //! Initialise damping
   //! \param[in] damping_props Damping properties
@@ -191,11 +189,11 @@ class MPMBase : public MPM {
   using mpm::MPM::console_;
 
   //! Stress update method
-  std::string stress_update_;
+  std::string stress_update_{"usf"};
   //! Stress update scheme
-  std::shared_ptr<mpm::StressUpdate<Tdim>> stress_update_scheme_{nullptr};
+  std::shared_ptr<mpm::MPMScheme<Tdim>> mpm_scheme_{nullptr};
   //! Interface scheme
-  std::shared_ptr<mpm::Interface<Tdim>> interface_scheme_{nullptr};
+  std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
   //! velocity update
   bool velocity_update_{false};
   //! Gravity

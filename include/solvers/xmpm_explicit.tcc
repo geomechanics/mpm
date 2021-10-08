@@ -77,11 +77,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   // Initialise particles
   if (!resume)
     this->initialise_particles();
-  else
-    this->initialise_particle_sets();
-
-  // Initialise loading conditions
-  this->initialise_loads();
 
   // Initialise the cells in node
   mesh_->add_cell_in_node();
@@ -116,6 +111,15 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     this->mpi_domain_decompose(initial_step);
   }
 
+  //! Particle entity sets and velocity constraints
+  if (resume) {
+    this->particle_entity_sets(false);
+    this->particle_velocity_constraints();
+  }
+
+  // Initialise loading conditions
+  this->initialise_loads();
+
   // Initialise the levelset values for particles
   if (surfacemesh_) mesh_->initialise_levelset_discontinuity();
 
@@ -139,17 +143,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   for (; step_ < nsteps_; ++step_) {
     bool nodal_update = true;
 
-    int change_step = 0;
-
-    mesh_->assign_step(step_);
-    if (step_ == change_step) {
-      // output_steps_ = 10;
-      // console_->info("change material");
-      // mesh_->change_mat();
-      // //dt_ = 0.001;
-      // mpm_scheme_->assign_dt(dt_);
-    }
-
     if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
 
 #ifdef USE_MPI
@@ -167,29 +160,16 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     mpm_scheme_->initialise();
 
     if (step_ == 0 || resume == true) {
-      // for oso
+      //predefine level set values
       mesh_->define_levelset();
       resume = false;
     }
-    // if (step_ == 0 || resume == true) {
-    //   mesh_->output_surface();
-    //   resume = false;
-    // }
-    // if (step_ == 40800) {
-    //   particle_levelet_ = true;
-    //   initiation_ = false;
-    //   propagation_ = false;
-    // }
-    // if (step_ == 40600) {
-    //   output_steps_ = 1;
-    // }
-
     // Initialise nodal properties and append material ids to node
     contact_->initialise();
 
     if (initiation_) initiation_ = !mesh_->initiation_discontinuity();
 
-    if (setdiscontinuity_ && !initiation_ && step_ >= change_step) {
+    if (setdiscontinuity_ && !initiation_) {
       // Initialise nodal properties
       mesh_->initialise_nodal_properties();
       // Initialise element properties
@@ -204,9 +184,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
         mesh_->compute_shapefn_discontinuity();
       }
 
-      // if (surfacemesh_ && (step_ + 1) % 2000 == 0 )
-      // mesh_->initialise_levelset_discontinuity();
-
       //     // obtain nodal volume
 
       mesh_->iterate_over_particles(
@@ -218,12 +195,11 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
                       std::placeholders::_1));
       }
 
+      // modify the nodal levelset_phi by mls
       if (nodal_levelset_ == "mls")
-        // modify the nodal levelset_phi by mls
         mesh_->modify_nodal_levelset_mls();
 
       // obtain nodal frictional_coefficient
-
       if (friction_coef_average_)
         mesh_->iterate_over_particles(
             std::bind(&mpm::ParticleBase<Tdim>::map_friction_coef_to_nodes,
@@ -245,24 +221,21 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 
       mesh_->iterate_over_cells(std::bind(
           &mpm::Cell<Tdim>::compute_area_discontinuity, std::placeholders::_1));
-      // mesh_->output_celltype(step_);
+
       if (propagation_)
         // remove the spurious potential tip element
         mesh_->spurious_potential_tip_element();
-      // mesh_->output_celltype(step_);
-      //  mesh_->compute_error();
+
       // assign_node_enrich
       mesh_->assign_node_enrich(friction_coef_average_, nodal_update);
 
       mesh_->check_particle_levelset(particle_levelet_);
 
-      // mesh_->output_celltype(step_);
       // obtain the normal direction of each cell and enrich nodes
       mesh_->compute_nodal_normal_vector_discontinuity();
-      // mesh_->output_celltype(step_);
+
       if (propagation_)  // find the tip element
       {
-
         mesh_->iterate_over_cells(
             std::bind(&mpm::Cell<Tdim>::tip_element, std::placeholders::_1));
         // mesh_->update_node_enrich(friction_coef_average_);
@@ -294,10 +267,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
 
-    // if ((step_ + 1) % 10 == 0) {
-    //   mesh_->output_force(step_);
-    // }
-
     // integrate momentum by iterating over nodes
     if (damping_type_ == mpm::Damping::Cundall)
       mesh_->iterate_over_nodes_predicate(
@@ -311,19 +280,14 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
                     std::placeholders::_1, phase, this->dt_),
           std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
-    if (setdiscontinuity_ && !initiation_ && step_ >= change_step) {
+    if (setdiscontinuity_ && !initiation_) {
 
       if (propagation_) {
         // find the next tip element
         mesh_->next_tip_element_discontinuity();
 
-        // mesh_->iterate_over_cells(
-        //     std::bind(&mpm::Cell<Tdim>::assign_tipcell_nodal_discontinuity,
-        //               std::placeholders::_1, true));
         // discontinuity growth
-        // mesh_->output_celltype(step_);
         mesh_->update_discontinuity();
-        // mesh_->output_celltype(step_);
       }
 
       // Update the discontinuity position
@@ -343,12 +307,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
-
-    //if (nodal_update) mesh_->update_nodal_levelset(dt_);
-
-      // if ((step_ + 1) % 1 == 0) {
-      //   mesh_->output_nodal_levelset(step_);
-      // }
 
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING

@@ -35,17 +35,6 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! Checkpoint resume
   bool checkpoint_resume() override;
 
-  void initialise_particle_sets() {
-    // Get mesh properties
-    auto mesh_props = io_->json_object("mesh");
-    // Check duplicates default set to true
-    bool check_duplicates = true;
-    if (mesh_props.find("check_duplicates") != mesh_props.end())
-      check_duplicates = mesh_props["check_duplicates"].template get<bool>();
-
-    this->particle_entity_sets(mesh_props, check_duplicates);
-  };
-
  protected:
   // Generate a unique id for the analysis
   using mpm::MPMBase<Tdim>::uuid_;

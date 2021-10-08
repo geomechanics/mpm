@@ -901,18 +901,6 @@ void mpm::Cell<Tdim>::tip_element() {
   }
 }
 
-// //! change the nodal discontinuity enrich to true for the TIP cell
-// template <unsigned Tdim>
-// void mpm::Cell<Tdim>::assign_tipcell_nodal_discontinuity(bool status) {
-//   if (this->discontinuity_element_ == nullptr) return;
-//   if (this->discontinuity_element_->element_type() != mpm::EnrichType::Tip)
-//     return;
-
-//   for (unsigned i = 0; i < nodes_.size(); ++i) {
-//     if (nodes_[i]->discontinuity_enrich()) continue;
-//     nodes_[i]->assign_discontinuity_enrich(status);
-//   }
-// }
 
 //! potential tip element
 template <unsigned Tdim>
@@ -1077,9 +1065,7 @@ void mpm::Cell<Tdim>::determine_crossed() {
     if (phi > max_phi) max_phi = phi;
     if (phi < min_phi) min_phi = phi;
   }
-  //   std::ofstream testnormal("crossed cell.txt", std::ios::app);
-  //   testnormal << centroid_[0] << "\t" << max_phi << "\t" << min_phi << "\t"
-  //              << max_phi * min_phi << std::endl;
+
   this->assign_type_discontinuity(mpm::EnrichType::Regular);
   if (max_phi * min_phi >= 0) return;
 
@@ -1216,9 +1202,6 @@ void mpm::Cell<Tdim>::assign_cohesion_area() {
       Eigen::Matrix<double, Tdim, 1>::Zero();
   Eigen::Matrix<double, Tdim, 1> xi;
 
-  //   std::ofstream crossedtxt("crossed.txt", std::ios::app);
-  //   crossedtxt << id() << "  " << centroid_[0] << "  " << centroid_[1] << " "
-  //              << std::endl;
   if (!this->is_point_in_cell(centers, &xi)) return;
 
   auto shapefn = element_->shapefn(xi, zeros, zeros);
@@ -1229,7 +1212,5 @@ void mpm::Cell<Tdim>::assign_cohesion_area() {
     nodes_[i]->update_discontinuity_property(true, "cohesion_area", node_area,
                                              0, 1);
   }
-  //   std::ofstream areatxt("area.txt", std::ios::app);
-  //   areatxt << id() << "  " << centroid_[0] << "  " << centroid_[1] << "  "
-  //           << area << std::endl;
+
 }

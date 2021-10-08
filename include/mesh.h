@@ -528,25 +528,13 @@ class Mesh {
   void output_discontinuity(int step) {
     this->discontinuity_->output_markpoints(step);
   };
-
-  void compute_error();
   void output_celltype(int step);
-  void output_force(int step);
-  void output_nodal_levelset(int step);
-  void change_mat();
+
   void define_levelset();
-  void update_nodal_levelset(double dt);
 
   void output_surface();
 
   void check_particle_levelset(bool particle_levelset);
-
-  int step_{0};
-  void assign_step(int step) {
-    step_ = step;
-    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
-      (*nitr)->step_ = step;
-  };
 
  private:
   // Read particles from file

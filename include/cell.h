@@ -253,8 +253,6 @@ class Cell {
 
   //! determine tip element
   void tip_element();
-  //   //! change the nodal discontinuity enrich to true for the TIP cell
-  //   void assign_tipcell_nodal_discontinuity(bool status);
 
   //! compute normal vector of discontinuity by the nodal level set values
   void compute_normal_vector_discontinuity();

@@ -62,6 +62,20 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
       const Eigen::VectorXd& displacement_increment) override {
     displacement_increment_ = displacement_increment;
   }
+
+  //! Check residual convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  //! \param[in] initial boolean to indentify 1st (true) iteration
+  //! \param[in] residual_tolerance residual norm tolerance
+  //! \param[in] relative_residual_tolerance relative residual norm tolerance
+  virtual bool check_residual_convergence(
+      bool initial, double residual_tolerance,
+      double relative_residual_tolerance) override;
+
+  //! Check solution convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  //! \param[in] solution_tolerance solution norm tolerance
+  virtual bool check_solution_convergence(double solution_tolerance) override;
   /**@{*/
 
  protected:
@@ -86,7 +100,7 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   //! Initial residual norm of each time step
   double initial_residual_norm_;
   /**@{*/
-};
+};  // namespace mpm
 }  // namespace mpm
 
 #include "assembler_eigen_implicit.tcc"

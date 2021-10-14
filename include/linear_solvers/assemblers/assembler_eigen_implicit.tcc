@@ -109,13 +109,13 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assign_displacement_constraints(
     // Iterate over nodes to get displacement constraints
     for (auto node = nodes.cbegin(); node != nodes.cend(); ++node) {
       for (unsigned i = 0; i < Tdim; ++i) {
-        // Assign total pressure constraint
+        // Assign total displacement constraint
         const double displacement_constraint =
             (*node)->displacement_constraint(i, current_time);
 
         // Check if there is a displacement constraint
         if (displacement_constraint != std::numeric_limits<double>::max()) {
-          // Insert the pressure constraints
+          // Insert the displacement constraints
           displacement_constraints_.insert(
               active_dof_ * i + (*node)->active_id()) = displacement_constraint;
         }
@@ -150,4 +150,48 @@ void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }
+}
+
+// Check residual convergence of Newton-Raphson iteration
+template <unsigned Tdim>
+bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
+    bool initial, double residual_tolerance,
+    double relative_residual_tolerance) {
+  bool convergence = false;
+  try {
+    // Residual force vector norm
+    double residual_norm = residual_force_rhs_vector_.norm();
+    // Save if this is the initial iteration
+    if (initial) initial_residual_norm_ = residual_norm;
+
+    // Convergence check
+    if (residual_norm < residual_tolerance) convergence = true;
+
+    // Convergence check with relative residual norm
+    if (!convergence) {
+      double relative_residual_norm = residual_norm / initial_residual_norm_;
+      if (relative_residual_norm < relative_residual_tolerance)
+        convergence = true;
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  }
+  return convergence;
+}
+
+// Check solution convergence of Newton-Raphson iteration
+template <unsigned Tdim>
+bool mpm::AssemblerEigenImplicit<Tdim>::check_solution_convergence(
+    double solution_tolerance) {
+  bool convergence = false;
+  try {
+    // Displacement increment norm
+    double displacement_norm = displacement_increment_.norm();
+
+    // Convergence check
+    if (displacement_norm < solution_tolerance) convergence = true;
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  }
+  return convergence;
 }

@@ -135,6 +135,28 @@ class AssemblerBase {
         "Calling the base class function (assign_displacement_increment) in "
         "AssemblerBase:: illegal operation!");
   };
+
+  //! Check residual convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  //! \param[in] initial boolean to indentify 1st (true) iteration
+  //! \param[in] residual_tolerance residual norm tolerance
+  //! \param[in] relative_residual_tolerance relative residual norm tolerance
+  virtual bool check_residual_convergence(bool initial,
+                                          double residual_tolerance,
+                                          double relative_residual_tolerance) {
+    throw std::runtime_error(
+        "Calling the base class function (check_residual_convergence) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Check solution convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  //! \param[in] solution_tolerance solution norm tolerance
+  virtual bool check_solution_convergence(double solution_tolerance) {
+    throw std::runtime_error(
+        "Calling the base class function (check_solution_convergence) in "
+        "AssemblerBase:: illegal operation!");
+  };
   /**@{*/
 
   //! Navier-Stokes

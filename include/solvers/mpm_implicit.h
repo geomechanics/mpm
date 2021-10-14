@@ -105,6 +105,14 @@ class MPMImplicit : public MPMBase<Tdim> {
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme
   double newmark_gamma_{0.5};
+  //! Max number of Newton-Raphson iteration
+  int max_iteration_{20};
+  //! Displacement norm tolerance of Newton-Raphson iteration
+  double displacement_tolerance_{1.0e-10};
+  //! Residual norm tolerance of Newton-Raphson iteration
+  double residual_tolerance_{1.0e-10};
+  //! Relative residual norm tolerance of Newton-Raphson iteration
+  double relative_residual_tolerance_{1.0e-6};
   //! Assembler object
   std::shared_ptr<mpm::AssemblerBase<Tdim>> assembler_;
   //! Linear solver object

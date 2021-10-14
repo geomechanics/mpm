@@ -163,19 +163,18 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
                                                  newmark_gamma_);
 
-    // Compute local residual force
-    mpm_scheme_->compute_forces(gravity_, phase, step_,
-                                set_node_concentrated_force_);
-
-    // Reinitialise system matrix to construct equillibrium equation
-    bool matrix_reinitialization_status = this->reinitialise_matrix();
-    if (!matrix_reinitialization_status) {
+    // Initialise nodal indices to construct equillibrium equation
+    bool nodal_indices_initialization_status = this->initialise_nodal_indices();
+    if (!nodal_indices_initialization_status) {
       status = false;
-      throw std::runtime_error("Reinitialisation of matrix failed");
+      throw std::runtime_error("Initialisation of nodal indices failed");
     }
 
     // Compute equilibrium equation
-    this->compute_equilibrium_equation();
+    this->compute_equilibrium_equation(phase);
+
+    // Solve equilibrium equation
+    this->solve_equilibrium_equation();
 
     // Assign displacement increment to nodes
     mesh_->iterate_over_nodes_predicate(
@@ -310,9 +309,9 @@ bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
   return status;
 }
 
-// Reinitialise and resize matrices at the beginning of every time step
+// Initialise nodal indices at the beginning of every time step
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
+bool mpm::MPMImplicit<Tdim>::initialise_nodal_indices() {
 
   bool status = true;
   try {
@@ -331,11 +330,6 @@ bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
     // Assign displacement constraints
     assembler_->assign_displacement_constraints(this->step_ * this->dt_);
 
-    // Initialise element matrix
-    mesh_->iterate_over_cells(
-        std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
-                  std::placeholders::_1));
-
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -345,9 +339,15 @@ bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
 
 // Compute equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation() {
+bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation(
+    const unsigned phase) {
   bool status = true;
   try {
+    // Initialise element matrix
+    mesh_->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                  std::placeholders::_1));
+
     // Compute local cell stiffness matrices
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::map_material_stiffness_matrix_to_cell,
@@ -358,6 +358,10 @@ bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation() {
 
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();
+
+    // Compute local residual force
+    mpm_scheme_->compute_forces(gravity_, phase, step_,
+                                set_node_concentrated_force_);
 
     // Assemble global residual force RHS vector
     assembler_->assemble_residual_force_right();
@@ -384,6 +388,18 @@ bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation() {
     //     linear_solver_["displacement"]->assign_rank_global_mapper(predictor_rgm);
     // #endif
 
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+// Solve equilibrium equation
+template <unsigned Tdim>
+bool mpm::MPMImplicit<Tdim>::solve_equilibrium_equation() {
+  bool status = true;
+  try {
     // Solve matrix equation and assign solution to assembler
     assembler_->assign_displacement_increment(
         linear_solver_["displacement"]->solve(

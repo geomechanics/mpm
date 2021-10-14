@@ -35,13 +35,17 @@ class MPMImplicit : public MPMBase<Tdim> {
   //! \ingroup Implicit
   bool initialise_matrix();
 
-  //! Initialise matrix
+  //! Initialise nodal indices
   //! \ingroup Implicit
-  bool reinitialise_matrix();
+  bool initialise_nodal_indices();
 
   //! Compute equilibrium equation
   //! \ingroup Implicit
-  bool compute_equilibrium_equation();
+  bool compute_equilibrium_equation(const unsigned phase);
+
+  //! Solve equilibrium equation
+  //! \ingroup Implicit
+  bool solve_equilibrium_equation();
   /**@}*/
 
   //! Class private variables

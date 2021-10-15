@@ -71,6 +71,9 @@ bool mpm::AssemblerEigenSemiImplicitTwoPhase<Tdim>::assemble_predictor_left(
             (*node_itr)->mass(mpm::NodePhase::NLiquid);
       }
 
+      // Apply null-space treatment
+      this->apply_null_space_treatment(coefficient_matrix, 2);
+
       // Add coefficient matrix to map
       if (predictor_lhs_matrix_.find(dir) != predictor_lhs_matrix_.end())
         predictor_lhs_matrix_.erase(dir);

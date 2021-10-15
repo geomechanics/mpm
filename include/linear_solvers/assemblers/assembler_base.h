@@ -64,6 +64,10 @@ class AssemblerBase {
   bool assign_global_node_indices(unsigned nactive_node,
                                   unsigned nglobal_active_node);
 
+  //! Null-space treatment of a sparse matrix
+  void apply_null_space_treatment(
+      Eigen::SparseMatrix<double>& coefficient_matrix, unsigned nblock = 1);
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

@@ -50,6 +50,9 @@ bool mpm::AssemblerEigenSemiImplicitNavierStokes<
 
     laplacian_matrix_ *= dt;
 
+    // Apply null-space treatment
+    this->apply_null_space_treatment(laplacian_matrix_);
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

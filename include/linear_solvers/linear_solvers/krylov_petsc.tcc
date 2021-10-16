@@ -149,6 +149,7 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
       VecGetArray(x_seq, &x_data);
 
       // Copy petsc x to Eigen x
+#pragma omp parallel for schedule(runtime)
       for (unsigned i = 0; i < x.size(); i++) {
         const int global_index = rank_global_mapper_[i];
         x(i) = x_data[global_index];
@@ -161,6 +162,7 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
     } else {
       PetscScalar value;
       // Copy petsc x to Eigen x
+#pragma omp parallel for schedule(runtime)
       for (unsigned i = 0; i < x.size(); i++) {
         const int global_index = rank_global_mapper_[i];
         VecGetValues(petsc_x, 1, &global_index, &value);

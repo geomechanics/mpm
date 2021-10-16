@@ -270,7 +270,7 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Use Nonlocal basis
   if (cell_type.back() == 'B') {
-    node_neighbourhood_ = 1;
+    node_neighbourhood_ = 2;
     this->initialise_nonlocal_mesh(mesh_props);
   }
 

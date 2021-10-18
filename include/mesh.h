@@ -611,5 +611,6 @@ class Mesh {
 }  // namespace mpm
 
 #include "mesh.tcc"
+#include "mesh_xmpm.tcc"
 
 #endif  // MPM_MESH_H_

@@ -341,5 +341,6 @@ class Cell {
 }  // namespace mpm
 
 #include "cell.tcc"
+#include "cell_xmpm.tcc"
 
 #endif  // MPM_CELL_H_

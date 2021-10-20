@@ -62,6 +62,8 @@ class XMPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::stress_update_;
   //! Interface scheme
   using mpm::MPMBase<Tdim>::contact_;
+  //! xmpm solver
+  using mpm::MPMBase<Tdim>::xmpm_;
 
 #ifdef USE_GRAPH_PARTITIONING
   //! Graph

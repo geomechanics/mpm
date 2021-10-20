@@ -575,14 +575,6 @@ void mpm::Mesh<Tdim>::next_tip_element_discontinuity() {
   return;
 }
 
-// Initialise the cells in node
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::add_cell_in_node() {
-  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    (*citr)->add_cell_in_node();
-  }
-}
-
 //! remove spurious potential tip element
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::spurious_potential_tip_element() {
@@ -643,19 +635,6 @@ void mpm::Mesh<Tdim>::assign_node_enrich(bool friction_coef_average,
       node->assign_discontinuity_property(true, "cohesion", cohesion, 0, 1);
     }
 
-    // bool negative = false;
-    // bool positive = false;
-    // for(auto particle : (*citr)->particles())
-    // {
-    //     if(particles_[particle]->levelset_phi() > 0)
-    //         positive = true;
-    //     if(particles_[particle]->levelset_phi() < 0)
-    //         negative = true;
-    // }
-
-    // if(!negative || !positive)
-    //     continue;
-
     (*citr)->assign_cohesion_area();
   }
 
@@ -669,17 +648,6 @@ void mpm::Mesh<Tdim>::assign_node_enrich(bool friction_coef_average,
   }
 
   if (!enrich_all) return;
-
-  //   double tolerance = 1e-16;
-  //   for(auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr){
-  //       (*nitr)->assign_discontinuity_enrich(true);
-  //       double positive_mass = (*nitr)->mass(mpm::ParticlePhase::Solid) +
-  //       (*nitr)->discontinuity_property("mass_enrich", 1)(0, 0); double
-  //       negative_mass = (*nitr)->mass(mpm::ParticlePhase::Solid) -
-  //       (*nitr)->discontinuity_property("mass_enrich", 1)(0, 0);
-  //       if(positive_mass < tolerance || negative_mass < tolerance)
-  //         (*nitr)->assign_discontinuity_enrich(false);
-  //   }
 
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
     (*nitr)->assign_discontinuity_enrich(true);
@@ -704,98 +672,6 @@ void mpm::Mesh<Tdim>::update_node_enrich() {
 }
 
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::define_levelset() {
-  // for oso
-  std::ifstream in("stage1.txt");
-  double stage[63126];
-  for (int i = 0; i < 63126; ++i) {
-    in >> stage[i];
-    if (stage[i] == 0) stage[i] = std::numeric_limits<double>::min();
-  }
-  int i = 0;
-  Eigen::Matrix<double, 1, 1> phi_mls;
-  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
-    phi_mls(0, 0) = stage[i];
-    i += 1;
-
-    (*nitr)->assign_discontinuity_property(true, "levelset_phi", phi_mls, 0, 1);
-  }
-  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-
-    (*pitr)->map_levelset_to_particle();
-  }
-
-  return;
-  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-
-    auto cor = (*pitr)->coordinates();
-    double phi;
-    // phi = 1 / std::sqrt(3) * cor[0] + 1 / std::sqrt(3) * cor[1] +
-    // 1 / std::sqrt(3) * cor[2] - 0.5 * std::sqrt(3);
-
-    //   phi = std::sqrt(std::pow(cor[0] - 35, 2) + std::pow(cor[1] - 30, 2) +
-    //                   std::pow(cor[2] - 0, 2)) -
-    //         25;
-    // slide body
-    phi = (0.5 * cor[0] + cor[2] - 0.5) / std::sqrt(0.25 + 1);
-    phi = cor[1] - 1.5;
-    (*pitr)->assign_levelsetphi(phi);
-    // case 4-2d
-    // if (cor[0] > 35 && cor[1] > 4 && cor[1] < 5) {
-    //   phi = 5 - cor[1];
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // if (cor[0] > 34 && cor[0] < 35 && cor[1] > 4) {
-    //   if ((*pitr)->levelset_phi() < 0) continue;
-    //   Eigen::Matrix<double, 2, 1> e1, e2, p2n;
-    //   e1 << 1 / std::sqrt(5), 2 / std::sqrt(5);
-    //   e2 << 2 / std::sqrt(5), -1 / std::sqrt(5);
-
-    //   p2n << cor[0] - 35, cor[1] - 5;
-    //   if (e2.dot(p2n) >= 0)
-    //     phi = p2n.norm();
-    //   else if (e2.dot(p2n) < 0) {
-    //     double dis1 = 5.25 - cor[1];  // 5.27118
-    //     double dis2 = std::abs(e1.dot(p2n));
-    //     if (dis1 < dis2)
-    //       dis1 = (*pitr)->levelset_phi();
-    //     else
-    //       dis1 = dis2;
-    //     phi = dis1;
-    //   }
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // case 5
-    // if (cor[0] > 35 && cor[1] > 4 && cor[1] < 5) {
-    //   phi = 5 - cor[1];
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // if (cor[0] > 34 && cor[0] < 35 && cor[1] > 4) {
-    //   if ((*pitr)->levelset_phi() != 0) continue;
-    //   Eigen::Matrix<double, 2, 1> e1, e2, p2n;
-    //   e1 << 1 / std::sqrt(5), 2 / std::sqrt(5);
-    //   e2 << 2 / std::sqrt(5), -1 / std::sqrt(5);
-
-    //   p2n << cor[0] - 35, cor[1] - 5;
-    //   if (e2.dot(p2n) >= 0)
-    //     phi = p2n.norm();
-    //   else if (e2.dot(p2n) < 0) {
-    //     double dis1 = 5.25 - cor[1];  // 5.27118
-    //     double dis2 = std::abs(e1.dot(p2n));
-    //     phi = dis2;
-    //   }
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 4)
-    //   (*pitr)->assign_levelsetphi(1.0);
-    // else if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 5)
-    //   (*pitr)->assign_levelsetphi(-1);
-    // else if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 6)
-    //   (*pitr)->assign_levelsetphi(-1);
-  }
-}
-
-template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::initiation_discontinuity() {
   bool status = false;
 
@@ -803,9 +679,6 @@ bool mpm::Mesh<Tdim>::initiation_discontinuity() {
   double max_pdstrain = 0;
   for (int i = 0; i < nparticles(); ++i) {
     double pdstrain = map_particles_[i]->state_variable("pdstrain");
-    // if(map_particles_[i]->coordinates()[1] < 0.2 ||
-    // map_particles_[i]->coordinates()[1] > 0.8 ||
-    // map_particles_[i]->coordinates()[0] > 0.05) continue;
 
     if (pdstrain > max_pdstrain) {
       max_pdstrain = pdstrain;
@@ -1124,28 +997,6 @@ void mpm::Mesh<Tdim>::check_particle_levelset(bool particle_levelset) {
       for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++) coef[i] += au.inverse()(i, j) * bu(j, 0);
 
-      // compute the error
-      //   double error = 0;
-      //   int error_p = 0;
-      //   for (auto cell : cell_list) {
-      //     for (auto particle : map_cells_[cell]->particles()) {
-      //       auto corp = map_particles_[particle]->coordinates();
-      //       double phi = map_particles_[particle]->levelset_phi();
-      //       if (phi == 0) continue;
-      //       double phi_mls = 1 * coef[0] + corp[0] * coef[1] + corp[1] *
-      //       coef[2] +
-      //                        corp[2] * coef[3];
-      //       error += std::pow(phi_mls - phi, 2);
-      //       error_p += 1;
-      //     }
-      //   }
-      //   error = std::sqrt(error / error_p) / discontinuity_->width();
-
-      //   if (error > 1e-3) {
-      //     (*pitr)->map_levelset_to_particle();
-      //     continue;
-      //   }
-
       Eigen::Vector4d cor;
       cor << 1, (*pitr)->coordinates()[0], (*pitr)->coordinates()[1],
           (*pitr)->coordinates()[2];
@@ -1169,6 +1020,7 @@ void mpm::Mesh<Tdim>::check_particle_levelset(bool particle_levelset) {
   }
 }
 
+// code for debugging added by yliang
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::output_celltype(int step) {
   std::ofstream test("cell_type.txt", std::ios::app);
@@ -1206,5 +1058,97 @@ void mpm::Mesh<Tdim>::output_celltype(int step) {
     testnormal << (*nitr)->coordinates()[0] << "\t" << (*nitr)->coordinates()[1]
                << "\t" << normal[0] << "\t" << normal[1] << "\t" << normal[2]
                << std::endl;
+  }
+}
+
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::define_levelset() {
+  // for oso
+  std::ifstream in("stage1.txt");
+  double stage[63126];
+  for (int i = 0; i < 63126; ++i) {
+    in >> stage[i];
+    if (stage[i] == 0) stage[i] = std::numeric_limits<double>::min();
+  }
+  int i = 0;
+  Eigen::Matrix<double, 1, 1> phi_mls;
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+    phi_mls(0, 0) = stage[i];
+    i += 1;
+
+    (*nitr)->assign_discontinuity_property(true, "levelset_phi", phi_mls, 0, 1);
+  }
+  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
+
+    (*pitr)->map_levelset_to_particle();
+  }
+
+  return;
+  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
+
+    auto cor = (*pitr)->coordinates();
+    double phi;
+    // phi = 1 / std::sqrt(3) * cor[0] + 1 / std::sqrt(3) * cor[1] +
+    // 1 / std::sqrt(3) * cor[2] - 0.5 * std::sqrt(3);
+
+    //   phi = std::sqrt(std::pow(cor[0] - 35, 2) + std::pow(cor[1] - 30, 2) +
+    //                   std::pow(cor[2] - 0, 2)) -
+    //         25;
+    // slide body
+    phi = (0.5 * cor[0] + cor[2] - 0.5) / std::sqrt(0.25 + 1);
+    phi = cor[1] - 1.5;
+    (*pitr)->assign_levelsetphi(phi);
+    // case 4-2d
+    // if (cor[0] > 35 && cor[1] > 4 && cor[1] < 5) {
+    //   phi = 5 - cor[1];
+    //   (*pitr)->assign_levelsetphi(phi);
+    // }
+    // if (cor[0] > 34 && cor[0] < 35 && cor[1] > 4) {
+    //   if ((*pitr)->levelset_phi() < 0) continue;
+    //   Eigen::Matrix<double, 2, 1> e1, e2, p2n;
+    //   e1 << 1 / std::sqrt(5), 2 / std::sqrt(5);
+    //   e2 << 2 / std::sqrt(5), -1 / std::sqrt(5);
+
+    //   p2n << cor[0] - 35, cor[1] - 5;
+    //   if (e2.dot(p2n) >= 0)
+    //     phi = p2n.norm();
+    //   else if (e2.dot(p2n) < 0) {
+    //     double dis1 = 5.25 - cor[1];  // 5.27118
+    //     double dis2 = std::abs(e1.dot(p2n));
+    //     if (dis1 < dis2)
+    //       dis1 = (*pitr)->levelset_phi();
+    //     else
+    //       dis1 = dis2;
+    //     phi = dis1;
+    //   }
+    //   (*pitr)->assign_levelsetphi(phi);
+    // }
+    // case 5
+    // if (cor[0] > 35 && cor[1] > 4 && cor[1] < 5) {
+    //   phi = 5 - cor[1];
+    //   (*pitr)->assign_levelsetphi(phi);
+    // }
+    // if (cor[0] > 34 && cor[0] < 35 && cor[1] > 4) {
+    //   if ((*pitr)->levelset_phi() != 0) continue;
+    //   Eigen::Matrix<double, 2, 1> e1, e2, p2n;
+    //   e1 << 1 / std::sqrt(5), 2 / std::sqrt(5);
+    //   e2 << 2 / std::sqrt(5), -1 / std::sqrt(5);
+
+    //   p2n << cor[0] - 35, cor[1] - 5;
+    //   if (e2.dot(p2n) >= 0)
+    //     phi = p2n.norm();
+    //   else if (e2.dot(p2n) < 0) {
+    //     double dis1 = 5.25 - cor[1];  // 5.27118
+    //     double dis2 = std::abs(e1.dot(p2n));
+    //     phi = dis2;
+    //   }
+    //   (*pitr)->assign_levelsetphi(phi);
+    // }
+    // if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 4)
+    //   (*pitr)->assign_levelsetphi(1.0);
+    // else if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 5)
+    //   (*pitr)->assign_levelsetphi(-1);
+    // else if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 6)
+    //   (*pitr)->assign_levelsetphi(-1);
   }
 }

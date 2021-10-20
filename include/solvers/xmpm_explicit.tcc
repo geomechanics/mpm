@@ -2,6 +2,7 @@
 template <unsigned Tdim>
 mpm::XMPMExplicit<Tdim>::XMPMExplicit(const std::shared_ptr<IO>& io)
     : mpm::MPMBase<Tdim>(io) {
+  this->xmpm_ = true;
   //! Logger
   console_ = spdlog::get("XMPMExplicit");
   //! Stress update
@@ -76,9 +77,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 
   // Initialise particles
   if (!resume) this->initialise_particles();
-
-  // Initialise the cells in node
-  mesh_->add_cell_in_node();
 
   // Create nodal properties
   if (interface_) mesh_->create_nodal_properties();

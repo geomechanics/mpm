@@ -262,7 +262,8 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
         "mpm::base::init_mesh(): Addition of cells to mesh failed");
 
   // Compute cell neighbours
-  mesh_->find_cell_neighbours();
+  bool assign_to_nodes = xmpm_;
+  mesh_->find_cell_neighbours(assign_to_nodes);
 
   // Read and assign cell sets
   this->cell_entity_sets(mesh_props, check_duplicates);

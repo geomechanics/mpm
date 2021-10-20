@@ -269,9 +269,6 @@ class Cell {
   // product of the nodal level set value
   double product_levelset();
 
-  // Initialise the cells in node
-  void add_cell_in_node();
-
   // return the constant value of the discontinuity plane
   double d_discontinuity() {
     return this->discontinuity_element_->d_discontinuity();

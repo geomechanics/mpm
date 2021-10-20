@@ -266,7 +266,7 @@ void mpm::Mesh<Tdim>::iterate_over_cells(Toper oper) {
 
 //! Create cells from node lists
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::find_cell_neighbours() {
+void mpm::Mesh<Tdim>::find_cell_neighbours(bool assign_to_nodes) {
   // Initialize and compute node cell map
   tsl::robin_map<mpm::Index, std::set<mpm::Index>> node_cell_map;
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
@@ -275,14 +275,26 @@ void mpm::Mesh<Tdim>::find_cell_neighbours() {
     for (auto id : (*citr)->nodes_id()) node_cell_map[id].insert(cell_id);
   }
 
-#pragma omp parallel for schedule(runtime)
-  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    // Iterate over each node in current cell
-    for (auto id : (*citr)->nodes_id()) {
-      auto cell_id = (*citr)->id();
-      // Get the cells associated with each node
-      for (auto neighbour_id : node_cell_map[id])
-        if (neighbour_id != cell_id) (*citr)->add_neighbour(neighbour_id);
+#pragma omp parallel
+  {
+    if (assign_to_nodes) {
+#pragma for schedule(runtime)
+      for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+        auto node_id = (*nitr)->id();
+        for (auto neighbour_id : node_cell_map[node_id])
+          (*nitr)->add_cell_id(neighbour_id);
+      }
+    }
+
+#pragma for schedule(runtime)
+    for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+      // Iterate over each node in current cell
+      for (auto id : (*citr)->nodes_id()) {
+        auto cell_id = (*citr)->id();
+        // Get the cells associated with each node
+        for (auto neighbour_id : node_cell_map[id])
+          if (neighbour_id != cell_id) (*citr)->add_neighbour(neighbour_id);
+      }
     }
   }
 }

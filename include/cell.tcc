@@ -1008,14 +1008,6 @@ Eigen::Matrix<double, Tdim, 1> mpm::Cell<Tdim>::compute_gradient_levelset() {
   return gradient;
 }
 
-//! assign nodal normal vector
-template <unsigned Tdim>
-void mpm::Cell<Tdim>::add_cell_in_node() {
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->add_cell_id(id_);
-  }
-}
-
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_plane_discontinuity(bool enrich) {
   int enriched_node = 0;

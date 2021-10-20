@@ -217,6 +217,8 @@ class MPMBase : public MPM {
   double damping_factor_{0.};
   //! Locate particles
   bool locate_particles_{true};
+  //! XMPM Solver
+  bool xmpm_{false};
 
 #ifdef USE_GRAPH_PARTITIONING
   // graph pass the address of the container of cell

@@ -181,7 +181,7 @@ class Mesh {
   void iterate_over_cells(Toper oper);
 
   //! Find cell neighbours
-  void find_cell_neighbours();
+  void find_cell_neighbours(bool assign_to_nodes = false);
 
   //! Find global nparticles across MPI ranks / cell
   void find_nglobal_particles_cells();

@@ -1,3 +1,28 @@
+//! Assign discontinuity element type
+template <unsigned Tdim>
+void mpm::Cell<Tdim>::assign_type_discontinuity(mpm::EnrichType type) {
+  if (nparticles() == 0 && type != mpm::EnrichType::NeighbourTip_2)
+    type = mpm::EnrichType::Regular;
+  if (discontinuity_element_ == nullptr)
+    discontinuity_element_ =
+        std::make_shared<mpm::DiscontinuityElement<Tdim>>(type);
+  else
+    discontinuity_element_->assign_element_type(type);
+}
+// Initialize discontinuity element type
+template <unsigned Tdim>
+void mpm::Cell<Tdim>::initialise_element_properties_discontinuity() {
+  if (discontinuity_element_ == nullptr) return;
+  discontinuity_element_->initialize();
+}
+
+// Return discontinuity element type
+template <unsigned Tdim>
+unsigned mpm::Cell<Tdim>::element_type_discontinuity() {
+  if (discontinuity_element_ == nullptr) return mpm::EnrichType::Regular;
+  return discontinuity_element_->element_type();
+}
+
 //! potential tip element
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::potential_tip_element() {
@@ -35,54 +60,32 @@ template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_discontinuity_point(
     std::vector<VectorDim>& coordinates) {
 
-  // if (this->discontinuity_element_->area() == 0)
-  // compute_area_discontinuity();
   std::vector<Eigen::Matrix<double, Tdim, 1>> intersections_list;
 
   Eigen::Matrix<double, Tdim, 1> center =
       this->discontinuity_element_->cohesion_cor();
-  int index_area[6][5] = {{0, 1, 2, 3, 0}, {0, 1, 5, 4, 0}, {1, 2, 6, 5, 1},
-                          {3, 2, 6, 7, 3}, {0, 3, 7, 4, 0}, {4, 5, 6, 7, 4}};
-  for (int i = 0; i < 6; i++) {
-    std::vector<Eigen::Matrix<double, Tdim, 1>> intersections;
-    for (int j = 0; j < 4; j++) {
-      double phi[2];
-      phi[0] = nodes_[index_area[i][j]]->discontinuity_property("levelset_phi",
-                                                                1)(0, 0);
-      phi[1] = nodes_[index_area[i][j + 1]]->discontinuity_property(
-          "levelset_phi", 1)(0, 0);
-      if (phi[0] * phi[1] >= 0) continue;
-      Eigen::Matrix<double, Tdim, 1> intersection;
-      Eigen::Matrix<double, Tdim, 1> cor0 =
-          nodes_[index_area[i][j]]->coordinates();
-      Eigen::Matrix<double, Tdim, 1> cor1 =
-          nodes_[index_area[i][j + 1]]->coordinates();
-      intersection = cor0 * std::abs(phi[1] / ((phi[1] - phi[0]))) +
-                     cor1 * std::abs(phi[0] / ((phi[1] - phi[0])));
 
-      intersections.push_back(intersection);
-      intersections_list.push_back(intersection);
-    }
-    // if (intersections.size() != 2) continue;
-    // if (this->discontinuity_element_->area() == 0) continue;
-    // Eigen::Matrix<double, Tdim, 1> cor =
-    //     1.0 / 3 * (intersections[0] + intersections[1] + center);
-    // double length = (cor - center).norm();
-    // if (length < 0.25 * mean_length_) continue;
-    // coordinates.push_back(cor);
+  int index_line[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {0, 4}, {1, 5},
+                           {2, 6}, {3, 7}, {4, 5}, {5, 6}, {6, 7}, {7, 4}};
+  for (int i = 0; i < 12; i++) {
+
+    double phi[2];
+    phi[0] = nodes_[index_line[i][0]]->discontinuity_property("levelset_phi",
+                                                              1)(0, 0);
+    phi[1] = nodes_[index_line[i][1]]->discontinuity_property("levelset_phi",
+                                                              1)(0, 0);
+    if (phi[0] * phi[1] >= 0) continue;
+    Eigen::Matrix<double, Tdim, 1> intersection;
+    Eigen::Matrix<double, Tdim, 1> cor0 =
+        nodes_[index_line[i][0]]->coordinates();
+    Eigen::Matrix<double, Tdim, 1> cor1 =
+        nodes_[index_line[i][1]]->coordinates();
+    intersection = cor0 * std::abs(phi[1] / ((phi[1] - phi[0]))) +
+                   cor1 * std::abs(phi[0] / ((phi[1] - phi[0])));
+
+    intersections_list.push_back(intersection);
   }
 
-  //   if (this->discontinuity_element_->area() != 0) {
-  //     coordinates.push_back(this->discontinuity_element_->cohesion_cor());
-  //   } else {
-  //     if (intersections_list.size() < 3) return;
-
-  //     Eigen::Matrix<double, Tdim, 1> cor;
-  //     cor.setZero();
-  //     for (int i = 0; i < intersections_list.size(); i++)
-  //       cor += 1.0 / intersections_list.size() * intersections_list[i];
-  //     coordinates.push_back(cor);
-  //   }
   if (intersections_list.size() < 3) return;
 
   Eigen::Matrix<double, Tdim, 1> cor;

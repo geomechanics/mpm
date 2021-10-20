@@ -111,7 +111,7 @@ void mpm::Mesh<Tdim>::initialise_nodal_levelset_discontinuity() {
   }
 }
 
-//code for debugging added by yliang
+// code for debugging added by yliang
 //! solve nodal levelset values
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::update_node_levelset() {

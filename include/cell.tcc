@@ -82,30 +82,6 @@ void mpm::Cell<Tdim>::assign_quadrature(unsigned nquadratures) {
   this->quadrature_ = element_->quadrature(nquadratures);
 }
 
-//! Assign discontinuity element type
-template <unsigned Tdim>
-void mpm::Cell<Tdim>::assign_type_discontinuity(mpm::EnrichType type) {
-  if (nparticles() == 0 && type != mpm::EnrichType::NeighbourTip_2)
-    type = mpm::EnrichType::Regular;
-  if (discontinuity_element_ == nullptr)
-    discontinuity_element_ =
-        std::make_shared<mpm::DiscontinuityElement<Tdim>>(type);
-  else
-    discontinuity_element_->assign_element_type(type);
-}
-// Initialize discontinuity element type
-template <unsigned Tdim>
-void mpm::Cell<Tdim>::initialise_element_properties_discontinuity() {
-  if (discontinuity_element_ == nullptr) return;
-  discontinuity_element_->initialize();
-}
-
-// Return discontinuity element type
-template <unsigned Tdim>
-unsigned mpm::Cell<Tdim>::element_type_discontinuity() {
-  if (discontinuity_element_ == nullptr) return mpm::EnrichType::Regular;
-  return discontinuity_element_->element_type();
-}
 //! Assign quadrature
 template <unsigned Tdim>
 std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points() {

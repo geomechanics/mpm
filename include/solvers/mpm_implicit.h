@@ -119,6 +119,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   double residual_tolerance_{1.0e-10};
   //! Relative residual norm tolerance of Newton-Raphson iteration
   double relative_residual_tolerance_{1.0e-6};
+  //! Verbosity for Newton-Raphson iteration
+  unsigned verbosity_{0};
   //! Assembler object
   std::shared_ptr<mpm::AssemblerBase<Tdim>> assembler_;
   //! Linear solver object

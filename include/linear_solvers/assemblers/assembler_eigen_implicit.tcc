@@ -166,17 +166,17 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
   bool convergence = false;
   try {
     // Residual force vector norm
-    double residual_norm = residual_force_rhs_vector_.norm();
+    residual_norm_ = residual_force_rhs_vector_.norm();
     // Save if this is the initial iteration
-    if (initial) initial_residual_norm_ = residual_norm;
+    if (initial) initial_residual_norm_ = residual_norm_;
 
     // Convergence check
-    if (residual_norm < residual_tolerance) convergence = true;
+    if (residual_norm_ < residual_tolerance) convergence = true;
 
     // Convergence check with relative residual norm
     if (!convergence) {
-      double relative_residual_norm = residual_norm / initial_residual_norm_;
-      if (relative_residual_norm < relative_residual_tolerance)
+      relative_residual_norm_ = residual_norm_ / initial_residual_norm_;
+      if (relative_residual_norm_ < relative_residual_tolerance)
         convergence = true;
     }
   } catch (std::exception& exception) {
@@ -192,10 +192,10 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_solution_convergence(
   bool convergence = false;
   try {
     // Displacement increment norm
-    double displacement_norm = displacement_increment_.norm();
+    displacement_increment_norm_ = displacement_increment_.norm();
 
     // Convergence check
-    if (displacement_norm < solution_tolerance) convergence = true;
+    if (displacement_increment_norm_ < solution_tolerance) convergence = true;
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }

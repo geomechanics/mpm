@@ -47,6 +47,10 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
       relative_residual_tolerance_ = analysis_["scheme_settings"]
                                          .at("relative_residual_tolerance")
                                          .template get<double>();
+    if (analysis_.contains("scheme_settings") &&
+        analysis_["scheme_settings"].contains("verbosity"))
+      verbosity_ =
+          analysis_["scheme_settings"].at("verbosity").template get<double>();
   }
 }
 
@@ -193,6 +197,16 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       // Check convergence of solution (displacement increment)
       convergence =
           assembler_->check_solution_convergence(displacement_tolerance_);
+
+      current_iteration_++;
+      if (mpi_rank == 0) {
+        if (verbosity_ > 0)
+          console_->info("Newton-Raphson iteration: {} of {}.\n",
+                         current_iteration_, max_iteration_);
+        if (verbosity_ == 2)
+          console_->info("Displacment increment norm: {}.\n",
+                         assembler_->solution_norm());
+      }
       if (convergence) break;
 
       // Compute equilibrium equation
@@ -202,10 +216,21 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       convergence = assembler_->check_residual_convergence(
           false, residual_tolerance_, relative_residual_tolerance_);
 
-      current_iteration_++;
-      if (mpi_rank == 0)
-        console_->info("Newton-Raphson iteration: {} of {}.\n",
-                       current_iteration_, max_iteration_);
+      if (mpi_rank == 0) {
+        if (verbosity_ == 2) {
+          console_->info("Residual norm: {}.\n", assembler_->residual_norm());
+          console_->info("Relative residual norm: {}.\n",
+                         assembler_->relative_residual_norm());
+        }
+      }
+    }
+
+    if (mpi_rank == 0 && verbosity_ > 0) {
+      if (convergence) {
+        console_->info("Newton-Raphson iteration has converged.\n");
+      } else {
+        console_->info("Newton-Raphson iteration has diverged.\n");
+      }
     }
 
     // Particle kinematics

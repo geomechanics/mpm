@@ -76,6 +76,18 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   //! \ingroup Implicit
   //! \param[in] solution_tolerance solution norm tolerance
   virtual bool check_solution_convergence(double solution_tolerance) override;
+
+  //! Return displacement increment norm
+  //! \ingroup Implicit
+  double solution_norm() override { return displacement_increment_norm_; }
+
+  //! Return residual norm
+  //! \ingroup Implicit
+  double residual_norm() override { return residual_norm_; }
+
+  //! Return relative residual norm
+  //! \ingroup Implicit
+  double relative_residual_norm() override { return relative_residual_norm_; }
   /**@{*/
 
  protected:
@@ -97,8 +109,15 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   Eigen::SparseVector<double> displacement_constraints_;
   //! Displacement increment
   Eigen::VectorXd displacement_increment_;
+  //! Displacement increment norm
+  double displacement_increment_norm_;
   //! Initial residual norm of each time step
   double initial_residual_norm_;
+  //! Residual norm
+  double residual_norm_;
+  //! Relative residual norm
+  double relative_residual_norm_;
+
   /**@{*/
 };  // namespace mpm
 }  // namespace mpm

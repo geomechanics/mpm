@@ -169,6 +169,12 @@ inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
   return status;
 }
 
+// Initialise particle strain increment within a time step
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::initialise_strain_increment() {
+  dstrain_.setZero();
+}
+
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_increment(

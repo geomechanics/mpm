@@ -390,6 +390,10 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt parameter beta of Newmark scheme
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
 
+  //! Initialise strain increment within a time step
+  //! \ingroup Implicit
+  void initialise_strain_increment() override;
+
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
   void compute_strain_newmark() noexcept override;

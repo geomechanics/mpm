@@ -382,6 +382,10 @@ class ParticleBase {
   virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
                                               double dt) = 0;
 
+  //! Initialise strain increment within a time step
+  //! \ingroup Implicit
+  virtual void initialise_strain_increment() = 0;
+
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
   virtual void compute_strain_newmark() = 0;

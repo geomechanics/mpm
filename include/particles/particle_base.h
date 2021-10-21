@@ -386,12 +386,17 @@ class ParticleBase {
   //! \ingroup Implicit
   virtual void compute_strain_newmark() = 0;
 
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  virtual void compute_stress_implicit() = 0;
+
   //! Compute updated position by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
   virtual void compute_updated_position_newmark(double dt) = 0;
 
   //! Assign acceleration to the particle (used for test)
+  //! \ingroup Implicit
   //! \param[in] acceleration A vector of particle acceleration
   //! \retval status Assignment status
   virtual bool assign_acceleration(const VectorDim& acceleration) = 0;

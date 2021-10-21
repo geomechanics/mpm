@@ -237,10 +237,12 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
 // Compute strain of the particle using nodal displacement
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_strain_newmark() noexcept {
+  // Save the strain increment of the last Newton-Raphson iteration
+  Eigen::Matrix<double, 6, 1> previous_dstrain = dstrain_;
   // Compute strain increment from previous time step
   dstrain_ = this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
-  // Update strain += dstrain
-  strain_ += dstrain_;
+  // Update strain
+  strain_ += dstrain_ - previous_dstrain;
 
   // Compute at centroid
   // Strain rate for reduced integration
@@ -249,8 +251,22 @@ void mpm::Particle<Tdim>::compute_strain_newmark() noexcept {
                                      mpm::ParticlePhase::Solid);
 
   // Assign volumetric strain at centroid
+  double previous_dvolumetric_strain_ = dvolumetric_strain_;
   dvolumetric_strain_ = dstrain_.head(Tdim).sum();
-  volumetric_strain_centroid_ += dvolumetric_strain_;
+  volumetric_strain_centroid_ +=
+      dvolumetric_strain_ - previous_dvolumetric_strain_;
+}
+
+// Compute stress using implicit updating scheme
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::compute_stress_implicit() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+  // Calculate stress
+  this->stress_ = (this->material())
+                      ->compute_stress_implicit(
+                          stress_, strain_, this,
+                          &state_variables_[mpm::ParticlePhase::Solid]);
 }
 
 // Compute updated position of the particle by Newmark scheme

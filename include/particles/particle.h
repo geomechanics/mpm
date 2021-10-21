@@ -394,6 +394,10 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   void compute_strain_newmark() noexcept override;
 
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  void compute_stress_implicit() noexcept override;
+
   //! Compute updated position of the particle by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step

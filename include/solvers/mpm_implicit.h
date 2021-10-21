@@ -45,7 +45,7 @@ class MPMImplicit : public MPMBase<Tdim> {
 
   //! Solve equilibrium equation
   //! \ingroup Implicit
-  bool solve_equilibrium_equation();
+  bool solve_equilibrium_equation(const unsigned phase);
   /**@}*/
 
   //! Class private variables
@@ -109,8 +109,10 @@ class MPMImplicit : public MPMBase<Tdim> {
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme
   double newmark_gamma_{0.5};
+  //! Current number of Newton-Raphson iteration
+  unsigned current_iteration_;
   //! Max number of Newton-Raphson iteration
-  int max_iteration_{20};
+  unsigned max_iteration_{20};
   //! Displacement norm tolerance of Newton-Raphson iteration
   double displacement_tolerance_{1.0e-10};
   //! Residual norm tolerance of Newton-Raphson iteration

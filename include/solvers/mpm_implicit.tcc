@@ -158,8 +158,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(phase);
 
-    // Predict nodal velocity and acceleration -- Predictor step of Newmark
-    // scheme
+    // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
                                                  newmark_gamma_);
 
@@ -173,23 +172,41 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     // Compute equilibrium equation
     this->compute_equilibrium_equation(phase);
 
-    // Solve equilibrium equation
-    this->solve_equilibrium_equation();
+    // Check convergence of residual
+    bool convergence = false;
+    convergence = assembler_->check_residual_convergence(
+        true, residual_tolerance_, relative_residual_tolerance_);
 
-    // Assign displacement increment to nodes
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::update_displacement_increment,
-                  std::placeholders::_1, assembler_->displacement_increment(),
-                  phase, assembler_->active_dof()),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    // Newton-Raphson iteration
+    current_iteration_ = 0;
+    while (!convergence && current_iteration_ < max_iteration_) {
+      // Solve equilibrium equation
+      this->solve_equilibrium_equation(phase);
 
-    // Update nodal velocity and acceleration -- Corrector step of Newmark
-    // scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
-                                                 newmark_gamma_);
+      // Update nodal kinematics -- Corrector step of Newmark scheme
+      mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
+                                                   newmark_gamma_);
 
-    // Update stress and strain
-    mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
+      // Update stress and strain
+      mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
+
+      // Check convergence of solution (displacement increment)
+      convergence =
+          assembler_->check_solution_convergence(displacement_tolerance_);
+      if (convergence) break;
+
+      // Compute equilibrium equation
+      this->compute_equilibrium_equation(phase);
+
+      // Check convergence of residual
+      convergence = assembler_->check_residual_convergence(
+          false, residual_tolerance_, relative_residual_tolerance_);
+
+      current_iteration_++;
+      if (mpi_rank == 0)
+        console_->info("Newton-Raphson iteration: {} of {}.\n",
+                       current_iteration_, max_iteration_);
+    }
 
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
@@ -359,6 +376,12 @@ bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation(
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();
 
+    // Initialise nodal forces
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::initialise_force,
+                  std::placeholders::_1),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
     // Compute local residual force
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
@@ -397,7 +420,7 @@ bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation(
 
 // Solve equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::solve_equilibrium_equation() {
+bool mpm::MPMImplicit<Tdim>::solve_equilibrium_equation(const unsigned phase) {
   bool status = true;
   try {
     // Solve matrix equation and assign solution to assembler
@@ -405,6 +428,13 @@ bool mpm::MPMImplicit<Tdim>::solve_equilibrium_equation() {
         linear_solver_["displacement"]->solve(
             assembler_->stiffness_matrix(),
             assembler_->residual_force_rhs_vector()));
+
+    // Assign displacement increment to nodes
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::update_displacement_increment,
+                  std::placeholders::_1, assembler_->displacement_increment(),
+                  phase, assembler_->active_dof()),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

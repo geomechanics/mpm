@@ -72,3 +72,13 @@ Eigen::Matrix<double, 6, 6> mpm::LinearElastic<Tdim>::compute_dmatrix(
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
   return de_;
 }
+
+//! Compute stress using implicit updating scheme
+template <unsigned Tdim>
+Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_stress_implicit(
+    const Vector6d& stress, const Vector6d& strain,
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+  // Elastic trial step
+  const Vector6d trial_stress = this->de_ * strain;
+  return trial_stress;
+}

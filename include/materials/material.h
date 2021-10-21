@@ -96,6 +96,29 @@ class Material {
     return error;
   };
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  //! \param[in] stress Stress
+  //! \param[in] strain Total strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval updated_stress Updated value of stress
+  virtual Vector6d compute_stress_implicit(const Vector6d& stress,
+                                           const Vector6d& strain,
+                                           const ParticleBase<Tdim>* ptr,
+                                           mpm::dense_map* state_vars) {
+    auto error = Vector6d::Zero();
+    throw std::runtime_error(
+        "Calling the base class function (compute_stress_implicit) in "
+        "Material:: illegal operation!");
+    return error;
+  };
+  /**@}*/
+
  protected:
   //! material id
   unsigned id_{std::numeric_limits<unsigned>::max()};

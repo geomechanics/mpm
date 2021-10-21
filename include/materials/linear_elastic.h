@@ -65,6 +65,23 @@ class LinearElastic : public Material<Tdim> {
                             const ParticleBase<Tdim>* ptr,
                             mpm::dense_map* state_vars) override;
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  //! \param[in] stress Stress
+  //! \param[in] strain Total strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval updated_stress Updated value of stress
+  Vector6d compute_stress_implicit(const Vector6d& stress,
+                                   const Vector6d& strain,
+                                   const ParticleBase<Tdim>* ptr,
+                                   mpm::dense_map* state_vars) override;
+  /**@}*/
+
  protected:
   //! material id
   using Material<Tdim>::id_;

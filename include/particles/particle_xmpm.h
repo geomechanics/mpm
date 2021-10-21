@@ -11,9 +11,6 @@
 #include "logger.h"
 #include "particle_base.h"
 
-#include <fstream>
-#include <iostream>
-
 namespace mpm {
 
 //! ParticleXMPM class
@@ -49,11 +46,12 @@ class ParticleXMPM : public Particle<Tdim> {
   //! Initialise particle from HDF5 data
   //! \param[in] particle HDF5 data of particle
   //! \retval status Status of reading HDF5 particle
-  bool initialise_particle(const HDF5Particle& particle) override;
+  bool initialise_particle(PODParticle& particle) override;
 
-  //! Retrun particle data as HDF5
-  //! \retval particle HDF5 data of the particle
-  HDF5Particle hdf5() const override;
+  //! Return particle data as POD
+  //! \retval particle POD of the particle
+  std::shared_ptr<void> pod() const override;
+
 
   //! Initialise properties
   void initialise() override;

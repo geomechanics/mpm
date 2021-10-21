@@ -218,7 +218,6 @@ class Cell {
   //! Return previous mpi rank
   unsigned previous_mpirank() const;
 
-<<<<<<< HEAD
   //! Assign discontinuity element type
   void assign_type_discontinuity(mpm::EnrichType type);
 
@@ -286,7 +285,6 @@ class Cell {
   double discontinuity_area() { return this->discontinuity_element_->area(); }
 
   void assign_cohesion_area();
-=======
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -468,7 +466,6 @@ class Cell {
       double multiplier = 1.0) noexcept;
 
   /**@}*/
->>>>>>> master
 
  private:
   //! Approximately check if a point is in a cell
@@ -559,11 +556,8 @@ class Cell {
 }  // namespace mpm
 
 #include "cell.tcc"
-<<<<<<< HEAD
 #include "cell_xmpm.tcc"
-=======
 #include "cell_implicit.tcc"
 #include "cell_multiphase.tcc"
->>>>>>> master
 
 #endif  // MPM_CELL_H_

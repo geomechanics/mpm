@@ -29,13 +29,6 @@ void mpm::Mesh<Tdim>::create_nodal_properties_discontinuity() {
                                                       nodal_properties_);
 }
 
-// Initialise the nodal properties' map
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::initialise_nodal_properties() {
-  // Call initialise_properties function from the nodal properties
-  nodal_properties_->initialise_nodal_properties();
-}
-
 //! Locate points in a cell
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::locate_discontinuity() {

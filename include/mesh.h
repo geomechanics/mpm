@@ -428,12 +428,10 @@ class Mesh {
 
   //! Read HDF5 particles for singlephase particle
   //! \param[in] filename Name of HDF5 file to write particles data
-<<<<<<< HEAD
   //! \param[in] particle type of HDF5 file to generate particles class
   //! \retval status Status of reading HDF5 output
   bool read_particles_hdf5(unsigned phase, const std::string& filename,
                            const std::string& particle_type);
-=======
   //! \param[in] particle_type Particle type to be generated
   //! \retval status Status of reading HDF5 output
   bool read_particles_hdf5(const std::string& filename,
@@ -445,7 +443,6 @@ class Mesh {
   //! \retval status Status of reading HDF5 output
   bool read_particles_hdf5_twophase(const std::string& filename,
                                     const std::string& particle_type);
->>>>>>> master
 
   //! Return HDF5 particles
   //! \retval particles_hdf5 Vector of HDF5 particles
@@ -508,7 +505,6 @@ class Mesh {
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
 
-<<<<<<< HEAD
   // Create the nodal properties' map for discontinuity
   void create_nodal_properties_discontinuity();
 
@@ -577,7 +573,6 @@ class Mesh {
   void output_surface();
 
   void check_particle_levelset(bool particle_levelset);
-=======
   /**
    * \defgroup MultiPhase Functions dealing with multi-phase MPM
    */
@@ -672,7 +667,6 @@ class Mesh {
       const Eigen::VectorXd& pressure_increment, double dt);
 
   /**@}*/
->>>>>>> master
 
  private:
   // Read particles from file
@@ -749,10 +743,7 @@ class Mesh {
 }  // namespace mpm
 
 #include "mesh.tcc"
-<<<<<<< HEAD
 #include "mesh_xmpm.tcc"
-=======
 #include "mesh_multiphase.tcc"
->>>>>>> master
 
 #endif  // MPM_MESH_H_

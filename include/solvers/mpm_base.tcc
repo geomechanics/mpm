@@ -485,15 +485,9 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
           io_->output_file(attribute, extension, uuid_, step_, this->nsteps_)
               .string();
 
-<<<<<<< HEAD
-    // Load particle information from file
-    const std::string particle_type = (Tdim == 2) ? "P2D" : "P3D";
-    mesh_->read_particles_hdf5(phase, particles_file, particle_type);
-=======
       // Load particle information from file
       mesh_->read_particles_hdf5(particles_file, attribute, ptype);
     }
->>>>>>> master
 
     // Clear all particle ids
     mesh_->iterate_over_cells(

@@ -265,25 +265,14 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usl_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usl_unitcell_test.cc
-<<<<<<< HEAD
     ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_test.cc
 #    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_test.cc
 #    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_unitcell_test.cc    
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
-    ${mpm_SOURCE_DIR}/tests/nodal_properties_test.cc
-    ${mpm_SOURCE_DIR}/tests/node_map_test.cc
-    ${mpm_SOURCE_DIR}/tests/node_test.cc
     ${mpm_SOURCE_DIR}/tests/node_xmpm_test.cc
-    ${mpm_SOURCE_DIR}/tests/node_vector_test.cc
-    ${mpm_SOURCE_DIR}/tests/particle_cell_crossing_test.cc
-    ${mpm_SOURCE_DIR}/tests/particle_serialize_deserialize_test.cc
-    ${mpm_SOURCE_DIR}/tests/particle_test.cc
     ${mpm_SOURCE_DIR}/tests/particle_xmpm_test.cc
-    ${mpm_SOURCE_DIR}/tests/particle_traction_test.cc
-    ${mpm_SOURCE_DIR}/tests/particle_vector_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
-=======
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usf_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usl_test.cc
@@ -295,7 +284,6 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
->>>>>>> master
   )
   add_executable(mpmtest ${mpm_src} ${test_src})
   add_test(NAME mpmtest COMMAND $<TARGET_FILE:mpmtest>)

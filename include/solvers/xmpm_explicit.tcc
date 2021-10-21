@@ -437,7 +437,7 @@ bool mpm::XMPMExplicit<Tdim>::checkpoint_resume() {
 
     // Load particle information from file
     const std::string particle_type = (Tdim == 2) ? "P2DXMPM" : "P3DXMPM";
-    mesh_->read_particles_hdf5(phase, particles_file, particle_type);
+    mesh_->read_particles_hdf5(particles_file, particle_type);
 
     // Clear all particle ids
     mesh_->iterate_over_cells(

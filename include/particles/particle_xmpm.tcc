@@ -21,26 +21,27 @@ mpm::ParticleXMPM<Tdim>::ParticleXMPM(Index id, const VectorDim& coord,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
-//! Initialise particle data from HDF5
+//! Initialise particle data from pod
 template <unsigned Tdim>
-bool mpm::ParticleXMPM<Tdim>::initialise_particle(
-    const HDF5Particle& particle) {
-  mpm::Particle<Tdim>::initialise_particle(particle);
-
+bool mpm::ParticleXMPM<Tdim>::initialise_particle(PODParticle& particle) {
+  bool status = mpm::Particle<Tdim>::initialise_particle(particle);
   // levelset_phi
-  this->levelset_phi_ = particle.levelset_phi;
+  //to do
+  levelset_phi_ = particle.levelset_phi;
 
-  return true;
+  return status;
 }
 
-//! Return particle data in HDF5 format
+
+//! Return particle data as POD
 template <unsigned Tdim>
 // cppcheck-suppress *
-mpm::HDF5Particle mpm::ParticleXMPM<Tdim>::hdf5() const {
+std::shared_ptr<void> mpm::ParticleXMPM<Tdim>::pod() const {
 
-  mpm::HDF5Particle particle_data = mpm::Particle<Tdim>::hdf5();
 
-  particle_data.levelset_phi = levelset_phi_;
+  auto particle_data = std::make_shared<mpm::PODParticle>();
+  //to do
+  particle_data->levelset_phi = levelset_phi_;
   return particle_data;
 }
 

@@ -656,13 +656,11 @@ class Node : public NodeBase<Tdim> {
   std::unique_ptr<spdlog::logger> console_;
   //! MPI ranks
   std::set<unsigned> mpi_ranks_;
-<<<<<<< HEAD
   //! discontinuity enrich
   // need to be done
   bool discontinuity_enrich_{false};
   //! cells ids including the node
   std::vector<Index> cells_;
-=======
   //! Global index for active node (in each rank)
   Index active_id_{std::numeric_limits<Index>::max()};
   //! Global index for active node (globally)
@@ -699,16 +697,12 @@ class Node : public NodeBase<Tdim> {
   //! Drag force
   Eigen::Matrix<double, Tdim, 1> drag_force_coefficient_;
   /**@}*/
->>>>>>> master
 };  // Node class
 }  // namespace mpm
 
 #include "node.tcc"
-<<<<<<< HEAD
 #include "node_xmpm.tcc"
-=======
 #include "node_implicit.tcc"
 #include "node_multiphase.tcc"
->>>>>>> master
 
 #endif  // MPM_NODE_H_

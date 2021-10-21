@@ -1600,12 +1600,7 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
 
 //! Read HDF5 particles for singlephase particle
 template <unsigned Tdim>
-<<<<<<< HEAD
-bool mpm::Mesh<Tdim>::read_particles_hdf5(unsigned phase,
-                                          const std::string& filename,
-=======
 bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
->>>>>>> master
                                           const std::string& particle_type) {
 
   // Create a new file using default properties.
@@ -1628,10 +1623,6 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
                  mpm::pod::particle::dst_offset, mpm::pod::particle::dst_sizes,
                  dst_buf.data());
 
-<<<<<<< HEAD
-  // Particle type
-  // const std::string particle_type = (Tdim == 2) ? "P2D" : "P3D";
-=======
   // Iterate over all HDF5 particles
   for (unsigned i = 0; i < nrecords; ++i) {
     PODParticle pod_particle = dst_buf[i];
@@ -1690,7 +1681,6 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5_twophase(
   H5TBread_table(file_id, "table", mpm::pod::particletwophase::dst_size,
                  mpm::pod::particletwophase::dst_offset,
                  mpm::pod::particletwophase::dst_sizes, dst_buf.data());
->>>>>>> master
 
   // Iterate over all HDF5 particles
   for (unsigned i = 0; i < nrecords; ++i) {
@@ -2164,8 +2154,6 @@ void mpm::Mesh<Tdim>::create_nodal_properties() {
   } else {
     throw std::runtime_error("Number of nodes or number of materials is zero");
   }
-<<<<<<< HEAD
-=======
 }
 
 // Initialise the nodal properties' map
@@ -2173,5 +2161,4 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::initialise_nodal_properties() {
   // Call initialise_properties function from the nodal properties
   nodal_properties_->initialise_nodal_properties();
->>>>>>> master
 }

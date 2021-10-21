@@ -46,32 +46,23 @@ class Particle : public ParticleBase<Tdim> {
   //! Delete assignment operator
   Particle& operator=(const Particle<Tdim>&) = delete;
 
-  //! Initialise particle from HDF5 data
-  //! \param[in] particle HDF5 data of particle
-  //! \retval status Status of reading HDF5 particle
-  bool initialise_particle(const HDF5Particle& particle) override;
+  //! Initialise particle from POD data
+  //! \param[in] particle POD data of particle
+  //! \retval status Status of reading POD particle
+  bool initialise_particle(PODParticle& particle) override;
 
-  //! Initialise particle HDF5 data and material
-  //! \param[in] particle HDF5 data of particle
-  //! \param[in] material Material associated with the particle
-  //! \retval status Status of reading HDF5 particle
+  //! Initialise particle POD data and material
+  //! \param[in] particle POD data of particle
+  //! \param[in] materials Material associated with the particle arranged in a
+  //! vector
+  //! \retval status Status of reading POD particle
   virtual bool initialise_particle(
-      const HDF5Particle& particle,
-      const std::shared_ptr<Material<Tdim>>& material) override;
+      PODParticle& particle,
+      const std::vector<std::shared_ptr<Material<Tdim>>>& materials) override;
 
-  //! Assign material history variables
-  //! \param[in] state_vars State variables
-  //! \param[in] material Material associated with the particle
-  //! \param[in] phase Index to indicate material phase
-  //! \retval status Status of cloning HDF5 particle
-  bool assign_material_state_vars(
-      const mpm::dense_map& state_vars,
-      const std::shared_ptr<mpm::Material<Tdim>>& material,
-      unsigned phase = mpm::ParticlePhase::Solid) override;
-
-  //! Retrun particle data as HDF5
-  //! \retval particle HDF5 data of the particle
-  HDF5Particle hdf5() const override;
+  //! Return particle data as POD
+  //! \retval particle POD of the particle
+  std::shared_ptr<void> pod() const override;
 
   //! Initialise properties
   void initialise() override;
@@ -121,6 +112,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Return volume
   double volume() const override { return volume_; }
 
+  //! Return the approximate particle diameter
+  double diameter() const override;
+
   //! Return size of particle in natural coordinates
   VectorDim natural_size() const override { return natural_size_; }
 
@@ -131,7 +125,6 @@ class Particle : public ParticleBase<Tdim> {
   void update_volume() noexcept override;
 
   //! Return mass density
-  //! \param[in] phase Index corresponding to the phase
   double mass_density() const override { return mass_density_; }
 
   //! Compute mass as volume * density
@@ -225,7 +218,6 @@ class Particle : public ParticleBase<Tdim> {
   bool assign_traction(unsigned direction, double traction) override;
 
   //! Return traction of the particle
-  //! \param[in] phase Index corresponding to the phase
   VectorDim traction() const override { return traction_; }
 
   //! Map traction force
@@ -236,6 +228,24 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] velocity_update Update particle velocity from nodal vel
   void compute_updated_position(double dt,
                                 bool velocity_update = false) noexcept override;
+
+  //! Assign material history variables
+  //! \param[in] state_vars State variables
+  //! \param[in] material Material associated with the particle
+  //! \param[in] phase Index to indicate material phase
+  //! \retval status Status of assigning material state variables
+  bool assign_material_state_vars(
+      const mpm::dense_map& state_vars,
+      const std::shared_ptr<mpm::Material<Tdim>>& material,
+      unsigned phase = mpm::ParticlePhase::Solid) override;
+
+  //! Assign a state variable
+  //! \param[in] var State variable
+  //! \param[in] value State variable to be assigned
+  //! \param[in] phase Index to indicate phase
+  void assign_state_variable(
+      const std::string& var, double value,
+      unsigned phase = mpm::ParticlePhase::Solid) override;
 
   //! Return a state variable
   //! \param[in] var State variable
@@ -258,6 +268,14 @@ class Particle : public ParticleBase<Tdim> {
   //! $$\hat{p}_p = \sum_{i = 1}^{n_n} N_i(x_p) p_i$$
   bool compute_pressure_smoothing(
       unsigned phase = mpm::ParticlePhase::Solid) noexcept override;
+
+  //! Assign a state variable
+  //! \param[in] value Particle pressure to be assigned
+  //! \param[in] phase Index to indicate phase
+  void assign_pressure(double pressure,
+                       unsigned phase = mpm::ParticlePhase::Solid) override {
+    this->assign_state_variable("pressure", pressure, phase);
+  }
 
   //! Return pressure of the particles
   //! \param[in] phase Index to indicate phase
@@ -290,6 +308,29 @@ class Particle : public ParticleBase<Tdim> {
   //! Assign material id of this particle to nodes
   void append_material_id_to_nodes() const override;
 
+  //! Assign free surface
+  void assign_free_surface(bool free_surface) override {
+    free_surface_ = free_surface;
+  };
+
+  //! Return free surface bool
+  bool free_surface() const override { return free_surface_; };
+
+  //! Compute free surface in particle level by density ratio comparison
+  //! \param[in] density_ratio_tolerance Tolerance of density ratio comparison.
+  //! Default value is set to be 0.65, which is derived from a 3D case where at
+  //! one side the cell is fully occupied by particles and the other side the
+  //! cell is empty. See (Hamad, 2015).
+  //! \retval status Status of compute_free_surface
+  bool compute_free_surface_by_density(
+      double density_ratio_tolerance = 0.65) override;
+
+  //! Assign normal vector
+  void assign_normal(const VectorDim& normal) override { normal_ = normal; };
+
+  //! Return normal vector
+  VectorDim normal() const override { return normal_; };
+
   //! Return the number of neighbour particles
   unsigned nneighbours() const override { return neighbours_.size(); };
 
@@ -315,6 +356,60 @@ class Particle : public ParticleBase<Tdim> {
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) override;
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Map particle mass, momentum and inertia to nodes
+  //! \ingroup Implicit
+  void map_mass_momentum_inertia_to_nodes() noexcept override;
+
+  //! Map inertial force
+  //! \ingroup Implicit
+  void map_inertial_force() noexcept override;
+
+  //! Return acceleration of the particle
+  //! \ingroup Implicit
+  VectorDim acceleration() const override { return acceleration_; }
+
+  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  inline bool map_material_stiffness_matrix_to_cell() override;
+
+  //! Reduce constitutive relations matrix depending on the dimension
+  //! \ingroup Implicit
+  //! \param[in] dmatrix Constitutive relations matrix in 3D
+  //! \retval reduced_dmatrix Reduced constitutive relation matrix for spatial
+  //! dimension
+  inline Eigen::MatrixXd reduce_dmatrix(
+      const Eigen::MatrixXd& dmatrix) noexcept override;
+
+  //! Compute B matrix of a particle, based on local coordinates
+  inline Eigen::MatrixXd compute_bmatrix() noexcept override;
+
+  //! Map mass matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
+
+  //! Compute strain using nodal displacement
+  //! \ingroup Implicit
+  void compute_strain_newmark() noexcept override;
+
+  //! Compute updated position of the particle by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] dt Analysis time step
+  //! \param[in] velocity_update Update particle velocity from nodal vel
+  void compute_updated_position_newmark(double dt) noexcept override;
+
+  //! Assign acceleration to the particle (used for test)
+  //! \ingroup Implicit
+  //! \param[in] acceleration A vector of particle acceleration
+  //! \retval status Assignment status
+  bool assign_acceleration(const VectorDim& acceleration) override;
+  /**@}*/
+
  protected:
   //! Initialise particle material container
   //! \details This function allocate memory and initialise the material related
@@ -325,6 +420,7 @@ class Particle : public ParticleBase<Tdim> {
   void initialise_material(unsigned phase_size = 1);
 
   //! Compute strain rate
+  //! \ingroup Implicit
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
   //! \retval strain rate at particle inside a cell
@@ -333,9 +429,21 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute pack size
   //! \retval pack size of serialized object
-  int compute_pack_size() const;
+  virtual int compute_pack_size() const;
 
- protected:
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Compute strain increment
+  //! \ingroup Implicit
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval strain increment at particle inside a cell
+  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+  /**@}*/
+
   //! particle id
   using ParticleBase<Tdim>::id_;
   //! coordinates
@@ -386,6 +494,10 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, Tdim, 1> displacement_;
   //! Particle velocity constraints
   std::map<unsigned, double> particle_velocity_constraints_;
+  //! Free surface
+  bool free_surface_{false};
+  //! Free surface
+  Eigen::Matrix<double, Tdim, 1> normal_;
   //! Set traction
   bool set_traction_{false};
   //! Surface Traction (given as a stress; force/area)
@@ -408,9 +520,18 @@ class Particle : public ParticleBase<Tdim> {
   //! Pack size
   unsigned pack_size_{0};
 
+  /**
+   * \defgroup ImplicitVariables Variables dealing with implicit MPM
+   */
+  /**@{*/
+  //! Acceleration
+  Eigen::Matrix<double, Tdim, 1> acceleration_;
+  /**@}*/
+
 };  // Particle class
 }  // namespace mpm
 
 #include "particle.tcc"
+#include "particle_implicit.tcc"
 
 #endif  // MPM_PARTICLE_H__

@@ -88,6 +88,23 @@ class Material {
   }
   //！ return Elastic stiffness matrix
   virtual Matrix6x6 de() { return Matrix6x6::Zero(); }
+  //! Compute constitutive relations matrix
+  //! \ingroup Implicit
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval dmatrix Constitutive relations mattrix
+  virtual Matrix6x6 compute_dmatrix(const Vector6d& stress,
+                                    const Vector6d& dstrain,
+                                    const ParticleBase<Tdim>* ptr,
+                                    mpm::dense_map* state_vars) {
+    auto error = Matrix6x6::Zero();
+    throw std::runtime_error(
+        "Calling the base class function (compute_dmatrix) in "
+        "Material:: illegal operation!");
+    return error;
+  };
 
  protected:
   //! material id

@@ -22,9 +22,12 @@
 #include "contact_friction.h"
 #include "mpm.h"
 #include "mpm_scheme.h"
+#include "mpm_scheme_musl.h"
+#include "mpm_scheme_newmark.h"
 #include "mpm_scheme_usf.h"
 #include "mpm_scheme_usl.h"
 #include "particle.h"
+#include "solver_base.h"
 #include "vector.h"
 
 namespace mpm {
@@ -96,6 +99,9 @@ class MPMBase : public MPM {
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
 
+  //! Write HDF5 files
+  void write_hdf5_twophase(mpm::Index step, mpm::Index max_steps) override;
+
   //! Domain decomposition
   //! \param[in] initial_step Start of simulation or later steps
   void mpi_domain_decompose(bool initial_step = false) override;
@@ -108,6 +114,17 @@ class MPMBase : public MPM {
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle
   void particle_velocity_constraints();
+
+ protected:
+  //! Initialise implicit solver
+  //! \param[in] lin_solver_props Linear solver properties
+  //! \param[in, out] linear_solver Linear solver map
+  void initialise_linear_solver(
+      const Json& lin_solver_props,
+      tsl::robin_map<
+          std::string,
+          std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>&
+          linear_solver);
 
  private:
   //! Return if a mesh will be isoparametric or not
@@ -137,6 +154,12 @@ class MPMBase : public MPM {
   void nodal_frictional_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
+  //! Nodal pressure constraints
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void nodal_pressure_constraints(
+      const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+
   //! Cell entity sets
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] check Check duplicates
@@ -161,9 +184,31 @@ class MPMBase : public MPM {
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  // Particles pore pressures
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_pore_pressures(
+      const Json& mesh_prop,
+      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   //! Initialise damping
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);
+
+  //! Initialise particle types
+  void initialise_particle_types();
+
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Nodal displacement constraints for implicit solver
+  //! \ingroup Implicit
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void nodal_displacement_constraints(
+      const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+  /**@}*/
 
  protected:
   // Generate a unique id for the analysis
@@ -201,6 +246,8 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;
   //! Constraints object
   std::shared_ptr<mpm::Constraints<Tdim>> constraints_;
+  //! Particle types
+  std::set<std::string> particle_types_;
   //! Materials
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Mathematical functions
@@ -219,6 +266,8 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! XMPM Solver
   bool xmpm_{false};
+  //! Nonlocal node neighbourhood
+  unsigned node_neighbourhood_{0};
 
 #ifdef USE_GRAPH_PARTITIONING
   // graph pass the address of the container of cell

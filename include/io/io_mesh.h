@@ -63,6 +63,17 @@ class IOMesh {
   virtual std::vector<Eigen::Matrix<double, 6, 1>> read_particles_stresses(
       const std::string& particles_stresses) = 0;
 
+  //! Read particle scalar properties
+  //! \param[in] scalar_file file name with particle scalar properties
+  //! \retval Vector of particles scalar properties
+  virtual std::vector<std::tuple<mpm::Index, double>>
+      read_particles_scalar_properties(const std::string& scalar_file) = 0;
+
+  //! Read pressure constraints file
+  //! \param[in] pressure_constraints_files file name with pressure constraints
+  virtual std::vector<std::tuple<mpm::Index, double>> read_pressure_constraints(
+      const std::string& _pressure_constraints_file) = 0;
+
   //! Read nodal euler angles file
   //! \param[in] nodal_euler_angles_file file name with nodal id and respective
   //! euler angles
@@ -102,6 +113,19 @@ class IOMesh {
   //! \param[in] forces_files file name with nodal concentrated force
   virtual std::vector<std::tuple<mpm::Index, unsigned, double>> read_forces(
       const std::string& forces_file) = 0;
+
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Read displacement constraints file
+  //! \ingroup Implicit
+  //! \param[in] displacement_constraints_files file name with displacement
+  //! constraints
+  virtual std::vector<std::tuple<mpm::Index, unsigned, double>>
+      read_displacement_constraints(
+          const std::string& displacement_constraints_file) = 0;
+  /**@}*/
 
 };  // IOMesh class
 }  // namespace mpm

@@ -66,6 +66,10 @@ class MPMScheme {
       bool velocity_update, unsigned phase, const std::string& damping_type,
       double damping_factor);
 
+  //! Postcompute nodal kinematics - map mass and momentum to nodes
+  //! \param[in] phase Phase to smooth pressure
+  virtual inline void postcompute_nodal_kinematics(unsigned phase) = 0;
+
   //! Compute particle location
   //! \param[in] locate_particles Flag to enable locate particles, if set to
   //! false, unlocated particles will be removed
@@ -76,6 +80,24 @@ class MPMScheme {
   virtual inline std::string scheme() const = 0;
   //! Time increment
   void assign_dt(double dt) { dt_ = dt; };
+
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Update nodal kinematics by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta Parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
+  //! \param[in] phase Phase to smooth pressure
+  virtual inline void update_nodal_kinematics_newmark(unsigned phase,
+                                                      double newmark_beta,
+                                                      double newmark_gamma) {
+    throw std::runtime_error(
+        "Calling the base class function (update_nodal_kinematics_newmark) in "
+        "MPMScheme:: illegal operation!");
+  };
+  /**@}*/
 
  protected:
   //! Mesh object

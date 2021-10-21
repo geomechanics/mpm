@@ -18,6 +18,7 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
 
     // Check degree
     REQUIRE(quad->degree() == mpm::ElementDegree::Linear);
+    REQUIRE(quad->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0,0)
     SECTION("Four noded quadrilateral element for coordinates(0,0)") {
@@ -689,6 +690,7 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
 
     // Check degree
     REQUIRE(quad->degree() == mpm::ElementDegree::Quadratic);
+    REQUIRE(quad->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0,0)
     SECTION("Eight noded quadrilateral element for coordinates(0,0)") {
@@ -1488,6 +1490,7 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
 
     // Check degree
     REQUIRE(quad->degree() == mpm::ElementDegree::Quadratic);
+    REQUIRE(quad->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0,0)
     SECTION("Nine noded quadrilateral element for coordinates(0,0)") {

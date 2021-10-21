@@ -18,6 +18,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
     // Check degree
     REQUIRE(tri->degree() == mpm::ElementDegree::Linear);
+    REQUIRE(tri->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0,0)
     SECTION("Three noded triangle element for coordinates(0,0)") {
@@ -672,6 +673,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
     // Check degree
     REQUIRE(tri->degree() == mpm::ElementDegree::Quadratic);
+    REQUIRE(tri->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0,0)
     SECTION("Six noded triangle element for coordinates(0,0)") {

@@ -17,6 +17,11 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
   // Initialise scheme
   if (stress_update_ == "newmark") {
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(mesh_, dt_);
+    // Read boolean of nonlinear analysis
+    if (analysis_.contains("scheme_settings") &&
+        analysis_["scheme_settings"].contains("nonlinear"))
+      nonlinear_ =
+          analysis_["scheme_settings"].at("nonlinear").template get<bool>();
     // Read parameters of Newmark scheme
     if (analysis_.contains("scheme_settings") &&
         analysis_["scheme_settings"].contains("beta"))
@@ -31,7 +36,7 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
         analysis_["scheme_settings"].contains("max_iteration"))
       max_iteration_ = analysis_["scheme_settings"]
                            .at("max_iteration")
-                           .template get<double>();
+                           .template get<unsigned>();
     if (analysis_.contains("scheme_settings") &&
         analysis_["scheme_settings"].contains("displacement_tolerance"))
       displacement_tolerance_ = analysis_["scheme_settings"]
@@ -50,7 +55,7 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
     if (analysis_.contains("scheme_settings") &&
         analysis_["scheme_settings"].contains("verbosity"))
       verbosity_ =
-          analysis_["scheme_settings"].at("verbosity").template get<double>();
+          analysis_["scheme_settings"].at("verbosity").template get<unsigned>();
   }
 }
 
@@ -216,6 +221,8 @@ bool mpm::MPMImplicit<Tdim>::solve() {
               false, verbosity_, residual_tolerance_,
               relative_residual_tolerance_);
         }
+      } else {
+        convergence = true;
       }
     }
 

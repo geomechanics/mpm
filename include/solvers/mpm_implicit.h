@@ -54,6 +54,10 @@ class MPMImplicit : public MPMBase<Tdim> {
   //! Initialisation of Newton-Raphson iteration
   //! \ingroup Implicit
   void initialise_newton_raphson_iteration();
+
+  //! Finalisation of Newton-Raphson iteration
+  //! \ingroup Implicit
+  void finalise_newton_raphson_iteration();
   /**@}*/
 
   //! Class private variables
@@ -113,6 +117,8 @@ class MPMImplicit : public MPMBase<Tdim> {
    * \defgroup ImplicitVariables Variables dealing with implicit MPM
    */
   /**@{*/
+  //! Phase
+  const unsigned phase_{mpm::ParticlePhase::SinglePhase};
   //! Boolean of nonlinear analysis
   bool nonlinear_{true};
   //! Parameter beta of Newmark scheme

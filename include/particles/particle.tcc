@@ -261,6 +261,7 @@ void mpm::Particle<Tdim>::initialise() {
   size_.setZero();
   strain_rate_.setZero();
   strain_.setZero();
+  previous_stress_.setZero();
   stress_.setZero();
   traction_.setZero();
   velocity_.setZero();

@@ -77,8 +77,13 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] newmark_beta Parameter beta of Newmark scheme
   //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
   //! \param[in] phase Phase to smooth pressure
-  virtual inline void update_nodal_kinematics_newmark(
-      unsigned phase, double newmark_beta, double newmark_gamma) override;
+  inline void update_nodal_kinematics_newmark(unsigned phase,
+                                              double newmark_beta,
+                                              double newmark_gamma) override;
+
+  // Update particle stress, strain and volume
+  //! \ingroup Implicit
+  inline void update_particle_stress_strain_volume() override;
   /**@}*/
 
  protected:

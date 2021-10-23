@@ -171,6 +171,9 @@ bool mpm::MPMImplicitLinear<Tdim>::solve() {
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
                                              damping_factor_);
 
+    // Particle stress, strain and volume
+    mpm_scheme_->update_particle_stress_strain_volume();
+
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
 

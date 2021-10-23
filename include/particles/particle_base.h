@@ -382,22 +382,22 @@ class ParticleBase {
   virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
                                               double dt) = 0;
 
-  //! Initialise strain increment within a time step
-  //! \ingroup Implicit
-  virtual void initialise_strain_increment() = 0;
-
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
   virtual void compute_strain_newmark() = 0;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  virtual void compute_stress_implicit() = 0;
+  virtual void compute_stress_newmark() = 0;
 
   //! Compute updated position by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
   virtual void compute_updated_position_newmark(double dt) = 0;
+
+  //! Update stress and strain after convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  virtual void update_stress_strain() = 0;
 
   //! Assign acceleration to the particle (used for test)
   //! \ingroup Implicit

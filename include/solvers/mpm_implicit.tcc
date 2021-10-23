@@ -77,9 +77,6 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   //   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
   // #endif
 
-  // Phase
-  const unsigned phase = mpm::ParticlePhase::SinglePhase;
-
   // Test if checkpoint resume is needed
   bool resume = false;
   if (analysis_.find("resume") != analysis_.end())
@@ -165,10 +162,10 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mpm_scheme_->initialise();
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
-    mpm_scheme_->compute_nodal_kinematics(phase);
+    mpm_scheme_->compute_nodal_kinematics(phase_);
 
     // Predict nodal kinematics -- Predictor step of Newmark scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
+    mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
                                                  newmark_gamma_);
 
     // Reinitialise system matrix to construct equillibrium equation
@@ -182,7 +179,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     current_iteration_ = 0;
 
     // Assemble equilibrium equation
-    this->assemble_system_equation(phase);
+    this->assemble_system_equation(phase_);
 
     // Check convergence of residual
     bool convergence = false;
@@ -195,14 +192,14 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       this->initialise_newton_raphson_iteration();
 
       // Solve equilibrium equation
-      this->solve_system_equation(phase);
+      this->solve_system_equation(phase_);
 
       // Update nodal kinematics -- Corrector step of Newmark scheme
-      mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
+      mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
                                                    newmark_gamma_);
 
       // Update stress and strain
-      mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
+      mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);
 
       if (nonlinear_) {
         // Check convergence of solution (displacement increment)
@@ -214,7 +211,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
           this->reinitialise_system_equation();
 
           // Assemble equilibrium equation
-          this->assemble_system_equation(phase);
+          this->assemble_system_equation(phase_);
 
           // Check convergence of residual
           convergence = assembler_->check_residual_convergence(
@@ -224,11 +221,10 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       } else {
         convergence = true;
       }
-    }
 
-    // Particle kinematics and volume
-    mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
-                                             damping_factor_);
+      // Finalisation of Newton-Raphson iteration
+      if (convergence) finalise_newton_raphson_iteration();
+    }
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
@@ -475,4 +471,15 @@ void mpm::MPMImplicit<Tdim>::initialise_newton_raphson_iteration() {
   if (verbosity_ > 0 && nonlinear_)
     console_->info("Newton-Raphson iteration: {} of {}.\n", current_iteration_,
                    max_iteration_);
+}
+
+// finalisation of Newton-Raphson iteration
+template <unsigned Tdim>
+void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
+  // Particle kinematics and volume
+  mpm_scheme_->compute_particle_kinematics(velocity_update_, phase_, "Cundall",
+                                           damping_factor_);
+
+  // Particle stress, strain and volume
+  mpm_scheme_->update_particle_stress_strain_volume();
 }

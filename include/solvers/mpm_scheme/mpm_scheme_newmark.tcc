@@ -25,11 +25,6 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
-
-      // Iterate over each particle to initialise strain increment
-      mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::initialise_strain_increment,
-                    std::placeholders::_1));
     }
   }  // Wait to complete
 }
@@ -96,9 +91,8 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
   if (pressure_smoothing) this->pressure_smoothing(phase);
 
   // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::compute_stress_implicit,
-                std::placeholders::_1));
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
 }
 
 //! Precompute stresses and strains
@@ -153,7 +147,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
   }  // Wait for tasks to finish
 }
 
-// Compute particle kinematics and volume
+// Update particle kinematics
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     bool velocity_update, unsigned phase, const std::string& damping_type,
@@ -163,6 +157,15 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
                 std::placeholders::_1, dt_));
+}
+
+// Update particle stress, strain and volume
+template <unsigned Tdim>
+inline void
+    mpm::MPMSchemeNewmark<Tdim>::update_particle_stress_strain_volume() {
+  // Iterate over each particle to update particle stress and strain
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
 
   // Iterate over each particle to update particle volume
   mesh_->iterate_over_particles(std::bind(

@@ -182,6 +182,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] stress Initial sress
   void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) override {
     this->stress_ = stress;
+    this->previous_stress_ = stress;
   }
 
   //! Compute stress
@@ -390,23 +391,23 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt parameter beta of Newmark scheme
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
 
-  //! Initialise strain increment within a time step
-  //! \ingroup Implicit
-  void initialise_strain_increment() override;
-
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
   void compute_strain_newmark() noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  void compute_stress_implicit() noexcept override;
+  void compute_stress_newmark() noexcept override;
 
   //! Compute updated position of the particle by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Update particle velocity from nodal vel
   void compute_updated_position_newmark(double dt) noexcept override;
+
+  //! Update stress and strain after convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  void update_stress_strain() noexcept override;
 
   //! Assign acceleration to the particle (used for test)
   //! \ingroup Implicit
@@ -531,6 +532,8 @@ class Particle : public ParticleBase<Tdim> {
   /**@{*/
   //! Acceleration
   Eigen::Matrix<double, Tdim, 1> acceleration_;
+  //! Stresses at the last time step
+  Eigen::Matrix<double, 6, 1> previous_stress_;
   /**@}*/
 
 };  // Particle class

@@ -179,7 +179,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     current_iteration_ = 0;
 
     // Assemble equilibrium equation
-    this->assemble_system_equation(phase_);
+    this->assemble_system_equation();
 
     // Check convergence of residual
     bool convergence = false;
@@ -192,7 +192,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       this->initialise_newton_raphson_iteration();
 
       // Solve equilibrium equation
-      this->solve_system_equation(phase_);
+      this->solve_system_equation();
 
       // Update nodal kinematics -- Corrector step of Newmark scheme
       mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
@@ -374,7 +374,7 @@ void mpm::MPMImplicit<Tdim>::reinitialise_system_equation() {
 
 // Assemble equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::assemble_system_equation(const unsigned phase) {
+bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
   bool status = true;
   try {
     // Compute local cell stiffness matrices
@@ -389,7 +389,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation(const unsigned phase) {
     assembler_->assemble_stiffness_matrix();
 
     // Compute local residual force
-    mpm_scheme_->compute_forces(gravity_, phase, step_,
+    mpm_scheme_->compute_forces(gravity_, phase_, step_,
                                 set_node_concentrated_force_);
 
     // Assemble global residual force RHS vector
@@ -426,7 +426,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation(const unsigned phase) {
 
 // Solve equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::solve_system_equation(const unsigned phase) {
+bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
   bool status = true;
   try {
     // Solve matrix equation and assign solution to assembler
@@ -439,7 +439,7 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation(const unsigned phase) {
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::update_displacement_increment,
                   std::placeholders::_1, assembler_->displacement_increment(),
-                  phase, assembler_->active_dof()),
+                  phase_, assembler_->active_dof()),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
   } catch (std::exception& exception) {
@@ -472,7 +472,7 @@ bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
     this->reinitialise_system_equation();
 
     // Assemble equilibrium equation
-    this->assemble_system_equation(phase_);
+    this->assemble_system_equation();
 
     // Check convergence of residual
     convergence = assembler_->check_residual_convergence(

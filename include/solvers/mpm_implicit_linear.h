@@ -39,9 +39,9 @@ class MPMImplicitLinear : public MPMBase<Tdim> {
   //! \ingroup Implicit
   bool reinitialise_matrix();
 
-  //! Compute equilibrium equation
+  //! Assemble equilibrium equation
   //! \ingroup Implicit
-  bool compute_equilibrium_equation();
+  bool assemble_system_equation();
   /**@}*/
 
   //! Class private variables
@@ -101,6 +101,8 @@ class MPMImplicitLinear : public MPMBase<Tdim> {
    * \defgroup ImplicitVariables Variables dealing with implicit MPM
    */
   /**@{*/
+  //! Phase
+  const unsigned phase_{mpm::ParticlePhase::SinglePhase};
   //! Parameter beta of Newmark scheme
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme

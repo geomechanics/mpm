@@ -45,11 +45,11 @@ class MPMImplicit : public MPMBase<Tdim> {
 
   //! Assemble equilibrium equation
   //! \ingroup Implicit
-  bool assemble_system_equation(const unsigned phase);
+  bool assemble_system_equation();
 
   //! Solve equilibrium equation
   //! \ingroup Implicit
-  bool solve_system_equation(const unsigned phase);
+  bool solve_system_equation();
 
   //! Initialisation of Newton-Raphson iteration
   //! \ingroup Implicit

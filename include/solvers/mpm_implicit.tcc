@@ -173,16 +173,18 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       throw std::runtime_error("Reinitialisation of matrix failed");
     }
 
+    // Newton-Raphson iteration
+    current_iteration_ = 0;
+
     // Assemble equilibrium equation
     this->assemble_system_equation(phase);
 
     // Check convergence of residual
     bool convergence = false;
     convergence = assembler_->check_residual_convergence(
-        true, residual_tolerance_, relative_residual_tolerance_);
+        true, verbosity_, residual_tolerance_, relative_residual_tolerance_);
 
-    // Newton-Raphson iteration
-    current_iteration_ = 0;
+    // Iterations
     while (!convergence && current_iteration_ <= max_iteration_) {
       // Initialisation of Newton-Raphson iteration
       this->initialise_newton_raphson_iteration();
@@ -199,33 +201,25 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
       if (nonlinear_) {
         // Check convergence of solution (displacement increment)
-        convergence =
-            assembler_->check_solution_convergence(displacement_tolerance_);
+        convergence = assembler_->check_solution_convergence(
+            verbosity_, displacement_tolerance_);
 
-        if (verbosity_ == 2)
-          console_->info("Displacment increment norm: {}.\n",
-                         assembler_->solution_norm());
-        if (convergence) break;
+        if (!convergence) {
+          // Reinitialise equilibrium equation
+          this->reinitialise_system_equation();
 
-        // Reinitialise equilibrium equation
-        this->reinitialise_system_equation();
+          // Assemble equilibrium equation
+          this->assemble_system_equation(phase);
 
-        // Assemble equilibrium equation
-        this->assemble_system_equation(phase);
-
-        // Check convergence of residual
-        convergence = assembler_->check_residual_convergence(
-            false, residual_tolerance_, relative_residual_tolerance_);
-
-        if (verbosity_ == 2) {
-          console_->info("Residual norm: {}.\n", assembler_->residual_norm());
-          console_->info("Relative residual norm: {}.\n",
-                         assembler_->relative_residual_norm());
+          // Check convergence of residual
+          convergence = assembler_->check_residual_convergence(
+              false, verbosity_, residual_tolerance_,
+              relative_residual_tolerance_);
         }
       }
     }
 
-    // Particle kinematics
+    // Particle kinematics and volume
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
                                              damping_factor_);
 

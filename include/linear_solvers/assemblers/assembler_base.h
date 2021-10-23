@@ -139,9 +139,10 @@ class AssemblerBase {
   //! Check residual convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   //! \param[in] initial boolean to indentify 1st (true) iteration
+  //! \param[in] verbosiby Verbosity
   //! \param[in] residual_tolerance residual norm tolerance
   //! \param[in] relative_residual_tolerance relative residual norm tolerance
-  virtual bool check_residual_convergence(bool initial,
+  virtual bool check_residual_convergence(bool initial, unsigned verbosity,
                                           double residual_tolerance,
                                           double relative_residual_tolerance) {
     throw std::runtime_error(
@@ -151,8 +152,10 @@ class AssemblerBase {
 
   //! Check solution convergence of Newton-Raphson iteration
   //! \ingroup Implicit
+  //! \param[in] verbosiby Verbosity
   //! \param[in] solution_tolerance solution norm tolerance
-  virtual bool check_solution_convergence(double solution_tolerance) {
+  virtual bool check_solution_convergence(unsigned verbosity,
+                                          double solution_tolerance) {
     throw std::runtime_error(
         "Calling the base class function (check_solution_convergence) in "
         "AssemblerBase:: illegal operation!");

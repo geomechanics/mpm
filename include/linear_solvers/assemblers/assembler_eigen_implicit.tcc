@@ -161,7 +161,7 @@ void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
 // Check residual convergence of Newton-Raphson iteration
 template <unsigned Tdim>
 bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
-    bool initial, double residual_tolerance,
+    bool initial, unsigned verbosity, double residual_tolerance,
     double relative_residual_tolerance) {
   bool convergence = false;
   try {
@@ -179,6 +179,11 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
       if (relative_residual_norm_ < relative_residual_tolerance)
         convergence = true;
     }
+
+    if (verbosity == 2) {
+      console_->info("Residual norm: {}.\n", residual_norm_);
+      console_->info("Relative residual norm: {}.\n", relative_residual_norm_);
+    }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }
@@ -188,7 +193,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
 // Check solution convergence of Newton-Raphson iteration
 template <unsigned Tdim>
 bool mpm::AssemblerEigenImplicit<Tdim>::check_solution_convergence(
-    double solution_tolerance) {
+    unsigned verbosity, double solution_tolerance) {
   bool convergence = false;
   try {
     // Displacement increment norm
@@ -196,6 +201,10 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_solution_convergence(
 
     // Convergence check
     if (displacement_increment_norm_ < solution_tolerance) convergence = true;
+
+    if (verbosity == 2)
+      console_->info("Displacment increment norm: {}.\n",
+                     displacement_increment_norm_);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }

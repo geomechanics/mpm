@@ -55,6 +55,10 @@ class MPMImplicit : public MPMBase<Tdim> {
   //! \ingroup Implicit
   void initialise_newton_raphson_iteration();
 
+  //! Check convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  bool check_newton_raphson_convergence();
+
   //! Finalisation of Newton-Raphson iteration
   //! \ingroup Implicit
   void finalise_newton_raphson_iteration();

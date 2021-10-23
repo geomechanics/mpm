@@ -201,23 +201,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       // Update stress and strain
       mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);
 
+      // Check convergence of Newton-Raphson iteration
       if (nonlinear_) {
-        // Check convergence of solution (displacement increment)
-        convergence = assembler_->check_solution_convergence(
-            verbosity_, displacement_tolerance_);
-
-        if (!convergence) {
-          // Reinitialise equilibrium equation
-          this->reinitialise_system_equation();
-
-          // Assemble equilibrium equation
-          this->assemble_system_equation(phase_);
-
-          // Check convergence of residual
-          convergence = assembler_->check_residual_convergence(
-              false, verbosity_, residual_tolerance_,
-              relative_residual_tolerance_);
-        }
+        convergence = check_newton_raphson_convergence();
       } else {
         convergence = true;
       }
@@ -471,6 +457,28 @@ void mpm::MPMImplicit<Tdim>::initialise_newton_raphson_iteration() {
   if (verbosity_ > 0 && nonlinear_)
     console_->info("Newton-Raphson iteration: {} of {}.\n", current_iteration_,
                    max_iteration_);
+}
+
+// Check convergnece of Newton-Raphson iteration
+template <unsigned Tdim>
+bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
+  bool convergence;
+  // Check convergence of solution (displacement increment)
+  convergence = assembler_->check_solution_convergence(verbosity_,
+                                                       displacement_tolerance_);
+
+  if (!convergence) {
+    // Reinitialise equilibrium equation
+    this->reinitialise_system_equation();
+
+    // Assemble equilibrium equation
+    this->assemble_system_equation(phase_);
+
+    // Check convergence of residual
+    convergence = assembler_->check_residual_convergence(
+        false, verbosity_, residual_tolerance_, relative_residual_tolerance_);
+  }
+  return convergence;
 }
 
 // finalisation of Newton-Raphson iteration

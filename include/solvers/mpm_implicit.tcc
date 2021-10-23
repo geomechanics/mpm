@@ -166,15 +166,15 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
                                                  newmark_gamma_);
 
-    // Initialise nodal indices to construct equillibrium equation
-    bool nodal_indices_initialization_status = this->initialise_nodal_indices();
-    if (!nodal_indices_initialization_status) {
+    // Reinitialise system matrix to construct equillibrium equation
+    bool matrix_reinitialization_status = this->reinitialise_matrix();
+    if (!matrix_reinitialization_status) {
       status = false;
-      throw std::runtime_error("Initialisation of nodal indices failed");
+      throw std::runtime_error("Reinitialisation of matrix failed");
     }
 
-    // Compute equilibrium equation
-    this->compute_equilibrium_equation(phase);
+    // Assemble equilibrium equation
+    this->assemble_system_equation(phase);
 
     // Check convergence of residual
     bool convergence = false;
@@ -183,9 +183,12 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
     // Newton-Raphson iteration
     current_iteration_ = 0;
-    while (!convergence && current_iteration_ < max_iteration_) {
+    while (!convergence && current_iteration_ <= max_iteration_) {
+      // Initialisation of Newton-Raphson iteration
+      this->initialise_newton_raphson_iteration();
+
       // Solve equilibrium equation
-      this->solve_equilibrium_equation(phase);
+      this->solve_system_equation(phase);
 
       // Update nodal kinematics -- Corrector step of Newmark scheme
       mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
@@ -194,42 +197,31 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       // Update stress and strain
       mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
 
-      // Check convergence of solution (displacement increment)
-      convergence =
-          assembler_->check_solution_convergence(displacement_tolerance_);
+      if (nonlinear_) {
+        // Check convergence of solution (displacement increment)
+        convergence =
+            assembler_->check_solution_convergence(displacement_tolerance_);
 
-      current_iteration_++;
-      if (mpi_rank == 0) {
-        if (verbosity_ > 0)
-          console_->info("Newton-Raphson iteration: {} of {}.\n",
-                         current_iteration_, max_iteration_);
         if (verbosity_ == 2)
           console_->info("Displacment increment norm: {}.\n",
                          assembler_->solution_norm());
-      }
-      if (convergence) break;
+        if (convergence) break;
 
-      // Compute equilibrium equation
-      this->compute_equilibrium_equation(phase);
+        // Reinitialise equilibrium equation
+        this->reinitialise_system_equation();
 
-      // Check convergence of residual
-      convergence = assembler_->check_residual_convergence(
-          false, residual_tolerance_, relative_residual_tolerance_);
+        // Assemble equilibrium equation
+        this->assemble_system_equation(phase);
 
-      if (mpi_rank == 0) {
+        // Check convergence of residual
+        convergence = assembler_->check_residual_convergence(
+            false, residual_tolerance_, relative_residual_tolerance_);
+
         if (verbosity_ == 2) {
           console_->info("Residual norm: {}.\n", assembler_->residual_norm());
           console_->info("Relative residual norm: {}.\n",
                          assembler_->relative_residual_norm());
         }
-      }
-    }
-
-    if (mpi_rank == 0 && verbosity_ > 0) {
-      if (convergence) {
-        console_->info("Newton-Raphson iteration has converged.\n");
-      } else {
-        console_->info("Newton-Raphson iteration has diverged.\n");
       }
     }
 
@@ -322,8 +314,8 @@ bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
       //         console_->warn(
       //             "The linear solver in MPI setting is automatically set to
       //             default: "
-      //             "\'KrylovPETSC\'. Only \'KrylovPETSC\' solver is supported
-      //             for " "MPI.");
+      //             "\'KrylovPETSC\'. Only \'KrylovPETSC\' solver is
+      //             supported for " "MPI.");
       //         solver_type = "KrylovPETSC";
       //       }
       // #endif
@@ -351,10 +343,9 @@ bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
   return status;
 }
 
-// Initialise nodal indices at the beginning of every time step
+// Reinitialise and resize matrices at the beginning of every time step
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::initialise_nodal_indices() {
-
+bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
   bool status = true;
   try {
     // Assigning matrix id (in each MPI rank)
@@ -372,6 +363,11 @@ bool mpm::MPMImplicit<Tdim>::initialise_nodal_indices() {
     // Assign displacement constraints
     assembler_->assign_displacement_constraints(this->step_ * this->dt_);
 
+    // Initialise element matrix
+    mesh_->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                  std::placeholders::_1));
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -379,17 +375,25 @@ bool mpm::MPMImplicit<Tdim>::initialise_nodal_indices() {
   return status;
 }
 
-// Compute equilibrium equation
+// Reinitialise equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation(
-    const unsigned phase) {
+void mpm::MPMImplicit<Tdim>::reinitialise_system_equation() {
+  // Initialise element matrix
+  mesh_->iterate_over_cells(
+      std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                std::placeholders::_1));
+
+  // Initialise nodal forces
+  mesh_->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Tdim>::initialise_force, std::placeholders::_1),
+      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+}
+
+// Assemble equilibrium equation
+template <unsigned Tdim>
+bool mpm::MPMImplicit<Tdim>::assemble_system_equation(const unsigned phase) {
   bool status = true;
   try {
-    // Initialise element matrix
-    mesh_->iterate_over_cells(
-        std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
-                  std::placeholders::_1));
-
     // Compute local cell stiffness matrices
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::map_material_stiffness_matrix_to_cell,
@@ -400,12 +404,6 @@ bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation(
 
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();
-
-    // Initialise nodal forces
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::initialise_force,
-                  std::placeholders::_1),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
     // Compute local residual force
     mpm_scheme_->compute_forces(gravity_, phase, step_,
@@ -445,7 +443,7 @@ bool mpm::MPMImplicit<Tdim>::compute_equilibrium_equation(
 
 // Solve equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::solve_equilibrium_equation(const unsigned phase) {
+bool mpm::MPMImplicit<Tdim>::solve_system_equation(const unsigned phase) {
   bool status = true;
   try {
     // Solve matrix equation and assign solution to assembler
@@ -466,4 +464,14 @@ bool mpm::MPMImplicit<Tdim>::solve_equilibrium_equation(const unsigned phase) {
     status = false;
   }
   return status;
+}
+
+// Initialisation of Newton-Raphson iteration
+template <unsigned Tdim>
+void mpm::MPMImplicit<Tdim>::initialise_newton_raphson_iteration() {
+  current_iteration_++;
+  // if (mpi_rank == 0 && verbosity_ > 0 && nonlinear_)
+  if (verbosity_ > 0 && nonlinear_)
+    console_->info("Newton-Raphson iteration: {} of {}.\n", current_iteration_,
+                   max_iteration_);
 }

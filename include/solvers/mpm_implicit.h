@@ -35,17 +35,25 @@ class MPMImplicit : public MPMBase<Tdim> {
   //! \ingroup Implicit
   bool initialise_matrix();
 
-  //! Initialise nodal indices
+  //! Initialise matrix
   //! \ingroup Implicit
-  bool initialise_nodal_indices();
+  bool reinitialise_matrix();
 
-  //! Compute equilibrium equation
+  //! Reinitialise equilibrium equation
   //! \ingroup Implicit
-  bool compute_equilibrium_equation(const unsigned phase);
+  void reinitialise_system_equation();
+
+  //! Assemble equilibrium equation
+  //! \ingroup Implicit
+  bool assemble_system_equation(const unsigned phase);
 
   //! Solve equilibrium equation
   //! \ingroup Implicit
-  bool solve_equilibrium_equation(const unsigned phase);
+  bool solve_system_equation(const unsigned phase);
+
+  //! Initialisation of Newton-Raphson iteration
+  //! \ingroup Implicit
+  void initialise_newton_raphson_iteration();
   /**@}*/
 
   //! Class private variables
@@ -105,6 +113,8 @@ class MPMImplicit : public MPMBase<Tdim> {
    * \defgroup ImplicitVariables Variables dealing with implicit MPM
    */
   /**@{*/
+  //! Boolean of nonlinear analysis
+  bool nonlinear_{true};
   //! Parameter beta of Newmark scheme
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme

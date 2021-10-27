@@ -365,6 +365,12 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   void map_inertial_force() noexcept override;
 
+  //! Assign acceleration to the particle (used for test)
+  //! \ingroup Implicit
+  //! \param[in] acceleration A vector of particle acceleration
+  //! \retval status Assignment status
+  bool assign_acceleration(const VectorDim& acceleration) override;
+
   //! Return acceleration of the particle
   //! \ingroup Implicit
   VectorDim acceleration() const override { return acceleration_; }
@@ -400,11 +406,6 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] velocity_update Update particle velocity from nodal vel
   void compute_updated_position_newmark(double dt) noexcept override;
 
-  //! Assign acceleration to the particle (used for test)
-  //! \ingroup Implicit
-  //! \param[in] acceleration A vector of particle acceleration
-  //! \retval status Assignment status
-  bool assign_acceleration(const VectorDim& acceleration) override;
   /**@}*/
 
  protected:

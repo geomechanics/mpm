@@ -717,14 +717,14 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
     for (unsigned i = 0; i < gravity_.size(); ++i) {
       gravity_[i] = loads.at("gravity").at(i);
     }
+
+    // Assign initial particle acceleration as gravity
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::assign_acceleration,
+                  std::placeholders::_1, gravity_));
   } else {
     throw std::runtime_error("Specified gravity dimension is invalid");
   }
-
-  // Assign initial particle acceleration as gravity
-  mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::assign_acceleration,
-                std::placeholders::_1, gravity_));
 
   // Create a file reader
   const std::string io_type =

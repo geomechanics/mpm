@@ -366,6 +366,12 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   void map_inertial_force() noexcept override;
 
+  //! Assign acceleration to the particle (used for test)
+  //! \ingroup Implicit
+  //! \param[in] acceleration A vector of particle acceleration
+  //! \retval status Assignment status
+  bool assign_acceleration(const VectorDim& acceleration) override;
+
   //! Return acceleration of the particle
   //! \ingroup Implicit
   VectorDim acceleration() const override { return acceleration_; }
@@ -408,12 +414,6 @@ class Particle : public ParticleBase<Tdim> {
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   void update_stress_strain() noexcept override;
-
-  //! Assign acceleration to the particle (used for test)
-  //! \ingroup Implicit
-  //! \param[in] acceleration A vector of particle acceleration
-  //! \retval status Assignment status
-  bool assign_acceleration(const VectorDim& acceleration) override;
   /**@}*/
 
  protected:

@@ -66,14 +66,14 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
   // Initialise MPI rank and size
   int mpi_rank = 0;
-  // int mpi_size = 1;
+  int mpi_size = 1;
 
-  // #ifdef USE_MPI
-  //   // Get MPI rank
-  //   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-  //   // Get number of MPI ranks
-  //   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
-  // #endif
+#ifdef USE_MPI
+  // Get MPI rank
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
 
   // Test if checkpoint resume is needed
   bool resume = false;
@@ -109,11 +109,11 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       this->mpi_domain_decompose(initial_step);
     } else {
       mesh_->resume_domain_cell_ranks();
-      // #ifdef USE_MPI
-      // #ifdef USE_GRAPH_PARTITIONING
-      //       MPI_Barrier(MPI_COMM_WORLD);
-      // #endif
-      // #endif
+#ifdef USE_MPI
+#ifdef USE_GRAPH_PARTITIONING
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+#endif
     }
     //! Particle entity sets and velocity constraints
     this->particle_entity_sets(false);
@@ -145,13 +145,13 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   for (; step_ < nsteps_; ++step_) {
     if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
 
-    // #ifdef USE_MPI
-    // #ifdef USE_GRAPH_PARTITIONING
-    //     // Run load balancer at a specified frequency
-    //     if (step_ % nload_balance_steps_ == 0 && step_ != 0)
-    //       this->mpi_domain_decompose(false);
-    // #endif
-    // #endif
+#ifdef USE_MPI
+#ifdef USE_GRAPH_PARTITIONING
+    // Run load balancer at a specified frequency
+    if (step_ % nload_balance_steps_ == 0 && step_ != 0)
+      this->mpi_domain_decompose(false);
+#endif
+#endif
 
     // Inject particles
     mesh_->inject_particles(step_ * dt_);
@@ -201,24 +201,24 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
       // Check convergence of Newton-Raphson iteration
       if (nonlinear_) {
-        convergence = check_newton_raphson_convergence();
+        convergence = this->check_newton_raphson_convergence();
       } else {
         convergence = true;
       }
 
       // Finalisation of Newton-Raphson iteration
-      if (convergence) finalise_newton_raphson_iteration();
+      if (convergence) this->finalise_newton_raphson_iteration();
     }
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
 
-    // #ifdef USE_MPI
-    // #ifdef USE_GRAPH_PARTITIONING
-    //     mesh_->transfer_halo_particles();
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    // #endif
-    // #endif
+#ifdef USE_MPI
+#ifdef USE_GRAPH_PARTITIONING
+    mesh_->transfer_halo_particles();
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+#endif
 
     if (step_ % output_steps_ == 0) {
       // HDF5 outputs
@@ -286,20 +286,19 @@ bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
       }
 
       // NOTE: Only KrylovPETSC solver is supported for MPI
-      // #ifdef USE_MPI
-      //       // Get number of MPI ranks
-      //       int mpi_size = 1;
-      //       MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#ifdef USE_MPI
+      // Get number of MPI ranks
+      int mpi_size = 1;
+      MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
-      //       if (solver_type != "KrylovPETSC" && mpi_size > 1) {
-      //         console_->warn(
-      //             "The linear solver in MPI setting is automatically set to
-      //             default: "
-      //             "\'KrylovPETSC\'. Only \'KrylovPETSC\' solver is
-      //             supported for " "MPI.");
-      //         solver_type = "KrylovPETSC";
-      //       }
-      // #endif
+      if (solver_type != "KrylovPETSC" && mpi_size > 1) {
+        console_->warn(
+            "The linear solver in MPI setting is automatically set to default: "
+            "\'KrylovPETSC\'. Only \'KrylovPETSC\' solver is supported for "
+            "MPI.");
+        solver_type = "KrylovPETSC";
+      }
+#endif
 
       // Create matrix solver
       auto lin_solver =
@@ -334,9 +333,9 @@ bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
 
     // Assigning matrix id globally (required for rank-to-global mapping)
     unsigned nglobal_active_node = nactive_node;
-    // #ifdef USE_MPI
-    //     nglobal_active_node = mesh_->assign_global_active_nodes_id();
-    // #endif
+#ifdef USE_MPI
+    nglobal_active_node = mesh_->assign_global_active_nodes_id();
+#endif
 
     // Assign global node indice
     assembler_->assign_global_node_indices(nactive_node, nglobal_active_node);
@@ -396,25 +395,6 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     // Apply displacement constraints
     assembler_->apply_displacement_constraints();
 
-    // #ifdef USE_MPI
-    //     // Assign global active dof to solver
-    //     linear_solver_["displacement"]->assign_global_active_dof(
-    //         Tdim * assembler_->global_active_dof());
-
-    //     // Prepare rank global mapper
-    //     std::vector<int> predictor_rgm;
-    //     for (unsigned dir = 0; dir < Tdim; ++dir) {
-    //       auto dir_rgm = assembler_->rank_global_mapper();
-    //       std::for_each(dir_rgm.begin(), dir_rgm.end(),
-    //                     [size = assembler_->global_active_dof(),
-    //                      dir = dir](int& rgm) { rgm += dir * size; });
-    //       predictor_rgm.insert(predictor_rgm.end(), dir_rgm.begin(),
-    //       dir_rgm.end());
-    //     }
-    //     // Assign rank global mapper to solver
-    //     linear_solver_["displacement"]->assign_rank_global_mapper(predictor_rgm);
-    // #endif
-
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -427,6 +407,28 @@ template <unsigned Tdim>
 bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
   bool status = true;
   try {
+    // Assign rank global mapper to solver (only necessary at the first
+    // iteration)
+    if (current_iteration_ == 1) {
+#ifdef USE_MPI
+      // Assign global active dof to solver
+      linear_solver_["displacement"]->assign_global_active_dof(
+          Tdim * assembler_->global_active_dof());
+
+      // Prepare rank global mapper
+      std::vector<int> matrix_rgm;
+      for (unsigned dir = 0; dir < Tdim; ++dir) {
+        auto dir_rgm = assembler_->rank_global_mapper();
+        std::for_each(dir_rgm.begin(), dir_rgm.end(),
+                      [size = assembler_->global_active_dof(),
+                       dir = dir](int& rgm) { rgm += dir * size; });
+        matrix_rgm.insert(matrix_rgm.end(), dir_rgm.begin(), dir_rgm.end());
+      }
+      // Assign rank global mapper to solver
+      linear_solver_["displacement"]->assign_rank_global_mapper(matrix_rgm);
+#endif
+    }
+
     // Solve matrix equation and assign solution to assembler
     assembler_->assign_displacement_increment(
         linear_solver_["displacement"]->solve(
@@ -450,10 +452,17 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
 // Initialisation of Newton-Raphson iteration
 template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::initialise_newton_raphson_iteration() {
+  // Initialise MPI rank
+  int mpi_rank = 0;
+#ifdef USE_MPI
+  // Get MPI rank
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+
+  // Advance iteration
   current_iteration_++;
-  // if (mpi_rank == 0 && verbosity_ > 0 && nonlinear_)
-  if (verbosity_ > 0 && nonlinear_)
-    console_->info("Newton-Raphson iteration: {} of {}.\n", current_iteration_,
+  if (mpi_rank == 0 && verbosity_ > 0 && nonlinear_)
+    console_->info("Newton-Raphson iteration: {} of {}.", current_iteration_,
                    max_iteration_);
 }
 

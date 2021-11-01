@@ -18,44 +18,42 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
   if (stress_update_ == "newmark") {
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(mesh_, dt_);
     // Read boolean of nonlinear analysis
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("nonlinear"))
-      nonlinear_ =
-          analysis_["scheme_settings"].at("nonlinear").template get<bool>();
-    // Read parameters of Newmark scheme
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("beta"))
-      newmark_beta_ =
-          analysis_["scheme_settings"].at("beta").template get<double>();
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("gamma"))
-      newmark_gamma_ =
-          analysis_["scheme_settings"].at("gamma").template get<double>();
-    // Read parameters of Newton-Raphson interation
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("max_iteration"))
-      max_iteration_ = analysis_["scheme_settings"]
-                           .at("max_iteration")
-                           .template get<unsigned>();
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("displacement_tolerance"))
-      displacement_tolerance_ = analysis_["scheme_settings"]
-                                    .at("displacement_tolerance")
+    if (analysis_.contains("scheme_settings")) {
+      if (analysis_["scheme_settings"].contains("nonlinear"))
+        nonlinear_ =
+            analysis_["scheme_settings"].at("nonlinear").template get<bool>();
+      // Read parameters of Newmark scheme
+      if (analysis_["scheme_settings"].contains("beta"))
+        newmark_beta_ =
+            analysis_["scheme_settings"].at("beta").template get<double>();
+      if (analysis_["scheme_settings"].contains("gamma"))
+        newmark_gamma_ =
+            analysis_["scheme_settings"].at("gamma").template get<double>();
+      // Read parameters of Newton-Raphson interation
+      if (nonlinear_) {
+        if (analysis_["scheme_settings"].contains("max_iteration"))
+          max_iteration_ = analysis_["scheme_settings"]
+                               .at("max_iteration")
+                               .template get<unsigned>();
+        if (analysis_["scheme_settings"].contains("displacement_tolerance"))
+          displacement_tolerance_ = analysis_["scheme_settings"]
+                                        .at("displacement_tolerance")
+                                        .template get<double>();
+        if (analysis_["scheme_settings"].contains("residual_tolerance"))
+          residual_tolerance_ = analysis_["scheme_settings"]
+                                    .at("residual_tolerance")
                                     .template get<double>();
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("residual_tolerance"))
-      residual_tolerance_ = analysis_["scheme_settings"]
-                                .at("residual_tolerance")
-                                .template get<double>();
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("relative_residual_tolerance"))
-      relative_residual_tolerance_ = analysis_["scheme_settings"]
-                                         .at("relative_residual_tolerance")
-                                         .template get<double>();
-    if (analysis_.contains("scheme_settings") &&
-        analysis_["scheme_settings"].contains("verbosity"))
-      verbosity_ =
-          analysis_["scheme_settings"].at("verbosity").template get<unsigned>();
+        if (analysis_["scheme_settings"].contains(
+                "relative_residual_tolerance"))
+          relative_residual_tolerance_ = analysis_["scheme_settings"]
+                                             .at("relative_residual_tolerance")
+                                             .template get<double>();
+        if (analysis_["scheme_settings"].contains("verbosity"))
+          verbosity_ = analysis_["scheme_settings"]
+                           .at("verbosity")
+                           .template get<unsigned>();
+      }
+    }
   }
 }
 

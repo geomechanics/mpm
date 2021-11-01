@@ -160,30 +160,6 @@ class AssemblerBase {
         "Calling the base class function (check_solution_convergence) in "
         "AssemblerBase:: illegal operation!");
   };
-
-  //! Return solution norm
-  //! \ingroup Implicit
-  virtual double solution_norm() {
-    throw std::runtime_error(
-        "Calling the base class function (solution_norm) in "
-        "AssemblerBase:: illegal operation!");
-  }
-
-  //! Return residual norm
-  //! \ingroup Implicit
-  virtual double residual_norm() {
-    throw std::runtime_error(
-        "Calling the base class function (residual_norm) in "
-        "AssemblerBase:: illegal operation!");
-  }
-
-  //! Return relative residual norm
-  //! \ingroup Implicit
-  virtual double relative_residual_norm() {
-    throw std::runtime_error(
-        "Calling the base class function (relative_residual_norm) in "
-        "AssemblerBase:: illegal operation!");
-  }
   /**@{*/
 
   //! Navier-Stokes

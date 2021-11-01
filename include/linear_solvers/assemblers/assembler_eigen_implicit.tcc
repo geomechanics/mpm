@@ -179,7 +179,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
 
     // Perform norm computation: using PETSC Vector for parallel case
     if (mpi_size > 1) {
-#ifdef USE_MPI
+#if USE_PETSC
       // Prepare rank global mapper
       std::vector<int> vector_rgm;
       for (unsigned dir = 0; dir < Tdim; ++dir) {
@@ -255,7 +255,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_solution_convergence(
 
     // Perform norm computation: using PETSC Vector for parallel case
     if (mpi_size > 1) {
-#ifdef USE_MPI
+#if USE_PETSC
       // Prepare rank global mapper
       std::vector<int> vector_rgm;
       for (unsigned dir = 0; dir < Tdim; ++dir) {

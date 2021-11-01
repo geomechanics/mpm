@@ -10,6 +10,12 @@
 
 #include "mesh.h"
 
+// For residual check
+// TODO: To be removed when convergence criterion is refactored
+#ifdef USE_PETSC
+#include <petscksp.h>
+#endif
+
 namespace mpm {
 template <unsigned Tdim>
 class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
@@ -66,7 +72,7 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   //! Check residual convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   //! \param[in] initial Boolean to indentify 1st (true) iteration
-  //! \param[in] verbosiby Verbosity
+  //! \param[in] verbosity Verbosity
   //! \param[in] residual_tolerance Residual norm tolerance
   //! \param[in] relative_residual_tolerance Relative residual norm tolerance
   virtual bool check_residual_convergence(
@@ -75,7 +81,7 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
 
   //! Check solution convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  //! \param[in] verbosiby Verbosity
+  //! \param[in] verbosity Verbosity
   //! \param[in] solution_tolerance Solution norm tolerance
   virtual bool check_solution_convergence(unsigned verbosity,
                                           double solution_tolerance) override;
@@ -101,7 +107,7 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   //! Displacement increment
   Eigen::VectorXd displacement_increment_;
   //! Displacement increment norm
-  double displacement_increment_norm_;
+  double disp_increment_norm_;
   //! Initial residual norm of each time step
   double initial_residual_norm_;
   //! Residual norm

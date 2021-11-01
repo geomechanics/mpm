@@ -159,14 +159,61 @@ void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
 }
 
 // Check residual convergence of Newton-Raphson iteration
+// TODO: This function should be moved to a separate class
 template <unsigned Tdim>
 bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
     bool initial, unsigned verbosity, double residual_tolerance,
     double relative_residual_tolerance) {
   bool convergence = false;
   try {
-    // Residual force vector norm
-    residual_norm_ = residual_force_rhs_vector_.norm();
+    // Check mpi rank and size
+    int mpi_rank = 0;
+    int mpi_size = 1;
+
+#ifdef USE_MPI
+    // Get MPI rank
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    // Get number of MPI ranks
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+    // Perform norm computation: using PETSC Vector for parallel case
+    if (mpi_size > 1) {
+#ifdef USE_MPI
+      // Prepare rank global mapper
+      std::vector<int> vector_rgm;
+      for (unsigned dir = 0; dir < Tdim; ++dir) {
+        auto dir_rgm = this->rank_global_mapper_;
+        std::for_each(dir_rgm.begin(), dir_rgm.end(),
+                      [size = this->global_active_dof_, dir = dir](int& rgm) {
+                        rgm += dir * size;
+                      });
+        vector_rgm.insert(vector_rgm.end(), dir_rgm.begin(), dir_rgm.end());
+      }
+
+      // Initiate PETSC residual vector across the ranks
+      Vec petsc_res;
+      VecCreateMPI(MPI_COMM_WORLD, PETSC_DECIDE,
+                   Tdim * this->global_active_dof_, &petsc_res);
+
+      // Copying local residual vector to petsc vector
+      VecSetValues(petsc_res, vector_rgm.size(), vector_rgm.data(),
+                   residual_force_rhs_vector_.data(), ADD_VALUES);
+      VecAssemblyBegin(petsc_res);
+      VecAssemblyEnd(petsc_res);
+
+      // Compute PETSC Vector norm in all rank
+      PetscScalar res_norm;
+      VecNorm(petsc_res, NORM_2, &res_norm);
+      residual_norm_ = res_norm;
+
+      // Destroy vector
+      VecDestroy(&petsc_res);
+#endif
+    } else {
+      residual_norm_ = residual_force_rhs_vector_.norm();
+    }
+
     // Save if this is the initial iteration
     if (initial) initial_residual_norm_ = residual_norm_;
 
@@ -174,15 +221,13 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
     if (residual_norm_ < residual_tolerance) convergence = true;
 
     // Convergence check with relative residual norm
-    if (!convergence) {
-      relative_residual_norm_ = residual_norm_ / initial_residual_norm_;
-      if (relative_residual_norm_ < relative_residual_tolerance)
-        convergence = true;
-    }
+    relative_residual_norm_ = residual_norm_ / initial_residual_norm_;
+    if (relative_residual_norm_ < relative_residual_tolerance)
+      convergence = true;
 
-    if (verbosity == 2) {
-      console_->info("Residual norm: {}.\n", residual_norm_);
-      console_->info("Relative residual norm: {}.\n", relative_residual_norm_);
+    if (mpi_rank == 0 && verbosity == 2) {
+      console_->info("Residual norm: {}.", residual_norm_);
+      console_->info("Relative residual norm: {}.", relative_residual_norm_);
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -191,20 +236,65 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
 }
 
 // Check solution convergence of Newton-Raphson iteration
+// TODO: This function should be moved to a separate class
 template <unsigned Tdim>
 bool mpm::AssemblerEigenImplicit<Tdim>::check_solution_convergence(
     unsigned verbosity, double solution_tolerance) {
   bool convergence = false;
   try {
-    // Displacement increment norm
-    displacement_increment_norm_ = displacement_increment_.norm();
+    // Check mpi rank and size
+    int mpi_rank = 0;
+    int mpi_size = 1;
+
+#ifdef USE_MPI
+    // Get MPI rank
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    // Get number of MPI ranks
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+    // Perform norm computation: using PETSC Vector for parallel case
+    if (mpi_size > 1) {
+#ifdef USE_MPI
+      // Prepare rank global mapper
+      std::vector<int> vector_rgm;
+      for (unsigned dir = 0; dir < Tdim; ++dir) {
+        auto dir_rgm = this->rank_global_mapper_;
+        std::for_each(dir_rgm.begin(), dir_rgm.end(),
+                      [size = this->global_active_dof_, dir = dir](int& rgm) {
+                        rgm += dir * size;
+                      });
+        vector_rgm.insert(vector_rgm.end(), dir_rgm.begin(), dir_rgm.end());
+      }
+
+      // Initiate PETSC solution vector across the ranks
+      Vec petsc_sol;
+      VecCreateMPI(MPI_COMM_WORLD, PETSC_DECIDE,
+                   Tdim * this->global_active_dof_, &petsc_sol);
+
+      // Copying local residual vector to petsc vector
+      VecSetValues(petsc_sol, vector_rgm.size(), vector_rgm.data(),
+                   displacement_increment_.data(), INSERT_VALUES);
+      VecAssemblyBegin(petsc_sol);
+      VecAssemblyEnd(petsc_sol);
+
+      // Compute PETSC Vector norm in all rank
+      PetscScalar sol_norm;
+      VecNorm(petsc_sol, NORM_2, &sol_norm);
+      disp_increment_norm_ = sol_norm;
+
+      // Destroy vector
+      VecDestroy(&petsc_sol);
+#endif
+    } else {
+      disp_increment_norm_ = displacement_increment_.norm();
+    }
 
     // Convergence check
-    if (displacement_increment_norm_ < solution_tolerance) convergence = true;
+    if (disp_increment_norm_ < solution_tolerance) convergence = true;
 
-    if (verbosity == 2)
-      console_->info("Displacment increment norm: {}.\n",
-                     displacement_increment_norm_);
+    if (mpi_rank == 0 && verbosity == 2)
+      console_->info("Displacement increment norm: {}.", disp_increment_norm_);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }

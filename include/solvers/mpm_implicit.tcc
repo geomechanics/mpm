@@ -182,7 +182,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     // Check convergence of residual
     bool convergence = false;
     convergence = assembler_->check_residual_convergence(
-        true, verbosity_, residual_tolerance_, relative_residual_tolerance_);
+        true, residual_tolerance_, relative_residual_tolerance_, verbosity_);
 
     // Iterations
     while (!convergence && current_iteration_ <= max_iteration_) {
@@ -471,8 +471,8 @@ template <unsigned Tdim>
 bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
   bool convergence;
   // Check convergence of solution (displacement increment)
-  convergence = assembler_->check_solution_convergence(verbosity_,
-                                                       displacement_tolerance_);
+  convergence = assembler_->check_solution_convergence(displacement_tolerance_,
+                                                       verbosity_);
 
   if (!convergence) {
     // Reinitialise equilibrium equation
@@ -483,7 +483,7 @@ bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
 
     // Check convergence of residual
     convergence = assembler_->check_residual_convergence(
-        false, verbosity_, residual_tolerance_, relative_residual_tolerance_);
+        false, residual_tolerance_, relative_residual_tolerance_, verbosity_);
   }
   return convergence;
 }

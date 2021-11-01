@@ -75,16 +75,17 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   //! \param[in] verbosity Verbosity
   //! \param[in] residual_tolerance Residual norm tolerance
   //! \param[in] relative_residual_tolerance Relative residual norm tolerance
-  virtual bool check_residual_convergence(
-      bool initial, unsigned verbosity, double residual_tolerance,
-      double relative_residual_tolerance) override;
+  virtual bool check_residual_convergence(bool initial,
+                                          double residual_tolerance,
+                                          double relative_residual_tolerance,
+                                          unsigned verbosity = 0) override;
 
   //! Check solution convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   //! \param[in] verbosity Verbosity
   //! \param[in] solution_tolerance Solution norm tolerance
-  virtual bool check_solution_convergence(unsigned verbosity,
-                                          double solution_tolerance) override;
+  virtual bool check_solution_convergence(double solution_tolerance,
+                                          unsigned verbosity = 0) override;
   /**@{*/
 
  protected:

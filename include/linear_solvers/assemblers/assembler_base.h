@@ -142,9 +142,10 @@ class AssemblerBase {
   //! \param[in] verbosiby Verbosity
   //! \param[in] residual_tolerance residual norm tolerance
   //! \param[in] relative_residual_tolerance relative residual norm tolerance
-  virtual bool check_residual_convergence(bool initial, unsigned verbosity,
+  virtual bool check_residual_convergence(bool initial,
                                           double residual_tolerance,
-                                          double relative_residual_tolerance) {
+                                          double relative_residual_tolerance,
+                                          unsigned verbosity = 0) {
     throw std::runtime_error(
         "Calling the base class function (check_residual_convergence) in "
         "AssemblerBase:: illegal operation!");
@@ -154,8 +155,8 @@ class AssemblerBase {
   //! \ingroup Implicit
   //! \param[in] verbosiby Verbosity
   //! \param[in] solution_tolerance solution norm tolerance
-  virtual bool check_solution_convergence(unsigned verbosity,
-                                          double solution_tolerance) {
+  virtual bool check_solution_convergence(double solution_tolerance,
+                                          unsigned verbosity = 0) {
     throw std::runtime_error(
         "Calling the base class function (check_solution_convergence) in "
         "AssemblerBase:: illegal operation!");

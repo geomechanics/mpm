@@ -162,8 +162,8 @@ void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
 // TODO: This function should be moved to a separate class
 template <unsigned Tdim>
 bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
-    bool initial, unsigned verbosity, double residual_tolerance,
-    double relative_residual_tolerance) {
+    bool initial, double residual_tolerance, double relative_residual_tolerance,
+    unsigned verbosity) {
   bool convergence = false;
   try {
     // Check mpi rank and size
@@ -239,7 +239,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::check_residual_convergence(
 // TODO: This function should be moved to a separate class
 template <unsigned Tdim>
 bool mpm::AssemblerEigenImplicit<Tdim>::check_solution_convergence(
-    unsigned verbosity, double solution_tolerance) {
+    double solution_tolerance, unsigned verbosity) {
   bool convergence = false;
   try {
     // Check mpi rank and size

@@ -10,8 +10,7 @@
 #include "node.h"
 
 // Check node class for 1D case
-TEST_CASE("Implicit Linear Node is checked for 1D case",
-          "[node][1D][Implicit]") {
+TEST_CASE("Implicit Node is checked for 1D case", "[node][1D][Implicit]") {
   const unsigned Dim = 1;
   const unsigned Dof = 1;
   const unsigned Nphases = 1;
@@ -170,8 +169,7 @@ TEST_CASE("Implicit Linear Node is checked for 1D case",
 }
 
 // \brief Check node class for 2D case
-TEST_CASE("Implicit Linear Node is checked for 2D case",
-          "[node][2D][Implicit]") {
+TEST_CASE("Implicit Node is checked for 2D case", "[node][2D][Implicit]") {
   const unsigned Dim = 2;
   const unsigned Dof = 2;
   const unsigned Nphases = 1;
@@ -336,8 +334,7 @@ TEST_CASE("Implicit Linear Node is checked for 2D case",
 }
 
 // \brief Check node class for 3D case
-TEST_CASE("Implicit Linear Node is checked for 3D case",
-          "[node][3D][Implicit]") {
+TEST_CASE("Implicit Node is checked for 3D case", "[node][3D][Implicit]") {
   const unsigned Dim = 3;
   const unsigned Dof = 3;
   const unsigned Nphases = 1;

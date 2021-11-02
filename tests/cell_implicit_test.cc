@@ -15,8 +15,7 @@
 #include "quadrilateral_quadrature.h"
 
 //! \brief Check cell class for 2D case
-TEST_CASE("Implicit Linear Cell is checked for 2D case",
-          "[cell][2D][Implicit]") {
+TEST_CASE("Implicit Cell is checked for 2D case", "[cell][2D][Implicit]") {
   // Dimension
   const unsigned Dim = 2;
   // Degrees of freedom
@@ -259,8 +258,7 @@ TEST_CASE("Implicit Linear Cell is checked for 2D case",
 }
 
 //! \brief Check cell class for 3D case
-TEST_CASE("Implicit Linear Cell is checked for 3D case",
-          "[cell][3D][Implicit]") {
+TEST_CASE("Implicit Cell is checked for 3D case", "[cell][3D][Implicit]") {
   // Dimension
   const unsigned Dim = 3;
   // Degrees of freedom

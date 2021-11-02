@@ -14,7 +14,7 @@
 #include "quadrilateral_element.h"
 
 //! \brief Check particle class for 2D case
-TEST_CASE("Implicit Linear Particle is checked for 2D case",
+TEST_CASE("Implicit Particle is checked for 2D case",
           "[particle][2D][Implicit]") {
   // Dimension
   const unsigned Dim = 2;
@@ -397,7 +397,7 @@ TEST_CASE("Implicit Linear Particle is checked for 2D case",
 }
 
 //! \brief Check particle class for 3D case
-TEST_CASE("Implicit Linear Particle is checked for 3D case",
+TEST_CASE("Implicit Particle is checked for 3D case",
           "[particle][3D][Implicit]") {
   // Dimension
   const unsigned Dim = 3;

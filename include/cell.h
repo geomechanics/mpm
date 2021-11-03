@@ -224,22 +224,23 @@ class Cell {
   //! Initialize discontinuity element properties
   void initialise_element_properties_discontinuity();
 
-  //! assign the normal direction of the discontinuity in the cell
+  //! Assign the normal direction of the discontinuity in the cell
   //! \param[in] the normal direction
   void assign_normal_discontinuity(VectorDim normal);
 
-  //! assign the constant parameters of the discontinuity in the cell
+  //! Assign the constant parameters of the discontinuity in the cell
   //! \param[in] the constant parameters
   void assign_d_discontinuity(double d) {
     this->discontinuity_element_->assign_d(d);
   };
 
-  //! assign the normal direction of the discontinuity in the cell
+  //! Assign the normal direction of the discontinuity in the cell
   //! \param[in] the normal direction
   //! \param[in] the plane constant
   void assign_normal_discontinuity(VectorDim normal, double d);
 
-  //! return the normal direction of the discontinuity in the cell
+  //! Return the normal direction of the discontinuity in the cell
+  //! \retval the normal direction of the discontinuity
   VectorDim normal_discontinuity() {
     return discontinuity_element_->normal_discontinuity();
   };
@@ -247,44 +248,47 @@ class Cell {
   //! Return discontinuity element type
   unsigned element_type_discontinuity();
 
-  //! potential tip element
+  //! Find the potential tip element
   void potential_tip_element();
 
-  //! determine tip element
+  //! Determine tip element
   void tip_element();
 
-  //! compute normal vector of discontinuity by the nodal level set values
+  //! Compute normal vector of discontinuity by the nodal level set values
   void compute_normal_vector_discontinuity();
 
-  //! compute gradient of the nodal level set values
-  VectorDim compute_gradient_levelset();
-
-  //! compute the discontinuity plane by the nodal level set values
-  //! \param[in] from the enriched nodes
+  //! Compute the discontinuity plane by the nodal level set values
+  //! \param[in] true: compute by the enriched nodes
   void compute_plane_discontinuity(bool enrich);
 
-  //! update nodal nodal level set
+  //! Compute the discontinuity point: the average coordinates of the
+  //! intersection points \param[in] mark points list
   void compute_discontinuity_point(std::vector<VectorDim>& coordinates);
 
-  // product of the nodal level set value
+  //! Return the product of the maximum and minimum nodal level set value
+  //! \retval the product of the maximum and minimum nodal level set value
   double product_levelset();
 
-  // return the constant value of the discontinuity plane
+  //! Return the constant value of the discontinuity plane
   double d_discontinuity() {
     return this->discontinuity_element_->d_discontinuity();
   }
-  // determine the celltype by the nodal level set
+
+  //! Determine the celltype by the nodal level set
   void determine_crossed();
 
-  // compute the nodal level set values by plane equations
+  //! Compute the nodal level set values by plane equations
   void compute_nodal_levelset_equation();
 
-  // compute the area of the crossed cell
+  //! Compute the area of the discontinuity
   void compute_area_discontinuity();
 
+  //! Return the area of the discontinuity
   double discontinuity_area() { return this->discontinuity_element_->area(); }
 
+  //! Assign the area of the discontinuity to nodes
   void assign_cohesion_area();
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -556,8 +560,8 @@ class Cell {
 }  // namespace mpm
 
 #include "cell.tcc"
-#include "cell_xmpm.tcc"
 #include "cell_implicit.tcc"
 #include "cell_multiphase.tcc"
+#include "cell_xmpm.tcc"
 
 #endif  // MPM_CELL_H_

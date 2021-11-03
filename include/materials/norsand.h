@@ -55,24 +55,6 @@ class NorSand : public Material<Tdim> {
   Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
                           const ParticleBase<Tdim>* ptr,
                           mpm::dense_map* state_vars) override;
-  //！ return Plastic stiffness matrix
-  //! \param[in] stress Stress
-  //! \param[in] state_vars History-dependent state variables
-  //! \param[in] the yield status
-  virtual Matrix6x6 dp(const Vector6d& stress, mpm::dense_map* state_vars,
-                       bool& status) {
-    //-------------------------------------------------------------------------
-    // Compute yield function based on the stress
-    double yield_function;
-    auto yield_type =
-        this->compute_yield_state(&yield_function, stress, state_vars);
-    // Return the updated stress in elastic state
-    if (yield_type == mpm::norsand::FailureState::Elastic) {
-      status = false;
-    }
-    compute_plastic_tensor(stress, state_vars);
-    return dp_;
-  }
 
  protected:
   //! material id

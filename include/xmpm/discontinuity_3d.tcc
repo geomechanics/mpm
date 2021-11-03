@@ -4,7 +4,7 @@ mpm::Discontinuity3D<Tdim>::Discontinuity3D(const Json& discontinuity_props)
 
 // initialization
 template <unsigned Tdim>
-bool mpm::Discontinuity3D<Tdim>::initialize(
+bool mpm::Discontinuity3D<Tdim>::initialise(
     const std::vector<VectorDim>& points,
     const std::vector<std::vector<mpm::Index>>& surfs) {
   bool status = true;
@@ -23,7 +23,7 @@ bool mpm::Discontinuity3D<Tdim>::initialize(
         "Addition of surfaces in discontinuity to mesh failed");
   }
 
-  bool normal_status = initialize_center_normal();
+  bool normal_status = initialise_center_normal();
   if (!normal_status) {
     status = false;
     throw std::runtime_error(
@@ -35,7 +35,7 @@ bool mpm::Discontinuity3D<Tdim>::initialize(
   return status;
 };
 
-//! create surfaces from file
+//! Create surfaces from file
 template <unsigned Tdim>
 bool mpm::Discontinuity3D<Tdim>::create_surfaces(
     const std::vector<std::vector<mpm::Index>>& surfs) {
@@ -58,9 +58,9 @@ bool mpm::Discontinuity3D<Tdim>::create_surfaces(
   return status;
 }
 
-// initialize the center and normal of the surfaces
+//! Initialize the center and normal of the surfaces
 template <>
-bool mpm::Discontinuity3D<3>::initialize_center_normal() {
+bool mpm::Discontinuity3D<3>::initialise_center_normal() {
   bool status = true;
   try {
     VectorDim center;
@@ -97,7 +97,7 @@ bool mpm::Discontinuity3D<3>::initialize_center_normal() {
   return status;
 }
 
-// return the cross product of ab X bc
+//! Return the cross product of ab X bc
 template <unsigned Tdim>
 Eigen::Matrix<double, Tdim, 1> mpm::Discontinuity3D<Tdim>::three_cross_product(
     const VectorDim& a, const VectorDim& b, const VectorDim& c) {
@@ -108,7 +108,7 @@ Eigen::Matrix<double, Tdim, 1> mpm::Discontinuity3D<Tdim>::three_cross_product(
   return threecross;
 }
 
-// return the levelset values of each coordinates
+//! Return the levelset values of each coordinates
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
                                                   double& phi_particle) {
@@ -131,7 +131,7 @@ void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
     phi_particle = 0;
 }
 
-// return the normal vectors of given coordinates
+//! Return the normal vectors of given coordinates
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::compute_normal(const VectorDim& coordinates,
                                                 VectorDim& normal_vector) {
@@ -153,11 +153,11 @@ void mpm::Discontinuity3D<Tdim>::assign_point_friction_coef() noexcept {
   for (auto& point : points_) point.assign_friction_coef(friction_coef_);
 }
 
-// Compute updated position of the particle
+//! Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::compute_updated_position(double dt) noexcept {
   for (auto& point : this->points_)
     point.compute_updated_position(dt, move_direction_);
 
-  initialize_center_normal();
+  initialise_center_normal();
 }

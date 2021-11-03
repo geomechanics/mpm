@@ -351,9 +351,6 @@ class ParticleBase {
   //! \param[in] phivalue Signed distance function
   virtual void assign_levelsetphi(double phivalue){};
 
-  //! Compute the principal stress and strain
-  virtual void compute_principal_stress_strain(){};
-
   //! Map particle volume to nodes
   virtual void map_volume_to_nodes() noexcept = 0;
 
@@ -361,22 +358,26 @@ class ParticleBase {
   virtual void map_levelset_to_nodes(){};
 
   //! Map particle frictional_coef to nodes
+  //! \param[in] the default friction coefficient
   virtual void map_friction_coef_to_nodes(double discontinuity_friction_coef){};
 
   //! Map levelset from nodes to particles
   virtual void map_levelset_to_particle(){};
 
-  //! Compute dudx
+  //! Compute displacement
   //! \param[in] dt Analysis time step
   virtual void compute_dudx(double dt){};
 
-  //   virtual void check_levelset(){};
+  //! to do
+  //! virtual void check_levelset(){};
 
   //! return levelset values
   virtual double levelset_phi() { return 0; }
 
   //! compute the minimum eigenvalue of the acoustic tensor
-  //! \param[in] the normal direction of the discontinuity
+  //! \param[in] the normal direction of the previous discontinuity
+  //! \param[in] do the initiation detection loop
+  //! \retval whether initiate or propagate
   virtual bool minimum_acoustic_tensor(VectorDim& normal_cell,
                                        bool initiation) {
     return false;

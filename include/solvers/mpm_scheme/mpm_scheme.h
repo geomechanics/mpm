@@ -78,7 +78,9 @@ class MPMScheme {
   //! Stress update scheme
   //! \retval scheme Stress update scheme
   virtual inline std::string scheme() const = 0;
-  //! Time increment
+
+  //! Assign time increment
+  //! \param[in] the time increment
   void assign_dt(double dt) { dt_ = dt; };
 
   /**

@@ -806,7 +806,6 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
     }
     // Assign traction
     traction_(direction) = traction * this->volume_ / this->size_(direction);
-    traction_(direction) = traction;
     status = true;
     this->set_traction_ = true;
   } catch (std::exception& exception) {

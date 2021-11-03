@@ -428,10 +428,6 @@ class Mesh {
 
   //! Read HDF5 particles for singlephase particle
   //! \param[in] filename Name of HDF5 file to write particles data
-  //! \param[in] particle type of HDF5 file to generate particles class
-  //! \retval status Status of reading HDF5 output
-  bool read_particles_hdf5(unsigned phase, const std::string& filename,
-                           const std::string& particle_type);
   //! \param[in] particle_type Particle type to be generated
   //! \retval status Status of reading HDF5 output
   bool read_particles_hdf5(const std::string& filename,
@@ -505,7 +501,7 @@ class Mesh {
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
 
-  // Create the nodal properties' map for discontinuity
+  //! Create the nodal properties' map for discontinuity
   void create_nodal_properties_discontinuity();
 
   //! Initialise discontinuity
@@ -531,47 +527,51 @@ class Mesh {
   //! compute the normal vector of enriched nodes at the discontinuity
   void compute_nodal_normal_vector_discontinuity();
 
-  //! Initialise the level set function values
+  //! Initialize the level set function values
   void initialise_levelset_discontinuity();
 
-  //! Initialise the nodal level set function values
+  //! Initialize the nodal level set function values
   void initialise_nodal_levelset_discontinuity();
 
-  //! solve nodal levelset values
-  void update_node_levelset();
-
-  // discontinuity growth
+  //! The evolution of the discontinuity
   void update_discontinuity();
 
-  // find next tip element
+  //! Find next tip element
   void next_tip_element_discontinuity();
-  // Initialise the cells in node
+
+  // Initialize the cells in node
   void add_cell_in_node();
 
-  //! remove spurious potential tip element
+  //! Remove spurious potential tip element
   void spurious_potential_tip_element();
 
-  // assign_node_enrich
+  //! Assign node type as enrich
+  //! \param[in] whether use the average value of the surrounding particle
+  //! friction angle \param[in] whether enrich all the nodes
   void assign_node_enrich(bool friction_coef_average, bool enrich_all);
 
-  // update_node_enrich
+  //! Find all the nodes need to enriched
   void update_node_enrich();
-  // the initiation of discontinuity
+
+  //! The initiation of discontinuity
   bool initiation_discontinuity();
-  // modify the nodal levelset_phi by mls
+
+  //! Adjust the nodal levelset_phi by mls
   void modify_nodal_levelset_mls();
 
+  //! Compute the distance between two sides of discontinuity
   void selfcontact_detection();
 
+  //! code for debugging added by yliang start-------------------------------
   void output_discontinuity(int step) {
     this->discontinuity_->output_markpoints(step);
   };
   void output_celltype(int step);
-
   void define_levelset();
+  //! code for debugging added by yliang end---------------------------------
 
-  void output_surface();
-
+  //! Assign the level set values to the particles which just enter the crossed
+  //! cell
   void check_particle_levelset(bool particle_levelset);
   /**
    * \defgroup MultiPhase Functions dealing with multi-phase MPM
@@ -743,7 +743,7 @@ class Mesh {
 }  // namespace mpm
 
 #include "mesh.tcc"
-#include "mesh_xmpm.tcc"
 #include "mesh_multiphase.tcc"
+#include "mesh_xmpm.tcc"
 
 #endif  // MPM_MESH_H_

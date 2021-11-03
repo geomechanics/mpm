@@ -234,7 +234,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       {
         mesh_->iterate_over_cells(
             std::bind(&mpm::Cell<Tdim>::tip_element, std::placeholders::_1));
-        // mesh_->update_node_enrich(friction_coef_average_);
       }
 
       // mesh_->output_celltype(step_);
@@ -387,7 +386,7 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
             Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
 
         // Create points and cells from file
-        discontinuity->initialize(
+        discontinuity->initialise(
             discontunity_io->read_mesh_nodes(discontinuity_file),
             discontunity_io->read_mesh_cells(discontinuity_file));
       } else if (discontinuity_props.contains("particle_levelset")) {

@@ -468,9 +468,9 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   return updated_stress;
 }
 
-//！ compute the acoustic tensor
+//！ Compute the elastic plastic tensor
 template <unsigned Tdim>
-bool mpm::MohrCoulomb<Tdim>::compute_plastic_tensor(
+bool mpm::MohrCoulomb<Tdim>::compute_elastic_plastic_tensor(
     const Vector6d& stress, mpm::dense_map* state_vars) {
   //-------------------------------------------------------------------------
   // Compute yield function based on the stress

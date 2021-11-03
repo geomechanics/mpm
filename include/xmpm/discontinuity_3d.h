@@ -17,31 +17,32 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   //! \param[in] discontinuity_props discontinuity properties
   Discontinuity3D(const Json& discontinuity_props);
 
-  //! initialization
+  //! Initialization
   //! \param[in] the coordinates of all points
   //! \param[in] the point index of each surface
-  virtual bool initialize(const std::vector<VectorDim>& points,
+  virtual bool initialise(const std::vector<VectorDim>& points,
                           const std::vector<std::vector<mpm::Index>>& surfs);
-  //! create elements from file
+  //! Create elements from file
   //! \param[in] surfs the point index list of each surface
   virtual bool create_surfaces(
       const std::vector<std::vector<mpm::Index>>& surfs) override;
 
-  //! initialize the center and normal vector of each surface
-  bool initialize_center_normal();
+  //! Initialize the center and normal vector of each surface
+  bool initialise_center_normal();
 
-  //! return the cross product of ab and bc
+  //! Return the cross product of ab and bc
   //! \param[in] a,b,c coordinates of three points
+  //! \retval the cross product of ab and bc
   VectorDim three_cross_product(const VectorDim& a, const VectorDim& b,
                                 const VectorDim& c);
 
-  // return the levelset values of each coordinates
+  // Return the levelset values of each coordinates
   //! \param[in] coordinates coordinates
   //! \param[in] phi_list the reference of phi for all coordinates
   void compute_levelset(const VectorDim& coordinates,
                         double& phi_particle) override;
 
-  //! compute the normal vectors of coordinates
+  //! Compute the normal vectors of coordinates
   //! \param[in] coordinates The coordinates
   //! \param[in] normal vector the normal vector of the given coordinates
   void compute_normal(const VectorDim& coordinates,
@@ -55,19 +56,19 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   void compute_updated_position(const double dt) noexcept;
 
  protected:
-  //! vector of points
+  //! Vector of points
   using mpm::DiscontinuityBase<Tdim>::points_;
   //! Logger
   using mpm::DiscontinuityBase<Tdim>::console_;
-  //! friction coefficient
+  //! Friction coefficient
   using mpm::DiscontinuityBase<Tdim>::friction_coef_;
-  //! width
+  //! Width
   using mpm::DiscontinuityBase<Tdim>::width_;
-
+  //! The mark points move with which side
   using mpm::DiscontinuityBase<Tdim>::move_direction_;
 
  private:
-  // vector of surfaces
+  //! Vector of surfaces
   std::vector<discontinuity_surface<Tdim>> surfaces_;
 };
 

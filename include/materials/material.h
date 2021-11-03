@@ -78,16 +78,19 @@ class Material {
                                   const ParticleBase<Tdim>* ptr,
                                   mpm::dense_map* state_vars) = 0;
 
-  //！ return Plastic stiffness matrix
+  //！ Return Elastic-Plastic stiffness matrix
   //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
   //! \param[in] the yield status
+  //! \retval dp_ Elastic-Plastic stiffness matrix
   virtual Matrix6x6 dp(const Vector6d& stress, mpm::dense_map* state_vars,
                        bool& status) {
     return Matrix6x6::Zero();
   }
-  //！ return Elastic stiffness matrix
+  //！ Return Elastic stiffness matrix
+  //! \retval de_ Elastic stiffness matrix
   virtual Matrix6x6 de() { return Matrix6x6::Zero(); }
+
   //! Compute constitutive relations matrix
   //! \ingroup Implicit
   //! \param[in] stress Stress

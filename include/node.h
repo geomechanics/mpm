@@ -297,10 +297,11 @@ class Node : public NodeBase<Tdim> {
   void compute_multimaterial_normal_unit_vector() override;
 
   //! Assign whether the node is enriched
-  //! \param[in] discontinuity discontinuity_enrich: true or false
+  //! \param[in] discontinuity_enrich_: true or false
   void assign_discontinuity_enrich(bool discontinuity) {
     discontinuity_enrich_ = discontinuity;
   };
+
   //! Return whether the node is enriched
   bool discontinuity_enrich() const { return discontinuity_enrich_; };
 
@@ -326,9 +327,9 @@ class Node : public NodeBase<Tdim> {
                                      unsigned discontinuity_id,
                                      unsigned nprops) noexcept;
 
-  // Return data in the nodal discontinuity properties map at a specific index
-  // \param[in] property Property name
-  // \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  //! Return data in the nodal discontinuity properties map at a specific index
+  //! \param[in] property Property name
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
   Eigen::MatrixXd discontinuity_property(const std::string& property,
                                          unsigned nprops = 1) noexcept override;
 
@@ -342,10 +343,10 @@ class Node : public NodeBase<Tdim> {
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
   //! \param[in] damping_factor Damping factor
-  virtual bool compute_momentum_discontinuity_cundall(
+  bool compute_momentum_discontinuity_cundall(
       unsigned phase, double dt, double damping_factor) noexcept override;
 
-  //! Apply self-contact of the discontinuity
+  //! Apply self-contact force of the discontinuity
   //! \param[in] dt Time-step
   void self_contact_discontinuity(double dt) noexcept override;
 
@@ -354,14 +355,13 @@ class Node : public NodeBase<Tdim> {
     return discontinuity_prop_id_;
   };
 
-  //! update the nodal levelset values
-  void update_levelset() noexcept override;
-
   //! Add a cell id
   void add_cell_id(Index id) noexcept override;
 
-  //! Return cells_
+  //! Return  connected cells
+  //! \retval cells_ connected cells
   std::vector<Index> cells() const { return cells_; }
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -701,8 +701,8 @@ class Node : public NodeBase<Tdim> {
 }  // namespace mpm
 
 #include "node.tcc"
-#include "node_xmpm.tcc"
 #include "node_implicit.tcc"
 #include "node_multiphase.tcc"
+#include "node_xmpm.tcc"
 
 #endif  // MPM_NODE_H_

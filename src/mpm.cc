@@ -4,11 +4,11 @@
 #include "io.h"
 #include "mpm.h"
 #include "mpm_explicit.h"
-#include "xmpm_explicit.h"
 #include "mpm_explicit_twophase.h"
 #include "mpm_implicit_linear.h"
 #include "mpm_semi_implicit_navierstokes.h"
 #include "mpm_semi_implicit_twophase.h"
+#include "xmpm_explicit.h"
 
 namespace mpm {
 // 2D Explicit MPM

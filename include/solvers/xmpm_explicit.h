@@ -11,8 +11,8 @@
 namespace mpm {
 
 //! XMPMExplicit class
-//! \brief A class that implements the fully explicit one phase mpm
-//! \details A single-phase explicit MPM
+//! \brief A class that implements the fully explicit one phase xmpm
+//! \details A single-phase explicit XMPM
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
 class XMPMExplicit : public MPMBase<Tdim> {
@@ -92,21 +92,21 @@ class XMPMExplicit : public MPMBase<Tdim> {
   bool pressure_smoothing_{false};
   //! Interface
   bool interface_{false};
-  //! discontinuities statue
+  //! With or without discontinuities
   bool setdiscontinuity_{false};
-  //! discontinuities
+  //! Discontinuities
   std::shared_ptr<mpm::DiscontinuityBase<Tdim>> discontinuity_;
-
+  //! Describe a discontinuity by mesh
   bool surfacemesh_{false};
-
+  //! Initialize the discontinuity by level set values
   bool particle_levelet_{false};
-
+  //! Proparate or not
   bool propagation_{false};
-
+  //! Initiate or not
   bool initiation_{false};
-
+  //! Compute the nodal level set values by: "shepard" of "mls"
   std::string nodal_levelset_{"shepard"};
-
+  //! Compute the average friction coefficient from the neighbour particles
   bool friction_coef_average_{false};
 
 };  // XMPMExplicit class

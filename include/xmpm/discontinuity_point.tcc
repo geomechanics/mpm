@@ -212,6 +212,4 @@ void mpm::discontinuity_point<Tdim>::assign_node_enrich(
                                              friction_coef, 0, 1);
     nodes_[i]->assign_discontinuity_property(true, "cohesion", cohesion, 0, 1);
   }
-  std::ofstream test("cor.txt", std::ios::app);
-  test << coordinates_;
 }

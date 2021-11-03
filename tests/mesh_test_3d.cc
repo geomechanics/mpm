@@ -1561,7 +1561,7 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
             ->create(discontunity_type, std::move(discontinuity_id),
                      discontinuity_props);
 
-    REQUIRE(discontinuity->initialize(points, surfs) == true);
+    REQUIRE(discontinuity->initialise(points, surfs) == true);
 
     //! discontinuities
     std::map<unsigned, std::shared_ptr<mpm::DiscontinuityBase<Dim>>>

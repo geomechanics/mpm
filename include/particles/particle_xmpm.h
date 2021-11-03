@@ -28,12 +28,6 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \param[in] coord coordinates of the particle
   ParticleXMPM(Index id, const VectorDim& coord);
 
-  //! Construct a particle with id, coordinates and status
-  //! \param[in] id Particle id
-  //! \param[in] coord coordinates of the particle
-  //! \param[in] status Particle status (active / inactive)
-  ParticleXMPM(Index id, const VectorDim& coord, bool status);
-
   //! Destructor
   ~ParticleXMPM() override = default;
 
@@ -43,15 +37,14 @@ class ParticleXMPM : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleXMPM& operator=(const ParticleXMPM<Tdim>&) = delete;
 
-  //! Initialise particle from HDF5 data
-  //! \param[in] particle HDF5 data of particle
+  //! Initialise particle from POD data
+  //! \param[in] particle POD data of particle
   //! \retval status Status of reading HDF5 particle
   bool initialise_particle(PODParticle& particle) override;
 
   //! Return particle data as POD
   //! \retval particle POD of the particle
   std::shared_ptr<void> pod() const override;
-
 
   //! Initialise properties
   void initialise() override;
@@ -72,9 +65,6 @@ class ParticleXMPM : public Particle<Tdim> {
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
-  //! Compute the principal stress and strain
-  void compute_principal_stress_strain();
-
   //! Map particle levelset to nodes
   void map_levelset_to_nodes() noexcept override;
 
@@ -82,11 +72,13 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \param[in] friction_coef of the discontinuity
   void map_friction_coef_to_nodes(
       double discontinuity_friction_coef) noexcept override;
-  //! Compute dudx
+
+  //! Compute displacement gradient
   //! \param[in] dt Analysis time step
   void compute_dudx(double dt) noexcept;
 
-  //   virtual void check_levelset() noexcept override;
+  //! to do
+  //!   virtual void check_levelset() noexcept override;
 
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
@@ -105,13 +97,16 @@ class ParticleXMPM : public Particle<Tdim> {
   void map_levelset_to_particle();
 
   //! return levelset values
+  //! \retval particle levelset values
   double levelset_phi() { return levelset_phi_; }
 
   //! compute the minimum eigenvalue of the acoustic tensor
-  //! \param[in] the normal direction of the discontinuity
+  //! \param[in] the normal direction of the previous discontinuity
+  //! \param[in] do the initiation detection loop
   bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation);
 
-  //! compute the gradient of displacement dot direction
+  //! compute the initiation normal direction
+  //! \param[in] initiation normal direction
   void compute_initiation_normal(VectorDim& normal);
 
  private:
@@ -202,13 +197,6 @@ class ParticleXMPM : public Particle<Tdim> {
  private:
   //! level set value： phi for discontinuity
   double levelset_phi_{0.};
-
-  //! first principal stress
-  double first_principal_stress_{0.};
-  //! first principal strain
-  double first_principal_strain_{0.};
-  //! energy:first_principal_stress_*first_principal_strain_*0.5
-  double energy_{0.};
 
   //! the minimum eigenvalue of the acoustic tensor
   double minimum_acoustic_eigenvalue_{1e16};

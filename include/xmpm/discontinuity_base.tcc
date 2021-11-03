@@ -40,7 +40,7 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
   }
 }
 
-//! create points from file
+//! Create points from file
 template <unsigned Tdim>
 bool mpm::DiscontinuityBase<Tdim>::create_points(
     const std::vector<VectorDim>& coordinates) {
@@ -70,7 +70,6 @@ void mpm::DiscontinuityBase<Tdim>::locate_discontinuity_mesh(
     const Map<Cell<Tdim>>& map_cells) noexcept {
   for (auto& point : this->points_)
     point.locate_discontinuity_mesh(cells, map_cells);
-  // for (auto& point : this->points_) point.assign_node_enrich(map_cells);
 }
 
 // Compute updated position of the particle
@@ -95,7 +94,7 @@ void mpm::DiscontinuityBase<Tdim>::insert_particles(
   for (auto& point : this->points_) {
     point.assign_tip(false);
   }
-  // Add point
+  // add points
   mpm::discontinuity_point<Tdim> point(coordinates);
   point.locate_discontinuity_mesh(cells, map_cells);
   point.compute_shapefn();

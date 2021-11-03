@@ -16,7 +16,7 @@ namespace mpm {
 template <unsigned Tdim>
 struct discontinuity_point;
 
-//! class for describe the discontinuous surface
+//! Class for describe the discontinuous surface
 //! \brief
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
@@ -38,55 +38,62 @@ class DiscontinuityBase {
   //! Delete assignement operator
   DiscontinuityBase& operator=(const DiscontinuityBase<Tdim>&) = delete;
 
-  //！ initialization
+  //！ Initialization
   //! \param[in] the coordinates of all points
   //! \param[in] the point index of each surface
-  virtual bool initialize(
+  virtual bool initialise(
       const std::vector<VectorDim>& points,
       const std::vector<std::vector<mpm::Index>>& surfs) = 0;
 
-  //! create points from file
+  //! Create points from file
   //! \param[in] points the coordinates list of points
   bool create_points(const std::vector<VectorDim>& points);
 
-  //! create elements from file
+  //! Create elements from file
   //! \param[in] surfs the point index list of each surface
   virtual bool create_surfaces(
       const std::vector<std::vector<mpm::Index>>& surfs) {
     return true;
   };
 
-  // return the levelset values of each coordinates
+  // Return the levelset values of each coordinates
   //! \param[in] coordinates coordinates
   //! \param[in] phi_list the reference of phi for all coordinates
   virtual void compute_levelset(const VectorDim& coordinates,
                                 double& phi_particle) = 0;
 
-  //! compute the normal vectors of coordinates
+  //! Compute the normal vectors of coordinates
   //! \param[in] coordinates The coordinates
   //! \param[in] normal vector the normal vector of the given coordinates
   virtual void compute_normal(const VectorDim& coordinates,
                               VectorDim& normal_vector) = 0;
 
-  //! return self_contact
+  //! Return self_contact
+  //! \retval compute the self-contact force
   bool self_contact() const { return self_contact_; };
 
-  //! return the friction coefficient
+  //! Return the friction coefficient
+  //! \retval the friction coeffcient of this discontinuity
   double friction_coef() const { return friction_coef_; };
 
-  //! return the cohesion
+  //! Return the cohesion
+  //! \retval the surface cohesion
   double cohesion() const { return cohesion_; };
 
-  //! return the width
+  //! Return the width
+  //! \retval the width of the dsicontinuity
   double width() const { return width_; }
 
-  //! return the contact_distance
+  //! Return the contact_distance
+  //! \retval the contact distance for the contact detection
   double contact_distance() const { return contact_distance_; }
 
-  //! return the maximum_pdstrain
+  //! Return the maximum_pdstrain
+  //! \retval the critical value of the pdstrain
   double maximum_pdstrain() const { return maximum_pdstrain_; }
 
-  //! return the number of the points
+  //! Return the number of the points
+  //! \retval the numberof the mark points
   mpm::Index npoints() const { return points_.size(); };
 
   //! Locate points in a cell
@@ -109,48 +116,40 @@ class DiscontinuityBase {
   void insert_particles(VectorDim& point, const Vector<Cell<Tdim>>& cells,
                         const Map<Cell<Tdim>>& map_cells);
 
+  //! to do:output mark points
   void output_markpoints(int step);
 
  protected:
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
-
-  //! vector of points
+  //! Vector of points
   std::vector<mpm::discontinuity_point<Tdim>> points_;
-
-  //! self-contact
+  //! Self-contact
   bool self_contact_{true};
-
-  //! friction coefficient
+  //! Friction coefficient
   double friction_coef_;
-
-  //! cohesion
+  //! Cohesion
   double cohesion_;
-
-  //! the influence length of the discontinuity
+  //! The width of the discontinuity
   double width_{std::numeric_limits<double>::max()};
-
-  //! move_direction
+  //! Move_direction
   int move_direction_{1};
-
-  //! contact distance
+  //! Contact distance, consider the particle size
   double contact_distance_{std::numeric_limits<double>::max()};
-
-  //! maximum pdstrain
+  //! Maximum pdstrain
   double maximum_pdstrain_{0};
 
 };  // DiscontinuityBase class
 
-//! struct of discontinuity point
+//! Struct of discontinuity point
 template <unsigned Tdim>
 struct discontinuity_point {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
-  //! construct with coordinate
+  //! Construct with coordinate
   discontinuity_point(const VectorDim& coordinate) {
-
     friction_coef_ = 0;
     cohesion_ = 0;
     coordinates_ = coordinate;
@@ -187,6 +186,7 @@ struct discontinuity_point {
   //! Assign the discontinuity enrich to node
   //! \param[in] map_cells map of cells
   void assign_node_enrich(const Map<Cell<Tdim>>& map_cells);
+
   //! Compute reference coordinates in a cell
   bool compute_reference_location() noexcept;
 
@@ -239,7 +239,7 @@ struct discontinuity_point {
   bool tip_{false};
 };
 
-//! struct of discontinuity line: for 2d, need to be done
+//! To do: Struct of discontinuity line: for 2d
 struct discontinuity_line {
  public:
   //! Return points indices
@@ -250,25 +250,25 @@ struct discontinuity_line {
   Eigen::Matrix<int, 2, 1> points_;
 };
 
-//! struct of discontinuity surface: triangle
+//! Struct of discontinuity surface: triangle
 template <unsigned Tdim>
 struct discontinuity_surface {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
-  //! construct with points indices
+  //! Construct with points indices
   discontinuity_surface(const std::vector<mpm::Index>& points) {
     for (int i = 0; i < 3; ++i) points_[i] = points[i];
   }
   //! Return points indices
   Eigen::Matrix<mpm::Index, 3, 1> points() const { return points_; }
 
-  //! assign the surface center
+  //! Assign the surface center
   //! \param[in] center coordinates of the surface center
   inline void assign_center(VectorDim& center) { center_ = center; }
 
-  //! assign the surface normal vector
+  //! Assign the surface normal vector
   //! \param[in] normal normal vector of the surface
   inline void assign_normal(VectorDim& normal) { normal_ = normal; }
 
@@ -290,13 +290,11 @@ struct discontinuity_surface {
   };
 
  private:
-  //! points indices
+  //! Points indices
   Eigen::Matrix<mpm::Index, 3, 1> points_;
-
-  // the center coordinates
+  //！ The center coordinates
   VectorDim center_;
-
-  // the normal vector
+  //！ The normal vector
   VectorDim normal_;
 };
 

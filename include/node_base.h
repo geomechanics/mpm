@@ -33,7 +33,6 @@ enum NodePhase : unsigned int {
 template <unsigned Tdim>
 class NodeBase {
  public:
-  double step_{0};
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
@@ -225,7 +224,7 @@ class NodeBase {
   //! Assign velocity constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of velocity constraint
-  //! \param[in] velocity Applied velocity constraint
+  //! \param[ivirtualn] velocity Applied velocity constraint
   virtual bool assign_velocity_constraint(unsigned dir, double velocity) = 0;
 
   //! Apply velocity constraints
@@ -294,9 +293,9 @@ class NodeBase {
   //! Compute multimaterial normal unit vector
   virtual void compute_multimaterial_normal_unit_vector() = 0;
 
-  // Return data in the nodal discontinuity properties map at a specific index
-  // \param[in] property Property name
-  // \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  //! Return data in the nodal discontinuity properties map at a specific index
+  //! \param[in] property Property name
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
   virtual Eigen::MatrixXd discontinuity_property(
       const std::string& property, unsigned nprops = 1) noexcept = 0;
 
@@ -342,15 +341,13 @@ class NodeBase {
   virtual bool compute_momentum_discontinuity_cundall(
       unsigned phase, double dt, double damping_factor) noexcept = 0;
 
-  //! Apply self-contact of the discontinuity
+  //! Apply self-contact force of the discontinuity
   //! \param[in] dt Time-step
   virtual void self_contact_discontinuity(double dt) noexcept = 0;
 
   //! Return the discontinuity_prop_id
   virtual unsigned discontinuity_prop_id() const noexcept = 0;
 
-  //! update the nodal levelset values
-  virtual void update_levelset() = 0;
   //! Add a cell id
   virtual void add_cell_id(Index id) = 0;
 

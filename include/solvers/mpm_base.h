@@ -37,14 +37,6 @@ namespace mpm {
 //! Vector: Vector of size 3
 //! Tensor: Symmetric tensor arranged in voigt notation
 enum class VariableType { Scalar, Vector, Tensor };
-extern tsl::robin_map<std::string, VariableType> variables;
-
-//! Stress update method
-//! USF: Update Stress First
-//! USL: Update Stress Last
-//! MUSL: Modified Stress Last
-enum class StressUpdate { USF, USL, MUSL };
-extern std::map<std::string, StressUpdate> stress_update;
 
 //! Damping type
 //! None: No damping is specified

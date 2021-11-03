@@ -40,7 +40,7 @@ class DiscontinuityElement {
   //! Destructor
   virtual ~DiscontinuityElement(){};
 
-  void initialize() {
+  void initialise() {
     enrich_type_ = mpm::EnrichType::Regular;
     normal_.setZero();
     d_ = 0;
@@ -49,53 +49,55 @@ class DiscontinuityElement {
   }
 
   //! Assign discontinuity element type
+  //! \param[in] the element type
   void assign_element_type(mpm::EnrichType type) { enrich_type_ = type; }
 
-  //! assign the normal direction of the discontinuity in the cell
+  //! Assign the normal direction of the discontinuity in the cell
   //! \param[in] the normal direction
   void assign_normal_discontinuity(VectorDim normal) { normal_ = normal; };
 
-  //! assign constant value of the discontinuity plane equation
+  //! Assign constant value of the discontinuity plane equation
   //! \param[in] the constant value
   void assign_d(double d) { d_ = d; };
 
-  //! assign the area of the discontinuity in the cell
+  //! Assign the area of the discontinuity in the cell
   //! \param[in] the area
   void assign_area(double area) { area_ = area; };
 
-  //! assign the center of the discontinuity in the cell
-  //! \param[in] the area
+  //! Assign the center of the discontinuity in the cell
+  //! \param[in] the center of the discontinuity
   void assign_cohesion_cor(VectorDim cor) { cohesion_cor_ = cor; };
 
-  //! return enriched type
+  //! Return enriched type
+  //! \retval the element type
   unsigned element_type() { return enrich_type_; }
 
-  //! return normal_discontinuity
+  //! Return normal_discontinuity
+  //! \retval the normal of the discontinuity at the cell center
   VectorDim normal_discontinuity() { return normal_; }
 
-  //! return d
+  //! Return d
+  //! \retval the constant of the plane equation
   double d_discontinuity() { return d_; }
 
-  //! return area
+  //! Return area
+  //! \retval the area of the discontinuity for the cohesion
   double area() { return area_; }
 
-  //! return the centroid
+  //! Return the centroid
+  //! \retval the center of the discontinuity
   VectorDim cohesion_cor() { return cohesion_cor_; }
 
  private:
-  // default enrich type
+  //! Default enrich type
   mpm::EnrichType enrich_type_;
-
-  // normal direction
+  //! Normal direction
   VectorDim normal_;
-
-  // constant value of the discontinuity plane equation a*x + b*y + c*z + d = 0
+  //! Constant value of the discontinuity plane equation a*x + b*y + c*z + d = 0
   double d_;
-
-  // the section area of the crossed cell
+  //! The section area of the crossed cell
   double area_{0};
-
-  // the center of the discontinuity
+  //! The center of the discontinuity
   VectorDim cohesion_cor_ =
       VectorDim::Ones() * std::numeric_limits<double>::max();
 };

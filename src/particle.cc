@@ -1,9 +1,9 @@
 #include "particle.h"
 #include "factory.h"
 #include "particle_base.h"
-#include "particle_xmpm.h"
 #include "particle_fluid.h"
 #include "particle_twophase.h"
+#include "particle_xmpm.h"
 
 namespace mpm {
 // ParticleType

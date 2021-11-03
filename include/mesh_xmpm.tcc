@@ -1,4 +1,4 @@
-// Create the nodal properties' map for discontinuity
+//! Create the nodal properties' map for discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::create_nodal_properties_discontinuity() {
   // Initialise the shared pointer to nodal properties
@@ -34,18 +34,19 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::locate_discontinuity() {
   discontinuity_->locate_discontinuity_mesh(cells_, map_cells_);
 }
-//! updated_position of discontinuity
+//! Updated_position of discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_updated_position_discontinuity(double dt) {
   discontinuity_->compute_updated_position(dt);
 }
-//! compute shape function
+
+//! Compute shape function
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_shapefn_discontinuity() {
   discontinuity_->compute_shapefn();
 }
 
-// compute the normal vector of cells
+//! Compute the normal vector of cells
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_cell_normal_vector_discontinuity() {
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
@@ -54,7 +55,7 @@ void mpm::Mesh<Tdim>::compute_cell_normal_vector_discontinuity() {
   }
 }
 
-// compute the normal vector of enriched nodes at the discontinuity
+//! Compute the normal vector of enriched nodes at the discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_nodal_normal_vector_discontinuity() {
 
@@ -77,7 +78,7 @@ void mpm::Mesh<Tdim>::compute_nodal_normal_vector_discontinuity() {
   }
 }
 
-// Initialise level set values particles
+//! Initialise level set values at particles
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::initialise_levelset_discontinuity() {
 
@@ -90,7 +91,7 @@ void mpm::Mesh<Tdim>::initialise_levelset_discontinuity() {
   }
 }
 
-// Initialise nodal level set values particles
+//! Initialise nodal level set values particles
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::initialise_nodal_levelset_discontinuity() {
 
@@ -104,15 +105,7 @@ void mpm::Mesh<Tdim>::initialise_nodal_levelset_discontinuity() {
   }
 }
 
-// code for debugging added by yliang
-//! solve nodal levelset values
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::update_node_levelset() {
-  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
-    (*nitr)->update_levelset();
-}
-
-// discontinuity growth
+//! The evolution of the discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::update_discontinuity() {
 
@@ -137,10 +130,7 @@ void mpm::Mesh<Tdim>::update_discontinuity() {
         virtual_enrich = true;
         break;
       }
-      if (virtual_enrich) {
-        // node->assign_discontinuity_enrich(true);
-        continue;
-      }
+      if (virtual_enrich) continue;
 
       for (auto cell : node->cells()) {
         if (map_cells_[cell]->element_type_discontinuity() !=
@@ -539,7 +529,7 @@ void mpm::Mesh<Tdim>::update_discontinuity() {
   }
 }
 
-//! find next tip element
+//! Find next tip element
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::next_tip_element_discontinuity() {
   std::string shear;
@@ -569,7 +559,7 @@ void mpm::Mesh<Tdim>::next_tip_element_discontinuity() {
   return;
 }
 
-//! remove spurious potential tip element
+//! Remove spurious potential tip element
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::spurious_potential_tip_element() {
 
@@ -607,7 +597,7 @@ void mpm::Mesh<Tdim>::spurious_potential_tip_element() {
   }
 }
 
-// assign_node_enrich
+//! Assign node type as enrich
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::assign_node_enrich(bool friction_coef_average,
                                          bool enrich_all) {
@@ -648,7 +638,7 @@ void mpm::Mesh<Tdim>::assign_node_enrich(bool friction_coef_average,
   }
 }
 
-// modify_node_enrich
+//! Find all the nodes need to enriched
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::update_node_enrich() {
 
@@ -665,6 +655,7 @@ void mpm::Mesh<Tdim>::update_node_enrich() {
   }
 }
 
+//! The initiation of discontinuity
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::initiation_discontinuity() {
   bool status = false;
@@ -742,6 +733,7 @@ bool mpm::Mesh<Tdim>::initiation_discontinuity() {
   return status;
 }
 
+//! Adjust the nodal levelset_phi by mls
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::modify_nodal_levelset_mls() {
   Eigen::Matrix<double, 4, 4> au;
@@ -890,6 +882,7 @@ void mpm::Mesh<Tdim>::modify_nodal_levelset_mls() {
   }
 }
 
+//! Compute the distance between two sides of discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::selfcontact_detection() {
 
@@ -923,6 +916,8 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
   }
 }
 
+//! Assign the level set values to the particles which just enter the crossed
+//! cell
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::check_particle_levelset(bool particle_levelset) {
 
@@ -1014,7 +1009,7 @@ void mpm::Mesh<Tdim>::check_particle_levelset(bool particle_levelset) {
   }
 }
 
-// code for debugging added by yliang
+//! code for debugging added by yliang start-------------------------------
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::output_celltype(int step) {
   std::ofstream test("cell_type.txt", std::ios::app);
@@ -1146,3 +1141,4 @@ void mpm::Mesh<Tdim>::define_levelset() {
     //   (*pitr)->assign_levelsetphi(-1);
   }
 }
+//! code for debugging added by yliang start-------------------------------

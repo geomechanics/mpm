@@ -125,25 +125,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
-  // HDF5 outputs the initial status
-  this->write_hdf5(this->step_, this->nsteps_);
-#ifdef USE_VTK
-  // VTK outputs
-  this->write_vtk(this->step_, this->nsteps_);
-#endif
-#ifdef USE_PARTIO
-  // Partio outputs
-  this->write_partio(this->step_, this->nsteps_);
-#endif
-
   for (; step_ < nsteps_; ++step_) {
 
     if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
-
-      // if (step_ == 0 || resume == true) {
-      //   mesh_->output_surface();
-      //   resume = false;
-      // }
 
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
@@ -195,16 +179,16 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 #endif
 #endif
 
-    if ((step_ + 1) % output_steps_ == 0) {
+    if (step_ % output_steps_ == 0) {
       // HDF5 outputs
-      this->write_hdf5(this->step_ + 1, this->nsteps_);
+      this->write_hdf5(this->step_, this->nsteps_);
 #ifdef USE_VTK
       // VTK outputs
-      this->write_vtk(this->step_ + 1, this->nsteps_);
+      this->write_vtk(this->step_, this->nsteps_);
 #endif
 #ifdef USE_PARTIO
       // Partio outputs
-      this->write_partio(this->step_ + 1, this->nsteps_);
+      this->write_partio(this->step_, this->nsteps_);
 #endif
     }
   }

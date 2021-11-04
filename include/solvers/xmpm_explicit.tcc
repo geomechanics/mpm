@@ -138,7 +138,8 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   }
 
   for (; step_ < nsteps_; ++step_) {
-    bool nodal_update = true;
+    // to do
+    bool nodal_update = false;
 
     if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
 
@@ -313,7 +314,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     if ((step_ + 1) % output_steps_ == 0) {
       // HDF5 outputs
       this->write_hdf5(this->step_ + 1, this->nsteps_);
-
+      // to do
       mesh_->output_discontinuity(this->step_ + 1);
       // mesh_->output_force(step_);
 #ifdef USE_VTK

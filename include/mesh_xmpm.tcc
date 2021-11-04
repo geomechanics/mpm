@@ -50,6 +50,8 @@ void mpm::Mesh<Tdim>::compute_shapefn_discontinuity() {
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_cell_normal_vector_discontinuity() {
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+    if ((*citr)->element_type_discontinuity() == mpm::EnrichType::Regular)
+      continue;
     (*citr)->compute_normal_vector_discontinuity();
     (*citr)->compute_plane_discontinuity(false);
   }

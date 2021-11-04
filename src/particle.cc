@@ -7,9 +7,9 @@
 
 namespace mpm {
 // ParticleType
-std::map<std::string, int> ParticleType = {{"P2D", 0},       {"P3D", 1},
-                                           {"P2DFLUID", 2},  {"P3DFLUID", 3},
-                                           {"P2D2PHASE", 4}, {"P3D2PHASE", 5}};
+std::map<std::string, int> ParticleType = {
+    {"P2D", 0},       {"P3D", 1},       {"P2DFLUID", 2}, {"P3DFLUID", 3},
+    {"P2D2PHASE", 4}, {"P3D2PHASE", 5}, {"P2DXMPM", 7},  {"P3DXMPM", 8}};
 std::map<int, std::string> ParticleTypeName = {
     {0, "P2D"},      {1, "P3D"},       {2, "P2DFLUID"},
     {3, "P3DFLUID"}, {4, "P2D2PHASE"}, {5, "P3D2PHASE"}};
@@ -19,7 +19,9 @@ std::map<std::string, std::string> ParticlePODTypeName = {
     {"P2DFLUID", "fluid_particles"},
     {"P3DFLUID", "fluid_particles"},
     {"P2D2PHASE", "twophase_particles"},
-    {"P3D2PHASE", "twophase_particles"}};
+    {"P3D2PHASE", "twophase_particles"},
+    {"P2DXMPM", "particles"},
+    {"P3DXMPM", "particles"}};
 }  // namespace mpm
 
 // Particle2D (2 Dim)

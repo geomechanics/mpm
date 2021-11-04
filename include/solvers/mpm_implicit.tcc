@@ -55,15 +55,17 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
           verbosity_ = analysis_["scheme_settings"]
                            .at("verbosity")
                            .template get<unsigned>();
-
-        // Initialise convergence criteria
-        residual_criterion_ =
-            std::make_shared<mpm::ConvergenceCriterionResidual<Tdim>>(
-                relative_residual_tolerance, residual_tolerance, verbosity_);
-        disp_criterion_ =
-            std::make_shared<mpm::ConvergenceCriterionSolution<Tdim>>(
-                displacement_tolerance, verbosity_);
       }
+    }
+
+    // Initialise convergence criteria
+    if (nonlinear_) {
+      residual_criterion_ =
+          std::make_shared<mpm::ConvergenceCriterionResidual<Tdim>>(
+              relative_residual_tolerance, residual_tolerance, verbosity_);
+      disp_criterion_ =
+          std::make_shared<mpm::ConvergenceCriterionSolution<Tdim>>(
+              displacement_tolerance, verbosity_);
     }
   }
 }

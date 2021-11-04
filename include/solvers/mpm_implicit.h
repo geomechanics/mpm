@@ -8,6 +8,9 @@
 #include "mpm_base.h"
 
 #include "assembler_base.h"
+#include "convergence_criterion_base.h"
+#include "convergence_criterion_residual.h"
+#include "convergence_criterion_solution.h"
 #include "solver_base.h"
 
 namespace mpm {
@@ -133,12 +136,6 @@ class MPMImplicit : public MPMBase<Tdim> {
   unsigned current_iteration_;
   //! Max number of Newton-Raphson iteration
   unsigned max_iteration_{20};
-  //! Displacement norm tolerance of Newton-Raphson iteration
-  double displacement_tolerance_{1.0e-10};
-  //! Residual norm tolerance of Newton-Raphson iteration
-  double residual_tolerance_{1.0e-10};
-  //! Relative residual norm tolerance of Newton-Raphson iteration
-  double relative_residual_tolerance_{1.0e-6};
   //! Verbosity for Newton-Raphson iteration
   unsigned verbosity_{0};
   //! Assembler object
@@ -147,6 +144,11 @@ class MPMImplicit : public MPMBase<Tdim> {
   tsl::robin_map<std::string,
                  std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>
       linear_solver_;
+  //! Newton-Raphson displacement increment convergence
+  std::shared_ptr<mpm::ConvergenceCriterionBase<Tdim>> disp_criterion_{nullptr};
+  //! Newton-Raphson residual convergence
+  std::shared_ptr<mpm::ConvergenceCriterionBase<Tdim>> residual_criterion_{
+      nullptr};
   /**@}*/
 
 };  // MPMImplicit class

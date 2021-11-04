@@ -15,6 +15,9 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
   }
 
   // Initialise scheme
+  double displacement_tolerance = 1.0e-10;
+  double residual_tolerance = 1.0e-10;
+  double relative_residual_tolerance = 1.0e-6;
   if (stress_update_ == "newmark") {
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(mesh_, dt_);
     // Read boolean of nonlinear analysis
@@ -36,22 +39,30 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
                                .at("max_iteration")
                                .template get<unsigned>();
         if (analysis_["scheme_settings"].contains("displacement_tolerance"))
-          displacement_tolerance_ = analysis_["scheme_settings"]
-                                        .at("displacement_tolerance")
-                                        .template get<double>();
+          displacement_tolerance = analysis_["scheme_settings"]
+                                       .at("displacement_tolerance")
+                                       .template get<double>();
         if (analysis_["scheme_settings"].contains("residual_tolerance"))
-          residual_tolerance_ = analysis_["scheme_settings"]
-                                    .at("residual_tolerance")
-                                    .template get<double>();
+          residual_tolerance = analysis_["scheme_settings"]
+                                   .at("residual_tolerance")
+                                   .template get<double>();
         if (analysis_["scheme_settings"].contains(
                 "relative_residual_tolerance"))
-          relative_residual_tolerance_ = analysis_["scheme_settings"]
-                                             .at("relative_residual_tolerance")
-                                             .template get<double>();
+          relative_residual_tolerance = analysis_["scheme_settings"]
+                                            .at("relative_residual_tolerance")
+                                            .template get<double>();
         if (analysis_["scheme_settings"].contains("verbosity"))
           verbosity_ = analysis_["scheme_settings"]
                            .at("verbosity")
                            .template get<unsigned>();
+
+        // Initialise convergence criteria
+        residual_criterion_ =
+            std::make_shared<mpm::ConvergenceCriterionResidual<Tdim>>(
+                relative_residual_tolerance, residual_tolerance, verbosity_);
+        disp_criterion_ =
+            std::make_shared<mpm::ConvergenceCriterionSolution<Tdim>>(
+                displacement_tolerance, verbosity_);
       }
     }
   }
@@ -181,8 +192,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
     // Check convergence of residual
     bool convergence = false;
-    convergence = assembler_->check_residual_convergence(
-        true, residual_tolerance_, relative_residual_tolerance_, verbosity_);
+    if (nonlinear_)
+      convergence = residual_criterion_->check_convergence(
+          assembler_->residual_force_rhs_vector(), true);
 
     // Iterations
     while (!convergence && current_iteration_ <= max_iteration_) {
@@ -395,6 +407,37 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     // Apply displacement constraints
     assembler_->apply_displacement_constraints();
 
+    // Assign rank global mapper to solver and convergence criteria (only
+    // necessary at the initial iteration)
+    if (current_iteration_ == 0) {
+#ifdef USE_MPI
+      // Assign global active dof to solver
+      linear_solver_["displacement"]->assign_global_active_dof(
+          Tdim * assembler_->global_active_dof());
+
+      // Prepare rank global mapper
+      std::vector<int> system_rgm;
+      for (unsigned dir = 0; dir < Tdim; ++dir) {
+        auto dir_rgm = assembler_->rank_global_mapper();
+        std::for_each(dir_rgm.begin(), dir_rgm.end(),
+                      [size = assembler_->global_active_dof(),
+                       dir = dir](int& rgm) { rgm += dir * size; });
+        system_rgm.insert(system_rgm.end(), dir_rgm.begin(), dir_rgm.end());
+      }
+      // Assign rank global mapper to solver
+      linear_solver_["displacement"]->assign_rank_global_mapper(system_rgm);
+
+      if (nonlinear_) {
+        disp_criterion_->assign_global_active_dof(
+            Tdim * assembler_->global_active_dof());
+        residual_criterion_->assign_global_active_dof(
+            Tdim * assembler_->global_active_dof());
+        disp_criterion_->assign_rank_global_mapper(system_rgm);
+        residual_criterion_->assign_rank_global_mapper(system_rgm);
+      }
+#endif
+    }
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -407,28 +450,6 @@ template <unsigned Tdim>
 bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
   bool status = true;
   try {
-    // Assign rank global mapper to solver (only necessary at the first
-    // iteration)
-    if (current_iteration_ == 1) {
-#ifdef USE_MPI
-      // Assign global active dof to solver
-      linear_solver_["displacement"]->assign_global_active_dof(
-          Tdim * assembler_->global_active_dof());
-
-      // Prepare rank global mapper
-      std::vector<int> matrix_rgm;
-      for (unsigned dir = 0; dir < Tdim; ++dir) {
-        auto dir_rgm = assembler_->rank_global_mapper();
-        std::for_each(dir_rgm.begin(), dir_rgm.end(),
-                      [size = assembler_->global_active_dof(),
-                       dir = dir](int& rgm) { rgm += dir * size; });
-        matrix_rgm.insert(matrix_rgm.end(), dir_rgm.begin(), dir_rgm.end());
-      }
-      // Assign rank global mapper to solver
-      linear_solver_["displacement"]->assign_rank_global_mapper(matrix_rgm);
-#endif
-    }
-
     // Solve matrix equation and assign solution to assembler
     assembler_->assign_displacement_increment(
         linear_solver_["displacement"]->solve(
@@ -471,8 +492,8 @@ template <unsigned Tdim>
 bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
   bool convergence;
   // Check convergence of solution (displacement increment)
-  convergence = assembler_->check_solution_convergence(displacement_tolerance_,
-                                                       verbosity_);
+  convergence =
+      disp_criterion_->check_convergence(assembler_->displacement_increment());
 
   if (!convergence) {
     // Reinitialise equilibrium equation
@@ -482,8 +503,8 @@ bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
     this->assemble_system_equation();
 
     // Check convergence of residual
-    convergence = assembler_->check_residual_convergence(
-        false, residual_tolerance_, relative_residual_tolerance_, verbosity_);
+    convergence = residual_criterion_->check_convergence(
+        assembler_->residual_force_rhs_vector());
   }
   return convergence;
 }

@@ -10,12 +10,6 @@
 
 #include "mesh.h"
 
-// For residual check
-// TODO: To be removed when convergence criterion is refactored
-#ifdef USE_PETSC
-#include <petscksp.h>
-#endif
-
 namespace mpm {
 template <unsigned Tdim>
 class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
@@ -69,23 +63,6 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
     displacement_increment_ = displacement_increment;
   }
 
-  //! Check residual convergence of Newton-Raphson iteration
-  //! \ingroup Implicit
-  //! \param[in] initial Boolean to indentify 1st (true) iteration
-  //! \param[in] verbosity Verbosity
-  //! \param[in] residual_tolerance Residual norm tolerance
-  //! \param[in] relative_residual_tolerance Relative residual norm tolerance
-  virtual bool check_residual_convergence(bool initial,
-                                          double residual_tolerance,
-                                          double relative_residual_tolerance,
-                                          unsigned verbosity = 0) override;
-
-  //! Check solution convergence of Newton-Raphson iteration
-  //! \ingroup Implicit
-  //! \param[in] verbosity Verbosity
-  //! \param[in] solution_tolerance Solution norm tolerance
-  virtual bool check_solution_convergence(double solution_tolerance,
-                                          unsigned verbosity = 0) override;
   /**@{*/
 
  protected:
@@ -107,14 +84,6 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   Eigen::SparseVector<double> displacement_constraints_;
   //! Displacement increment
   Eigen::VectorXd displacement_increment_;
-  //! Displacement increment norm
-  double disp_increment_norm_;
-  //! Initial residual norm of each time step
-  double initial_residual_norm_;
-  //! Residual norm
-  double residual_norm_;
-  //! Relative residual norm
-  double relative_residual_norm_;
 
   /**@{*/
 };  // namespace mpm

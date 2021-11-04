@@ -52,7 +52,8 @@ class KrylovPETSC : public SolverBase<Traits> {
   };
 
   //! Assign rank to global mapper
-  void assign_rank_global_mapper(std::vector<int> rank_global_mapper) override {
+  void assign_rank_global_mapper(
+      const std::vector<int>& rank_global_mapper) override {
     rank_global_mapper_ = rank_global_mapper;
   };
 

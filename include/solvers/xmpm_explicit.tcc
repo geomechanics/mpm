@@ -411,8 +411,6 @@ template <unsigned Tdim>
 bool mpm::XMPMExplicit<Tdim>::checkpoint_resume() {
   bool checkpoint = true;
   try {
-    // TODO: Set phase
-    const unsigned phase = 0;
 
     int mpi_rank = 0;
 #ifdef USE_MPI

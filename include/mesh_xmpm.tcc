@@ -524,9 +524,6 @@ void mpm::Mesh<Tdim>::update_discontinuity() {
     (*citr)->compute_discontinuity_point(coordinates);
     for (int i = 0; i < coordinates.size(); i++) {
       discontinuity_->insert_particles(coordinates[i], cells_, map_cells_);
-
-      double d = (*citr)->d_discontinuity();
-      auto normal_cell = (*citr)->normal_discontinuity();
     }
   }
 }

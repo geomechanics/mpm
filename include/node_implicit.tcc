@@ -1,10 +1,18 @@
-//! Initialise two-phase nodal properties
+//! Initialise implicit nodal properties
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_implicit() noexcept {
   this->initialise();
   // Specific variables for implicit solver
   inertia_.setZero();
   displacement_.setZero();
+}
+
+//! Initialise nodal force during Newton-Raphson iteration
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::initialise_force() noexcept {
+  // nodal forces
+  external_force_.setZero();
+  internal_force_.setZero();
 }
 
 //! Assign nodal inertia

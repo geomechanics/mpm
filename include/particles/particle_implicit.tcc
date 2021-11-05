@@ -238,19 +238,20 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_strain_newmark() noexcept {
   // Compute strain increment from previous time step
-  dstrain_ = this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
-  // Update strain += dstrain
-  strain_ += dstrain_;
+  this->dstrain_ =
+      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+}
 
-  // Compute at centroid
-  // Strain rate for reduced integration
-  const Eigen::Matrix<double, 6, 1> strain_increment_centroid =
-      this->compute_strain_increment(dn_dx_centroid_,
-                                     mpm::ParticlePhase::Solid);
-
-  // Assign volumetric strain at centroid
-  dvolumetric_strain_ = dstrain_.head(Tdim).sum();
-  volumetric_strain_centroid_ += dvolumetric_strain_;
+// Compute stress using implicit updating scheme
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+  // Calculate stress
+  this->stress_ =
+      (this->material())
+          ->compute_stress(previous_stress_, dstrain_, this,
+                           &state_variables_[mpm::ParticlePhase::Solid]);
 }
 
 // Compute updated position of the particle by Newmark scheme
@@ -280,6 +281,25 @@ void mpm::Particle<Tdim>::compute_updated_position_newmark(double dt) noexcept {
   this->coordinates_ += nodal_displacement;
   // Update displacement
   this->displacement_ += nodal_displacement;
+}
+
+// Update stress and strain after convergence of Newton-Raphson iteration
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::update_stress_strain() noexcept {
+  // Update initial stress of the time step
+  this->previous_stress_ = this->stress_;
+
+  // Update total strain
+  this->strain_ += this->dstrain_;
+
+  // Volumetric strain increment
+  this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
+
+  // Update volumetric strain at particle position (not at centroid)
+  this->volumetric_strain_centroid_ += this->dvolumetric_strain_;
+
+  // Reset strain increment
+  this->dstrain_.setZero();
 }
 
 // Assign acceleration to the particle

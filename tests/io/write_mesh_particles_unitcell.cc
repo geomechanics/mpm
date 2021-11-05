@@ -112,10 +112,11 @@ bool write_json_unitcell(unsigned dim, const std::string& analysis,
   return true;
 }
 
-// Write JSON Configuration file for implicit linear
-bool write_json_unitcell_implicit_linear(
-    unsigned dim, const std::string& analysis, const std::string& mpm_scheme,
-    const std::string& file_name, const std::string& linear_solver_type) {
+// Write JSON Configuration file for implicit
+bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
+                                  const std::string& mpm_scheme, bool nonlinear,
+                                  const std::string& file_name,
+                                  const std::string& linear_solver_type) {
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
@@ -123,7 +124,7 @@ bool write_json_unitcell_implicit_linear(
   auto node_type = "N2D";
   auto cell_type = "ED2Q4";
   auto io_type = "Ascii2D";
-  auto assembler_type = "EigenImplicitLinear2D";
+  auto assembler_type = "EigenImplicit2D";
   std::string material = "LinearElastic2D";
   std::vector<double> gravity{{0., -9.81}};
   std::vector<unsigned> material_id{{1}};
@@ -136,7 +137,7 @@ bool write_json_unitcell_implicit_linear(
     particle_type = "P3D";
     node_type = "N3D";
     cell_type = "ED3H8";
-    assembler_type = "EigenImplicitLinear3D";
+    assembler_type = "EigenImplicit3D";
     io_type = "Ascii3D";
     material = "LinearElastic3D";
     gravity.clear();
@@ -195,6 +196,15 @@ bool write_json_unitcell_implicit_linear(
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
+        {"scheme_settings",
+         {{"nonlinear", nonlinear},
+          {"beta", 0.25},
+          {"gamma", 0.50},
+          {"max_iteration", 20},
+          {"displacement_tolerance", 1.0e-10},
+          {"residual_tolerance", 1.0e-10},
+          {"relative_residual_tolerance", 1.0e-6},
+          {"verbosity", 0}}},
         {"locate_particles", true},
         {"pressure_smoothing", false},
         {"dt", 0.0001},

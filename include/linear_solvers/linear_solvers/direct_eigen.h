@@ -40,8 +40,8 @@ class DirectEigen : public SolverBase<Traits> {
   void assign_global_active_dof(unsigned global_active_dof) override {}
 
   //! Assign rank to global mapper
-  void assign_rank_global_mapper(std::vector<int> rank_global_mapper) override {
-  }
+  void assign_rank_global_mapper(
+      const std::vector<int>& rank_global_mapper) override {}
 
  protected:
   //! Solver type

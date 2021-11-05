@@ -1,9 +1,9 @@
 //! Constructor
 template <unsigned Tdim>
-mpm::MPMImplicitLinear<Tdim>::MPMImplicitLinear(const std::shared_ptr<IO>& io)
+mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
     : mpm::MPMBase<Tdim>(io) {
   //! Logger
-  console_ = spdlog::get("MPMImplicitLinear");
+  console_ = spdlog::get("MPMImplicit");
 
   // Check if stress update is not newmark
   if (stress_update_ != "newmark") {
@@ -15,19 +15,62 @@ mpm::MPMImplicitLinear<Tdim>::MPMImplicitLinear(const std::shared_ptr<IO>& io)
   }
 
   // Initialise scheme
+  double displacement_tolerance = 1.0e-10;
+  double residual_tolerance = 1.0e-10;
+  double relative_residual_tolerance = 1.0e-6;
   if (stress_update_ == "newmark") {
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(mesh_, dt_);
-    // Read parameters of Newmark scheme
-    if (analysis_.contains("newmark") && analysis_["newmark"].contains("beta"))
-      newmark_beta_ = analysis_["newmark"].at("beta").template get<double>();
-    if (analysis_.contains("newmark") && analysis_["newmark"].contains("gamma"))
-      newmark_gamma_ = analysis_["newmark"].at("gamma").template get<double>();
+    // Read boolean of nonlinear analysis
+    if (analysis_.contains("scheme_settings")) {
+      if (analysis_["scheme_settings"].contains("nonlinear"))
+        nonlinear_ =
+            analysis_["scheme_settings"].at("nonlinear").template get<bool>();
+      // Read parameters of Newmark scheme
+      if (analysis_["scheme_settings"].contains("beta"))
+        newmark_beta_ =
+            analysis_["scheme_settings"].at("beta").template get<double>();
+      if (analysis_["scheme_settings"].contains("gamma"))
+        newmark_gamma_ =
+            analysis_["scheme_settings"].at("gamma").template get<double>();
+      // Read parameters of Newton-Raphson interation
+      if (nonlinear_) {
+        if (analysis_["scheme_settings"].contains("max_iteration"))
+          max_iteration_ = analysis_["scheme_settings"]
+                               .at("max_iteration")
+                               .template get<unsigned>();
+        if (analysis_["scheme_settings"].contains("displacement_tolerance"))
+          displacement_tolerance = analysis_["scheme_settings"]
+                                       .at("displacement_tolerance")
+                                       .template get<double>();
+        if (analysis_["scheme_settings"].contains("residual_tolerance"))
+          residual_tolerance = analysis_["scheme_settings"]
+                                   .at("residual_tolerance")
+                                   .template get<double>();
+        if (analysis_["scheme_settings"].contains(
+                "relative_residual_tolerance"))
+          relative_residual_tolerance = analysis_["scheme_settings"]
+                                            .at("relative_residual_tolerance")
+                                            .template get<double>();
+        if (analysis_["scheme_settings"].contains("verbosity"))
+          verbosity_ = analysis_["scheme_settings"]
+                           .at("verbosity")
+                           .template get<unsigned>();
+      }
+    }
+
+    // Initialise convergence criteria
+    if (nonlinear_) {
+      residual_criterion_ = std::make_shared<mpm::ConvergenceCriterionResidual>(
+          relative_residual_tolerance, residual_tolerance, verbosity_);
+      disp_criterion_ = std::make_shared<mpm::ConvergenceCriterionSolution>(
+          displacement_tolerance, verbosity_);
+    }
   }
 }
 
-//! MPM Implicit Linear solver
+//! MPM Implicit solver
 template <unsigned Tdim>
-bool mpm::MPMImplicitLinear<Tdim>::solve() {
+bool mpm::MPMImplicit<Tdim>::solve() {
   bool status = true;
 
   console_->info("MPM analysis type {}", io_->analysis_type());
@@ -42,9 +85,6 @@ bool mpm::MPMImplicitLinear<Tdim>::solve() {
   // Get number of MPI ranks
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 #endif
-
-  // Phase
-  const unsigned phase = mpm::ParticlePhase::SinglePhase;
 
   // Test if checkpoint resume is needed
   bool resume = false;
@@ -131,16 +171,11 @@ bool mpm::MPMImplicitLinear<Tdim>::solve() {
     mpm_scheme_->initialise();
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
-    mpm_scheme_->compute_nodal_kinematics(phase);
+    mpm_scheme_->compute_nodal_kinematics(phase_);
 
-    // Predict nodal velocity and acceleration -- Predictor step of Newmark
-    // scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
+    // Predict nodal kinematics -- Predictor step of Newmark scheme
+    mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
                                                  newmark_gamma_);
-
-    // Compute local residual force
-    mpm_scheme_->compute_forces(gravity_, phase, step_,
-                                set_node_concentrated_force_);
 
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
@@ -149,27 +184,43 @@ bool mpm::MPMImplicitLinear<Tdim>::solve() {
       throw std::runtime_error("Reinitialisation of matrix failed");
     }
 
-    // Compute equilibrium equation
-    this->compute_equilibrium_equation();
+    // Newton-Raphson iteration
+    current_iteration_ = 0;
 
-    // Assign displacement increment to nodes
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::update_displacement_increment,
-                  std::placeholders::_1, assembler_->displacement_increment(),
-                  phase, assembler_->active_dof()),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    // Assemble equilibrium equation
+    this->assemble_system_equation();
 
-    // Update nodal velocity and acceleration -- Corrector step of Newmark
-    // scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase, newmark_beta_,
-                                                 newmark_gamma_);
+    // Check convergence of residual
+    bool convergence = false;
+    if (nonlinear_)
+      convergence = residual_criterion_->check_convergence(
+          assembler_->residual_force_rhs_vector(), true);
 
-    // Update stress and strain
-    mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
+    // Iterations
+    while (!convergence && current_iteration_ <= max_iteration_) {
+      // Initialisation of Newton-Raphson iteration
+      this->initialise_newton_raphson_iteration();
 
-    // Particle kinematics
-    mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
-                                             damping_factor_);
+      // Solve equilibrium equation
+      this->solve_system_equation();
+
+      // Update nodal kinematics -- Corrector step of Newmark scheme
+      mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
+                                                   newmark_gamma_);
+
+      // Update stress and strain
+      mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);
+
+      // Check convergence of Newton-Raphson iteration
+      if (nonlinear_) {
+        convergence = this->check_newton_raphson_convergence();
+      } else {
+        convergence = true;
+      }
+
+      // Finalisation of Newton-Raphson iteration
+      if (convergence) this->finalise_newton_raphson_iteration();
+    }
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
@@ -195,7 +246,7 @@ bool mpm::MPMImplicitLinear<Tdim>::solve() {
     }
   }
   auto solver_end = std::chrono::steady_clock::now();
-  console_->info("Rank {}, Implicit Linear {} solver duration: {} ms", mpi_rank,
+  console_->info("Rank {}, Implicit {} solver duration: {} ms", mpi_rank,
                  mpm_scheme_->scheme(),
                  std::chrono::duration_cast<std::chrono::milliseconds>(
                      solver_end - solver_begin)
@@ -206,7 +257,7 @@ bool mpm::MPMImplicitLinear<Tdim>::solve() {
 
 // Initialise matrix
 template <unsigned Tdim>
-bool mpm::MPMImplicitLinear<Tdim>::initialise_matrix() {
+bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
   bool status = true;
   try {
     // Get matrix assembler type
@@ -286,8 +337,7 @@ bool mpm::MPMImplicitLinear<Tdim>::initialise_matrix() {
 
 // Reinitialise and resize matrices at the beginning of every time step
 template <unsigned Tdim>
-bool mpm::MPMImplicitLinear<Tdim>::reinitialise_matrix() {
-
+bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
   bool status = true;
   try {
     // Assigning matrix id (in each MPI rank)
@@ -317,9 +367,23 @@ bool mpm::MPMImplicitLinear<Tdim>::reinitialise_matrix() {
   return status;
 }
 
-// Compute equilibrium equation
+// Reinitialise equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicitLinear<Tdim>::compute_equilibrium_equation() {
+void mpm::MPMImplicit<Tdim>::reinitialise_system_equation() {
+  // Initialise element matrix
+  mesh_->iterate_over_cells(
+      std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                std::placeholders::_1));
+
+  // Initialise nodal forces
+  mesh_->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Tdim>::initialise_force, std::placeholders::_1),
+      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+}
+
+// Assemble equilibrium equation
+template <unsigned Tdim>
+bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
   bool status = true;
   try {
     // Compute local cell stiffness matrices
@@ -333,39 +397,125 @@ bool mpm::MPMImplicitLinear<Tdim>::compute_equilibrium_equation() {
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();
 
+    // Compute local residual force
+    mpm_scheme_->compute_forces(gravity_, phase_, step_,
+                                set_node_concentrated_force_);
+
     // Assemble global residual force RHS vector
     assembler_->assemble_residual_force_right();
 
     // Apply displacement constraints
     assembler_->apply_displacement_constraints();
 
+    // Assign rank global mapper to solver and convergence criteria (only
+    // necessary at the initial iteration)
+    if (current_iteration_ == 0) {
 #ifdef USE_MPI
-    // Assign global active dof to solver
-    linear_solver_["displacement"]->assign_global_active_dof(
-        Tdim * assembler_->global_active_dof());
+      // Assign global active dof to solver
+      linear_solver_["displacement"]->assign_global_active_dof(
+          Tdim * assembler_->global_active_dof());
 
-    // Prepare rank global mapper
-    std::vector<int> matrix_rgm;
-    for (unsigned dir = 0; dir < Tdim; ++dir) {
-      auto dir_rgm = assembler_->rank_global_mapper();
-      std::for_each(dir_rgm.begin(), dir_rgm.end(),
-                    [size = assembler_->global_active_dof(),
-                     dir = dir](int& rgm) { rgm += dir * size; });
-      matrix_rgm.insert(matrix_rgm.end(), dir_rgm.begin(), dir_rgm.end());
-    }
-    // Assign rank global mapper to solver
-    linear_solver_["displacement"]->assign_rank_global_mapper(matrix_rgm);
+      // Prepare rank global mapper
+      std::vector<int> system_rgm;
+      for (unsigned dir = 0; dir < Tdim; ++dir) {
+        auto dir_rgm = assembler_->rank_global_mapper();
+        std::for_each(dir_rgm.begin(), dir_rgm.end(),
+                      [size = assembler_->global_active_dof(),
+                       dir = dir](int& rgm) { rgm += dir * size; });
+        system_rgm.insert(system_rgm.end(), dir_rgm.begin(), dir_rgm.end());
+      }
+      // Assign rank global mapper to solver
+      linear_solver_["displacement"]->assign_rank_global_mapper(system_rgm);
+
+      if (nonlinear_) {
+        disp_criterion_->assign_global_active_dof(
+            Tdim * assembler_->global_active_dof());
+        residual_criterion_->assign_global_active_dof(
+            Tdim * assembler_->global_active_dof());
+        disp_criterion_->assign_rank_global_mapper(system_rgm);
+        residual_criterion_->assign_rank_global_mapper(system_rgm);
+      }
 #endif
-
-    // Solve matrix equation and assign solution to assembler
-    assembler_->assign_displacement_increment(
-        linear_solver_["displacement"]->solve(
-            assembler_->stiffness_matrix(),
-            assembler_->residual_force_rhs_vector()));
+    }
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
   }
   return status;
+}
+
+// Solve equilibrium equation
+template <unsigned Tdim>
+bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
+  bool status = true;
+  try {
+    // Solve matrix equation and assign solution to assembler
+    assembler_->assign_displacement_increment(
+        linear_solver_["displacement"]->solve(
+            assembler_->stiffness_matrix(),
+            assembler_->residual_force_rhs_vector()));
+
+    // Assign displacement increment to nodes
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::update_displacement_increment,
+                  std::placeholders::_1, assembler_->displacement_increment(),
+                  phase_, assembler_->active_dof()),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+// Initialisation of Newton-Raphson iteration
+template <unsigned Tdim>
+void mpm::MPMImplicit<Tdim>::initialise_newton_raphson_iteration() {
+  // Initialise MPI rank
+  int mpi_rank = 0;
+#ifdef USE_MPI
+  // Get MPI rank
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+
+  // Advance iteration
+  current_iteration_++;
+  if (mpi_rank == 0 && verbosity_ > 0 && nonlinear_)
+    console_->info("Newton-Raphson iteration: {} of {}.", current_iteration_,
+                   max_iteration_);
+}
+
+// Check convergnece of Newton-Raphson iteration
+template <unsigned Tdim>
+bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
+  bool convergence;
+  // Check convergence of solution (displacement increment)
+  convergence =
+      disp_criterion_->check_convergence(assembler_->displacement_increment());
+
+  if (!convergence) {
+    // Reinitialise equilibrium equation
+    this->reinitialise_system_equation();
+
+    // Assemble equilibrium equation
+    this->assemble_system_equation();
+
+    // Check convergence of residual
+    convergence = residual_criterion_->check_convergence(
+        assembler_->residual_force_rhs_vector());
+  }
+  return convergence;
+}
+
+// finalisation of Newton-Raphson iteration
+template <unsigned Tdim>
+void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
+  // Particle kinematics and volume
+  mpm_scheme_->compute_particle_kinematics(velocity_update_, phase_, "Cundall",
+                                           damping_factor_);
+
+  // Particle stress, strain and volume
+  mpm_scheme_->update_particle_stress_strain_volume();
 }

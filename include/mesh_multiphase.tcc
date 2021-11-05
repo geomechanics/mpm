@@ -439,7 +439,7 @@ std::set<mpm::Index> mpm::Mesh<Tdim>::free_surface_particles() {
 //! Compute cell volume fraction
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_cell_vol_fraction() {
-  this->iterate_over_cells([&map_particles = map_particles_](
+  this->iterate_over_cells([& map_particles = map_particles_](
                                std::shared_ptr<mpm::Cell<Tdim>> c_ptr) {
     if (c_ptr->status()) {
       // Compute volume fraction

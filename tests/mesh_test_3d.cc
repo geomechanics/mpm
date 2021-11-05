@@ -1568,14 +1568,12 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
         discontinuities;
 
     discontinuities.insert(std::make_pair(discontinuity_id, discontinuity));
-    REQUIRE_NOTHROW(mesh->initialise_discontinuities(discontinuities));
     REQUIRE_NOTHROW(mesh->locate_discontinuity());
 
     double dt = 0.1;
     REQUIRE_NOTHROW(mesh->compute_updated_position_discontinuity(dt));
 
     REQUIRE_NOTHROW(mesh->compute_shapefn_discontinuity());
-    REQUIRE_NOTHROW(mesh->compute_normal_vector_discontinuity());
     REQUIRE_NOTHROW(mesh->initialise_levelset_discontinuity());
   }
 }

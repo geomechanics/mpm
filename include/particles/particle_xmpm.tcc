@@ -570,7 +570,7 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
 
 // Compute du_dx_ of the particle
 template <>
-void mpm::ParticleXMPM<3>::compute_dudx(double dt) noexcept {
+void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) noexcept {
   // Define strain rate
   Eigen::Matrix<double, 3, 3> dudx_rate = Eigen::Matrix<double, 3, 3>::Zero();
   const double tolerance = 1.E-16;

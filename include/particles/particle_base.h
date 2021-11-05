@@ -366,7 +366,7 @@ class ParticleBase {
 
   //! Compute displacement
   //! \param[in] dt Analysis time step
-  virtual void compute_dudx(double dt){};
+  virtual inline void compute_displacement_gradient(double dt) noexcept {};
 
   //! to do
   //! virtual void check_levelset(){};

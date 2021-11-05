@@ -54,7 +54,7 @@ TEST_CASE("XMPM 3D Explicit implementation is checked",
     // Initialise particles
     REQUIRE_NOTHROW(mpm->initialise_particles());
     // Initialise discontinuities
-    REQUIRE_NOTHROW(mpm->initialise_discontinuities());
+    REQUIRE_NOTHROW(mpm->initialise_discontinuity());
 
     // Renitialise materials
     REQUIRE_THROWS(mpm->initialise_materials());

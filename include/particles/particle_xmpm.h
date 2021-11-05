@@ -75,7 +75,7 @@ class ParticleXMPM : public Particle<Tdim> {
 
   //! Compute displacement gradient
   //! \param[in] dt Analysis time step
-  void compute_dudx(double dt) noexcept;
+  void inline compute_displacement_gradient(double dt) noexcept override;
 
   //! to do
   //!   virtual void check_levelset() noexcept override;

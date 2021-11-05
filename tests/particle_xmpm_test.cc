@@ -5,7 +5,6 @@
 #include "cell.h"
 #include "element.h"
 #include "function_base.h"
-#include "hdf5_particle.h"
 #include "hexahedron_element.h"
 #include "linear_function.h"
 #include "material.h"
@@ -69,7 +68,7 @@ TEST_CASE("Particle_XMPM is checked for 3D case", "[particle][3D][XMPM]") {
     mpm::Index id = 0;
     bool status = true;
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
-        std::make_shared<mpm::ParticleXMPM<Dim>>(id, coords, status);
+        std::make_shared<mpm::ParticleXMPM<Dim>>(id, coords);
     REQUIRE(particle->id() == 0);
     REQUIRE(particle->status() == true);
     particle->assign_status(false);

@@ -49,7 +49,7 @@ TEST_CASE("XMPM 3D Explicit USL implementation is checked",
     // Initialise materials
     REQUIRE_NOTHROW(mpm->initialise_materials());
     // Initialise discontinuities
-    REQUIRE_NOTHROW(mpm->initialise_discontinuities());
+    REQUIRE_NOTHROW(mpm->initialise_discontinuity());
     // Initialise mesh and particles
     REQUIRE_NOTHROW(mpm->initialise_mesh());
     REQUIRE_NOTHROW(mpm->initialise_particles());

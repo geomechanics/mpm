@@ -256,8 +256,9 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
 
     // Iterate over each particle to calculate dudx
-    mesh_->iterate_over_particles(std::bind(
-        &mpm::ParticleBase<Tdim>::compute_dudx, std::placeholders::_1, dt_));
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
+                  std::placeholders::_1, dt_));
 
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,

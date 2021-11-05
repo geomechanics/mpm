@@ -12,14 +12,11 @@ namespace mpm {
 // Convergence criteria of solution class
 //! \brief Class which perform check of convergence of nonlinear iteration
 //! solution
-//! \tparam Tdim Dimension
-template <unsigned Tdim>
-class ConvergenceCriterionSolution
-    : public mpm::ConvergenceCriterionBase<Tdim> {
+class ConvergenceCriterionSolution : public mpm::ConvergenceCriterionBase {
  public:
   //! Constructor
   ConvergenceCriterionSolution(double tolerance, unsigned verbosity)
-      : mpm::ConvergenceCriterionBase<Tdim>(tolerance, verbosity) {
+      : mpm::ConvergenceCriterionBase(tolerance, verbosity) {
     //! Logger
     std::string logger = "ConvergenceCriterionSolution::";
     console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
@@ -29,15 +26,14 @@ class ConvergenceCriterionSolution
   virtual ~ConvergenceCriterionSolution() = default;
 
   //! Copy constructor
-  ConvergenceCriterionSolution(const ConvergenceCriterionSolution<Tdim>&) =
-      default;
+  ConvergenceCriterionSolution(const ConvergenceCriterionSolution&) = default;
 
   //! Assignment operator
-  ConvergenceCriterionSolution& operator=(
-      const ConvergenceCriterionSolution<Tdim>&) = default;
+  ConvergenceCriterionSolution& operator=(const ConvergenceCriterionSolution&) =
+      default;
 
   //! Move constructor
-  ConvergenceCriterionSolution(ConvergenceCriterionSolution<Tdim>&&) = default;
+  ConvergenceCriterionSolution(ConvergenceCriterionSolution&&) = default;
 
   //! Function to check convergence
   //! \param[in] solution_vector Solution vector of interest
@@ -49,15 +45,15 @@ class ConvergenceCriterionSolution
   //! Logger
   std::shared_ptr<spdlog::logger> console_;
   //! Relative tolerance
-  using ConvergenceCriterionBase<Tdim>::tolerance_;
+  using ConvergenceCriterionBase::tolerance_;
   //! Absolute tolerance
-  using ConvergenceCriterionBase<Tdim>::abs_tolerance_;
+  using ConvergenceCriterionBase::abs_tolerance_;
   //! Verbosity
-  using ConvergenceCriterionBase<Tdim>::verbosity_;
+  using ConvergenceCriterionBase::verbosity_;
   //! Global active dof
-  using ConvergenceCriterionBase<Tdim>::global_active_dof_;
+  using ConvergenceCriterionBase::global_active_dof_;
   //! Rank to Global mapper
-  using ConvergenceCriterionBase<Tdim>::rank_global_mapper_;
+  using ConvergenceCriterionBase::rank_global_mapper_;
 };
 }  // namespace mpm
 

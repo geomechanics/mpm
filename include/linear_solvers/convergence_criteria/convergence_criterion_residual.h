@@ -12,14 +12,11 @@ namespace mpm {
 // Convergence criterion of residual class
 //! \brief Class which perform check of convergence of nonlinear iteration
 //! residuals
-//! \tparam Tdim Dimension
-template <unsigned Tdim>
-class ConvergenceCriterionResidual
-    : public mpm::ConvergenceCriterionBase<Tdim> {
+class ConvergenceCriterionResidual : public mpm::ConvergenceCriterionBase {
  public:
   //! Constructor with two arguments
   ConvergenceCriterionResidual(double tolerance, unsigned verbosity)
-      : mpm::ConvergenceCriterionBase<Tdim>(tolerance, verbosity) {
+      : mpm::ConvergenceCriterionBase(tolerance, verbosity) {
     abs_tolerance_ = tolerance;
     //! Logger
     std::string logger = "ConvergenceCriterionBase::";
@@ -29,8 +26,7 @@ class ConvergenceCriterionResidual
   //! Constructor with three arguments
   ConvergenceCriterionResidual(double tolerance, double abs_tolerance,
                                unsigned verbosity)
-      : mpm::ConvergenceCriterionBase<Tdim>(tolerance, abs_tolerance,
-                                            verbosity) {
+      : mpm::ConvergenceCriterionBase(tolerance, abs_tolerance, verbosity) {
     //! Logger
     std::string logger = "ConvergenceCriterionResidual::";
     console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
@@ -40,15 +36,14 @@ class ConvergenceCriterionResidual
   virtual ~ConvergenceCriterionResidual() = default;
 
   //! Copy constructor
-  ConvergenceCriterionResidual(const ConvergenceCriterionResidual<Tdim>&) =
-      default;
+  ConvergenceCriterionResidual(const ConvergenceCriterionResidual&) = default;
 
   //! Assignment operator
-  ConvergenceCriterionResidual& operator=(
-      const ConvergenceCriterionResidual<Tdim>&) = default;
+  ConvergenceCriterionResidual& operator=(const ConvergenceCriterionResidual&) =
+      default;
 
   //! Move constructor
-  ConvergenceCriterionResidual(ConvergenceCriterionResidual<Tdim>&&) = default;
+  ConvergenceCriterionResidual(ConvergenceCriterionResidual&&) = default;
 
   //! Function to check convergence
   //! \param[in] residual_vector Residual vector of interest
@@ -60,15 +55,15 @@ class ConvergenceCriterionResidual
   //! Logger
   std::shared_ptr<spdlog::logger> console_;
   //! Relative tolerance
-  using ConvergenceCriterionBase<Tdim>::tolerance_;
+  using ConvergenceCriterionBase::tolerance_;
   //! Absolute tolerance
-  using ConvergenceCriterionBase<Tdim>::abs_tolerance_;
+  using ConvergenceCriterionBase::abs_tolerance_;
   //! Verbosity
-  using ConvergenceCriterionBase<Tdim>::verbosity_;
+  using ConvergenceCriterionBase::verbosity_;
   //! Global active dof
-  using ConvergenceCriterionBase<Tdim>::global_active_dof_;
+  using ConvergenceCriterionBase::global_active_dof_;
   //! Rank to Global mapper
-  using ConvergenceCriterionBase<Tdim>::rank_global_mapper_;
+  using ConvergenceCriterionBase::rank_global_mapper_;
   //! Initial residuals
   double initial_residual_norm_;
 };

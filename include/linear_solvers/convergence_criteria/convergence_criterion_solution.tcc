@@ -1,6 +1,5 @@
 //! Function to check convergence
-template <unsigned Tdim>
-bool mpm::ConvergenceCriterionSolution<Tdim>::check_convergence(
+bool mpm::ConvergenceCriterionSolution::check_convergence(
     const Eigen::VectorXd& solution_vector, bool save_settings) {
   bool convergence = false;
   try {

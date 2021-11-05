@@ -60,12 +60,10 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
 
     // Initialise convergence criteria
     if (nonlinear_) {
-      residual_criterion_ =
-          std::make_shared<mpm::ConvergenceCriterionResidual<Tdim>>(
-              relative_residual_tolerance, residual_tolerance, verbosity_);
-      disp_criterion_ =
-          std::make_shared<mpm::ConvergenceCriterionSolution<Tdim>>(
-              displacement_tolerance, verbosity_);
+      residual_criterion_ = std::make_shared<mpm::ConvergenceCriterionResidual>(
+          relative_residual_tolerance, residual_tolerance, verbosity_);
+      disp_criterion_ = std::make_shared<mpm::ConvergenceCriterionSolution>(
+          displacement_tolerance, verbosity_);
     }
   }
 }

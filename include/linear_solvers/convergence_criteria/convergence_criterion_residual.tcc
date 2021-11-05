@@ -1,6 +1,5 @@
 //! Function to check convergence
-template <unsigned Tdim>
-bool mpm::ConvergenceCriterionResidual<Tdim>::check_convergence(
+bool mpm::ConvergenceCriterionResidual::check_convergence(
     const Eigen::VectorXd& residual_vector, bool initial) {
   bool convergence = false;
   try {

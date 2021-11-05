@@ -145,10 +145,9 @@ class MPMImplicit : public MPMBase<Tdim> {
                  std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>
       linear_solver_;
   //! Newton-Raphson displacement increment convergence
-  std::shared_ptr<mpm::ConvergenceCriterionBase<Tdim>> disp_criterion_{nullptr};
+  std::shared_ptr<mpm::ConvergenceCriterionBase> disp_criterion_{nullptr};
   //! Newton-Raphson residual convergence
-  std::shared_ptr<mpm::ConvergenceCriterionBase<Tdim>> residual_criterion_{
-      nullptr};
+  std::shared_ptr<mpm::ConvergenceCriterionBase> residual_criterion_{nullptr};
   /**@}*/
 
 };  // MPMImplicit class

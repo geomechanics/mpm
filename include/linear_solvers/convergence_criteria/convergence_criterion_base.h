@@ -22,8 +22,6 @@ namespace mpm {
 //! \brief Class which perform check of convergence
 //! \details Given a certain tolerance, the class will return boolean to check
 //! convergence of an iteration.
-//! \tparam Tdim Dimension
-template <unsigned Tdim>
 class ConvergenceCriterionBase {
  public:
   //! Constructor with two arguments
@@ -50,14 +48,14 @@ class ConvergenceCriterionBase {
   virtual ~ConvergenceCriterionBase() = default;
 
   //! Copy constructor
-  ConvergenceCriterionBase(const ConvergenceCriterionBase<Tdim>&) = default;
+  ConvergenceCriterionBase(const ConvergenceCriterionBase&) = default;
 
   //! Assignment operator
-  ConvergenceCriterionBase& operator=(const ConvergenceCriterionBase<Tdim>&) =
+  ConvergenceCriterionBase& operator=(const ConvergenceCriterionBase&) =
       default;
 
   //! Move constructor
-  ConvergenceCriterionBase(ConvergenceCriterionBase<Tdim>&&) = default;
+  ConvergenceCriterionBase(ConvergenceCriterionBase&&) = default;
 
   //! Set verbosity
   void set_verbosity(unsigned v) noexcept { verbosity_ = v; }

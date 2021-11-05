@@ -224,7 +224,7 @@ class NodeBase {
   //! Assign velocity constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of velocity constraint
-  //! \param[ivirtualn] velocity Applied velocity constraint
+  //! \param[in] velocity Applied velocity constraint
   virtual bool assign_velocity_constraint(unsigned dir, double velocity) = 0;
 
   //! Apply velocity constraints

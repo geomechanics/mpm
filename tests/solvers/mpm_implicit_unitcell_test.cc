@@ -18,7 +18,9 @@ TEST_CASE("MPM 2D Implicit implementation is checked in unitcells",
   const std::string analysis = "MPMImplicit2D";
   const std::string mpm_scheme = "newmark";
   const std::string lin_solver_type = "IterativeEigen";
-  REQUIRE(mpm_test::write_json_unitcell_implicit(2, analysis, mpm_scheme, fname,
+  bool nonlinear = true;
+  REQUIRE(mpm_test::write_json_unitcell_implicit(2, analysis, mpm_scheme,
+                                                 nonlinear, fname,
                                                  lin_solver_type) == true);
 
   // Write Mesh
@@ -76,7 +78,9 @@ TEST_CASE("MPM 3D Implicit implementation is checked in unitcells",
   const std::string analysis = "MPMImplicit3D";
   const std::string mpm_scheme = "newmark";
   const std::string lin_solver_type = "IterativeEigen";
-  REQUIRE(mpm_test::write_json_unitcell_implicit(3, analysis, mpm_scheme, fname,
+  bool nonlinear = true;
+  REQUIRE(mpm_test::write_json_unitcell_implicit(3, analysis, mpm_scheme,
+                                                 nonlinear, fname,
                                                  lin_solver_type) == true);
 
   // Write Mesh

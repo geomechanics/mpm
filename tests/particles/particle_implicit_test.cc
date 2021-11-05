@@ -321,11 +321,26 @@ TEST_CASE("Implicit Particle is checked for 2D case",
     for (unsigned i = 0; i < strain.rows(); ++i)
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
 
+    // Previous stress
+    Eigen::Matrix<double, 6, 1> previous_stress;
+    // clang-format off
+      previous_stress <<  721153.8461538460 * 2.,
+                          1682692.3076923075 * 2.,
+                          721153.8461538460 * 2.,
+                          96153.8461538462 * 2.,
+                          0.0000000000 * 2.,
+                          0.0000000000 * 2.;
+    // clang-format on
+    // Check previous stress
+    for (unsigned i = 0; i < stress.rows(); ++i)
+      REQUIRE(particle->previous_stress()(i) ==
+              Approx(previous_stress(i)).epsilon(Tolerance));
+
     // Check updated pressure
     const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Update volume
+    // Check volume
     REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
     REQUIRE_NOTHROW(particle->update_volume());
     REQUIRE(particle->volume() == Approx(1.25).epsilon(Tolerance));

@@ -19,7 +19,9 @@ TEST_CASE("MPM 2D Implicit implementation is checked",
   const std::string mpm_scheme = "newmark";
   const std::string lin_solver_type = "IterativeEigen";
   bool resume = false;
-  REQUIRE(mpm_test::write_json_implicit(2, resume, analysis, mpm_scheme, fname,
+  bool nonlinear = true;
+  REQUIRE(mpm_test::write_json_implicit(2, resume, analysis, mpm_scheme,
+                                        nonlinear, fname,
                                         lin_solver_type) == true);
 
   // Write JSON Entity Sets file
@@ -76,8 +78,10 @@ TEST_CASE("MPM 2D Implicit implementation is checked",
     const std::string mpm_scheme = "newmark";
     const std::string lin_solver_type = "IterativeEigen";
     bool resume = true;
+    bool nonlinear = true;
     REQUIRE(mpm_test::write_json_implicit(2, resume, analysis, mpm_scheme,
-                                          fname, lin_solver_type) == true);
+                                          nonlinear, fname,
+                                          lin_solver_type) == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
@@ -113,7 +117,9 @@ TEST_CASE("MPM 3D Implicit implementation is checked",
   const std::string mpm_scheme = "newmark";
   const std::string lin_solver_type = "IterativeEigen";
   const bool resume = false;
-  REQUIRE(mpm_test::write_json_implicit(3, resume, analysis, mpm_scheme, fname,
+  bool nonlinear = true;
+  REQUIRE(mpm_test::write_json_implicit(3, resume, analysis, mpm_scheme,
+                                        nonlinear, fname,
                                         lin_solver_type) == true);
 
   // Write JSON Entity Sets file
@@ -168,8 +174,10 @@ TEST_CASE("MPM 3D Implicit implementation is checked",
     const std::string mpm_scheme = "newmark";
     const std::string lin_solver_type = "IterativeEigen";
     bool resume = true;
+    bool nonlinear = true;
     REQUIRE(mpm_test::write_json_implicit(3, resume, analysis, mpm_scheme,
-                                          fname, lin_solver_type) == true);
+                                          nonlinear, fname,
+                                          lin_solver_type) == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);

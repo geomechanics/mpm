@@ -390,6 +390,9 @@ class ParticleBase {
   //! \ingroup Implicit
   virtual void compute_stress_newmark() = 0;
 
+  //! Return previous stress
+  virtual Eigen::Matrix<double, 6, 1> previous_stress() const = 0;
+
   //! Compute updated position by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step

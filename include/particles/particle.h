@@ -405,6 +405,12 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   void compute_stress_newmark() noexcept override;
 
+  //! Return stress at the previous time step of the particle
+  //! \ingroup Implicit
+  Eigen::Matrix<double, 6, 1> previous_stress() const override {
+    return previous_stress_;
+  }
+
   //! Compute updated position of the particle by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step

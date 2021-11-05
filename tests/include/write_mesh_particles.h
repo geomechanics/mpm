@@ -10,7 +10,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
 
 // Write JSON Configuration file for implicit
 bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
-                         const std::string& mpm_scheme,
+                         const std::string& mpm_scheme, bool nonlinear,
                          const std::string& file_name,
                          const std::string& linear_solver_type = "none");
 

@@ -478,6 +478,8 @@ template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
     VectorDim& normal_initiation) {
 
+  double theta;
+  double phi;
   double dtheta = 1;
   const double PI = M_PI / 180;
   VectorDim normal_m;
@@ -493,6 +495,7 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
   double det_de_n;
   double det_dp_n;
 
+  double mininum_ratio = std::numeric_limits<double>::max();
   double max_dudxmn = 0;
 
   bool yield_status = true;

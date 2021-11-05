@@ -1,6 +1,7 @@
-#ifndef MPM_CONVERGENCE_CRITERION_H_
-#define MPM_CONVERGENCE_CRITERION_H_
+#ifndef MPM_CONVERGENCE_CRITERION_BASE_H_
+#define MPM_CONVERGENCE_CRITERION_BASE_H_
 
+#include "logger.h"
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -82,8 +83,8 @@ class ConvergenceCriterionBase {
   //! \param[in] vector vector of interest
   //! \param[in] save_settings boolean which determine if any saving of
   //! variables is necessary
-  virtual bool check_convergence(const Eigen::VectorXd& vector,
-                                 bool save_settings = false) = 0;
+  virtual inline bool check_convergence(const Eigen::VectorXd& vector,
+                                        bool save_settings = false) = 0;
 
  protected:
   //! Logger
@@ -101,4 +102,4 @@ class ConvergenceCriterionBase {
 };
 }  // namespace mpm
 
-#endif  // MPM_CONVERGENCE_CRITERION_H_
+#endif  // MPM_CONVERGENCE_CRITERION_BASE_H_

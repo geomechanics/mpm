@@ -1,5 +1,5 @@
 //! Function to check convergence
-bool mpm::ConvergenceCriterionSolution::check_convergence(
+inline bool mpm::ConvergenceCriterionSolution::check_convergence(
     const Eigen::VectorXd& solution_vector, bool save_settings) {
   bool convergence = false;
   try {

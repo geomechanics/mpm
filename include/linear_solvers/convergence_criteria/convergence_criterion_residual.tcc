@@ -1,5 +1,5 @@
 //! Function to check convergence
-bool mpm::ConvergenceCriterionResidual::check_convergence(
+inline bool mpm::ConvergenceCriterionResidual::check_convergence(
     const Eigen::VectorXd& residual_vector, bool initial) {
   bool convergence = false;
   try {

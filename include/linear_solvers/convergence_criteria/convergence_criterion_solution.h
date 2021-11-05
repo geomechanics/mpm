@@ -38,8 +38,8 @@ class ConvergenceCriterionSolution : public mpm::ConvergenceCriterionBase {
   //! Function to check convergence
   //! \param[in] solution_vector Solution vector of interest
   //! \param[in] save_settings Unused boolean settings
-  bool check_convergence(const Eigen::VectorXd& solution_vector,
-                         bool save_settings = false) override;
+  inline bool check_convergence(const Eigen::VectorXd& solution_vector,
+                                bool save_settings = false) override;
 
  protected:
   //! Logger

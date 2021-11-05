@@ -48,8 +48,8 @@ class ConvergenceCriterionResidual : public mpm::ConvergenceCriterionBase {
   //! Function to check convergence
   //! \param[in] residual_vector Residual vector of interest
   //! \param[in] initial Boolean to indentify 1st (true) iteration
-  bool check_convergence(const Eigen::VectorXd& residual_vector,
-                         bool initial = false) override;
+  inline bool check_convergence(const Eigen::VectorXd& residual_vector,
+                                bool initial = false) override;
 
  protected:
   //! Logger

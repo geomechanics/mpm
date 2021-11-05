@@ -98,7 +98,7 @@ TEST_CASE("Convergence criteria test MPI", "[convergence_criteria][mpi]") {
 
   // Get number of MPI ranks
   int mpi_size, mpi_rank;
-#ifdef USE_MPI
+#ifdef USE_PETSC
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 

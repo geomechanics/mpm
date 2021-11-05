@@ -333,9 +333,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   const double pdstrain = (*state_vars).at("pdstrain");
 
   // Update MC parameters using a linear softening rule
-  (*state_vars).at("phi") = phi_peak_;
-  (*state_vars).at("psi") = psi_peak_;
-  (*state_vars).at("cohesion") = cohesion_peak_;
   if (softening_ && pdstrain > pdstrain_peak_) {
     if (pdstrain < pdstrain_residual_) {
       (*state_vars).at("phi") =

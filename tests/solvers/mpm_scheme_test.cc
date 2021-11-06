@@ -19,6 +19,7 @@
 #include "mesh.h"
 #include "mpm_scheme.h"
 #include "mpm_scheme_musl.h"
+#include "mpm_scheme_newmark.h"
 #include "mpm_scheme_usf.h"
 #include "mpm_scheme_usl.h"
 #include "node.h"
@@ -27,7 +28,7 @@
 
 //! \brief Check stress update 3D case
 TEST_CASE("Stress update is checked for USF, USL and MUSL",
-          "[MPMScheme][USF][USL][MUSL][3D]") {
+          "[MPMScheme][USF][USL][MUSL][Newmark][3D]") {
   // Dimension
   const unsigned Dim = 3;
   // Degrees of freedom
@@ -293,5 +294,48 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     // Locate particles
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(true));
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(false));
+
+    // Illegal Operation
+    REQUIRE_THROWS(mpm_scheme->update_nodal_kinematics_newmark(0, 0, 0));
+    REQUIRE_THROWS(mpm_scheme->update_particle_stress_strain_volume());
+  }
+
+  SECTION("Check Newmark") {
+    auto mpm_scheme = std::make_shared<mpm::MPMSchemeNewmark<Dim>>(mesh, 0.01);
+    // Phase
+    unsigned phase = 0;
+    // Step
+    unsigned step = 5;
+    // Gravity
+    Eigen::Matrix<double, Dim, 1> gravity = {0., 0., 9.81};
+    // Initialise
+    REQUIRE_NOTHROW(mpm_scheme->initialise());
+
+    // Mass momentum and compute velocity at nodes
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(phase));
+
+    // Update stress first
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
+
+    // Compute forces
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
+
+    // Particle kinematics
+    REQUIRE_NOTHROW(
+        mpm_scheme->compute_particle_kinematics(true, phase, "None", 0.02));
+
+    // Update Stress Last
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, false));
+
+    // Locate particles
+    REQUIRE_NOTHROW(mpm_scheme->locate_particles(true));
+    REQUIRE_NOTHROW(mpm_scheme->locate_particles(false));
+
+    // Specific Operation
+    REQUIRE_NOTHROW(mpm_scheme->update_nodal_kinematics_newmark(0, 0.25, 0.5));
+    REQUIRE_NOTHROW(mpm_scheme->update_particle_stress_strain_volume());
   }
 }

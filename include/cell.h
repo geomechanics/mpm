@@ -218,6 +218,11 @@ class Cell {
   //! Return previous mpi rank
   unsigned previous_mpirank() const;
 
+  /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+
   //! Assign discontinuity element type
   void assign_type_discontinuity(mpm::EnrichType type);
 
@@ -288,6 +293,8 @@ class Cell {
 
   //! Assign the area of the discontinuity to nodes
   void assign_cohesion_area();
+
+  /**@}*/
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -554,8 +561,13 @@ class Cell {
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  /**
+   * \defgroup XMPM Varibales for XMPM
+   */
+  /**@{*/
   //! discontinuity element
   std::shared_ptr<DiscontinuityElement<Tdim>> discontinuity_element_{nullptr};
+  /**@}*/
 };  // Cell class
 }  // namespace mpm
 

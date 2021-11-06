@@ -347,6 +347,11 @@ class ParticleBase {
   virtual void deserialize(
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) = 0;
+
+    /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
   //! set the level set function values
   //! \param[in] phivalue Signed distance function
   virtual void assign_levelsetphi(double phivalue){};
@@ -382,6 +387,8 @@ class ParticleBase {
                                        bool initiation) {
     return false;
   };
+
+  /**@}*/
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

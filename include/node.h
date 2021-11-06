@@ -5,7 +5,6 @@
 #include "mutex.h"
 #include "nodal_properties.h"
 #include "node_base.h"
-#include <fstream>
 
 namespace mpm {
 
@@ -296,6 +295,10 @@ class Node : public NodeBase<Tdim> {
   //! Compute multimaterial normal unit vector
   void compute_multimaterial_normal_unit_vector() override;
 
+   /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
   //! Assign whether the node is enriched
   //! \param[in] discontinuity_enrich_: true or false
   void assign_discontinuity_enrich(bool discontinuity) {
@@ -361,6 +364,7 @@ class Node : public NodeBase<Tdim> {
   //! Return  connected cells
   //! \retval cells_ connected cells
   std::vector<Index> cells() const { return cells_; }
+  /**@}*/
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

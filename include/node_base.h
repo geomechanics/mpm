@@ -293,6 +293,11 @@ class NodeBase {
   //! Compute multimaterial normal unit vector
   virtual void compute_multimaterial_normal_unit_vector() = 0;
 
+    /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+
   //! Return data in the nodal discontinuity properties map at a specific index
   //! \param[in] property Property name
   //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
@@ -353,6 +358,8 @@ class NodeBase {
 
   //! Return cells_
   virtual std::vector<Index> cells() const = 0;
+  /**@}*/
+  
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

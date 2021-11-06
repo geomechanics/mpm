@@ -501,6 +501,11 @@ class Mesh {
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
 
+  /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+
   //! Create the nodal properties' map for discontinuity
   void create_nodal_properties_discontinuity();
 
@@ -573,6 +578,9 @@ class Mesh {
   //! Assign the level set values to the particles which just enter the crossed
   //! cell
   void check_particle_levelset(bool particle_levelset);
+
+  /**@}*/
+
   /**
    * \defgroup MultiPhase Functions dealing with multi-phase MPM
    */
@@ -736,8 +744,13 @@ class Mesh {
   unsigned nhalo_nodes_{0};
   //! Maximum number of halo nodes
   unsigned ncomms_{0};
+  /**
+   * \defgroup XMPM Variables for XMPM
+   */
+  /**@{*/
   //! discontinuity
   std::shared_ptr<mpm::DiscontinuityBase<Tdim>> discontinuity_;
+  /**@}*/
 
 };  // Mesh class
 }  // namespace mpm

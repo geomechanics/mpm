@@ -147,6 +147,7 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/cells/
   ${mpm_SOURCE_DIR}/include/contacts/
   ${mpm_SOURCE_DIR}/include/containers/
+  ${mpm_SOURCE_DIR}/include/data_structures/
   ${mpm_SOURCE_DIR}/include/elements/
   ${mpm_SOURCE_DIR}/include/elements/2d
   ${mpm_SOURCE_DIR}/include/elements/3d

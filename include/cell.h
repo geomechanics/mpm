@@ -224,74 +224,93 @@ class Cell {
   /**@{*/
 
   //! Assign discontinuity element type
+  //! \ingroup XMPM
   void assign_type_discontinuity(mpm::EnrichType type);
 
   //! Initialize discontinuity element properties
+  //! \ingroup XMPM
   void initialise_element_properties_discontinuity();
 
   //! Assign the normal direction of the discontinuity in the cell
+  //! \ingroup XMPM
   //! \param[in] the normal direction
   void assign_normal_discontinuity(VectorDim normal);
 
   //! Assign the constant parameters of the discontinuity in the cell
+  //! \ingroup XMPM
   //! \param[in] the constant parameters
   void assign_d_discontinuity(double d) {
     this->discontinuity_element_->assign_d(d);
   };
 
   //! Assign the normal direction of the discontinuity in the cell
+  //! \ingroup XMPM
   //! \param[in] the normal direction
   //! \param[in] the plane constant
   void assign_normal_discontinuity(VectorDim normal, double d);
 
   //! Return the normal direction of the discontinuity in the cell
+  //! \ingroup XMPM
   //! \retval the normal direction of the discontinuity
   VectorDim normal_discontinuity() {
     return discontinuity_element_->normal_discontinuity();
   };
 
   //! Return discontinuity element type
+  //! \ingroup XMPM
   unsigned element_type_discontinuity();
 
   //! Find the potential tip element
+  //! \ingroup XMPM
   void potential_tip_element();
 
   //! Determine tip element
+  //! \ingroup XMPM
   void tip_element();
 
   //! Compute normal vector of discontinuity by the nodal level set values
+  //! \ingroup XMPM
   void compute_normal_vector_discontinuity();
 
   //! Compute the discontinuity plane by the nodal level set values
+  //! \ingroup XMPM
   //! \param[in] true: compute by the enriched nodes
   void compute_plane_discontinuity(bool enrich);
 
   //! Compute the discontinuity point: the average coordinates of the
-  //! intersection points \param[in] mark points list
+  //! \ingroup XMPM
+  //! \param[in] mark points list
   void compute_discontinuity_point(std::vector<VectorDim>& coordinates);
 
   //! Return the product of the maximum and minimum nodal level set value
+  //! \ingroup XMPM
   //! \retval the product of the maximum and minimum nodal level set value
   double product_levelset();
 
   //! Return the constant value of the discontinuity plane
+  //! \ingroup XMPM
   double d_discontinuity() {
     return this->discontinuity_element_->d_discontinuity();
   }
 
   //! Determine the celltype by the nodal level set
+  //! \ingroup XMPM
   void determine_crossed();
 
   //! Compute the nodal level set values by plane equations
+  //! \ingroup XMPM
   void compute_nodal_levelset_equation();
 
   //! Compute the area of the discontinuity
+  //! \ingroup XMPM
   void compute_area_discontinuity();
 
   //! Return the area of the discontinuity
+  //! \ingroup XMPM
   double discontinuity_area() { return this->discontinuity_element_->area(); }
 
   //! Assign the area of the discontinuity to nodes
+  //! \ingroup XMPM
   void assign_cohesion_area();
 
   /**@}*/

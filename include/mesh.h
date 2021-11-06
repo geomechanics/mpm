@@ -507,9 +507,11 @@ class Mesh {
   /**@{*/
 
   //! Create the nodal properties' map for discontinuity
+  //! \ingroup XMPM
   void create_nodal_properties_discontinuity();
 
   //! Initialise discontinuity
+  //! \ingroup XMPM
   //! \param[in] discontinuity List of discontinuity
   void initialise_discontinuity(
       const std::shared_ptr<mpm::DiscontinuityBase<Tdim>>& discontinuity) {
@@ -517,57 +519,74 @@ class Mesh {
   }
 
   //! Locate points of discontinuity in a cell
+  //! \ingroup XMPM
   void locate_discontinuity();
 
   //! Update the discontinuity position
+  //! \ingroup XMPM
   //! \param[in] dt Analysis time step
   void compute_updated_position_discontinuity(double dt);
 
   //! Update the discontinuity position
+  //! \ingroup XMPM
   void compute_shapefn_discontinuity();
 
   //! compute the normal vector of cells
+  //! \ingroup XMPM
   void compute_cell_normal_vector_discontinuity();
 
   //! compute the normal vector of enriched nodes at the discontinuity
+  //! \ingroup XMPM
   void compute_nodal_normal_vector_discontinuity();
 
   //! Initialize the level set function values
+  //! \ingroup XMPM
   void initialise_levelset_discontinuity();
 
   //! Initialize the nodal level set function values
+  //! \ingroup XMPM
   void initialise_nodal_levelset_discontinuity();
 
   //! The evolution of the discontinuity
+  //! \ingroup XMPM
   void update_discontinuity();
 
   //! Find next tip element
+  //! \ingroup XMPM
   void next_tip_element_discontinuity();
 
   // Initialize the cells in node
+  //! \ingroup XMPM
   void add_cell_in_node();
 
   //! Remove spurious potential tip element
+  //! \ingroup XMPM
   void spurious_potential_tip_element();
 
   //! Assign node type as enrich
+  //! \ingroup XMPM
   //! \param[in] whether use the average value of the surrounding particle
-  //! friction angle \param[in] whether enrich all the nodes
+  //! \param[in] whether enrich all the nodes
   void assign_node_enrich(bool friction_coef_average, bool enrich_all);
 
   //! Find all the nodes need to enriched
+  //! \ingroup XMPM
   void update_node_enrich();
 
   //! The initiation of discontinuity
+  //! \ingroup XMPM
   bool initiation_discontinuity();
 
   //! Adjust the nodal levelset_phi by mls
+  //! \ingroup XMPM
   void modify_nodal_levelset_mls();
 
   //! Compute the distance between two sides of discontinuity
+  //! \ingroup XMPM
   void selfcontact_detection();
 
   //! code for debugging added by yliang start-------------------------------
+  //! \ingroup XMPM
   void output_discontinuity(int step) {
     this->discontinuity_->output_markpoints(step);
   };
@@ -576,7 +595,8 @@ class Mesh {
   //! code for debugging added by yliang end---------------------------------
 
   //! Assign the level set values to the particles which just enter the crossed
-  //! cell
+  //! \ingroup XMPM
+  //! \param[in] the way to initialise the discontinuity
   void check_particle_levelset(bool particle_levelset);
 
   /**@}*/

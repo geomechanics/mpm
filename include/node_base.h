@@ -293,25 +293,32 @@ class NodeBase {
   //! Compute multimaterial normal unit vector
   virtual void compute_multimaterial_normal_unit_vector() = 0;
 
-    /**
+  /**
    * \defgroup XMPM Functions dealing with XMPM
    */
   /**@{*/
+  //! Initialise nodal properties for XMPM solver
+  //! \ingroup XMPM
+  virtual void initialise_xmpm() noexcept = 0;
 
   //! Return data in the nodal discontinuity properties map at a specific index
+  //! \ingroup XMPM
   //! \param[in] property Property name
   //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
   virtual Eigen::MatrixXd discontinuity_property(
       const std::string& property, unsigned nprops = 1) noexcept = 0;
 
   //! Assign whether the node is enriched
+  //! \ingroup XMPM
   //! \param[in] discontinuity discontinuity_enrich: true or false
   virtual void assign_discontinuity_enrich(bool discontinuity) = 0;
 
   //! Return whether the node is enriched
+  //! \ingroup XMPM
   virtual bool discontinuity_enrich() const = 0;
 
   //! Update nodal property at the nodes from particle for discontinuity
+  //! \ingroup XMPM
   //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] property Property name
   //! \param[in] property_value Property quantity from the particles in the cell
@@ -323,6 +330,7 @@ class NodeBase {
       unsigned nprops) noexcept = 0;
 
   //! Assign nodal property at the nodes from particle for discontinuity
+  //! \ingroup XMPM
   //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] property Property name
   //! \param[in] property_value Property quantity from the particles in the cell
@@ -334,12 +342,14 @@ class NodeBase {
       unsigned nprops) noexcept = 0;
 
   //! Compute momentum for discontinuity
+  //! \ingroup XMPM
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
   virtual bool compute_momentum_discontinuity(unsigned phase,
                                               double dt) noexcept = 0;
 
   //! Compute momentum for discontinuity with cundall damping factor
+  //! \ingroup XMPM
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
   //! \param[in] damping_factor Damping factor
@@ -347,19 +357,23 @@ class NodeBase {
       unsigned phase, double dt, double damping_factor) noexcept = 0;
 
   //! Apply self-contact force of the discontinuity
+  //! \ingroup XMPM
   //! \param[in] dt Time-step
   virtual void self_contact_discontinuity(double dt) noexcept = 0;
 
   //! Return the discontinuity_prop_id
+  //! \ingroup XMPM
   virtual unsigned discontinuity_prop_id() const noexcept = 0;
 
   //! Add a cell id
+  //! \ingroup XMPM
   virtual void add_cell_id(Index id) = 0;
 
   //! Return cells_
+  //! \ingroup XMPM
   virtual std::vector<Index> cells() const = 0;
   /**@}*/
-  
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

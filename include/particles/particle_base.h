@@ -348,28 +348,34 @@ class ParticleBase {
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) = 0;
 
-    /**
+  /**
    * \defgroup XMPM Functions dealing with XMPM
    */
   /**@{*/
   //! set the level set function values
+  //! \ingroup XMPM
   //! \param[in] phivalue Signed distance function
   virtual void assign_levelsetphi(double phivalue){};
 
   //! Map particle volume to nodes
+  //! \ingroup XMPM
   virtual void map_volume_to_nodes() noexcept = 0;
 
   //! Map particle levelset to nodes
+  //! \ingroup XMPM
   virtual void map_levelset_to_nodes(){};
 
   //! Map particle frictional_coef to nodes
+  //! \ingroup XMPM
   //! \param[in] the default friction coefficient
   virtual void map_friction_coef_to_nodes(double discontinuity_friction_coef){};
 
   //! Map levelset from nodes to particles
+  //! \ingroup XMPM
   virtual void map_levelset_to_particle(){};
 
   //! Compute displacement
+  //! \ingroup XMPM
   //! \param[in] dt Analysis time step
   virtual inline void compute_displacement_gradient(double dt) noexcept {};
 
@@ -377,9 +383,11 @@ class ParticleBase {
   //! virtual void check_levelset(){};
 
   //! return levelset values
+  //! \ingroup XMPM
   virtual double levelset_phi() { return 0; }
 
   //! compute the minimum eigenvalue of the acoustic tensor
+  //! \ingroup XMPM
   //! \param[in] the normal direction of the previous discontinuity
   //! \param[in] do the initiation detection loop
   //! \retval whether initiate or propagate

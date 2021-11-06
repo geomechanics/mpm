@@ -1,3 +1,11 @@
+//! Initialise xmpm nodal variables
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::initialise_xmpm() noexcept {
+  this->initialise();
+  // Specific variables for xmpm
+  discontinuity_enrich_ = false;
+}
+
 //! Initialise shared pointer to nodal properties pool for discontinuity
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_discontinuity_property_handle(

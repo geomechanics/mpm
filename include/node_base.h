@@ -291,6 +291,10 @@ class NodeBase {
   //! \ingroup Implicit
   virtual void initialise_implicit() noexcept = 0;
 
+  //! Initialise nodal forces
+  //! \ingroup Impolicit
+  virtual void initialise_force() noexcept = 0;
+
   //! Update nodal inertia
   //! \ingroup Implicit
   //! \param[in] update A boolean to update (true) or assign (false)

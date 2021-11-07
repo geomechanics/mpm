@@ -1,5 +1,5 @@
-#ifndef MPM_ASSEMBLER_EIGEN_IMPLICIT_LINEAR_H_
-#define MPM_ASSEMBLER_EIGEN_IMPLICIT_LINEAR_H_
+#ifndef MPM_ASSEMBLER_EIGEN_IMPLICIT_H_
+#define MPM_ASSEMBLER_EIGEN_IMPLICIT_H_
 
 #include <Eigen/Sparse>
 #include <string>
@@ -12,11 +12,11 @@
 
 namespace mpm {
 template <unsigned Tdim>
-class AssemblerEigenImplicitLinear : public AssemblerBase<Tdim> {
+class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
  public:
   //! Constructor
   //! \param[in] node_neighbourhood Number of node neighbourhood considered
-  AssemblerEigenImplicitLinear(unsigned node_neighbourhood);
+  AssemblerEigenImplicit(unsigned node_neighbourhood);
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -62,6 +62,7 @@ class AssemblerEigenImplicitLinear : public AssemblerBase<Tdim> {
       const Eigen::VectorXd& displacement_increment) override {
     displacement_increment_ = displacement_increment;
   }
+
   /**@{*/
 
  protected:
@@ -83,9 +84,10 @@ class AssemblerEigenImplicitLinear : public AssemblerBase<Tdim> {
   Eigen::SparseVector<double> displacement_constraints_;
   //! Displacement increment
   Eigen::VectorXd displacement_increment_;
+
   /**@{*/
-};
+};  // namespace mpm
 }  // namespace mpm
 
-#include "assembler_eigen_implicit_linear.tcc"
-#endif  // MPM_ASSEMBLER_EIGEN_IMPLICIT_LINEAR_H_
+#include "assembler_eigen_implicit.tcc"
+#endif  // MPM_ASSEMBLER_EIGEN_IMPLICIT_H_

@@ -1,5 +1,5 @@
-#ifndef MPM_MPM_IMPLICIT_LINEAR_H_
-#define MPM_MPM_IMPLICIT_LINEAR_H_
+#ifndef MPM_MPM_IMPLICIT_H_
+#define MPM_MPM_IMPLICIT_H_
 
 #ifdef USE_GRAPH_PARTITIONING
 #include "graph.h"
@@ -8,19 +8,22 @@
 #include "mpm_base.h"
 
 #include "assembler_base.h"
+#include "convergence_criterion_base.h"
+#include "convergence_criterion_residual.h"
+#include "convergence_criterion_solution.h"
 #include "solver_base.h"
 
 namespace mpm {
 
-//! MPMImplicitLinear class
-//! \brief A class that implements the fully implicit linear one phase mpm
-//! \details A single-phase implicit linear MPM
+//! MPMImplicit class
+//! \brief A class that implements the fully implicit one phase mpm
+//! \details A single-phase implicit MPM
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class MPMImplicitLinear : public MPMBase<Tdim> {
+class MPMImplicit : public MPMBase<Tdim> {
  public:
   //! Default constructor
-  MPMImplicitLinear(const std::shared_ptr<IO>& io);
+  MPMImplicit(const std::shared_ptr<IO>& io);
 
   //! Solve
   bool solve() override;
@@ -39,9 +42,29 @@ class MPMImplicitLinear : public MPMBase<Tdim> {
   //! \ingroup Implicit
   bool reinitialise_matrix();
 
-  //! Compute equilibrium equation
+  //! Reinitialise equilibrium equation
   //! \ingroup Implicit
-  bool compute_equilibrium_equation();
+  void reinitialise_system_equation();
+
+  //! Assemble equilibrium equation
+  //! \ingroup Implicit
+  bool assemble_system_equation();
+
+  //! Solve equilibrium equation
+  //! \ingroup Implicit
+  bool solve_system_equation();
+
+  //! Initialisation of Newton-Raphson iteration
+  //! \ingroup Implicit
+  void initialise_newton_raphson_iteration();
+
+  //! Check convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  bool check_newton_raphson_convergence();
+
+  //! Finalisation of Newton-Raphson iteration
+  //! \ingroup Implicit
+  void finalise_newton_raphson_iteration();
   /**@}*/
 
   //! Class private variables
@@ -101,21 +124,35 @@ class MPMImplicitLinear : public MPMBase<Tdim> {
    * \defgroup ImplicitVariables Variables dealing with implicit MPM
    */
   /**@{*/
+  //! Phase
+  const unsigned phase_{mpm::ParticlePhase::SinglePhase};
+  //! Boolean of nonlinear analysis
+  bool nonlinear_{true};
   //! Parameter beta of Newmark scheme
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme
   double newmark_gamma_{0.5};
+  //! Current number of Newton-Raphson iteration
+  unsigned current_iteration_;
+  //! Max number of Newton-Raphson iteration
+  unsigned max_iteration_{20};
+  //! Verbosity for Newton-Raphson iteration
+  unsigned verbosity_{0};
   //! Assembler object
   std::shared_ptr<mpm::AssemblerBase<Tdim>> assembler_;
   //! Linear solver object
   tsl::robin_map<std::string,
                  std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>
       linear_solver_;
+  //! Newton-Raphson displacement increment convergence
+  std::shared_ptr<mpm::ConvergenceCriterionBase> disp_criterion_{nullptr};
+  //! Newton-Raphson residual convergence
+  std::shared_ptr<mpm::ConvergenceCriterionBase> residual_criterion_{nullptr};
   /**@}*/
 
-};  // MPMImplicitLinear class
+};  // MPMImplicit class
 }  // namespace mpm
 
-#include "mpm_implicit_linear.tcc"
+#include "mpm_implicit.tcc"
 
-#endif  // MPM_MPM_IMPLICIT_LINEAR_H_
+#endif  // MPM_MPM_IMPLICIT_H_

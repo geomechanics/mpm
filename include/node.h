@@ -293,6 +293,10 @@ class Node : public NodeBase<Tdim> {
   //! \ingroup Impolicit
   void initialise_implicit() noexcept override;
 
+  //! Initialise nodal forces
+  //! \ingroup Impolicit
+  void initialise_force() noexcept override;
+
   //! Update inertia at the nodes
   //! \ingroup Implicit
   //! \param[in] update A boolean to update (true) or assign (false)

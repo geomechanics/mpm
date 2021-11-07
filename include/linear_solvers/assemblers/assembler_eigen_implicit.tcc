@@ -1,16 +1,16 @@
 //! Construct a implicit eigen matrix assembler
 template <unsigned Tdim>
-mpm::AssemblerEigenImplicitLinear<Tdim>::AssemblerEigenImplicitLinear(
+mpm::AssemblerEigenImplicit<Tdim>::AssemblerEigenImplicit(
     unsigned node_neighbourhood)
     : mpm::AssemblerBase<Tdim>(node_neighbourhood) {
   //! Logger
-  std::string logger = "AssemblerEigenImplicitLinear::";
+  std::string logger = "AssemblerEigenImplicit::";
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
 //! Assemble stiffness matrix
 template <unsigned Tdim>
-bool mpm::AssemblerEigenImplicitLinear<Tdim>::assemble_stiffness_matrix() {
+bool mpm::AssemblerEigenImplicit<Tdim>::assemble_stiffness_matrix() {
   bool status = true;
   try {
     // Initialise stiffness matrix
@@ -69,7 +69,7 @@ bool mpm::AssemblerEigenImplicitLinear<Tdim>::assemble_stiffness_matrix() {
 
 // Assemble residual force right vector
 template <unsigned Tdim>
-bool mpm::AssemblerEigenImplicitLinear<Tdim>::assemble_residual_force_right() {
+bool mpm::AssemblerEigenImplicit<Tdim>::assemble_residual_force_right() {
   bool status = true;
   try {
     // Initialise residual force RHS vector
@@ -102,7 +102,7 @@ bool mpm::AssemblerEigenImplicitLinear<Tdim>::assemble_residual_force_right() {
 
 //! Assign displacement constraints
 template <unsigned Tdim>
-bool mpm::AssemblerEigenImplicitLinear<Tdim>::assign_displacement_constraints(
+bool mpm::AssemblerEigenImplicit<Tdim>::assign_displacement_constraints(
     double current_time) {
   bool status = false;
   try {
@@ -115,13 +115,13 @@ bool mpm::AssemblerEigenImplicitLinear<Tdim>::assign_displacement_constraints(
     // Iterate over nodes to get displacement constraints
     for (auto node = nodes.cbegin(); node != nodes.cend(); ++node) {
       for (unsigned i = 0; i < Tdim; ++i) {
-        // Assign total pressure constraint
+        // Assign total displacement constraint
         const double displacement_constraint =
             (*node)->displacement_constraint(i, current_time);
 
         // Check if there is a displacement constraint
         if (displacement_constraint != std::numeric_limits<double>::max()) {
-          // Insert the pressure constraints
+          // Insert the displacement constraints
           displacement_constraints_.insert(
               active_dof_ * i + (*node)->active_id()) = displacement_constraint;
         }
@@ -136,7 +136,7 @@ bool mpm::AssemblerEigenImplicitLinear<Tdim>::assign_displacement_constraints(
 
 //! Apply displacement constraints vector
 template <unsigned Tdim>
-void mpm::AssemblerEigenImplicitLinear<Tdim>::apply_displacement_constraints() {
+void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
   try {
     // Modify residual_force_rhs_vector_
     residual_force_rhs_vector_ -= stiffness_matrix_ * displacement_constraints_;

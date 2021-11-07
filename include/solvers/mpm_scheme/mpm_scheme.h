@@ -95,6 +95,15 @@ class MPMScheme {
         "Calling the base class function (update_nodal_kinematics_newmark) in "
         "MPMScheme:: illegal operation!");
   };
+
+  // Update particle stress, strain and volume
+  //! \ingroup Implicit
+  virtual inline void update_particle_stress_strain_volume() {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(update_particle_stress_strain_volume) in "
+        "MPMScheme:: illegal operation!");
+  }
   /**@}*/
 
  protected:

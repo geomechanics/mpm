@@ -355,7 +355,13 @@ class ParticleBase {
   //! set the level set function values
   //! \ingroup XMPM
   //! \param[in] phivalue Signed distance function
-  virtual void assign_levelsetphi(double phivalue){};
+  virtual void assign_levelsetphi(double phivalue) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_levelsetphi) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  };
 
   //! Map particle volume to nodes
   //! \ingroup XMPM
@@ -363,28 +369,58 @@ class ParticleBase {
 
   //! Map particle levelset to nodes
   //! \ingroup XMPM
-  virtual void map_levelset_to_nodes(){};
+  virtual void map_levelset_to_nodes() {
+    throw std::runtime_error(
+        "Calling the base class function (map_levelset_to_nodes) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  };
 
   //! Map particle frictional_coef to nodes
   //! \ingroup XMPM
   //! \param[in] the default friction coefficient
-  virtual void map_friction_coef_to_nodes(double discontinuity_friction_coef){};
+  virtual void map_friction_coef_to_nodes(double discontinuity_friction_coef) {
+    throw std::runtime_error(
+        "Calling the base class function (map_friction_coef_to_nodes) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  };
 
   //! Map levelset from nodes to particles
   //! \ingroup XMPM
-  virtual void map_levelset_to_particle(){};
+  virtual void map_levelset_to_particle() {
+    throw std::runtime_error(
+        "Calling the base class function (map_levelset_to_particle) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  };
 
   //! Compute displacement
   //! \ingroup XMPM
   //! \param[in] dt Analysis time step
-  virtual inline void compute_displacement_gradient(double dt) noexcept {};
+  virtual inline void compute_displacement_gradient(double dt) noexcept {
+    throw std::runtime_error(
+        "Calling the base class function (compute_displacement_gradient) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  };
 
   //! to do
   //! virtual void check_levelset(){};
 
   //! return levelset values
   //! \ingroup XMPM
-  virtual double levelset_phi() { return 0; }
+  virtual double levelset_phi() {
+    throw std::runtime_error(
+        "Calling the base class function (levelset_phi) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  }
 
   //! compute the minimum eigenvalue of the acoustic tensor
   //! \ingroup XMPM
@@ -393,7 +429,11 @@ class ParticleBase {
   //! \retval whether initiate or propagate
   virtual bool minimum_acoustic_tensor(VectorDim& normal_cell,
                                        bool initiation) {
-    return false;
+    throw std::runtime_error(
+        "Calling the base class function (minimum_acoustic_tensor) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
   };
 
   /**@}*/

@@ -523,6 +523,13 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
 
     // Load particle information from file
     mesh_->write_particles_hdf5(particles_file);
+
+    if (attribute == "particles")
+      mesh_->write_particles_hdf5(particles_file);
+    else if (attribute == "twophase_particles")
+      mesh_->write_particles_hdf5_twophase(particles_file);
+    else if (attribute == "xmpm_particles")
+      mesh_->write_particles_hdf5_xmpm(particles_file);
   }
 }
 

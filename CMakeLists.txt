@@ -178,6 +178,7 @@ SET(mpm_src
   ${mpm_SOURCE_DIR}/src/geometry.cc
   ${mpm_SOURCE_DIR}/src/pod_particle.cc
   ${mpm_SOURCE_DIR}/src/pod_particle_twophase.cc
+  ${mpm_SOURCE_DIR}/src/pod_particle_xmpm.cc
   ${mpm_SOURCE_DIR}/src/io/io.cc
   ${mpm_SOURCE_DIR}/src/io/io_mesh.cc
   ${mpm_SOURCE_DIR}/src/io/logger.cc

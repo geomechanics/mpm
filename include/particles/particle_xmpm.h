@@ -10,6 +10,7 @@
 #include "cell.h"
 #include "logger.h"
 #include "particle_base.h"
+#include "pod_particle_xmpm.h"
 
 namespace mpm {
 
@@ -75,7 +76,7 @@ class ParticleXMPM : public Particle<Tdim> {
 
   //! Compute displacement gradient
   //! \param[in] dt Analysis time step
-  void inline compute_displacement_gradient(double dt) noexcept override;
+  void inline compute_displacement_gradient(double dt) override;
 
   //! to do
   //!   virtual void check_levelset() noexcept override;

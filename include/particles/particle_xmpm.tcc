@@ -13,9 +13,9 @@ mpm::ParticleXMPM<Tdim>::ParticleXMPM(Index id, const VectorDim& coord)
 template <unsigned Tdim>
 bool mpm::ParticleXMPM<Tdim>::initialise_particle(PODParticle& particle) {
   bool status = mpm::Particle<Tdim>::initialise_particle(particle);
+  auto xmpm_particle = reinterpret_cast<PODParticleXMPM*>(&particle);
   // levelset_phi
-  // to do
-  levelset_phi_ = particle.levelset_phi;
+  this->levelset_phi_ = xmpm_particle->levelset_phi;
 
   return status;
 }
@@ -25,8 +25,101 @@ template <unsigned Tdim>
 // cppcheck-suppress *
 std::shared_ptr<void> mpm::ParticleXMPM<Tdim>::pod() const {
 
-  auto particle_data = std::make_shared<mpm::PODParticle>();
-  // to do
+  auto particle_data = std::make_shared<mpm::PODParticleXMPM>();
+
+  Eigen::Vector3d coordinates;
+  coordinates.setZero();
+  for (unsigned j = 0; j < Tdim; ++j) coordinates[j] = this->coordinates_[j];
+
+  Eigen::Vector3d displacement;
+  displacement.setZero();
+  for (unsigned j = 0; j < Tdim; ++j) displacement[j] = this->displacement_[j];
+
+  Eigen::Vector3d velocity;
+  velocity.setZero();
+  for (unsigned j = 0; j < Tdim; ++j) velocity[j] = this->velocity_[j];
+
+  Eigen::Vector3d acceleration;
+  acceleration.setZero();
+  for (unsigned j = 0; j < Tdim; ++j) acceleration[j] = this->acceleration_[j];
+
+  // Particle local size
+  Eigen::Vector3d nsize;
+  nsize.setZero();
+  Eigen::VectorXd size = this->natural_size();
+  for (unsigned j = 0; j < Tdim; ++j) nsize[j] = size[j];
+
+  Eigen::Matrix<double, 6, 1> stress = this->stress_;
+
+  Eigen::Matrix<double, 6, 1> strain = this->strain_;
+
+  particle_data->id = this->id();
+  particle_data->mass = this->mass();
+  particle_data->volume = this->volume();
+  particle_data->pressure =
+      (state_variables_[mpm::ParticlePhase::Solid].find("pressure") !=
+       state_variables_[mpm::ParticlePhase::Solid].end())
+          ? state_variables_[mpm::ParticlePhase::Solid].at("pressure")
+          : 0.;
+
+  particle_data->coord_x = coordinates[0];
+  particle_data->coord_y = coordinates[1];
+  particle_data->coord_z = coordinates[2];
+
+  particle_data->displacement_x = displacement[0];
+  particle_data->displacement_y = displacement[1];
+  particle_data->displacement_z = displacement[2];
+
+  particle_data->nsize_x = nsize[0];
+  particle_data->nsize_y = nsize[1];
+  particle_data->nsize_z = nsize[2];
+
+  particle_data->velocity_x = velocity[0];
+  particle_data->velocity_y = velocity[1];
+  particle_data->velocity_z = velocity[2];
+
+  particle_data->acceleration_x = acceleration[0];
+  particle_data->acceleration_y = acceleration[1];
+  particle_data->acceleration_z = acceleration[2];
+
+  particle_data->stress_xx = stress[0];
+  particle_data->stress_yy = stress[1];
+  particle_data->stress_zz = stress[2];
+  particle_data->tau_xy = stress[3];
+  particle_data->tau_yz = stress[4];
+  particle_data->tau_xz = stress[5];
+
+  particle_data->strain_xx = strain[0];
+  particle_data->strain_yy = strain[1];
+  particle_data->strain_zz = strain[2];
+  particle_data->gamma_xy = strain[3];
+  particle_data->gamma_yz = strain[4];
+  particle_data->gamma_xz = strain[5];
+
+  particle_data->epsilon_v = this->volumetric_strain_centroid_;
+
+  particle_data->status = this->status();
+
+  particle_data->cell_id = this->cell_id();
+
+  particle_data->material_id = this->material_id();
+
+  // Write state variables
+  if (this->material() != nullptr) {
+    particle_data->nstate_vars =
+        state_variables_[mpm::ParticlePhase::Solid].size();
+    if (state_variables_[mpm::ParticlePhase::Solid].size() > 20)
+      throw std::runtime_error("# of state variables cannot be more than 20");
+    unsigned i = 0;
+    auto state_variables = (this->material())->state_variables();
+    for (const auto& state_var : state_variables) {
+      particle_data->svars[i] =
+          state_variables_[mpm::ParticlePhase::Solid].at(state_var);
+      ++i;
+    }
+  }
+
+  // XMPM
   particle_data->levelset_phi = levelset_phi_;
   return particle_data;
 }
@@ -570,7 +663,7 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
 
 // Compute du_dx_ of the particle
 template <>
-void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) noexcept {
+void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
   // Define strain rate
   Eigen::Matrix<double, 3, 3> dudx_rate = Eigen::Matrix<double, 3, 3>::Zero();
   const double tolerance = 1.E-16;

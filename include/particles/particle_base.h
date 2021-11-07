@@ -17,6 +17,7 @@
 #include "material.h"
 #include "pod_particle.h"
 #include "pod_particle_twophase.h"
+#include "pod_particle_xmpm.h"
 
 namespace mpm {
 
@@ -360,7 +361,6 @@ class ParticleBase {
         "Calling the base class function (assign_levelsetphi) in "
         "ParticleBase:: "
         "illegal operation!");
-    return 0;
   };
 
   //! Map particle volume to nodes
@@ -374,7 +374,6 @@ class ParticleBase {
         "Calling the base class function (map_levelset_to_nodes) in "
         "ParticleBase:: "
         "illegal operation!");
-    return 0;
   };
 
   //! Map particle frictional_coef to nodes
@@ -385,7 +384,6 @@ class ParticleBase {
         "Calling the base class function (map_friction_coef_to_nodes) in "
         "ParticleBase:: "
         "illegal operation!");
-    return 0;
   };
 
   //! Map levelset from nodes to particles
@@ -395,18 +393,16 @@ class ParticleBase {
         "Calling the base class function (map_levelset_to_particle) in "
         "ParticleBase:: "
         "illegal operation!");
-    return 0;
   };
 
   //! Compute displacement
   //! \ingroup XMPM
   //! \param[in] dt Analysis time step
-  virtual inline void compute_displacement_gradient(double dt) noexcept {
+  virtual inline void compute_displacement_gradient(double dt) {
     throw std::runtime_error(
         "Calling the base class function (compute_displacement_gradient) in "
         "ParticleBase:: "
         "illegal operation!");
-    return 0;
   };
 
   //! to do

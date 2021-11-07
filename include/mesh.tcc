@@ -1595,6 +1595,8 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
     status = this->read_particles_hdf5(filename, particle_type);
   else if (type_name == "twophase_particles")
     status = this->read_particles_hdf5_twophase(filename, particle_type);
+  else if (type_name == "xmpm_particles")
+    status = this->read_particles_hdf5_xmpm(filename, particle_type);
   return status;
 }
 

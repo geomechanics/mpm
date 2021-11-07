@@ -7,6 +7,7 @@
 #include "particle.h"
 #include "particle_twophase.h"
 #include "pod_particle_twophase.h"
+#include "pod_particle_xmpm.h"
 
 //! \brief Check particle class for serialization and deserialization
 TEST_CASE("Twophase particle is checked for serialization and deserialization",

@@ -32,9 +32,6 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! Initialise discontinuity
   void initialise_discontinuity();
 
-  //! Checkpoint resume
-  bool checkpoint_resume() override;
-
  protected:
   // Generate a unique id for the analysis
   using mpm::MPMBase<Tdim>::uuid_;

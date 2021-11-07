@@ -30,9 +30,6 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"levelset", VariableType::Scalar},
       {"minimum_acoustic_eigenvalue", VariableType::Scalar},
       {"discontinuity_angle", VariableType::Scalar},
-      {"first_principal_stress", VariableType::Scalar},
-      {"first_principal_strain", VariableType::Scalar},
-      {"energy", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},

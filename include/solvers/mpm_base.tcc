@@ -524,22 +524,11 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
 
     // Load particle information from file
-    mesh_->write_particles_hdf5(particles_file);
+    if (attribute == "particles" || attribute == "fluid_particles")
+      mesh_->write_particles_hdf5(particles_file);
+    else if (attribute == "twophase_particles")
+      mesh_->write_particles_hdf5_twophase(particles_file);
   }
-}
-
-//! Write HDF5 files for twophase particles
-template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::write_hdf5_twophase(mpm::Index step,
-                                             mpm::Index max_steps) {
-  // Write hdf5 file for single phase particle
-  std::string attribute = "twophase_particles";
-  std::string extension = ".h5";
-
-  auto particles_file =
-      io_->output_file(attribute, extension, uuid_, step, max_steps).string();
-
-  mesh_->write_particles_hdf5_twophase(particles_file);
 }
 
 #ifdef USE_VTK

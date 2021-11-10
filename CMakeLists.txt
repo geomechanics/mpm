@@ -144,8 +144,10 @@ endif()
 # Include directories
 include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/
+  ${mpm_SOURCE_DIR}/include/cells/
   ${mpm_SOURCE_DIR}/include/contacts/
   ${mpm_SOURCE_DIR}/include/containers/
+  ${mpm_SOURCE_DIR}/include/data_structures/
   ${mpm_SOURCE_DIR}/include/elements/
   ${mpm_SOURCE_DIR}/include/elements/2d
   ${mpm_SOURCE_DIR}/include/elements/3d
@@ -158,6 +160,8 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/linear_solvers/linear_solvers
   ${mpm_SOURCE_DIR}/include/loads_bcs/
   ${mpm_SOURCE_DIR}/include/materials/
+  ${mpm_SOURCE_DIR}/include/mesh/
+  ${mpm_SOURCE_DIR}/include/nodes/
   ${mpm_SOURCE_DIR}/include/particles/
   ${mpm_SOURCE_DIR}/include/particles/pod_particles
   ${mpm_SOURCE_DIR}/include/solvers/
@@ -206,9 +210,9 @@ target_link_libraries(mpm git)
 if(MPM_BUILD_TESTING)
   SET(test_src
     ${mpm_SOURCE_DIR}/tests/test_main.cc
-    ${mpm_SOURCE_DIR}/tests/cell_implicit_test.cc
-    ${mpm_SOURCE_DIR}/tests/cell_test.cc
-    ${mpm_SOURCE_DIR}/tests/cell_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_test.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_test.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_vector_test.cc
     ${mpm_SOURCE_DIR}/tests/contact_test.cc
     ${mpm_SOURCE_DIR}/tests/convergence_criteria_test.cc
     ${mpm_SOURCE_DIR}/tests/factory_test.cc
@@ -239,10 +243,10 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/materials/newtonian_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/norsand_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/material_utility_test.cc
-    ${mpm_SOURCE_DIR}/tests/mesh_free_surface_test.cc
-    ${mpm_SOURCE_DIR}/tests/mesh_neighbours_test.cc
-    ${mpm_SOURCE_DIR}/tests/mesh_test_2d.cc
-    ${mpm_SOURCE_DIR}/tests/mesh_test_3d.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_free_surface_test.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_neighbours_test.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_2d.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_3d.cc
     ${mpm_SOURCE_DIR}/tests/mpi_transfer_particle_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/nodal_properties_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_implicit_test.cc

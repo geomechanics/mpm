@@ -32,7 +32,7 @@ class SolverBase {
 
   //! Assign rank to global mapper
   virtual void assign_rank_global_mapper(
-      std::vector<int> rank_global_mapper) = 0;
+      const std::vector<int>& rank_global_mapper) = 0;
 
   //! Set sub solver type
   void set_sub_solver_type(const std::string& type) noexcept {

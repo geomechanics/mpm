@@ -86,6 +86,7 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->stress_[3] = particle.tau_xy;
   this->stress_[4] = particle.tau_yz;
   this->stress_[5] = particle.tau_xz;
+  this->previous_stress_ = stress_;
 
   // Strain
   this->strain_[0] = particle.strain_xx;
@@ -261,6 +262,7 @@ void mpm::Particle<Tdim>::initialise() {
   size_.setZero();
   strain_rate_.setZero();
   strain_.setZero();
+  previous_stress_.setZero();
   stress_.setZero();
   traction_.setZero();
   velocity_.setZero();
@@ -1195,6 +1197,7 @@ void mpm::Particle<Tdim>::deserialize(
   // Stress
   MPI_Unpack(data_ptr, data.size(), &position, stress_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);
+  this->previous_stress_ = stress_;
   // Strain
   MPI_Unpack(data_ptr, data.size(), &position, strain_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);

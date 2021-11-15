@@ -232,12 +232,11 @@ bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
   return true;
 }
 
-// Write JSON Configuration file for implicit linear
-bool write_json_implicit_linear(unsigned dim, bool resume,
-                                const std::string& analysis,
-                                const std::string& mpm_scheme,
-                                const std::string& file_name,
-                                const std::string& linear_solver_type) {
+// Write JSON Configuration file for implicit
+bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& mpm_scheme, bool nonlinear,
+                         const std::string& file_name,
+                         const std::string& linear_solver_type) {
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
@@ -245,7 +244,7 @@ bool write_json_implicit_linear(unsigned dim, bool resume,
   auto node_type = "N2D";
   auto cell_type = "ED2Q4";
   auto io_type = "Ascii2D";
-  auto assembler_type = "EigenImplicitLinear2D";
+  auto assembler_type = "EigenImplicit2D";
   std::string entity_set_name = "entity_sets_0";
   std::string material = "LinearElastic2D";
   std::vector<double> gravity{{0., -9.81}};
@@ -259,7 +258,7 @@ bool write_json_implicit_linear(unsigned dim, bool resume,
     particle_type = "P3D";
     node_type = "N3D";
     cell_type = "ED3H8";
-    assembler_type = "EigenImplicitLinear3D";
+    assembler_type = "EigenImplicit3D";
     io_type = "Ascii3D";
     material = "LinearElastic3D";
     gravity.clear();
@@ -323,6 +322,15 @@ bool write_json_implicit_linear(unsigned dim, bool resume,
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
+        {"scheme_settings",
+         {{"nonlinear", nonlinear},
+          {"beta", 0.25},
+          {"gamma", 0.50},
+          {"max_iteration", 20},
+          {"displacement_tolerance", 1.0e-10},
+          {"residual_tolerance", 1.0e-10},
+          {"relative_residual_tolerance", 1.0e-6},
+          {"verbosity", 0}}},
         {"locate_particles", true},
         {"pressure_smoothing", true},
         {"dt", 0.0001},

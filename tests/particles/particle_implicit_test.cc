@@ -14,7 +14,7 @@
 #include "quadrilateral_element.h"
 
 //! \brief Check particle class for 2D case
-TEST_CASE("Implicit Linear Particle is checked for 2D case",
+TEST_CASE("Implicit Particle is checked for 2D case",
           "[particle][2D][Implicit]") {
   // Dimension
   const unsigned Dim = 2;
@@ -293,27 +293,11 @@ TEST_CASE("Implicit Linear Particle is checked for 2D case",
     // Check pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Compute strain
+    // Compute strain increment
     particle->compute_strain_newmark();
-    // Strain
-    Eigen::Matrix<double, 6, 1> strain;
-    strain << 0., 0.25, 0., 0.050, 0., 0.;
-    // Check strains
-    for (unsigned i = 0; i < strain.rows(); ++i)
-      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
-
-    // Check updated pressure
-    const double K = 8333333.333333333;
-    REQUIRE(std::isnan(particle->pressure()) == true);
-
-    // Update volume
-    REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
-    REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(1.25).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
-
+    REQUIRE_NOTHROW(particle->compute_stress_newmark());
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
       stress <<  721153.8461538460 * 2.,
@@ -326,6 +310,40 @@ TEST_CASE("Implicit Linear Particle is checked for 2D case",
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
+
+    // Update stress and strain
+    particle->update_stress_strain();
+
+    // Strain
+    Eigen::Matrix<double, 6, 1> strain;
+    strain << 0., 0.25, 0., 0.050, 0., 0.;
+    // Check strains
+    for (unsigned i = 0; i < strain.rows(); ++i)
+      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
+
+    // Previous stress
+    Eigen::Matrix<double, 6, 1> previous_stress;
+    // clang-format off
+      previous_stress <<  721153.8461538460 * 2.,
+                          1682692.3076923075 * 2.,
+                          721153.8461538460 * 2.,
+                          96153.8461538462 * 2.,
+                          0.0000000000 * 2.,
+                          0.0000000000 * 2.;
+    // clang-format on
+    // Check previous stress
+    for (unsigned i = 0; i < stress.rows(); ++i)
+      REQUIRE(particle->previous_stress()(i) ==
+              Approx(previous_stress(i)).epsilon(Tolerance));
+
+    // Check updated pressure
+    const double K = 8333333.333333333;
+    REQUIRE(std::isnan(particle->pressure()) == true);
+
+    // Check volume
+    REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
+    REQUIRE_NOTHROW(particle->update_volume());
+    REQUIRE(particle->volume() == Approx(1.25).epsilon(Tolerance));
 
     // Update nodal velocity and acceleration using Newmark scheme
     for (const auto& node : nodes)
@@ -394,7 +412,7 @@ TEST_CASE("Implicit Linear Particle is checked for 2D case",
 }
 
 //! \brief Check particle class for 3D case
-TEST_CASE("Implicit Linear Particle is checked for 3D case",
+TEST_CASE("Implicit Particle is checked for 3D case",
           "[particle][3D][Implicit]") {
   // Dimension
   const unsigned Dim = 3;
@@ -728,27 +746,11 @@ TEST_CASE("Implicit Linear Particle is checked for 3D case",
     // Check pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Compute strain
+    // Compute strain increment
     particle->compute_strain_newmark();
-    // Strain
-    Eigen::Matrix<double, 6, 1> strain;
-    strain << 0.00000, 0.07500, 0.40000, -0.02500, 0.35000, -0.05000;
-
-    // Check strains
-    for (unsigned i = 0; i < strain.rows(); ++i)
-      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
-
-    // Check updated pressure
-    REQUIRE(std::isnan(particle->pressure()) == true);
-
-    // Update volume
-    REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
-    REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(11.8).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
-
+    REQUIRE_NOTHROW(particle->compute_stress_newmark());
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
     stress << 2740384.6153846150,
@@ -761,6 +763,26 @@ TEST_CASE("Implicit Linear Particle is checked for 3D case",
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
+
+    // Update stress and strain
+    particle->update_stress_strain();
+
+    // Strain
+    Eigen::Matrix<double, 6, 1> strain;
+    // clang-format off
+    strain << 0.00000, 0.07500, 0.40000, -0.02500, 0.35000, -0.05000;
+    // clang-format on
+    // Check strains
+    for (unsigned i = 0; i < strain.rows(); ++i)
+      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
+
+    // Check updated pressure
+    REQUIRE(std::isnan(particle->pressure()) == true);
+
+    // Update volume
+    REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
+    REQUIRE_NOTHROW(particle->update_volume());
+    REQUIRE(particle->volume() == Approx(11.8).epsilon(Tolerance));
 
     // Update nodal velocity and acceleration using Newmark scheme
     for (const auto& node : nodes)

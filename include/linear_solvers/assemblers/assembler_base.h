@@ -135,6 +135,7 @@ class AssemblerBase {
         "Calling the base class function (assign_displacement_increment) in "
         "AssemblerBase:: illegal operation!");
   };
+
   /**@{*/
 
   //! Navier-Stokes

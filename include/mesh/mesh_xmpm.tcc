@@ -1105,6 +1105,7 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_xmpm(const std::string& filename) {
 }
 
 //! code for debugging added by yliang start-------------------------------
+// FIXME: Remove this before merging to master
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::output_celltype(int step) {
   std::ofstream test("cell_type.txt", std::ios::app);
@@ -1145,6 +1146,7 @@ void mpm::Mesh<Tdim>::output_celltype(int step) {
   }
 }
 
+// FIXME: Remove this before merging to master
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::define_levelset() {
   // for oso

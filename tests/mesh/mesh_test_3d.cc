@@ -1551,14 +1551,14 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
     std::vector<mpm::Index> indices{0, 1, 2};
     surfs.emplace_back(indices);
 
-    const std::string discontunity_type = "tri3d";
+    const std::string discontinuity_type = "tri3d";
     // Get discontinuity id
     int discontinuity_id = 0;
     Json discontinuity_props;
     // Create a new discontinuity surface from JSON object
     auto discontinuity =
         Factory<mpm::DiscontinuityBase<Dim>, unsigned, const Json&>::instance()
-            ->create(discontunity_type, std::move(discontinuity_id),
+            ->create(discontinuity_type, std::move(discontinuity_id),
                      discontinuity_props);
 
     REQUIRE(discontinuity->initialise(points, surfs) == true);

@@ -10,12 +10,6 @@ mpm::XMPMExplicit<Tdim>::XMPMExplicit(const std::shared_ptr<IO>& io)
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSL<Tdim>>(mesh_, dt_);
   else
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSF<Tdim>>(mesh_, dt_);
-
-  //! Interface scheme
-  if (this->interface_)
-    contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
-  else
-    contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
 }
 
 //! MPM Explicit compute stress strain
@@ -63,11 +57,15 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   if (analysis_.find("resume") != analysis_.end())
     resume = analysis_["resume"]["resume"].template get<bool>();
 
+  // Enable repartitioning if resume is done with particles generated outside
+  // the MPM code.
+  bool repartition = false;
+  if (analysis_.find("resume") != analysis_.end() &&
+      analysis_["resume"].find("repartition") != analysis_["resume"].end())
+    repartition = analysis_["resume"]["repartition"].template get<bool>();
+
   // Pressure smoothing
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
-
-  // Interface
-  interface_ = io_->analysis_bool("interface");
 
   // Initialise material
   this->initialise_materials();
@@ -75,44 +73,45 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   // Initialise mesh
   this->initialise_mesh();
 
-  // Initialise particles
-  if (!resume) this->initialise_particles();
+  // Check point resume
+  if (resume) {
+    bool check_resume = this->checkpoint_resume();
+    if (!check_resume) resume = false;
+  }
 
-  // Create nodal properties
-  if (interface_) mesh_->create_nodal_properties();
+  // Resume or Initialise
+  bool initial_step = (resume == true) ? false : true;
+  if (resume) {
+    if (repartition) {
+      this->mpi_domain_decompose(initial_step);
+    } else {
+      mesh_->resume_domain_cell_ranks();
+#ifdef USE_MPI
+#ifdef USE_GRAPH_PARTITIONING
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+#endif
+    }
+    //! Particle entity sets and velocity constraints
+    this->particle_entity_sets(false);
+    this->particle_velocity_constraints();
+  } else {
+    // Initialise particles
+    this->initialise_particles();
+
+    // Compute mass
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
+
+    // Domain decompose
+    this->mpi_domain_decompose(initial_step);
+  }
 
   // Initialise discontinuity
   this->initialise_discontinuity();
 
   // Create nodal properties for discontinuity
   if (setdiscontinuity_) mesh_->create_nodal_properties_discontinuity();
-
-  // Compute mass
-  if (!resume)
-    mesh_->iterate_over_particles(std::bind(
-        &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
-
-  // Check point resume
-  if (resume) {
-    this->checkpoint_resume();
-    --this->step_;
-    mesh_->resume_domain_cell_ranks();
-#ifdef USE_MPI
-#ifdef USE_GRAPH_PARTITIONING
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-#endif
-  } else {
-    // Domain decompose
-    bool initial_step = (resume == true) ? false : true;
-    this->mpi_domain_decompose(initial_step);
-  }
-
-  //! Particle entity sets and velocity constraints
-  if (resume) {
-    this->particle_entity_sets(false);
-    this->particle_velocity_constraints();
-  }
 
   // Initialise loading conditions
   this->initialise_loads();
@@ -122,23 +121,8 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 
   auto solver_begin = std::chrono::steady_clock::now();
 
-  if (!resume) {
-    // Main loop
-    // HDF5 outputs
-    // HDF5 outputs the initial status
-    this->write_hdf5(this->step_, this->nsteps_);
-#ifdef USE_VTK
-    // VTK outputs
-    this->write_vtk(this->step_, this->nsteps_);
-#endif
-#ifdef USE_PARTIO
-    // Partio outputs
-    this->write_partio(this->step_, this->nsteps_);
-#endif
-  }
-
   for (; step_ < nsteps_; ++step_) {
-    // to do
+    // FIXME: Modify this to a more generic function
     bool nodal_update = false;
 
     if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
@@ -157,24 +141,25 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
 
-    if (step_ == 0 || resume == true) {
-      // predefine level set values
-      mesh_->define_levelset();
-      resume = false;
-    }
-    // Initialise nodal properties and append material ids to node
-    contact_->initialise();
+    // FIXME: Remove this before merging to master
+    // if (step_ == 0 || resume == true) {
+    //   // predefine level set values
+    //   mesh_->define_levelset();
+    //   resume = false;
+    // }
 
     if (initiation_) initiation_ = !mesh_->initiation_discontinuity();
 
     if (setdiscontinuity_ && !initiation_) {
       // Initialise nodal properties
       mesh_->initialise_nodal_properties();
+
       // Initialise element properties
       mesh_->iterate_over_cells(std::bind(
           &mpm::Cell<Tdim>::initialise_element_properties_discontinuity,
           std::placeholders::_1));
-      if (!particle_levelet_) {
+
+      if (!particle_levelset_) {
         // locate points of discontinuity
         mesh_->locate_discontinuity();
 
@@ -182,7 +167,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
         mesh_->compute_shapefn_discontinuity();
       }
 
-      //     // obtain nodal volume
+      // obtain nodal volume
 
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::map_volume_to_nodes,
@@ -207,7 +192,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
         mesh_->iterate_over_cells(std::bind(
             &mpm::Cell<Tdim>::potential_tip_element, std::placeholders::_1));
       }
-      if (particle_levelet_) {
+      if (particle_levelset_) {
         // determine the celltype by the nodal level set
         mesh_->iterate_over_cells(std::bind(&mpm::Cell<Tdim>::determine_crossed,
                                             std::placeholders::_1));
@@ -226,7 +211,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       // assign_node_enrich
       mesh_->assign_node_enrich(friction_coef_average_, nodal_update);
 
-      mesh_->check_particle_levelset(particle_levelet_);
+      mesh_->check_particle_levelset(particle_levelset_);
 
       // obtain the normal direction of each cell and enrich nodes
       mesh_->compute_nodal_normal_vector_discontinuity();
@@ -247,10 +232,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(phase);
 
-    if (particle_levelet_ || nodal_update) mesh_->update_node_enrich();
-
-    // Map material properties to nodes
-    contact_->compute_contact_forces();
+    if (particle_levelset_ || nodal_update) mesh_->update_node_enrich();
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
@@ -288,7 +270,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       }
 
       // Update the discontinuity position
-      if (!particle_levelet_)
+      if (!particle_levelset_)
         mesh_->compute_updated_position_discontinuity(this->dt_);
     }
 
@@ -347,13 +329,13 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
     if (!discontinuity_props.empty()) {
       setdiscontinuity_ = true;
       // Get discontinuity type
-      const std::string discontunity_type =
+      const std::string discontinuity_type =
           discontinuity_props["type"].template get<std::string>();
 
       // Create a new discontinuity surface from JSON object
       auto discontinuity =
           Factory<mpm::DiscontinuityBase<Tdim>, const Json&>::instance()
-              ->create(discontunity_type, discontinuity_props);
+              ->create(discontinuity_type, discontinuity_props);
 
       if (discontinuity_props.contains("initiation"))
         initiation_ = discontinuity_props.at("initiation").template get<bool>();
@@ -375,7 +357,8 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
           discontinuity_props.contains("file")) {
 
         surfacemesh_ = true;
-        // particle_levelet_ = true;
+        particle_levelset_ = true;
+
         // Get discontinuity  input type
         auto io_type =
             discontinuity_props["io_type"].template get<std::string>();
@@ -392,7 +375,7 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
             discontunity_io->read_mesh_nodes(discontinuity_file),
             discontunity_io->read_mesh_cells(discontinuity_file));
       } else if (discontinuity_props.contains("particle_levelset")) {
-        particle_levelet_ =
+        particle_levelset_ =
             discontinuity_props.at("particle_levelset").template get<bool>();
       }
 

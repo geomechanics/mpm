@@ -57,8 +57,6 @@ class XMPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::mpm_scheme_;
   //! Stress update method
   using mpm::MPMBase<Tdim>::stress_update_;
-  //! Interface scheme
-  using mpm::MPMBase<Tdim>::contact_;
   //! xmpm solver
   using mpm::MPMBase<Tdim>::xmpm_;
 
@@ -87,8 +85,6 @@ class XMPMExplicit : public MPMBase<Tdim> {
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
-  //! Interface
-  bool interface_{false};
   //! With or without discontinuities
   bool setdiscontinuity_{false};
   //! Discontinuities
@@ -96,7 +92,7 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! Describe a discontinuity by mesh
   bool surfacemesh_{false};
   //! Initialize the discontinuity by level set values
-  bool particle_levelet_{false};
+  bool particle_levelset_{false};
   //! Proparate or not
   bool propagation_{false};
   //! Initiate or not

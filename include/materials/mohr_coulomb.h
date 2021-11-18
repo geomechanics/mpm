@@ -85,6 +85,17 @@ class MohrCoulomb : public Material<Tdim> {
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
                      double* softening);
 
+  //! Compute constitutive relations matrix
+  //! \ingroup Implicit
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval dmatrix Constitutive relations mattrix
+  Matrix6x6 compute_dmatrix(const Vector6d& stress, const Vector6d& dstrain,
+                            const ParticleBase<Tdim>* ptr,
+                            mpm::dense_map* state_vars) override;
+
  protected:
   //! material id
   using Material<Tdim>::id_;

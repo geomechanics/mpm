@@ -1,2 +1,0 @@
-/usr/bin/ar qc libgit.a CMakeFiles/git.dir/include/git.cc.o
-/usr/bin/ranlib libgit.a

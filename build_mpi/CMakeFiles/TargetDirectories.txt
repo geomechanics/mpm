@@ -1,7 +1,0 @@
-/home/lyowsn/mpm_geomechanics/build_mpi/CMakeFiles/rebuild_cache.dir
-/home/lyowsn/mpm_geomechanics/build_mpi/CMakeFiles/edit_cache.dir
-/home/lyowsn/mpm_geomechanics/build_mpi/CMakeFiles/test.dir
-/home/lyowsn/mpm_geomechanics/build_mpi/CMakeFiles/mpmtest.dir
-/home/lyowsn/mpm_geomechanics/build_mpi/CMakeFiles/git.dir
-/home/lyowsn/mpm_geomechanics/build_mpi/CMakeFiles/check_git.dir
-/home/lyowsn/mpm_geomechanics/build_mpi/CMakeFiles/mpm.dir

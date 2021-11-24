@@ -182,39 +182,41 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       if (nodal_levelset_ == "mls") mesh_->modify_nodal_levelset_mls();
 
       // obtain nodal frictional_coefficient
-      if (friction_coef_average_)
-        mesh_->iterate_over_particles(
-            std::bind(&mpm::ParticleBase<Tdim>::map_friction_coef_to_nodes,
-                      std::placeholders::_1, discontinuity_->friction_coef()));
+      //   if (friction_coef_average_)
+      //     mesh_->iterate_over_particles(
+      //         std::bind(&mpm::ParticleBase<Tdim>::map_friction_coef_to_nodes,
+      //                   std::placeholders::_1,
+      //                   discontinuity_->friction_coef()));
 
       if (propagation_) {
         // find the potential tip element
         mesh_->iterate_over_cells(std::bind(
             &mpm::Cell<Tdim>::potential_tip_element, std::placeholders::_1));
       }
-      if (particle_levelset_) {
-        // determine the celltype by the nodal level set
-        mesh_->iterate_over_cells(std::bind(&mpm::Cell<Tdim>::determine_crossed,
-                                            std::placeholders::_1));
-      }
+      //   if (particle_levelset_) {
+      //     // determine the celltype by the nodal level set
+      //     mesh_->iterate_over_cells(std::bind(&mpm::Cell<Tdim>::determine_crossed,
+      //                                         std::placeholders::_1));
+      //   }
 
       // obtain the normal direction of non-regular cell
-      mesh_->compute_cell_normal_vector_discontinuity();
+      //   mesh_->compute_cell_normal_vector_discontinuity();
 
-      mesh_->iterate_over_cells(std::bind(
-          &mpm::Cell<Tdim>::compute_area_discontinuity, std::placeholders::_1));
+      //   mesh_->iterate_over_cells(std::bind(
+      //       &mpm::Cell<Tdim>::compute_area_discontinuity,
+      //       std::placeholders::_1));
 
       if (propagation_)
         // remove the spurious potential tip element
         mesh_->spurious_potential_tip_element();
 
-      // assign_node_enrich
-      mesh_->assign_node_enrich(friction_coef_average_, nodal_update);
+      //   // assign_node_enrich
+      //   mesh_->assign_node_enrich(friction_coef_average_, nodal_update);
 
-      mesh_->check_particle_levelset(particle_levelset_);
+      //   mesh_->check_particle_levelset(particle_levelset_);
 
-      // obtain the normal direction of each cell and enrich nodes
-      mesh_->compute_nodal_normal_vector_discontinuity();
+      //   // obtain the normal direction of each cell and enrich nodes
+      //   mesh_->compute_nodal_normal_vector_discontinuity();
 
       if (propagation_)  // find the tip element
       {
@@ -232,15 +234,15 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(phase);
 
-    if (particle_levelset_ || nodal_update) mesh_->update_node_enrich();
+    // if (particle_levelset_ || nodal_update) mesh_->update_node_enrich();
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
 
     // Iterate over each particle to calculate dudx
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
-                  std::placeholders::_1, dt_));
+    // mesh_->iterate_over_particles(
+    //     std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
+    //               std::placeholders::_1, dt_));
 
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,

@@ -372,6 +372,92 @@ class NodeBase {
   //! Return cells_
   //! \ingroup XMPM
   virtual std::vector<Index> cells() const = 0;
+
+  //! Update the nodal levelset values
+  //! \ingroup XMPM
+  //! \param[in] the id of the discontinuity
+  //! \param[in] the value of the nodal levelset_phi
+  virtual void update_levelset_phi(int discontinuity_id, double phi) {
+    throw std::runtime_error(
+        "Calling the base class function (update_levelset_phi) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched mass
+  //! \ingroup XMPM
+  //! \param[in] the value of the enriched mass
+  virtual void update_mass_enrich(double mass[3]) {
+    throw std::runtime_error(
+        "Calling the base class function update_mass_enriched in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched momentum
+  //! \ingroup XMPM
+  //! \param[in] the value of the enriched momentum
+  virtual void update_momentum_enrich(Eigen::Matrix<double, Tdim, 3> momenta) {
+    throw std::runtime_error(
+        "Calling the base class function update_momenta_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched internal_force
+  //! \ingroup XMPM
+  //! \param[in] the value of the enriched momentum
+  virtual void update_internal_force_enrich(
+      Eigen::Matrix<double, Tdim, 3> internal_force) {
+    throw std::runtime_error(
+        "Calling the base class function update_internal_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched external_force
+  //! \ingroup XMPM
+  //! \param[in] the value of the enriched external_force
+  virtual void update_external_force_enrich(
+      Eigen::Matrix<double, Tdim, 3> external_force) {
+    throw std::runtime_error(
+        "Calling the base class function update_external_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return mass_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual double* mass_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function mass_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+  //! Return momentum_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual Eigen::Matrix<double, Tdim, 3> momentum_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function momentum_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+  //! Return internal_force_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual Eigen::Matrix<double, Tdim, 3> internal_force_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function internal_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+  //! Return external_force_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual Eigen::Matrix<double, Tdim, 3> external_force_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function external_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
   /**@}*/
 
   /**

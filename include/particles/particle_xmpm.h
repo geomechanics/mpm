@@ -99,7 +99,10 @@ class ParticleXMPM : public Particle<Tdim> {
 
   //! return levelset values
   //! \retval particle levelset values
-  double levelset_phi() { return levelset_phi_; }
+  //! \param[in] discontinuity_id
+  double levelset_phi(int discontinuity_id = 0) {
+    return levelset_phi_[discontinuity_id];
+  }
 
   //! compute the minimum eigenvalue of the acoustic tensor
   //! \param[in] the normal direction of the previous discontinuity
@@ -113,7 +116,10 @@ class ParticleXMPM : public Particle<Tdim> {
  private:
   //! Assign the level set function values
   //! \param[in] phivalue The level set values
-  void assign_levelsetphi(double phivalue) { levelset_phi_ = phivalue; };
+  //! \param[in] discontinuity_id
+  void assign_levelsetphi(double phivalue, int discontinuity_id = 0) {
+    levelset_phi_[discontinuity_id] = phivalue;
+  };
 
   //! Return 1 if x > 0, -1 if x < 0 and 0 if x = 0
   //! \param[in] x double value
@@ -197,7 +203,7 @@ class ParticleXMPM : public Particle<Tdim> {
 
  private:
   //! level set value： phi for discontinuity
-  double levelset_phi_{0.};
+  double levelset_phi_[2];
 
   //! the minimum eigenvalue of the acoustic tensor
   double minimum_acoustic_eigenvalue_{1e16};

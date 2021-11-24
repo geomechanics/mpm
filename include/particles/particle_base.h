@@ -356,7 +356,8 @@ class ParticleBase {
   //! set the level set function values
   //! \ingroup XMPM
   //! \param[in] phivalue Signed distance function
-  virtual void assign_levelsetphi(double phivalue) {
+  //! \param[in] discontinuity_id
+  virtual void assign_levelsetphi(double phivalue, int discontinuity_id = 0) {
     throw std::runtime_error(
         "Calling the base class function (assign_levelsetphi) in "
         "ParticleBase:: "
@@ -410,7 +411,7 @@ class ParticleBase {
 
   //! return levelset values
   //! \ingroup XMPM
-  virtual double levelset_phi() {
+  virtual double levelset_phi(int discontinuity_id = 0) {
     throw std::runtime_error(
         "Calling the base class function (levelset_phi) in "
         "ParticleBase:: "

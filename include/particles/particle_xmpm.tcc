@@ -169,22 +169,24 @@ void mpm::ParticleXMPM<Tdim>::map_mass_momentum_to_nodes() noexcept {
   assert(mass_ != std::numeric_limits<double>::max());
 
   // Map mass and momentum to nodes
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                           mass_ * shapefn_[i]);
-    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i] * velocity_);
-    if (nodes_[i]->discontinuity_enrich()) {
-      // Unit 1x1 Eigen matrix to be used with scalar quantities
-      Eigen::Matrix<double, 1, 1> nodal_mass;
-      nodal_mass(0, 0) = sgn(levelset_phi_[0]) * mass_ * shapefn_[i];
-      // Map enriched mass and momentum to nodes
-      nodes_[i]->update_discontinuity_property(true, "mass_enrich", nodal_mass,
-                                               0, 1);
-      nodes_[i]->update_discontinuity_property(true, "momenta_enrich",
-                                               velocity_ * nodal_mass, 0, Tdim);
-    }
-  }
+  // for (unsigned i = 0; i < nodes_.size(); ++i) {
+  //   nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
+  //                          mass_ * shapefn_[i]);
+  //   nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
+  //                              mass_ * shapefn_[i] * velocity_);
+  //   if (nodes_[i]->discontinuity_enrich()) {
+  //     // Unit 1x1 Eigen matrix to be used with scalar quantities
+  //     Eigen::Matrix<double, 1, 1> nodal_mass;
+  //     nodal_mass(0, 0) = sgn(levelset_phi_[0]) * mass_ * shapefn_[i];
+  //     // Map enriched mass and momentum to nodes
+  //     nodes_[i]->update_discontinuity_property(true, "mass_enrich",
+  //     nodal_mass,
+  //                                              0, 1);
+  //     nodes_[i]->update_discontinuity_property(true, "momenta_enrich",
+  //                                              velocity_ * nodal_mass, 0,
+  //                                              Tdim);
+  //   }
+  // }
   // branch
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
@@ -196,7 +198,7 @@ void mpm::ParticleXMPM<Tdim>::map_mass_momentum_to_nodes() noexcept {
     mass_enrich[0] = sgn(levelset_phi_[0]) * mass_ * shapefn_[i];
     mass_enrich[1] = sgn(levelset_phi_[1]) * mass_ * shapefn_[i];
     mass_enrich[2] =
-        sgn(levelset_phi_[0]) * sgn(levelset_phi_[2]) * mass_ * shapefn_[i];
+        sgn(levelset_phi_[0]) * sgn(levelset_phi_[1]) * mass_ * shapefn_[i];
 
     Eigen::Matrix<double, Tdim, 3> momentum_enrich;
     for (unsigned j = 0; j < 3; j++) {
@@ -437,7 +439,7 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
         nodal_momentum_enrich.col(2) * sgn(levelset_phi_[0]) *
             sgn(levelset_phi_[1]);
 
-    nodal_velocity += nodal_momentum / nodal_mass;
+    nodal_velocity += shapefn_[i] * nodal_momentum / nodal_mass;
   }
   Eigen::Matrix<double, Tdim, 1> nodal_velocity_enrich =
       Eigen::Matrix<double, Tdim, 1>::Zero();

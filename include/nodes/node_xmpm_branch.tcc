@@ -28,13 +28,13 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::initialise() noexcept {
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::NodeXMPM<Tdim, Tdof, Tnphases>::compute_momentum_discontinuity(
     unsigned phase, double dt) noexcept {
-  momentum_enrich_.col(phase) =
+  momentum_.col(phase) =
       momentum_.col(phase) + (this->internal_force(phase).col(phase) +
                               this->external_force(phase).col(phase)) *
                                  dt;
 
   for (unsigned int i = 0; i < 3; i++)
-    momentum_enrich_.col(i) =
+    momentum_enrich_.col(i) +=
         (internal_force_enrich_.col(i) + external_force_enrich_.col(i)) * dt;
 
   // Apply velocity constraints, which also sets acceleration to 0,

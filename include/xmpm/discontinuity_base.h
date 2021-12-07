@@ -13,6 +13,12 @@
 
 namespace mpm {
 
+enum DescriptionType {
+  particle_levelset = 1,
+  node_levelset = 2,
+  mark_points = 3
+};
+
 template <unsigned Tdim>
 struct discontinuity_point;
 
@@ -119,7 +125,12 @@ class DiscontinuityBase {
   //! to do:output mark points
   void output_markpoints(int step);
 
+  //! Return description type
+  int description_type() { return description_type_; }
+
  protected:
+  //! Id
+  int id_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Vector of points
@@ -138,7 +149,12 @@ class DiscontinuityBase {
   double contact_distance_{std::numeric_limits<double>::max()};
   //! Maximum pdstrain
   double maximum_pdstrain_{0};
-
+  //! DescriptionType at the begining
+  DescriptionType description_type_{};
+  //! Compute the average friction coefficient from the neighbour particles
+  bool friction_coef_average_{false};
+  //! Proparate or not
+  bool propagation_{false};
 };  // DiscontinuityBase class
 
 //! Struct of discontinuity point

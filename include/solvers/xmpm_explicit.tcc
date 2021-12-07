@@ -111,10 +111,14 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   this->initialise_discontinuity();
 
   // Create nodal properties for discontinuity
-  if (setdiscontinuity_) mesh_->create_nodal_properties_discontinuity();
+  // if (setdiscontinuity_) mesh_->create_nodal_properties_discontinuity();
 
   // Initialise loading conditions
   this->initialise_loads();
+
+  bool surfacemesh_ = false;
+  bool particle_levelset_ = false;
+  bool propagation_ = false;
 
   // Initialise the levelset values for particles
   if (surfacemesh_) mesh_->initialise_levelset_discontinuity();
@@ -150,7 +154,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 
     if (initiation_) initiation_ = !mesh_->initiation_discontinuity();
 
-    if (setdiscontinuity_ && !initiation_) {
+    if (!initiation_) {  // setdiscontinuity_ &&
       // Initialise nodal properties
       mesh_->initialise_nodal_properties();
 
@@ -261,7 +265,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
                     std::placeholders::_1, phase, this->dt_),
           std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
-    if (setdiscontinuity_ && !initiation_) {
+    if (!initiation_) {  // setdiscontinuity_ &&
 
       if (propagation_) {
         // find the next tip element
@@ -329,60 +333,63 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
     // Get discontinuity data
     auto discontinuity_props = io_->json_object("discontinuity");
     if (!discontinuity_props.empty()) {
-      setdiscontinuity_ = true;
-      // Get discontinuity type
-      const std::string discontinuity_type =
-          discontinuity_props["type"].template get<std::string>();
-
-      // Create a new discontinuity surface from JSON object
-      auto discontinuity =
-          Factory<mpm::DiscontinuityBase<Tdim>, const Json&>::instance()
-              ->create(discontinuity_type, discontinuity_props);
-
+      // activate the initiation of the discontinuity
       if (discontinuity_props.contains("initiation"))
         initiation_ = discontinuity_props.at("initiation").template get<bool>();
+      // maximum number of the discontinuity
+      if (discontinuity_props.contains("maximum_num"))
+        maximum_num_ =
+            discontinuity_props.at("maximum_num").template get<int>();
+      // shield width for searching the initiation
+      if (discontinuity_props.contains("shield_width"))
+        shield_width_ =
+            discontinuity_props.at("shield_width").template get<double>();
+      // maximum_pdstrain for searching the initiation
+      if (discontinuity_props.contains("maximum_pdstrain"))
+        maximum_pdstrain_ =
+            discontinuity_props.at("maximum_pdstrain").template get<double>();
+      auto json_generators = discontinuity_props["generator"];
+      for (const auto& json_generator : json_generators) {
+        // Get discontinuity type
+        const std::string type =
+            json_generator["type"].template get<std::string>();
 
-      if (discontinuity_props.contains("nodal_levelset"))
-        nodal_levelset_ = discontinuity_props.at("nodal_levelset")
-                              .template get<std::string>();
+        // Create a new discontinuity surface from JSON object
+        auto discontinuity =
+            Factory<mpm::DiscontinuityBase<Tdim>, const Json&>::instance()
+                ->create(type, json_generator);
+        if (discontinuity->description_type() ==
+            mpm::DescriptionType::mark_points) {
+          // initiate with the mesh file
+          if (json_generator.contains("io_type") &&
+              json_generator.contains("file")) {
 
-      if (discontinuity_props.contains("friction_coefficient_average"))
-        friction_coef_average_ =
-            discontinuity_props.at("friction_coefficient_average")
-                .template get<bool>();
+            // Get discontinuity  input type
+            auto io_type =
+                json_generator["io_type"].template get<std::string>();
 
-      if (discontinuity_props.contains("propagation"))
-        propagation_ =
-            discontinuity_props.at("propagation").template get<bool>();
+            // discontinuity file
+            std::string discontinuity_file = io_->file_name(
+                json_generator["file"].template get<std::string>());
+            // Create a mesh reader
+            auto discontunity_io =
+                Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
 
-      if (discontinuity_props.contains("io_type") &&
-          discontinuity_props.contains("file")) {
+            // Create points and cells from file
+            discontinuity->initialise(
+                discontunity_io->read_mesh_nodes(discontinuity_file),
+                discontunity_io->read_mesh_cells(discontinuity_file));
+          }
+        } else {
+          // to do: read the mark points and directions
+        }
 
-        surfacemesh_ = true;
-        particle_levelset_ = true;
-
-        // Get discontinuity  input type
-        auto io_type =
-            discontinuity_props["io_type"].template get<std::string>();
-
-        // discontinuity file
-        std::string discontinuity_file = io_->file_name(
-            discontinuity_props["file"].template get<std::string>());
-        // Create a mesh reader
-        auto discontunity_io =
-            Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
-
-        // Create points and cells from file
-        discontinuity->initialise(
-            discontunity_io->read_mesh_nodes(discontinuity_file),
-            discontunity_io->read_mesh_cells(discontinuity_file));
-      } else if (discontinuity_props.contains("particle_levelset")) {
-        particle_levelset_ =
-            discontinuity_props.at("particle_levelset").template get<bool>();
+        // insert
+        discontinuity_ = discontinuity;
       }
 
       // Add discontinuity
-      discontinuity_ = discontinuity;
+      // discontinuity_ = discontinuity;
       // Copy discontinuity to mesh
       mesh_->initialise_discontinuity(this->discontinuity_);
     }

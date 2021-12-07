@@ -1,6 +1,6 @@
 template <unsigned Tdim>
-mpm::Discontinuity3D<Tdim>::Discontinuity3D(const Json& discontinuity_props)
-    : DiscontinuityBase<Tdim>(discontinuity_props) {}
+mpm::Discontinuity3D<Tdim>::Discontinuity3D(const Json& json_generator)
+    : DiscontinuityBase<Tdim>(json_generator) {}
 
 // initialization
 template <unsigned Tdim>

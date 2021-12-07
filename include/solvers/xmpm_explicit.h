@@ -85,22 +85,18 @@ class XMPMExplicit : public MPMBase<Tdim> {
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
-  //! With or without discontinuities
-  bool setdiscontinuity_{false};
   //! Discontinuities
   std::shared_ptr<mpm::DiscontinuityBase<Tdim>> discontinuity_;
-  //! Describe a discontinuity by mesh
-  bool surfacemesh_{false};
-  //! Initialize the discontinuity by level set values
-  bool particle_levelset_{false};
-  //! Proparate or not
-  bool propagation_{false};
   //! Initiate or not
   bool initiation_{false};
   //! Compute the nodal level set values by: "shepard" of "mls"
   std::string nodal_levelset_{"shepard"};
-  //! Compute the average friction coefficient from the neighbour particles
-  bool friction_coef_average_{false};
+  // maximum number of the discontinuity
+  int maximum_num_{1};
+  // shield width for searching the initiation
+  double shield_width_{std::numeric_limits<double>::max()};
+  // maximum_pdstrain for searching the initiation
+  double maximum_pdstrain_{0};
 
 };  // XMPMExplicit class
 }  // namespace mpm

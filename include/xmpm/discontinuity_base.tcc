@@ -1,38 +1,58 @@
 //! Constructor
 template <unsigned Tdim>
-mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
-    const Json& discontinuity_props) {
+mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(const Json& json_generator) {
 
   friction_coef_ = 0;
-
   std::string logger = "discontinuity";
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 
   try {
+
+    id_ = json_generator.at("id").template get<int>();
+
+    auto description =
+        json_generator.at("description_type").template get<std::string>();
+    if (description == "particle_levelset")
+      description_type_ == mpm::DescriptionType::particle_levelset;
+    else if (description == "node_levelset")
+      description_type_ == mpm::DescriptionType::node_levelset;
+    else if (description == "mark_points")
+      description_type_ == mpm::DescriptionType::mark_points;
+    else {
+      throw std::runtime_error(
+          "The description_type is uncorrect!"
+          "illegal operation!");
+    }
+
+    if (json_generator.contains("friction_coefficient_average"))
+      friction_coef_average_ = json_generator.at("friction_coefficient_average")
+                                   .template get<bool>();
+
+    if (json_generator.contains("propagation"))
+      propagation_ = json_generator.at("propagation").template get<bool>();
     // assign friction_coef_ if it's given in input file
-    if (discontinuity_props.contains("friction_coefficient"))
+    if (json_generator.contains("friction_coefficient"))
       friction_coef_ =
-          discontinuity_props.at("friction_coefficient").template get<double>();
+          json_generator.at("friction_coefficient").template get<double>();
     // assign cohesion_ if it's given in input file
-    if (discontinuity_props.contains("cohesion"))
-      cohesion_ = discontinuity_props.at("cohesion").template get<double>();
+    if (json_generator.contains("cohesion"))
+      cohesion_ = json_generator.at("cohesion").template get<double>();
     // assign contact_distance_ if it's given in input file
-    if (discontinuity_props.contains("contact_distance"))
+    if (json_generator.contains("contact_distance"))
       contact_distance_ =
-          discontinuity_props.at("contact_distance").template get<double>();
+          json_generator.at("contact_distance").template get<double>();
 
     // assign move direction if it's given in input file
-    if (discontinuity_props.contains("move_direction"))
-      move_direction_ =
-          discontinuity_props.at("move_direction").template get<int>();
+    if (json_generator.contains("move_direction"))
+      move_direction_ = json_generator.at("move_direction").template get<int>();
     // assign width if it's given in input file
-    if (discontinuity_props.contains("width"))
-      width_ = discontinuity_props.at("width").template get<double>();
+    if (json_generator.contains("width"))
+      width_ = json_generator.at("width").template get<double>();
 
     // assign maximum_pdstrain if it's given in input file
-    if (discontinuity_props.contains("maximum_pdstrain"))
+    if (json_generator.contains("maximum_pdstrain"))
       maximum_pdstrain_ =
-          discontinuity_props.at("maximum_pdstrain").template get<double>();
+          json_generator.at("maximum_pdstrain").template get<double>();
 
   } catch (Json::exception& except) {
     console_->error("discontinuity parameter not set: {} {}\n", except.what(),

@@ -516,6 +516,7 @@ class Mesh {
   void initialise_discontinuity(
       const std::shared_ptr<mpm::DiscontinuityBase<Tdim>>& discontinuity) {
     discontinuity_ = discontinuity;
+    this->initialise_levelset_discontinuity();
   }
 
   //! Locate points of discontinuity in a cell

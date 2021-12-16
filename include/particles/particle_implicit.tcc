@@ -34,10 +34,10 @@ inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell() {
     assert(this->material() != nullptr);
     // Calculate constitutive relations matrix
     Eigen::MatrixXd dmatrix;
-    dmatrix =
-        (this->material())
-            ->compute_dmatrix(stress_, dstrain_, this,
-                              &state_variables_[mpm::ParticlePhase::Solid]);
+    dmatrix = (this->material())
+                  ->compute_consistent_tangent_matrix(
+                      stress_, dstrain_, this,
+                      &state_variables_[mpm::ParticlePhase::Solid]);
 
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;

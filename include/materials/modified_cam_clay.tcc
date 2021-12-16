@@ -2,7 +2,7 @@
 template <unsigned Tdim>
 mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
                                             const Json& material_properties)
-    : Material<Tdim>(id, material_properties) {
+    : InfinitesimalElastoPlastic<Tdim>(id, material_properties) {
   try {
     // General parameters
     // Density

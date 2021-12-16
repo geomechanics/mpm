@@ -7,7 +7,7 @@
 
 #include "Eigen/Dense"
 
-#include "material.h"
+#include "infinitesimal_elasto_plastic.h"
 
 namespace mpm {
 
@@ -15,7 +15,7 @@ namespace mpm {
 //! \brief Modified Cam Clay material model
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class ModifiedCamClay : public Material<Tdim> {
+class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
  public:
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;

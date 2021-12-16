@@ -1,7 +1,7 @@
 //! Constructor with id and material properties
 template <unsigned Tdim>
 mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
-    : Material<Tdim>(id, material_properties) {
+    : InfinitesimalElastoPlastic<Tdim>(id, material_properties) {
   try {
     // Density
     density_ = material_properties.at("density").template get<double>();

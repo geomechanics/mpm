@@ -7,7 +7,7 @@
 
 #include "Eigen/Dense"
 
-#include "material.h"
+#include "infinitesimal_elasto_plastic.h"
 
 namespace mpm {
 
@@ -21,7 +21,7 @@ enum FailureState { Elastic, Tensile, Shear };
 //! \details Mohr Coulomb material model with softening
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class MohrCoulomb : public Material<Tdim> {
+class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
  public:
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
@@ -86,7 +86,6 @@ class MohrCoulomb : public Material<Tdim> {
                      double* softening);
 
   //! Compute constitutive relations matrix
-  //! \ingroup Implicit
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base

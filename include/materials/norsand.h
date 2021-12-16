@@ -5,7 +5,7 @@
 
 #include "Eigen/Dense"
 
-#include "material.h"
+#include "infinitesimal_elasto_plastic.h"
 
 namespace mpm {
 
@@ -19,7 +19,7 @@ enum class FailureState { Elastic, Yield };
 //! \details NorSand material model with softening
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class NorSand : public Material<Tdim> {
+class NorSand : public InfinitesimalElastoPlastic<Tdim> {
  public:
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;

@@ -55,14 +55,16 @@ class LinearElastic : public Material<Tdim> {
                           mpm::dense_map* state_vars) override;
 
   //! Compute consistent tangent matrix
-  //! \param[in] stress Stress
+  //! \param[in] stress Updated stress
+  //! \param[in] prev_stress Stress at the current step
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \retval dmatrix Constitutive relations mattrix
   Matrix6x6 compute_consistent_tangent_matrix(
-      const Vector6d& stress, const Vector6d& dstrain,
-      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) override;
+      const Vector6d& stress, const Vector6d& prev_stress,
+      const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
+      mpm::dense_map* state_vars) override;
 
  protected:
   //! material id

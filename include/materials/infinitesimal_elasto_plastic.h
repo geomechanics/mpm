@@ -20,8 +20,12 @@ namespace mpm {
 template <unsigned Tdim>
 class InfinitesimalElastoPlastic : public Material<Tdim> {
  public:
+  //! Define a vector of 3 dof
+  using Vector3d = Eigen::Matrix<double, 3, 1>;
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
+  //! Define a Matrix of 3 x 3
+  using Matrix3x3 = Eigen::Matrix<double, 3, 3>;
   //! Define a Matrix of 6 x 6
   using Matrix6x6 = Eigen::Matrix<double, 6, 6>;
 
@@ -41,32 +45,40 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
       delete;
 
   //! Compute consistent tangent matrix
-  //! \param[in] stress Stress
+  //! \param[in] stress Updated stress
+  //! \param[in] prev_stress Stress at the current step
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \retval dmatrix Constitutive relations mattrix
   Matrix6x6 compute_consistent_tangent_matrix(
-      const Vector6d& stress, const Vector6d& dstrain,
-      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) override;
+      const Vector6d& stress, const Vector6d& prev_stress,
+      const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
+      mpm::dense_map* state_vars) override;
 
  protected:
-  //! Compute constitutive relations matrix
+  //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \retval dmatrix Constitutive relations mattrix
-  virtual Matrix6x6 compute_dmatrix(const Vector6d& stress,
-                                    const Vector6d& dstrain,
-                                    const ParticleBase<Tdim>* ptr,
-                                    mpm::dense_map* state_vars) {
+  virtual Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
+                                                  const Vector6d& dstrain,
+                                                  const ParticleBase<Tdim>* ptr,
+                                                  mpm::dense_map* state_vars) {
     auto error = Matrix6x6::Zero();
     throw std::runtime_error(
-        "Calling the base class function (compute_dmatrix) in "
+        "Calling the base class function (compute_elasto_plastic_tensor) in "
         "Material:: illegal operation!");
     return error;
   };
+
+ protected:
+  //! Elastic stiffness matrix
+  Matrix6x6 de_;
+  //! Boolean to check whether the stress state is in plastic/elastic
+  bool plastic_region_{false};
 
 };  // MohrCoulomb class
 }  // namespace mpm

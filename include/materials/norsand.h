@@ -63,6 +63,10 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
+  //! Elastic matrix
+  using InfinitesimalElastoPlastic<Tdim>::de_;
+  //! Boolean to check whether the stress state is in plastic/elastic
+  using InfinitesimalElastoPlastic<Tdim>::plastic_region_;
 
  private:
   //! Compute elastic tensor
@@ -116,8 +120,6 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   //! Inline ternary function to check number not greater than one
   inline double check_one(double val) { return (val < 1.0 ? val : 1.0); }
 
-  //! Elastic stiffness matrix
-  Matrix6x6 de_;
   //! Plastic stiffness matrix
   Matrix6x6 dp_;
   //! Density

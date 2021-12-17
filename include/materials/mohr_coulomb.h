@@ -85,16 +85,6 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
                      double* softening);
 
-  //! Compute constitutive relations matrix
-  //! \param[in] stress Stress
-  //! \param[in] dstrain Strain
-  //! \param[in] particle Constant point to particle base
-  //! \param[in] state_vars History-dependent state variables
-  //! \retval dmatrix Constitutive relations mattrix
-  Matrix6x6 compute_dmatrix(const Vector6d& stress, const Vector6d& dstrain,
-                            const ParticleBase<Tdim>* ptr,
-                            mpm::dense_map* state_vars) override;
-
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -102,13 +92,26 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
+  //! Elastic matrix
+  using InfinitesimalElastoPlastic<Tdim>::de_;
+  //! Boolean to check whether the stress state is in plastic/elastic
+  using InfinitesimalElastoPlastic<Tdim>::plastic_region_;
 
  private:
   //! Compute elastic tensor
   bool compute_elastic_tensor();
 
-  //! Elastic stiffness matrix
-  Matrix6x6 de_;
+  //! Compute constitutive relations matrix for elasto-plastic material
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval dmatrix Constitutive relations mattrix
+  Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
+                                          const Vector6d& dstrain,
+                                          const ParticleBase<Tdim>* ptr,
+                                          mpm::dense_map* state_vars) override;
+
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Youngs modulus

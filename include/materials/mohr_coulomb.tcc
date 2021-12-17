@@ -362,8 +362,11 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   auto yield_type_trial =
       this->compute_yield_state(&yield_function_trial, (*state_vars));
   // Return the updated stress in elastic state
-  if (yield_type_trial == mpm::mohrcoulomb::FailureState::Elastic)
+  if (yield_type_trial == mpm::mohrcoulomb::FailureState::Elastic) {
+    plastic_region_ = false;
     return trial_stress;
+  } else
+    plastic_region_ = true;
   //-------------------------------------------------------------------------
   // Plastic-corrector stage: correct the stress back to the yield surface
   // Define tolerance of yield function
@@ -464,11 +467,12 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   return updated_stress;
 }
 
-//! Compute contitutive relations matrix
+//! Compute constitutive relations matrix for elasto-plastic material
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_dmatrix(
-    const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+Eigen::Matrix<double, 6, 6>
+    mpm::MohrCoulomb<Tdim>::compute_elasto_plastic_tensor(
+        const Vector6d& stress, const Vector6d& dstrain,
+        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
 
   //! Elasto-plastic stiffness matrix
   Matrix6x6 d_ep;

@@ -79,18 +79,20 @@ class Material {
                                   mpm::dense_map* state_vars) = 0;
 
   //! Compute consistent tangent matrix
-  //! \param[in] stress Stress
+  //! \param[in] stress Updated stress
+  //! \param[in] prev_stress Stress at the current step
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \retval dmatrix Constitutive relations mattrix
   virtual Matrix6x6 compute_consistent_tangent_matrix(
-      const Vector6d& stress, const Vector6d& dstrain,
-      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+      const Vector6d& stress, const Vector6d& prev_stress,
+      const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
+      mpm::dense_map* state_vars) {
     auto error = Matrix6x6::Zero();
     throw std::runtime_error(
-        "Calling the base class function (compute_dmatrix) in "
-        "Material:: illegal operation!");
+        "Calling the base class function (compute_consistent_tangent_matrix) "
+        "in Material:: illegal operation!");
     return error;
   };
 

@@ -105,6 +105,9 @@ class MPMBase : public MPM {
   //! Particle velocity constraints
   void particle_velocity_constraints();
 
+  //! Apply Absorbing Constraints
+  void nodal_absorbing_constraints();
+
  protected:
   //! Initialise implicit solver
   //! \param[in] lin_solver_props Linear solver properties
@@ -148,6 +151,12 @@ class MPMBase : public MPM {
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] mesh_io Mesh IO handle
   void nodal_pressure_constraints(
+      const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+
+  //! Nodal absorbing constraints
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void nodal_absorbing_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
   //! Cell entity sets
@@ -256,6 +265,11 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Nonlocal node neighbourhood
   unsigned node_neighbourhood_{0};
+  //! Absorbing Boundary Variables
+  bool absorbing_boundary_{false};
+  std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_constraint_;
+  std::vector<int> absorbing_nset_id_;
+  mpm::Position position_{mpm::Position::None};
 
 #ifdef USE_GRAPH_PARTITIONING
   // graph pass the address of the container of cell

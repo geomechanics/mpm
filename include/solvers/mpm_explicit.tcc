@@ -159,6 +159,12 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
 
+    // Apply Absorbing Constraint
+    if (absorbing_boundary_) {
+      mpm_scheme_->absorbing_boundary_properties();
+      this->nodal_absorbing_constraints();
+    }
+
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
                                              damping_factor_);

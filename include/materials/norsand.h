@@ -11,7 +11,7 @@ namespace mpm {
 
 namespace norsand {
 //! Failure state
-enum class FailureState { Elastic, Yield };
+enum class FailureState { Elastic = 0, Yield = 1 };
 }  // namespace norsand
 
 //! NorSand class

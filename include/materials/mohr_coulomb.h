@@ -13,7 +13,7 @@ namespace mpm {
 
 namespace mohrcoulomb {
 //! Failure state
-enum FailureState { Elastic, Tensile, Shear };
+enum FailureState { Elastic = 0, Shear = 1, Tensile = 2 };
 }  // namespace mohrcoulomb
 
 //! MohrCoulomb class

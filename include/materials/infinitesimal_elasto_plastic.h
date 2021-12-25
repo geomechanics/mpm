@@ -44,6 +44,11 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
   InfinitesimalElastoPlastic& operator=(const InfinitesimalElastoPlastic&) =
       delete;
 
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  void initialise() override { plastic_region_ = false; };
+
   //! Compute consistent tangent matrix
   //! \param[in] stress Updated stress
   //! \param[in] prev_stress Stress at the current step

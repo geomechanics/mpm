@@ -48,6 +48,14 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! State variables
   std::vector<std::string> state_variables() const override;
 
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  void initialise() override {
+    plastic_region_ = false;
+    yield_type_ = mpm::mohrcoulomb::FailureState::Elastic;
+  };
+
   //! Compute stress
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
@@ -142,6 +150,9 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   double tension_cutoff_{std::numeric_limits<double>::max()};
   //! softening
   bool softening_{false};
+  //! yield type
+  mpm::mohrcoulomb::FailureState yield_type_{
+      mpm::mohrcoulomb::FailureState::Elastic};
 };  // MohrCoulomb class
 }  // namespace mpm
 

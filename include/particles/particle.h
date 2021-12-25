@@ -420,6 +420,15 @@ class Particle : public ParticleBase<Tdim> {
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   void update_stress_strain() noexcept override;
+
+  //! Function to reinitialise material to be run at the beginning of each time
+  //! step
+  //! \ingroup Implicit
+  void initialise_material() noexcept override;
+
+  //! Function to finalise material to be run at the end of each time step
+  //! \ingroup Implicit
+  void finalise_material() noexcept override;
   /**@}*/
 
  protected:

@@ -25,6 +25,11 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+      // Initialise material
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::initialise_material,
+                    std::placeholders::_1));
     }
   }  // Wait to complete
 }
@@ -166,6 +171,10 @@ inline void
   // Iterate over each particle to update particle stress and strain
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
+
+  // Finalise material
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::finalise_material, std::placeholders::_1));
 
   // Iterate over each particle to update particle volume
   mesh_->iterate_over_particles(std::bind(

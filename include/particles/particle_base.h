@@ -407,6 +407,15 @@ class ParticleBase {
   //! \param[in] acceleration A vector of particle acceleration
   //! \retval status Assignment status
   virtual bool assign_acceleration(const VectorDim& acceleration) = 0;
+
+  //! Function to reinitialise material to be run at the beginning of each time
+  //! step
+  //! \ingroup Implicit
+  virtual void initialise_material() noexcept = 0;
+
+  //! Function to finalise material to be run at the end of each time step
+  //! \ingroup Implicit
+  virtual void finalise_material() noexcept = 0;
   /**@}*/
 
   //! Navier-Stokes functions----------------------------------

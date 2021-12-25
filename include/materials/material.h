@@ -67,6 +67,11 @@ class Material {
   //! State variables
   virtual std::vector<std::string> state_variables() const = 0;
 
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  virtual void initialise(){};
+
   //! Compute stress
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
@@ -95,6 +100,11 @@ class Material {
         "in Material:: illegal operation!");
     return error;
   };
+
+  //! Finalise material
+  //! \brief Function that finalise material to be called at the end of
+  //! time step
+  virtual void finalise(){};
 
  protected:
   //! material id

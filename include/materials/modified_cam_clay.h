@@ -127,10 +127,10 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
-  //! FIXME: Elastic matrix
-  using InfinitesimalElastoPlastic<Tdim>::de_;
 
  private:
+  //! FIXME: Elastic matrix (should not be a global variable)
+  Matrix6x6 de_;
   //! Plastic stiffness matrix
   Matrix6x6 dp_;
   //! General parameters

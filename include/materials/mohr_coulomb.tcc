@@ -472,14 +472,8 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6>
     mpm::MohrCoulomb<Tdim>::compute_elasto_plastic_tensor(
         const Vector6d& stress, const Vector6d& dstrain,
-        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
-
-  //! Elasto-plastic stiffness matrix
-  Matrix6x6 d_ep;
-
-  // Compute yield function based on the stress
-  Eigen::Matrix<double, 2, 1> yield_function;
-  auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
+        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars,
+        bool hardening) {
 
   // Return the updated stress in elastic state
   if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {

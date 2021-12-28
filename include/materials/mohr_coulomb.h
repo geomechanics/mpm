@@ -111,11 +111,14 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] hardening Boolean to consider hardening, default=true. If
+  //! perfect-plastic tensor is needed pass false
   //! \retval dmatrix Constitutive relations mattrix
   Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
                                           const Vector6d& dstrain,
                                           const ParticleBase<Tdim>* ptr,
-                                          mpm::dense_map* state_vars) override;
+                                          mpm::dense_map* state_vars,
+                                          bool hardening) override;
 
   //! Density
   double density_{std::numeric_limits<double>::max()};

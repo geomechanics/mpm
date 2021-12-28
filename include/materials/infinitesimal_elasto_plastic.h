@@ -62,21 +62,20 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] hardening Boolean to consider hardening, default=true. If
+  //! perfect-plastic tensor is needed pass false
   //! \retval dmatrix Constitutive relations mattrix
   virtual Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
                                                   const Vector6d& dstrain,
                                                   const ParticleBase<Tdim>* ptr,
-                                                  mpm::dense_map* state_vars) {
+                                                  mpm::dense_map* state_vars,
+                                                  bool hardening) {
     auto error = Matrix6x6::Zero();
     throw std::runtime_error(
         "Calling the base class function (compute_elasto_plastic_tensor) in "
         "Material:: illegal operation!");
     return error;
   };
-
- protected:
-  //! FIXME: Elastic stiffness matrix
-  Matrix6x6 de_;
 
 };  // MohrCoulomb class
 }  // namespace mpm

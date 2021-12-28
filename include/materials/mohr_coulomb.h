@@ -118,7 +118,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
                                           const Vector6d& dstrain,
                                           const ParticleBase<Tdim>* ptr,
                                           mpm::dense_map* state_vars,
-                                          bool hardening) override;
+                                          bool hardening = true) override;
 
   //! Inline ternary function to check negative or zero numbers
   inline double check_low(double val) {

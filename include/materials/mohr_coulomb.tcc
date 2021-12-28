@@ -89,26 +89,6 @@ std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
   return state_vars;
 }
 
-//! Compute elastic tensor
-template <unsigned Tdim>
-Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_elastic_tensor(
-    mpm::dense_map* state_vars) {
-  // Shear modulus
-  const double G = shear_modulus_;
-  const double a1 = bulk_modulus_ + (4.0 / 3.0) * G;
-  const double a2 = bulk_modulus_ - (2.0 / 3.0) * G;
-  // compute elastic stiffness matrix
-  // clang-format off
-  Matrix6x6 de = Matrix6x6::Zero();
-  de(0,0)=a1;    de(0,1)=a2;    de(0,2)=a2;
-  de(1,0)=a2;    de(1,1)=a1;    de(1,2)=a2;
-  de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;
-  de(3,3)=G;     de(4,4)=G;     de(5,5)=G;
-  // clang-format on
-
-  return de;
-}
-
 //! Compute stress invariants
 template <unsigned Tdim>
 bool mpm::MohrCoulomb<Tdim>::compute_stress_invariants(
@@ -496,6 +476,26 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   }
 
   return updated_stress;
+}
+
+//! Compute elastic tensor
+template <unsigned Tdim>
+Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_elastic_tensor(
+    mpm::dense_map* state_vars) {
+  // Shear modulus
+  const double G = shear_modulus_;
+  const double a1 = bulk_modulus_ + (4.0 / 3.0) * G;
+  const double a2 = bulk_modulus_ - (2.0 / 3.0) * G;
+  // compute elastic stiffness matrix
+  // clang-format off
+  Matrix6x6 de = Matrix6x6::Zero();
+  de(0,0)=a1;    de(0,1)=a2;    de(0,2)=a2;
+  de(1,0)=a2;    de(1,1)=a1;    de(1,2)=a2;
+  de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;
+  de(3,3)=G;     de(4,4)=G;     de(5,5)=G;
+  // clang-format on
+
+  return de;
 }
 
 //! Compute constitutive relations matrix for elasto-plastic material

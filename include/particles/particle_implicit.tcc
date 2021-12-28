@@ -14,13 +14,8 @@ void mpm::Particle<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
 //! Function to reinitialise material to be run at the beginning of each time
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::initialise_material() noexcept {
-  material_[mpm::ParticlePhase::Solid]->initialise();
-}
-
-//! Function to finalise material to be run at the end of each time step
-template <unsigned Tdim>
-void mpm::Particle<Tdim>::finalise_material() noexcept {
-  material_[mpm::ParticlePhase::Solid]->finalise();
+  material_[mpm::ParticlePhase::Solid]->initialise(
+      &state_variables_[mpm::ParticlePhase::Solid]);
 }
 
 //! Map inertial force

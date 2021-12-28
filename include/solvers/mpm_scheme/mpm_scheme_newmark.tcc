@@ -172,10 +172,6 @@ inline void
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
 
-  // Finalise material
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::finalise_material, std::placeholders::_1));
-
   // Iterate over each particle to update particle volume
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));

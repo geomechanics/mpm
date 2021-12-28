@@ -413,11 +413,6 @@ class ParticleBase {
   //! \ingroup Implicit
   virtual void initialise_material() noexcept = 0;
 
-  //! Function to finalise material to be run at the end of each time step
-  //! \ingroup Implicit
-  virtual void finalise_material() noexcept = 0;
-  /**@}*/
-
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle
   //! \param[in] pressure parameter determining type of projection

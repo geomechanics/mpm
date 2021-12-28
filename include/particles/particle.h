@@ -425,10 +425,6 @@ class Particle : public ParticleBase<Tdim> {
   //! step
   //! \ingroup Implicit
   void initialise_material() noexcept override;
-
-  //! Function to finalise material to be run at the end of each time step
-  //! \ingroup Implicit
-  void finalise_material() noexcept override;
   /**@}*/
 
  protected:

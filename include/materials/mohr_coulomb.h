@@ -51,9 +51,8 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! Initialise material
   //! \brief Function that initialise material to be called at the beginning of
   //! time step
-  void initialise() override {
-    plastic_region_ = false;
-    yield_type_ = mpm::mohrcoulomb::FailureState::Elastic;
+  void initialise(mpm::dense_map* state_vars) override {
+    (*state_vars).at("yield_state") = 0;
   };
 
   //! Compute stress
@@ -102,10 +101,6 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
-  //! Elastic matrix
-  using InfinitesimalElastoPlastic<Tdim>::de_;
-  //! Boolean to check whether the stress state is in plastic/elastic
-  using InfinitesimalElastoPlastic<Tdim>::plastic_region_;
 
  private:
   //! Compute elastic tensor

@@ -70,7 +70,8 @@ class Material {
   //! Initialise material
   //! \brief Function that initialise material to be called at the beginning of
   //! time step
-  virtual void initialise(){};
+  //! \param[in] state_vars History-dependent state variables
+  virtual void initialise(mpm::dense_map* state_vars){};
 
   //! Compute stress
   //! \param[in] stress Stress
@@ -102,11 +103,6 @@ class Material {
         "in Material:: illegal operation!");
     return error;
   };
-
-  //! Finalise material
-  //! \brief Function that finalise material to be called at the end of
-  //! time step
-  virtual void finalise(){};
 
  protected:
   //! material id

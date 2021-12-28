@@ -127,10 +127,8 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
-  //! Elastic matrix
+  //! FIXME: Elastic matrix
   using InfinitesimalElastoPlastic<Tdim>::de_;
-  //! Boolean to check whether the stress state is in plastic/elastic
-  using InfinitesimalElastoPlastic<Tdim>::plastic_region_;
 
  private:
   //! Plastic stiffness matrix

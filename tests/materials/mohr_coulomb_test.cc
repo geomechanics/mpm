@@ -116,9 +116,14 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       REQUIRE(state_variables.at("rho") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tension_cutoff") ==
+              Approx(1.e-15).epsilon(Tolerance));
+      REQUIRE(state_variables.at("yield_state") ==
+              Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-          "phi", "psi", "cohesion", "epsilon", "rho", "theta", "pdstrain"};
+          "yield_state", "phi", "psi",   "cohesion", "tension_cutoff",
+          "epsilon",     "rho", "theta", "pdstrain"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
     }
@@ -651,6 +656,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
     REQUIRE(state_variables.at("theta") ==
             Approx(0.13545926).epsilon(Tolerance));
     REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
+    REQUIRE(state_variables.at("tension_cutoff") ==
+            Approx(1.e-15).epsilon(Tolerance));
+    REQUIRE(state_variables.at("yield_state") == Approx(0.).epsilon(Tolerance));
 
     // Initialise values of yield functions
     Eigen::Matrix<double, 2, 1> yield_function;

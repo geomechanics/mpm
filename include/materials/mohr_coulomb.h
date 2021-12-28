@@ -104,7 +104,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
 
  private:
   //! Compute elastic tensor
-  bool compute_elastic_tensor();
+  Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
 
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
@@ -119,6 +119,11 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
                                           const ParticleBase<Tdim>* ptr,
                                           mpm::dense_map* state_vars,
                                           bool hardening) override;
+
+  //! Inline ternary function to check negative or zero numbers
+  inline double check_low(double val) {
+    return (val > 1.0e-15 ? val : 1.0e-15);
+  }
 
   //! Density
   double density_{std::numeric_limits<double>::max()};
@@ -150,9 +155,11 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   double tension_cutoff_{std::numeric_limits<double>::max()};
   //! softening
   bool softening_{false};
-  //! yield type
-  mpm::mohrcoulomb::FailureState yield_type_{
-      mpm::mohrcoulomb::FailureState::Elastic};
+  //! Failure state map
+  std::map<int, mpm::mohrcoulomb::FailureState> yield_type_ = {
+      {0, mpm::mohrcoulomb::FailureState::Elastic},
+      {1, mpm::mohrcoulomb::FailureState::Shear},
+      {2, mpm::mohrcoulomb::FailureState::Tensile}};
 };  // MohrCoulomb class
 }  // namespace mpm
 

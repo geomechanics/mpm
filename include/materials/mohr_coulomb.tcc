@@ -509,7 +509,7 @@ Eigen::Matrix<double, 6, 6>
   mpm::mohrcoulomb::FailureState yield_type =
       yield_type_.at(int((*state_vars).at("yield_state")));
   // Return the updated stress in elastic state
-  Matrix6x6 de = this->compute_elastic_tensor(state_vars);
+  const Matrix6x6 de = this->compute_elastic_tensor(state_vars);
   if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {
     return de;
   }

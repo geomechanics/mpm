@@ -132,8 +132,10 @@ std::vector<std::string> mpm::ModifiedCamClay<Tdim>::state_variables() const {
 
 //! Compute elastic tensor
 template <unsigned Tdim>
-bool mpm::ModifiedCamClay<Tdim>::compute_elastic_tensor(
-    mpm::dense_map* state_vars) {
+Eigen::Matrix<double, 6, 6> mpm::ModifiedCamClay<Tdim>::compute_elastic_tensor(
+    const Vector6d& stress, mpm::dense_map* state_vars) {
+  // Compute current mean pressure
+  (*state_vars).at("p") = -(stress(0) + stress(1) + stress(2)) / 3.;
   // Compute elastic modulus based on stress status
   if ((*state_vars).at("p") > std::numeric_limits<double>::epsilon()) {
     // Bulk modulus
@@ -160,20 +162,24 @@ bool mpm::ModifiedCamClay<Tdim>::compute_elastic_tensor(
   const double a2 = (*state_vars).at("bulk_modulus") - (2.0 / 3.0) * G;
   // Compute elastic stiffness matrix
   // clang-format off
-  de_(0,0)=a1;    de_(0,1)=a2;    de_(0,2)=a2;    de_(0,3)=0;    de_(0,4)=0;    de_(0,5)=0;
-  de_(1,0)=a2;    de_(1,1)=a1;    de_(1,2)=a2;    de_(1,3)=0;    de_(1,4)=0;    de_(1,5)=0;
-  de_(2,0)=a2;    de_(2,1)=a2;    de_(2,2)=a1;    de_(2,3)=0;    de_(2,4)=0;    de_(2,5)=0;
-  de_(3,0)= 0;    de_(3,1)= 0;    de_(3,2)= 0;    de_(3,3)=G;    de_(3,4)=0;    de_(3,5)=0;
-  de_(4,0)= 0;    de_(4,1)= 0;    de_(4,2)= 0;    de_(4,3)=0;    de_(4,4)=G;    de_(4,5)=0;
-  de_(5,0)= 0;    de_(5,1)= 0;    de_(5,2)= 0;    de_(5,3)=0;    de_(5,4)=0;    de_(5,5)=G;
+  Matrix6x6 de = Matrix6x6::Zero();
+  de(0,0)=a1;    de(0,1)=a2;    de(0,2)=a2;    de(0,3)=0;    de(0,4)=0;    de(0,5)=0;
+  de(1,0)=a2;    de(1,1)=a1;    de(1,2)=a2;    de(1,3)=0;    de(1,4)=0;    de(1,5)=0;
+  de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;    de(2,3)=0;    de(2,4)=0;    de(2,5)=0;
+  de(3,0)= 0;    de(3,1)= 0;    de(3,2)= 0;    de(3,3)=G;    de(3,4)=0;    de(3,5)=0;
+  de(4,0)= 0;    de(4,1)= 0;    de(4,2)= 0;    de(4,3)=0;    de(4,4)=G;    de(4,5)=0;
+  de(5,0)= 0;    de(5,1)= 0;    de(5,2)= 0;    de(5,3)=0;    de(5,4)=0;    de(5,5)=G;
   // clang-format on
-  return true;
+  return de;
 }
 
 //! Compute plastic tensor (used for drained test)
 template <unsigned Tdim>
-bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
-    const Vector6d& stress, mpm::dense_map* state_vars) {
+Eigen::Matrix<double, 6, 6>
+    mpm::ModifiedCamClay<Tdim>::compute_elasto_plastic_tensor(
+        const Vector6d& stress, const Vector6d& dstrain,
+        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars,
+        bool hardening) {
   // Current stress
   const double p = (*state_vars).at("p");
   const double q = (*state_vars).at("q");
@@ -215,7 +221,7 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
                      3 * (*state_vars).at("shear_modulus") * (df_dq * df_dq);
 
   // Hardening parameter
-  double hardening = upsilon * pc * df_dp * df_dpc;
+  double hardening_par = upsilon * pc * df_dp * df_dpc;
   // Compute bonding
   if (bonding_) {
     // Compute pcd hardening parameter
@@ -225,7 +231,7 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
     const double hardening_pcc =
         df_dpcc * (-m_degradation_ * mc_d_ * pcc) * df_dq;
     // Update hardening parameter
-    hardening += (hardening_pcd + hardening_pcc);
+    hardening_par += (hardening_pcd + hardening_pcc);
   }
   // Compute subloading
   if (subloading_) {
@@ -237,7 +243,7 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
         std::sqrt(std::pow((*state_vars).at("dpvstrain"), 2) +
                   std::pow((*state_vars).at("dpdstrain"), 2));
     // Update hardening parameter
-    hardening += hardening_subloading;
+    hardening_par += hardening_subloading;
   }
   // Compute the deviatoric stress
   auto dev_stress = stress;
@@ -270,9 +276,10 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
     }
   }
   // Compute plastic tensor
-  this->dp_ = (a1 * l_l + a2 * (n_l + l_n) + a3 * (n_n)) / (num - hardening);
+  Matrix6x6 dp =
+      (a1 * l_l + a2 * (n_l + l_n) + a3 * (n_n)) / (num - hardening_par);
 
-  return true;
+  return dp;
 }
 
 //! Compute stress invariants
@@ -526,14 +533,12 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
   const int itrstep = 100;
   // Maximum subiteration step number
   const int substep = 100;
-  // Compute current mean pressure
-  (*state_vars).at("p") = -(stress(0) + stress(1) + stress(2)) / 3.;
   // Set elastic tensor
-  this->compute_elastic_tensor(state_vars);
+  const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
   //-------------------------------------------------------------------------
   // Elastic step
   // Compute trial stress
-  const Vector6d trial_stress = stress + (this->de_ * dstrain);
+  const Vector6d trial_stress = stress + (de * dstrain);
   // Initialise vector n
   Vector6d n_trial = Vector6d::Zero();
   // Compute trial stress invariants

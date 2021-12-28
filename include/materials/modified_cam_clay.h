@@ -108,18 +108,6 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   void compute_dg_dpc(const mpm::dense_map* state_vars, const double pc_n,
                       const double p_trial, double* g_function, double* dg_dpc);
 
-  //! Compute elastic tensor
-  //! \param[in] state_vars History-dependent state variables
-  //! \retval status of computation
-  bool compute_elastic_tensor(mpm::dense_map* state_vars);
-
-  //! Compute plastic tensor
-  //! \param[in] stress Stress
-  //! \param[in] state_vars History-dependent state variables
-  //! \retval status of computation
-  bool compute_plastic_tensor(const Vector6d& stress,
-                              mpm::dense_map* state_vars);
-
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -129,10 +117,27 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   using Material<Tdim>::console_;
 
  private:
-  //! FIXME: Elastic matrix (should not be a global variable)
-  Matrix6x6 de_;
-  //! Plastic stiffness matrix
-  Matrix6x6 dp_;
+  //! Compute elastic tensor
+  //! \param[in] stress Stress
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval status of computation
+  Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
+      const Vector6d& stress, mpm::dense_map* state_vars);
+
+  //! Compute constitutive relations matrix for elasto-plastic material
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] hardening Boolean to consider hardening, default=true. If
+  //! perfect-plastic tensor is needed pass false
+  //! \retval dmatrix Constitutive relations mattrix
+  Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
+                                          const Vector6d& dstrain,
+                                          const ParticleBase<Tdim>* ptr,
+                                          mpm::dense_map* state_vars,
+                                          bool hardening = true) override;
+
   //! General parameters
   //! Density
   double density_{std::numeric_limits<double>::max()};

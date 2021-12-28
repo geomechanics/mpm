@@ -258,7 +258,7 @@ void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
   this->stress_ =
       (this->material())
           ->compute_stress(previous_stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+                           &state_variables_[mpm::ParticlePhase::Solid], false);
 }
 
 // Compute updated position of the particle by Newmark scheme
@@ -293,6 +293,12 @@ void mpm::Particle<Tdim>::compute_updated_position_newmark(double dt) noexcept {
 // Update stress and strain after convergence of Newton-Raphson iteration
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::update_stress_strain() noexcept {
+  // Update converged stress
+  this->stress_ =
+      (this->material())
+          ->compute_stress(previous_stress_, dstrain_, this,
+                           &state_variables_[mpm::ParticlePhase::Solid], true);
+
   // Update initial stress of the time step
   this->previous_stress_ = this->stress_;
 

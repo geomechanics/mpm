@@ -118,7 +118,8 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
       REQUIRE(state_variables.at("subloading_r") ==
               Approx(1.0).epsilon(Tolerance));
 
-      const std::vector<std::string> state_vars = {"bulk_modulus",
+      const std::vector<std::string> state_vars = {"yield_state",
+                                                   "bulk_modulus",
                                                    "shear_modulus",
                                                    "p",
                                                    "q",

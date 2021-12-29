@@ -74,6 +74,8 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
 template <unsigned Tdim>
 mpm::dense_map mpm::ModifiedCamClay<Tdim>::initialise_state_variables() {
   mpm::dense_map state_vars = {
+      // Yield state: 0: elastic, 1: yield
+      {"yield_state", 0},
       // Elastic modulus
       // Bulk modulus
       {"bulk_modulus", youngs_modulus_ / (2 * (1 + poisson_ratio_))},
@@ -123,10 +125,10 @@ mpm::dense_map mpm::ModifiedCamClay<Tdim>::initialise_state_variables() {
 template <unsigned Tdim>
 std::vector<std::string> mpm::ModifiedCamClay<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
-      "bulk_modulus", "shear_modulus", "p",           "q",        "theta",
-      "pc",           "void_ratio",    "delta_phi",   "m_theta",  "f_function",
-      "dpvstrain",    "dpdstrain",     "pvstrain",    "pdstrain", "chi",
-      "pcd",          "pcc",           "subloading_r"};
+      "yield_state", "bulk_modulus", "shear_modulus", "p",           "q",
+      "theta",       "pc",           "void_ratio",    "delta_phi",   "m_theta",
+      "f_function",  "dpvstrain",    "dpdstrain",     "pvstrain",    "pdstrain",
+      "chi",         "pcd",          "pcc",           "subloading_r"};
   return state_vars;
 }
 
@@ -134,8 +136,8 @@ std::vector<std::string> mpm::ModifiedCamClay<Tdim>::state_variables() const {
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6> mpm::ModifiedCamClay<Tdim>::compute_elastic_tensor(
     const Vector6d& stress, mpm::dense_map* state_vars) {
-  // Compute current mean pressure
-  (*state_vars).at("p") = -(stress(0) + stress(1) + stress(2)) / 3.;
+  // Compute trial stress invariants
+  this->compute_stress_invariants(stress, state_vars);
   // Compute elastic modulus based on stress status
   if ((*state_vars).at("p") > std::numeric_limits<double>::epsilon()) {
     // Bulk modulus
@@ -180,6 +182,15 @@ Eigen::Matrix<double, 6, 6>
         const Vector6d& stress, const Vector6d& dstrain,
         const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars,
         bool hardening) {
+
+  FailureState yield_type =
+      yield_type_.at(int((*state_vars).at("yield_state")));
+  // Return the updated stress in elastic state
+  const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
+  if (yield_type == FailureState::Elastic) {
+    return de;
+  }
+
   // Current stress
   const double p = (*state_vars).at("p");
   const double q = (*state_vars).at("q");
@@ -561,6 +572,7 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
   // Check yield status
   auto yield_type = this->compute_yield_state(state_vars);
   // Return the updated stress in elastic state
+  (*state_vars).at("yield_state") = yield_type;
   if (yield_type == FailureState::Elastic) return trial_stress;
   //-------------------------------------------------------------------------
   // Plastic step

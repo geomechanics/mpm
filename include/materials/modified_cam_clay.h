@@ -45,6 +45,13 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   //! State variables
   std::vector<std::string> state_variables() const override;
 
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  void initialise(mpm::dense_map* state_vars) override {
+    (*state_vars).at("yield_state") = 0;
+  };
+
   //! Compute stress
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
@@ -186,6 +193,9 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   double m_shear_ = {std::numeric_limits<double>::epsilon()};
   //! Hydrate saturation
   double s_h_{std::numeric_limits<double>::epsilon()};
+  //! Failure state map
+  std::map<int, FailureState> yield_type_ = {{0, FailureState::Elastic},
+                                             {1, FailureState::Yield}};
 };  // ModifiedCamClay class
 }  // namespace mpm
 

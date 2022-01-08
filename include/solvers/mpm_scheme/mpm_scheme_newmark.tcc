@@ -28,7 +28,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
 
       // Initialise material
       mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::initialise_material,
+          std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
                     std::placeholders::_1));
     }
   }  // Wait to complete

@@ -408,10 +408,10 @@ class ParticleBase {
   //! \retval status Assignment status
   virtual bool assign_acceleration(const VectorDim& acceleration) = 0;
 
-  //! Function to reinitialise material to be run at the beginning of each time
-  //! step
+  //! Function to reinitialise constitutive law to be run at the beginning of
+  //! each time step
   //! \ingroup Implicit
-  virtual void initialise_material() noexcept = 0;
+  virtual void initialise_constitutive_law() noexcept = 0;
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle

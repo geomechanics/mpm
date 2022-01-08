@@ -463,17 +463,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // Compute stress invariants based on updated stress
   this->compute_stress_invariants(updated_stress, state_vars);
 
-  // Update/reset hardening variables
-  if (update)
-    // Update plastic deviatoric strain
-    (*state_vars).at("pdstrain") += dpdstrain;
-  else {
-    // Reset hardening variables
-    (*state_vars).at("phi") = prev_state_vars.at("phi");
-    (*state_vars).at("psi") = prev_state_vars.at("psi");
-    (*state_vars).at("cohesion") = prev_state_vars.at("cohesion");
-    (*state_vars).at("tension_cutoff") = prev_state_vars.at("tension_cutoff");
-  }
+  // Update plastic deviatoric strain
+  (*state_vars).at("pdstrain") += dpdstrain;
 
   return updated_stress;
 }

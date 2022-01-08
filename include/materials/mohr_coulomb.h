@@ -104,6 +104,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
 
  private:
   //! Compute elastic tensor
+  //! \param[in] state_vars History-dependent state variables
   Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
 
   //! Compute constitutive relations matrix for elasto-plastic material

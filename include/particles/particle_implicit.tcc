@@ -13,9 +13,19 @@ void mpm::Particle<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
 
 //! Function to reinitialise material to be run at the beginning of each time
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::initialise_material() noexcept {
+void mpm::Particle<Tdim>::initialise_constitutive_law() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+
+  // Reset material to be Elastic
   material_[mpm::ParticlePhase::Solid]->initialise(
       &state_variables_[mpm::ParticlePhase::Solid]);
+
+  // Compute initial consititutive matrix
+  this->constitutive_matrix_ =
+      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
+          stress_, previous_stress_, dstrain_, this,
+          &state_variables_[mpm::ParticlePhase::Solid]);
 }
 
 //! Map inertial force
@@ -39,16 +49,10 @@ inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell() {
   try {
     // Check if material ptr is valid
     assert(this->material() != nullptr);
-    // Calculate constitutive relations matrix
-    Eigen::MatrixXd dmatrix;
-    dmatrix = (this->material())
-                  ->compute_consistent_tangent_matrix(
-                      stress_, previous_stress_, dstrain_, this,
-                      &state_variables_[mpm::ParticlePhase::Solid]);
 
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
-    reduced_dmatrix = this->reduce_dmatrix(dmatrix);
+    reduced_dmatrix = this->reduce_dmatrix(constitutive_matrix_);
 
     // Calculate B matrix
     Eigen::MatrixXd bmatrix;
@@ -254,11 +258,17 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
+  // Clone state variables
+  auto temp_state_variables = state_variables_[mpm::ParticlePhase::Solid];
   // Calculate stress
-  this->stress_ =
-      (this->material())
-          ->compute_stress(previous_stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid], false);
+  this->stress_ = (this->material())
+                      ->compute_stress(previous_stress_, dstrain_, this,
+                                       &temp_state_variables, false);
+
+  // Compute current consititutive matrix
+  this->constitutive_matrix_ =
+      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
+          stress_, previous_stress_, dstrain_, this, &temp_state_variables);
 }
 
 // Compute updated position of the particle by Newmark scheme

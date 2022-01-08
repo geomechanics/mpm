@@ -572,8 +572,11 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
   // Check yield status
   auto yield_type = this->compute_yield_state(state_vars);
   // Return the updated stress in elastic state
-  (*state_vars).at("yield_state") = yield_type;
-  if (yield_type == FailureState::Elastic) return trial_stress;
+  if (yield_type == FailureState::Elastic) {
+    (*state_vars).at("yield_state") = 0.;
+    return trial_stress;
+  } else
+    (*state_vars).at("yield_state") = 1.;
   //-------------------------------------------------------------------------
   // Plastic step
   // Counters for interations

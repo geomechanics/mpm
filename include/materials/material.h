@@ -78,13 +78,11 @@ class Material {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
-  //! \param[in] update Boolean to update hardening variables
   //! \retval updated_stress Updated value of stress
   virtual Vector6d compute_stress(const Vector6d& stress,
                                   const Vector6d& dstrain,
                                   const ParticleBase<Tdim>* ptr,
-                                  mpm::dense_map* state_vars,
-                                  bool update = true) = 0;
+                                  mpm::dense_map* state_vars) = 0;
 
   //! Compute consistent tangent matrix
   //! \param[in] stress Updated stress

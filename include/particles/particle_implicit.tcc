@@ -263,7 +263,7 @@ void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
   // Calculate stress
   this->stress_ = (this->material())
                       ->compute_stress(previous_stress_, dstrain_, this,
-                                       &temp_state_variables, false);
+                                       &temp_state_variables);
 
   // Compute current consititutive matrix
   this->constitutive_matrix_ =
@@ -307,7 +307,7 @@ void mpm::Particle<Tdim>::update_stress_strain() noexcept {
   this->stress_ =
       (this->material())
           ->compute_stress(previous_stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid], true);
+                           &state_variables_[mpm::ParticlePhase::Solid]);
 
   // Update initial stress of the time step
   this->previous_stress_ = this->stress_;

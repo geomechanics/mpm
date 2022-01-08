@@ -60,12 +60,10 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
-  //! \param[in] update Boolean to update hardening variables
   //! \retval updated_stress Updated value of stress
   Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
                           const ParticleBase<Tdim>* ptr,
-                          mpm::dense_map* state_vars,
-                          bool update = true) override;
+                          mpm::dense_map* state_vars) override;
 
   //! Compute stress invariants (j2, j3, rho, theta, and epsilon)
   //! \param[in] stress Stress

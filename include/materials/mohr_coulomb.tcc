@@ -317,7 +317,7 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, bool update) {
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
   // Get previous time step state variable
   const auto prev_state_vars = (*state_vars);
   const double pdstrain = (*state_vars).at("pdstrain");

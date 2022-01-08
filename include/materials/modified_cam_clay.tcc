@@ -535,7 +535,7 @@ void mpm::ModifiedCamClay<Tdim>::compute_df_dsigma(
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, bool update) {
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
   // Tolerance for yield function
   const double Ftolerance = 1.E-5;
   // Tolerance for preconsolidation function

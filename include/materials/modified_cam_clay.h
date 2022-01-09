@@ -146,6 +146,8 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   //! General parameters
   //! Density
   double density_{std::numeric_limits<double>::max()};
+  //! Shear Modulus
+  double shear_modulus_{std::numeric_limits<double>::max()};
   //! Poisson ratio
   double poisson_ratio_{std::numeric_limits<double>::max()};
   //! Modified Cam Clay parameters

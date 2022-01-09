@@ -28,7 +28,7 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
   // Initialise material
   Json jmaterial;
   jmaterial["density"] = 1800.;
-  jmaterial["youngs_modulus"] = 1.0E+7;
+  jmaterial["shear_modulus"] = 1.0E+7;
   jmaterial["poisson_ratio"] = 0.3;
   jmaterial["p_ref"] = 100000;
   jmaterial["e_ref"] = 1.12;
@@ -70,8 +70,8 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     // Get material properties
     REQUIRE(material->template property<double>("density") ==
             Approx(jmaterial.at("density")).epsilon(Tolerance));
-    REQUIRE(material->template property<double>("youngs_modulus") ==
-            Approx(jmaterial.at("youngs_modulus")).epsilon(Tolerance));
+    REQUIRE(material->template property<double>("shear_modulus") ==
+            Approx(jmaterial.at("shear_modulus")).epsilon(Tolerance));
     REQUIRE(material->template property<double>("poisson_ratio") ==
             Approx(jmaterial.at("poisson_ratio")).epsilon(Tolerance));
     REQUIRE(material->template property<double>("p_ref") ==
@@ -94,9 +94,9 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
 
       mpm::dense_map state_variables = material->initialise_state_variables();
       REQUIRE(state_variables.at("bulk_modulus") ==
-              Approx(0.0).epsilon(Tolerance));
+              Approx(21666666.6666666642).epsilon(Tolerance));
       REQUIRE(state_variables.at("shear_modulus") ==
-              Approx(0.0).epsilon(Tolerance));
+              Approx(jmaterial.at("shear_modulus")).epsilon(Tolerance));
       REQUIRE(state_variables.at("p") == Approx(0.0).epsilon(Tolerance));
       REQUIRE(state_variables.at("q") == Approx(0.0).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") == Approx(0.0).epsilon(Tolerance));

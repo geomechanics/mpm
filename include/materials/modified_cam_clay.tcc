@@ -7,6 +7,9 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
     // Elastic parameters
     // Density
     density_ = material_properties.at("density").template get<double>();
+    // Initial shear modulus
+    shear_modulus_ =
+        material_properties.at("shear_modulus").template get<double>();
     // Poisson ratio
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
@@ -95,48 +98,50 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
 //! Initialise state variables
 template <unsigned Tdim>
 mpm::dense_map mpm::ModifiedCamClay<Tdim>::initialise_state_variables() {
-  mpm::dense_map state_vars = {// Yield state: 0: elastic, 1: yield
-                               {"yield_state", 0},
-                               // Bulk modulus
-                               {"bulk_modulus", 0.},
-                               // Shear modulus
-                               {"shear_modulus", 0.},
-                               // Stress invariants
-                               // Volumetric stress
-                               {"p", 0.},
-                               // Deviatoric stress
-                               {"q", 0.},
-                               // Lode's angle
-                               {"theta", 0.},
-                               // Modified Cam clay parameters
-                               // Preconsolidation pressure
-                               {"pc", pc0_},
-                               // void_ratio
-                               {"void_ratio", e0_},
-                               // Consistency parameter
-                               {"delta_phi", 0.},
-                               // M_theta
-                               {"m_theta", m_},
-                               // Yield function
-                               {"f_function", 0.},
-                               // Incremental plastic strain
-                               // Incremental plastic volumetic strain
-                               {"dpvstrain", 0.},
-                               // Incremental plastic deviatoric strain
-                               {"dpdstrain", 0.},
-                               // Plastic volumetic strain
-                               {"pvstrain", 0.},
-                               // Plastic deviatoric strain
-                               {"pdstrain", 0.},
-                               // Bonding parameters
-                               // Chi
-                               {"chi", 1.},
-                               // Pcd
-                               {"pcd", 0.},
-                               // Pcc
-                               {"pcc", 0.},
-                               // Subloading surface ratio
-                               {"subloading_r", 1.}};
+  mpm::dense_map state_vars = {
+      // Yield state: 0: elastic, 1: yield
+      {"yield_state", 0},
+      // Bulk modulus
+      {"bulk_modulus", 2. * shear_modulus_ * (1. + poisson_ratio_) /
+                           (3. * (1. - 2. * poisson_ratio_))},
+      // Shear modulus
+      {"shear_modulus", shear_modulus_},
+      // Stress invariants
+      // Volumetric stress
+      {"p", 0.},
+      // Deviatoric stress
+      {"q", 0.},
+      // Lode's angle
+      {"theta", 0.},
+      // Modified Cam clay parameters
+      // Preconsolidation pressure
+      {"pc", pc0_},
+      // void_ratio
+      {"void_ratio", e0_},
+      // Consistency parameter
+      {"delta_phi", 0.},
+      // M_theta
+      {"m_theta", m_},
+      // Yield function
+      {"f_function", 0.},
+      // Incremental plastic strain
+      // Incremental plastic volumetic strain
+      {"dpvstrain", 0.},
+      // Incremental plastic deviatoric strain
+      {"dpdstrain", 0.},
+      // Plastic volumetic strain
+      {"pvstrain", 0.},
+      // Plastic deviatoric strain
+      {"pdstrain", 0.},
+      // Bonding parameters
+      // Chi
+      {"chi", 1.},
+      // Pcd
+      {"pcd", 0.},
+      // Pcc
+      {"pcc", 0.},
+      // Subloading surface ratio
+      {"subloading_r", 1.}};
   return state_vars;
 }
 
@@ -310,6 +315,7 @@ Eigen::Matrix<double, 6, 6>
     }
   }
   // Compute plastic tensor
+  if (!hardening) hardening_par = 0.;
   Matrix6x6 dp =
       (a1 * l_l + a2 * (n_l + l_n) + a3 * (n_n)) / (num - hardening_par);
 

@@ -1221,19 +1221,40 @@ void mpm::MPMBase<Tdim>::particles_stresses(
     const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
   try {
     if (mesh_props.find("particles_stresses") != mesh_props.end()) {
-      std::string fparticles_stresses =
-          mesh_props["particles_stresses"].template get<std::string>();
-      if (!io_->file_name(fparticles_stresses).empty()) {
+      // Get generator type
+      const std::string type =
+          mesh_props["particles_stresses"]["type"].template get<std::string>();
+      if (type == "file") {
+        std::string fparticles_stresses =
+            mesh_props["particles_stresses"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fparticles_stresses).empty()) {
 
-        // Get stresses of all particles
-        const auto all_particles_stresses =
-            particle_io->read_particles_stresses(
-                io_->file_name(fparticles_stresses));
+          // Get stresses of all particles
+          const auto all_particles_stresses =
+              particle_io->read_particles_stresses(
+                  io_->file_name(fparticles_stresses));
 
-        // Read and assign particles stresses
-        if (!mesh_->assign_particles_stresses(all_particles_stresses))
-          throw std::runtime_error(
-              "Particles stresses are not properly assigned");
+          // Read and assign particles stresses
+          if (!mesh_->assign_particles_stresses(all_particles_stresses))
+            throw std::runtime_error(
+                "Particles stresses are not properly assigned");
+        }
+      } else if (type == "isotropic") {
+        Eigen::Matrix<double, 6, 1> in_stress;
+        in_stress.setZero();
+        if (mesh_props["particles_stresses"]["values"].is_array() &&
+            mesh_props["particles_stresses"]["values"].size() ==
+                in_stress.size()) {
+          for (unsigned i = 0; i < in_stress.size(); ++i) {
+            in_stress[i] = mesh_props["particles_stresses"]["values"].at(i);
+          }
+          mesh_->iterate_over_particles(
+              std::bind(&mpm::ParticleBase<Tdim>::initial_stress,
+                        std::placeholders::_1, in_stress));
+        } else {
+          throw std::runtime_error("Specified gravity dimension is invalid");
+        }
       }
     } else
       throw std::runtime_error("Particle stresses JSON not found");
@@ -1293,6 +1314,13 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
             &mpm::ParticleBase<Tdim>::initialise_pore_pressure_watertable,
             std::placeholders::_1, dir_v, dir_h, this->gravity_,
             reference_points));
+      } else if (type == "isotropic") {
+        const double pore_pressure =
+            mesh_props["particles_pore_pressures"]["values"]
+                .template get<double>();
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::assign_pressure, std::placeholders::_1,
+            pore_pressure, mpm::ParticlePhase::Liquid));
       } else
         throw std::runtime_error(
             "Particle pore pressures generator type is not properly "

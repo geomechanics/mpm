@@ -146,8 +146,6 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   //! General parameters
   //! Density
   double density_{std::numeric_limits<double>::max()};
-  //! Youngs modulus
-  double youngs_modulus_{std::numeric_limits<double>::max()};
   //! Poisson ratio
   double poisson_ratio_{std::numeric_limits<double>::max()};
   //! Modified Cam Clay parameters
@@ -168,7 +166,7 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   //! Kappa
   double kappa_{std::numeric_limits<double>::max()};
   //! Three invariants
-  bool three_invariants_{false};
+  bool three_invariants_{true};
   //! Subloading surface properties
   //! Subloading status
   bool subloading_{false};

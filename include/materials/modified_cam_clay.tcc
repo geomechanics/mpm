@@ -4,12 +4,9 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
                                             const Json& material_properties)
     : InfinitesimalElastoPlastic<Tdim>(id, material_properties) {
   try {
-    // General parameters
+    // Elastic parameters
     // Density
     density_ = material_properties.at("density").template get<double>();
-    // Young's modulus
-    youngs_modulus_ =
-        material_properties.at("youngs_modulus").template get<double>();
     // Poisson ratio
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
@@ -19,25 +16,50 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
     e_ref_ = material_properties.at("e_ref").template get<double>();
     // Reference mean pressure
     p_ref_ = material_properties.at("p_ref").template get<double>();
-    // Over consolidation ratio
-    ocr_ = material_properties.at("ocr").template get<double>();
     // Initial preconsolidation pressure
     pc0_ = material_properties.at("pc0").template get<double>();
     // M (or triaxial compression M (Mtc) in "Three invariants type")
-    m_ = material_properties.at("m").template get<double>();
+    if (material_properties.contains("m")) {
+      m_ = material_properties.at("m").template get<double>();
+    } else if (material_properties.contains("friction_cs")) {
+      const double friction_cs =
+          material_properties.at("friction_cs").template get<double>() * M_PI /
+          180.;
+      const double sin_friction_cs = sin(friction_cs);
+      m_ = (6 * sin_friction_cs) / (3 - sin_friction_cs);
+    } else
+      throw std::runtime_error("Critical state ratio M is undefined!");
     // Lambda
     lambda_ = material_properties.at("lambda").template get<double>();
     // Kappa
     kappa_ = material_properties.at("kappa").template get<double>();
-    // e0
-    e0_ = e_ref_ - lambda_ * log(pc0_ / ocr_ / p_ref_) - kappa_ * log(ocr_);
+    // Initial void ratio computed from different sources e0
+    // From initial porosity
+    if (material_properties.contains("porosity")) {
+      const double n =
+          material_properties.at("porosity").template get<double>();
+      e0_ = n / (1. - n);
+    }
+    // From initial void ratio
+    else if (material_properties.contains("void_ratio_initial")) {
+      e0_ = material_properties.at("void_ratio_initial").template get<double>();
+    }
+    // From OCR
+    else if (material_properties.contains("ocr")) {
+      ocr_ = material_properties.at("ocr").template get<double>();
+      e0_ = e_ref_ - lambda_ * log(pc0_ / ocr_ / p_ref_) - kappa_ * log(ocr_);
+    } else
+      throw std::runtime_error("Initial void ratio is undefined!");
     // Three invariants option
-    three_invariants_ =
-        material_properties.at("three_invariants").template get<bool>();
+    if (material_properties.contains("three_invariants"))
+      three_invariants_ =
+          material_properties.at("three_invariants").template get<bool>();
     // Subloading option
-    subloading_ = material_properties.at("subloading").template get<bool>();
+    if (material_properties.contains("subloading"))
+      subloading_ = material_properties.at("subloading").template get<bool>();
     // Bonding option
-    bonding_ = material_properties.at("bonding").template get<bool>();
+    if (material_properties.contains("bonding"))
+      bonding_ = material_properties.at("bonding").template get<bool>();
     // Subloading surface ratio
     if (subloading_) {
       // Material constant controling plastic deformation
@@ -50,11 +72,11 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
       s_h_ = material_properties.at("s_h").template get<double>();
       // Material constants a
       mc_a_ = material_properties.at("mc_a").template get<double>();
-      // Material constants a
+      // Material constants b
       mc_b_ = material_properties.at("mc_b").template get<double>();
-      // Material constants a
+      // Material constants c
       mc_c_ = material_properties.at("mc_c").template get<double>();
-      // Material constants a
+      // Material constants d
       mc_d_ = material_properties.at("mc_d").template get<double>();
       // Degradation
       m_degradation_ =
@@ -73,51 +95,48 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
 //! Initialise state variables
 template <unsigned Tdim>
 mpm::dense_map mpm::ModifiedCamClay<Tdim>::initialise_state_variables() {
-  mpm::dense_map state_vars = {
-      // Yield state: 0: elastic, 1: yield
-      {"yield_state", 0},
-      // Elastic modulus
-      // Bulk modulus
-      {"bulk_modulus", youngs_modulus_ / (2 * (1 + poisson_ratio_))},
-      // Shear modulus
-      {"shear_modulus", 3 * youngs_modulus_ * (1 - 2 * poisson_ratio_) /
-                            (2 * (1 + poisson_ratio_))},
-      // Stress invariants
-      // Volumetric stress
-      {"p", 0.},
-      // Deviatoric stress
-      {"q", 0.},
-      // Lode's angle
-      {"theta", 0.},
-      // Modified Cam clay parameters
-      // Preconsolidation pressure
-      {"pc", pc0_},
-      // void_ratio
-      {"void_ratio", e0_},
-      // Consistency parameter
-      {"delta_phi", 0.},
-      // M_theta
-      {"m_theta", m_},
-      // Yield function
-      {"f_function", 0.},
-      // Incremental plastic strain
-      // Incremental plastic volumetic strain
-      {"dpvstrain", 0.},
-      // Incremental plastic deviatoric strain
-      {"dpdstrain", 0.},
-      // Plastic volumetic strain
-      {"pvstrain", 0.},
-      // Plastic deviatoric strain
-      {"pdstrain", 0.},
-      // Bonding parameters
-      // Chi
-      {"chi", 1.},
-      // Pcd
-      {"pcd", 0.},
-      // Pcc
-      {"pcc", 0.},
-      // Subloading surface ratio
-      {"subloading_r", 1.}};
+  mpm::dense_map state_vars = {// Yield state: 0: elastic, 1: yield
+                               {"yield_state", 0},
+                               // Bulk modulus
+                               {"bulk_modulus", 0.},
+                               // Shear modulus
+                               {"shear_modulus", 0.},
+                               // Stress invariants
+                               // Volumetric stress
+                               {"p", 0.},
+                               // Deviatoric stress
+                               {"q", 0.},
+                               // Lode's angle
+                               {"theta", 0.},
+                               // Modified Cam clay parameters
+                               // Preconsolidation pressure
+                               {"pc", pc0_},
+                               // void_ratio
+                               {"void_ratio", e0_},
+                               // Consistency parameter
+                               {"delta_phi", 0.},
+                               // M_theta
+                               {"m_theta", m_},
+                               // Yield function
+                               {"f_function", 0.},
+                               // Incremental plastic strain
+                               // Incremental plastic volumetic strain
+                               {"dpvstrain", 0.},
+                               // Incremental plastic deviatoric strain
+                               {"dpdstrain", 0.},
+                               // Plastic volumetic strain
+                               {"pvstrain", 0.},
+                               // Plastic deviatoric strain
+                               {"pdstrain", 0.},
+                               // Bonding parameters
+                               // Chi
+                               {"chi", 1.},
+                               // Pcd
+                               {"pcd", 0.},
+                               // Pcc
+                               {"pcc", 0.},
+                               // Subloading surface ratio
+                               {"subloading_r", 1.}};
   return state_vars;
 }
 
@@ -194,6 +213,10 @@ Eigen::Matrix<double, 6, 6>
   // Current stress
   const double p = (*state_vars).at("p");
   const double q = (*state_vars).at("q");
+  // Update Mtheta
+  if (three_invariants_)
+    (*state_vars).at("m_theta") =
+        m_ - std::pow(m_, 2) / (3 + m_) * cos(1.5 * (*state_vars).at("theta"));
   // Preconsolidation pressure
   const double pc = (*state_vars).at("pc");
   // Bonding parameters
@@ -350,7 +373,7 @@ typename mpm::ModifiedCamClay<Tdim>::FailureState
   (*state_vars).at("f_function") =
       std::pow(q / m_theta, 2) +
       (p + pcc) * (p - subloading_r * (pc + pcd + pcc));
-  // Tension failure
+  // Yielding
   if ((*state_vars).at("f_function") > std::numeric_limits<double>::epsilon())
     yield_type = FailureState::Yield;
 
@@ -389,7 +412,8 @@ void mpm::ModifiedCamClay<Tdim>::compute_subloading_parameters(
   const double dpvstrain = (*state_vars).at("dpvstrain");
   const double dpdstrain = (*state_vars).at("dpdstrain");
   // Initialise subloading surface ratio
-  if ((*state_vars).at("subloading_r") == 1.0)
+  if (std::abs((*state_vars).at("subloading_r") - 1.0) <
+      std::numeric_limits<double>::epsilon())
     (*state_vars).at("subloading_r") = p / (pc + pcd + pcc);
   else
     // Update subloading surface ratio
@@ -652,11 +676,7 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
       // Type-1 Equation(3.16)
       updated_stress = (*state_vars).at("q") * n_trial;
       for (int i = 0; i < 3; ++i) updated_stress(i) -= (*state_vars).at("p");
-      // Compute stress invariants
-      this->compute_stress_invariants(updated_stress, state_vars);
-      // Compute deviatoric stress tensor
-      n_trial =
-          this->compute_deviatoric_stress_tensor(trial_stress, state_vars);
+      (*state_vars).at("theta") = mpm::materials::lode_angle(updated_stress);
       // Update Mtheta
       (*state_vars).at("m_theta") =
           m_ -

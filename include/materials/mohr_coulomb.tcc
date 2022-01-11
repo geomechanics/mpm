@@ -518,28 +518,13 @@ Eigen::Matrix<double, 6, 6>
                       &dp_dq, &softening);
 
   // Compute the d_ep tensor
-  Eigen::Matrix<double, 6, 1> de_dpdsigma = Eigen::Matrix<double, 6, 1>::Zero();
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 3; j++) de_dpdsigma(i) += de(i, j) * dp_dsigma(j);
-    for (int j = 3; j < 6; j++) de_dpdsigma(i) += 2 * de(i, j) * dp_dsigma(j);
-  }
-  double dfdsigma_de_dpdsigma = 0;
-  for (int j = 0; j < 3; j++)
-    dfdsigma_de_dpdsigma += df_dsigma(j) * de_dpdsigma(j);
-  for (int j = 3; j < 6; j++)
-    dfdsigma_de_dpdsigma += 2 * df_dsigma(j) * de_dpdsigma(j);
-
-  Eigen::Matrix<double, 6, 1> de_dfdsigma = Eigen::Matrix<double, 6, 1>::Zero();
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 3; j++) de_dfdsigma(i) += de(i, j) * df_dsigma(j);
-    for (int j = 3; j < 6; j++) de_dfdsigma(i) += 2 * de(i, j) * df_dsigma(j);
-  }
+  Eigen::Matrix<double, 6, 1> de_dpdsigma = de * dp_dsigma;
+  double dfdsigma_de_dpdsigma = df_dsigma.dot(de_dpdsigma);
+  Eigen::Matrix<double, 6, 1> de_dfdsigma = de * df_dsigma;
 
   if (!hardening) softening = 0.;
-  for (int i = 0; i < 6; i++)
-    for (int j = 0; j < 6; j++)
-      d_ep(i, j) = de(i, j) - de_dpdsigma(i) * de_dfdsigma(j) /
-                                  (dfdsigma_de_dpdsigma + softening);
+  d_ep = de - 1. / (dfdsigma_de_dpdsigma + softening) *
+                  (de_dpdsigma * de_dfdsigma.transpose());
 
   return d_ep;
 }

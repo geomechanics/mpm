@@ -11,6 +11,11 @@
 
 namespace mpm {
 
+namespace modifiedcamclay {
+//! Failure state
+enum class FailureState { Elastic = 0, Yield = 1 };
+}  // namespace modifiedcamclay
+
 //! ModifiedCamClay class
 //! \brief Modified Cam Clay material model
 //! \tparam Tdim Dimension
@@ -21,9 +26,6 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   using Vector6d = Eigen::Matrix<double, 6, 1>;
   //! Define a Matrix of 6 x 6
   using Matrix6x6 = Eigen::Matrix<double, 6, 6>;
-
-  //! Failure state
-  enum FailureState { Elastic = 0, Yield = 1 };
 
   //! Constructor with id and material properties
   //! \param[in] material_properties Material properties
@@ -79,7 +81,8 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   //! Compute yield function and yield state
   //! \param[in] state_vars History-dependent state variables
   //! \retval yield_type Yield type (elastic or yield)
-  FailureState compute_yield_state(mpm::dense_map* state_vars);
+  mpm::modifiedcamclay::FailureState compute_yield_state(
+      mpm::dense_map* state_vars);
 
   //! Compute bonding parameters
   //! \param[in] chi Degredation
@@ -192,8 +195,9 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   //! Hydrate saturation
   double s_h_{std::numeric_limits<double>::epsilon()};
   //! Failure state map
-  std::map<int, FailureState> yield_type_ = {{0, FailureState::Elastic},
-                                             {1, FailureState::Yield}};
+  std::map<int, mpm::modifiedcamclay::FailureState> yield_type_ = {
+      {0, mpm::modifiedcamclay::FailureState::Elastic},
+      {1, mpm::modifiedcamclay::FailureState::Yield}};
 };  // ModifiedCamClay class
 }  // namespace mpm
 

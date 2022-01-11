@@ -207,11 +207,11 @@ Eigen::Matrix<double, 6, 6>
         const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars,
         bool hardening) {
 
-  FailureState yield_type =
+  mpm::modifiedcamclay::FailureState yield_type =
       yield_type_.at(int((*state_vars).at("yield_state")));
   // Return the updated stress in elastic state
   const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
-  if (yield_type == FailureState::Elastic) {
+  if (yield_type == mpm::modifiedcamclay::FailureState::Elastic) {
     return de;
   }
 
@@ -359,7 +359,7 @@ Eigen::Matrix<double, 6, 1>
 
 //! Compute yield function and yield state
 template <unsigned Tdim>
-typename mpm::ModifiedCamClay<Tdim>::FailureState
+typename mpm::modifiedcamclay::FailureState
     mpm::ModifiedCamClay<Tdim>::compute_yield_state(
         mpm::dense_map* state_vars) {
   // Get stress invariants
@@ -374,14 +374,14 @@ typename mpm::ModifiedCamClay<Tdim>::FailureState
   // Subloading surface ratio
   const double subloading_r = (*state_vars).at("subloading_r");
   // Initialise yield status (0: elastic, 1: yield)
-  auto yield_type = FailureState::Elastic;
+  auto yield_type = mpm::modifiedcamclay::FailureState::Elastic;
   // Compute yield functions
   (*state_vars).at("f_function") =
       std::pow(q / m_theta, 2) +
       (p + pcc) * (p - subloading_r * (pc + pcd + pcc));
   // Yielding
   if ((*state_vars).at("f_function") > std::numeric_limits<double>::epsilon())
-    yield_type = FailureState::Yield;
+    yield_type = mpm::modifiedcamclay::FailureState::Yield;
 
   return yield_type;
 }
@@ -602,7 +602,7 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
   // Check yield status
   auto yield_type = this->compute_yield_state(state_vars);
   // Return the updated stress in elastic state
-  if (yield_type == FailureState::Elastic) {
+  if (yield_type == mpm::modifiedcamclay::FailureState::Elastic) {
     (*state_vars).at("yield_state") = 0.;
     return trial_stress;
   } else

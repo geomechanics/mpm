@@ -103,42 +103,40 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
 //! Initialise state variables
 template <unsigned Tdim>
 mpm::dense_map mpm::NorSand<Tdim>::initialise_state_variables() {
-  mpm::dense_map state_vars = {
-      // Yield state: 0: elastic, 1: yield
-      {"yield_state", 0},
-      // M_theta
-      {"M_theta", Mtc_},
-      // M_image
-      {"M_image", 0.},
-      // M_image_tc
-      {"M_image_tc", 0.},
-      // Current void ratio
-      {"void_ratio", void_ratio_initial_},
-      // Void ratio image
-      {"e_image",
-       (use_bolton_csl_)
-           ? (e_max_ -
-              (e_max_ - e_min_) / log(crushing_pressure_ / p_image_initial_))
-           : (gamma_ - lambda_ * log(p_image_initial_ / reference_pressure_))},
-      // State parameter image
-      {"psi_image",
-       void_ratio_initial_ -
-           (gamma_ - lambda_ * log(p_image_initial_ / reference_pressure_))},
-      // Image pressure
-      {"p_image", p_image_initial_},
-      // p_cohesion
-      {"p_cohesion", p_cohesion_initial_},
-      // p_dilation
-      {"p_dilation", p_dilation_initial_},
-      // Equivalent plastic deviatoric strain
-      {"pdstrain", 0.},
-      // Plastic strain components
-      {"plastic_strain0", 0.},
-      {"plastic_strain1", 0.},
-      {"plastic_strain2", 0.},
-      {"plastic_strain3", 0.},
-      {"plastic_strain4", 0.},
-      {"plastic_strain5", 0.}};
+  const double e_i0 =
+      (use_bolton_csl_)
+          ? (e_max_ -
+             (e_max_ - e_min_) / log(crushing_pressure_ / p_image_initial_))
+          : (gamma_ - lambda_ * log(p_image_initial_ / reference_pressure_));
+  mpm::dense_map state_vars = {// Yield state: 0: elastic, 1: yield
+                               {"yield_state", 0},
+                               // M_theta
+                               {"M_theta", Mtc_},
+                               // M_image
+                               {"M_image", 0.},
+                               // M_image_tc
+                               {"M_image_tc", 0.},
+                               // Current void ratio
+                               {"void_ratio", void_ratio_initial_},
+                               // Void ratio image
+                               {"e_image", e_i0},
+                               // State parameter image
+                               {"psi_image", void_ratio_initial_ - e_i0},
+                               // Image pressure
+                               {"p_image", p_image_initial_},
+                               // p_cohesion
+                               {"p_cohesion", p_cohesion_initial_},
+                               // p_dilation
+                               {"p_dilation", p_dilation_initial_},
+                               // Equivalent plastic deviatoric strain
+                               {"pdstrain", 0.},
+                               // Plastic strain components
+                               {"plastic_strain0", 0.},
+                               {"plastic_strain1", 0.},
+                               {"plastic_strain2", 0.},
+                               {"plastic_strain3", 0.},
+                               {"plastic_strain4", 0.},
+                               {"plastic_strain5", 0.}};
 
   return state_vars;
 }

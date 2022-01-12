@@ -39,6 +39,9 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
       // Crushing pressure
       crushing_pressure_ =
           material_properties["crushing_pressure"].template get<double>();
+      // TODO: Need to find a way how to compute Lambda for Bolton's CSL eq
+      // Lambda volumetric
+      lambda_ = material_properties.at("lambda").template get<double>();
     }
 
     // Dilatancy coefficient chi
@@ -90,6 +93,8 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
     Mtc_ = (6 * sin_friction_cs) / (3 - sin_friction_cs);
     Mte_ = (6 * sin_friction_cs) / (3 + sin_friction_cs);
 
+    // TODO: Need to find a way how to compute Lambda for Bolton's CSL eq
+    // Lambda volumetric
     chi_image_ = chi_ / (1. - ((chi_ * lambda_) / Mtc_));
 
     // Properties
@@ -354,16 +359,16 @@ void mpm::NorSand<Tdim>::compute_image_parameters(mpm::dense_map* state_vars) {
   const double M_theta = (*state_vars).at("M_theta");
 
   // Compute state parameter image
-  const double psi_image_ = void_ratio - e_image;
-  (*state_vars).at("psi_image") = psi_image_;
+  const double psi_image = void_ratio - e_image;
+  (*state_vars).at("psi_image") = psi_image;
 
   // Compute critical state coefficient image
   (*state_vars).at("M_image") =
-      M_theta * (1. - ((chi_image_ * N_ * std::fabs(psi_image_)) / Mtc_));
+      M_theta * (1. - ((chi_image_ * N_ * std::fabs(psi_image)) / Mtc_));
 
   // Compute critical state coefficient image triaxial compression
   (*state_vars).at("M_image_tc") =
-      Mtc_ * (1. - ((chi_image_ * N_ * std::fabs(psi_image_)) / Mtc_));
+      Mtc_ * (1. - ((chi_image_ * N_ * std::fabs(psi_image)) / Mtc_));
 }
 
 //! Compute state parameters
@@ -479,8 +484,7 @@ typename mpm::norsand::FailureState mpm::NorSand<Tdim>::compute_yield_state(
         dev_q / (mean_p + p_cohesion) - M_image + M_image * std::log(1. / cap);
   } else {
     (*yield_function) = dev_q / (mean_p + p_cohesion) - M_image +
-                        M_image * std::log((mean_p + p_cohesion) /
-                                           (p_image + p_cohesion + p_dilation));
+                        M_image * std::log(1. / ratio);
   }
 
   // Yield criterion

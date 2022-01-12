@@ -46,6 +46,13 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   //! State variables
   std::vector<std::string> state_variables() const override;
 
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  void initialise(mpm::dense_map* state_vars) override {
+    (*state_vars).at("yield_state") = 0;
+  };
+
   //! Compute stress
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
@@ -66,11 +73,24 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
 
  private:
   //! Compute elastic tensor
-  bool compute_elastic_tensor();
+  //! \param[in] stress Stress
+  //! \param[in] state_vars History-dependent state variables
+  Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
+      const Vector6d& stress, mpm::dense_map* state_vars);
 
-  //! Compute plastic tensor
-  void compute_plastic_tensor(const Vector6d& stress,
-                              mpm::dense_map* state_vars);
+  //! Compute constitutive relations matrix for elasto-plastic material
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] hardening Boolean to consider hardening, default=true. If
+  //! perfect-plastic tensor is needed pass false
+  //! \retval dmatrix Constitutive relations mattrix
+  Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
+                                          const Vector6d& dstrain,
+                                          const ParticleBase<Tdim>* ptr,
+                                          mpm::dense_map* state_vars,
+                                          bool hardening = true) override;
 
   //! Compute stress invariants (p, q, lode_angle and M_theta)
   //! \param[in] stress Stress
@@ -116,20 +136,10 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   //! Inline ternary function to check number not greater than one
   inline double check_one(double val) { return (val < 1.0 ? val : 1.0); }
 
-  //! FIXME: Elastic matrix (should not be a global variable)
-  Matrix6x6 de_;
-  //! Plastic stiffness matrix
-  Matrix6x6 dp_;
   //! Density
   double density_{std::numeric_limits<double>::max()};
-  //! Youngs modulus
-  double youngs_modulus_{std::numeric_limits<double>::max()};
   //! Poisson ratio
   double poisson_ratio_{std::numeric_limits<double>::max()};
-  //! Bulk modulus
-  double bulk_modulus_{std::numeric_limits<double>::max()};
-  //! Shear modulus
-  double shear_modulus_{std::numeric_limits<double>::max()};
   //! Reference pressure pref
   double reference_pressure_{std::numeric_limits<double>::max()};
   //! Critical state friction angle
@@ -138,6 +148,8 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   double Mtc_{std::numeric_limits<double>::max()};
   //! Critical state coefficient M in triaxial extension
   double Mte_{std::numeric_limits<double>::max()};
+  //! Use bolton CSL line
+  bool use_bolton_csl_{false};
   //! Volumetric coupling (dilatancy) parameter N
   double N_{std::numeric_limits<double>::max()};
   //! Minimum void ratio
@@ -176,6 +188,10 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   double m_modulus_{0.};
   //! Default tolerance
   double tolerance_{std::numeric_limits<double>::epsilon()};
+  //! Failure state map
+  std::map<int, mpm::norsand::FailureState> yield_type_ = {
+      {0, mpm::norsand::FailureState::Elastic},
+      {1, mpm::norsand::FailureState::Yield}};
 
 };  // NorSand class
 }  // namespace mpm

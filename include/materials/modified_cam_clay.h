@@ -128,7 +128,6 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   //! Compute elastic tensor
   //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
-  //! \retval status of computation
   Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
       const Vector6d& stress, mpm::dense_map* state_vars);
 

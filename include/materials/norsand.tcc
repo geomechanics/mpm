@@ -8,29 +8,57 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
     // Poisson ratio
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
-    // Reference pressure pref
-    reference_pressure_ =
-        material_properties.at("reference_pressure").template get<double>();
     // Critical state friction angle
     friction_cs_ =
         material_properties.at("friction_cs").template get<double>() * M_PI /
         180.;
     // Volumetric coupling (dilatancy) parameter N
     N_ = material_properties.at("N").template get<double>();
-    // Lambda volumetric
-    lambda_ = material_properties.at("lambda").template get<double>();
     // Kappa swelling volumetric
     kappa_ = material_properties.at("kappa").template get<double>();
-    // Gamma void ratio at reference pressure
-    gamma_ = material_properties.at("gamma").template get<double>();
+
+    // CSL line
+    if (material_properties.contains("use_bolton_csl")) {
+      use_bolton_csl_ =
+          material_properties.at("use_bolton_csl").template get<bool>();
+    }
+
+    if (!use_bolton_csl_) {
+      // Lambda volumetric
+      lambda_ = material_properties.at("lambda").template get<double>();
+      // Gamma void ratio at reference pressure
+      gamma_ = material_properties.at("gamma").template get<double>();
+      // Reference pressure pref
+      reference_pressure_ =
+          material_properties.at("reference_pressure").template get<double>();
+    } else {
+      // Minimum void ratio
+      e_min_ = material_properties["e_min"].template get<double>();
+      // Maximum void ratio
+      e_max_ = material_properties["e_max"].template get<double>();
+      // Crushing pressure
+      crushing_pressure_ =
+          material_properties["crushing_pressure"].template get<double>();
+    }
+
     // Dilatancy coefficient chi
     chi_ = material_properties.at("chi").template get<double>();
     // Hardening modulus
     hardening_modulus_ =
         material_properties.at("hardening_modulus").template get<double>();
-    // Initial void ratio
-    void_ratio_initial_ =
-        material_properties.at("void_ratio_initial").template get<double>();
+    // Initial void ratio computed from different sources e0
+    // From initial porosity
+    if (material_properties.contains("porosity")) {
+      const double n =
+          material_properties.at("porosity").template get<double>();
+      void_ratio_initial_ = n / (1. - n);
+    }
+    // From initial void ratio
+    else if (material_properties.contains("void_ratio_initial")) {
+      void_ratio_initial_ =
+          material_properties.at("void_ratio_initial").template get<double>();
+    } else
+      throw std::runtime_error("Initial void ratio is undefined!");
     // Initial image pressure
     p_image_initial_ =
         material_properties.at("p_image_initial").template get<double>();
@@ -76,6 +104,8 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
 template <unsigned Tdim>
 mpm::dense_map mpm::NorSand<Tdim>::initialise_state_variables() {
   mpm::dense_map state_vars = {
+      // Yield state: 0: elastic, 1: yield
+      {"yield_state", 0},
       // M_theta
       {"M_theta", Mtc_},
       // M_image
@@ -86,7 +116,10 @@ mpm::dense_map mpm::NorSand<Tdim>::initialise_state_variables() {
       {"void_ratio", void_ratio_initial_},
       // Void ratio image
       {"e_image",
-       gamma_ - lambda_ * log(p_image_initial_ / reference_pressure_)},
+       (use_bolton_csl_)
+           ? (e_max_ -
+              (e_max_ - e_min_) / log(crushing_pressure_ / p_image_initial_))
+           : (gamma_ - lambda_ * log(p_image_initial_ / reference_pressure_))},
       // State parameter image
       {"psi_image",
        void_ratio_initial_ -
@@ -114,33 +147,180 @@ mpm::dense_map mpm::NorSand<Tdim>::initialise_state_variables() {
 template <unsigned Tdim>
 std::vector<std::string> mpm::NorSand<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
-      "M_theta",         "M_image",         "M_image_tc",
-      "void_ratio",      "e_image",         "psi_image",
-      "p_image",         "p_cohesion",      "p_dilation",
-      "pdstrain",        "plastic_strain0", "plastic_strain1",
-      "plastic_strain2", "plastic_strain3", "plastic_strain4",
-      "plastic_strain5"};
+      "yield_state",     "M_theta",         "M_image",
+      "M_image_tc",      "void_ratio",      "e_image",
+      "psi_image",       "p_image",         "p_cohesion",
+      "p_dilation",      "pdstrain",        "plastic_strain0",
+      "plastic_strain1", "plastic_strain2", "plastic_strain3",
+      "plastic_strain4", "plastic_strain5"};
   return state_vars;
 }
 
 //! Compute elastic tensor
 template <unsigned Tdim>
-bool mpm::NorSand<Tdim>::compute_elastic_tensor() {
+Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elastic_tensor(
+    const Vector6d& stress, mpm::dense_map* state_vars) {
+
+  // Get stress invariants
+  Vector6d stress_neg = -1 * stress;
+  const double mean_p = check_low(mpm::materials::p(stress_neg));
+
+  // Elastic step
+  // Bulk modulus computation
+  const double bulk_modulus =
+      (1. + (*state_vars).at("void_ratio")) / kappa_ * mean_p +
+      m_modulus_ *
+          ((*state_vars).at("p_cohesion") + (*state_vars).at("p_dilation"));
+  // Shear modulus computation
+  const double shear_modulus = 3. * bulk_modulus * (1. - 2. * poisson_ratio_) /
+                               (2.0 * (1. + poisson_ratio_));
+
   // Shear modulus
-  const double G = shear_modulus_;
-  const double a1 = bulk_modulus_ + (4.0 / 3.0) * G;
-  const double a2 = bulk_modulus_ - (2.0 / 3.0) * G;
+  const double G = shear_modulus;
+  const double a1 = bulk_modulus + (4.0 / 3.0) * G;
+  const double a2 = bulk_modulus - (2.0 / 3.0) * G;
+
   // compute elastic stiffness matrix
   // clang-format off
-  de_(0,0)=a1;    de_(0,1)=a2;    de_(0,2)=a2;    de_(0,3)=0;    de_(0,4)=0;    de_(0,5)=0;
-  de_(1,0)=a2;    de_(1,1)=a1;    de_(1,2)=a2;    de_(1,3)=0;    de_(1,4)=0;    de_(1,5)=0;
-  de_(2,0)=a2;    de_(2,1)=a2;    de_(2,2)=a1;    de_(2,3)=0;    de_(2,4)=0;    de_(2,5)=0;
-  de_(3,0)= 0;    de_(3,1)= 0;    de_(3,2)= 0;    de_(3,3)=G;    de_(3,4)=0;    de_(3,5)=0;
-  de_(4,0)= 0;    de_(4,1)= 0;    de_(4,2)= 0;    de_(4,3)=0;    de_(4,4)=G;    de_(4,5)=0;
-  de_(5,0)= 0;    de_(5,1)= 0;    de_(5,2)= 0;    de_(5,3)=0;    de_(5,4)=0;    de_(5,5)=G;
+  Matrix6x6 de = Matrix6x6::Zero();
+  de(0,0)=a1;    de(0,1)=a2;    de(0,2)=a2;    de(0,3)=0;    de(0,4)=0;    de(0,5)=0;
+  de(1,0)=a2;    de(1,1)=a1;    de(1,2)=a2;    de(1,3)=0;    de(1,4)=0;    de(1,5)=0;
+  de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;    de(2,3)=0;    de(2,4)=0;    de(2,5)=0;
+  de(3,0)= 0;    de(3,1)= 0;    de(3,2)= 0;    de(3,3)=G;    de(3,4)=0;    de(3,5)=0;
+  de(4,0)= 0;    de(4,1)= 0;    de(4,2)= 0;    de(4,3)=0;    de(4,4)=G;    de(4,5)=0;
+  de(5,0)= 0;    de(5,1)= 0;    de(5,2)= 0;    de(5,3)=0;    de(5,4)=0;    de(5,5)=G;
   // clang-format on
 
-  return true;
+  return de;
+}
+
+//! Compute plastic tensor
+template <unsigned Tdim>
+Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elasto_plastic_tensor(
+    const Vector6d& stress, const Vector6d& dstrain,
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, bool hardening) {
+
+  mpm::norsand::FailureState yield_type =
+      yield_type_.at(int((*state_vars).at("yield_state")));
+  // Return the updated stress in elastic state
+  const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
+  if (yield_type == mpm::norsand::FailureState::Elastic) {
+    return de;
+  }
+
+  // Note that in this subroutine, stress is set to be compression positive
+  Vector6d stress_neg = -1 * stress;
+
+  // Initialize invariants
+  double mean_p = 0.;
+  double dev_q = 0.;
+  double lode_angle = 0.;
+  double mtheta = 0.;
+
+  // Get invariants
+  this->compute_stress_invariants(stress_neg, &mean_p, &dev_q, &lode_angle,
+                                  &mtheta);
+
+  // Get state variables and image parameters
+  // note: M_image is at current stress
+  const double M_image = (*state_vars).at("M_image");
+  const double M_image_tc = (*state_vars).at("M_image_tc");
+  const double psi_image = (*state_vars).at("psi_image");
+  const double p_image = (*state_vars).at("p_image");
+  const double p_cohesion = (*state_vars).at("p_cohesion");
+  const double p_dilation = (*state_vars).at("p_dilation");
+
+  // Compute derivatives
+  // Compute dF / dp
+  const double dF_dp = M_image * (std::log(mean_p + p_cohesion) -
+                                  std::log(p_image + p_cohesion + p_dilation));
+
+  // Compute dp / dsigma
+  const Vector6d dp_dsigma = mpm::materials::dp_dsigma();
+
+  // Compute dF / dq
+  const double dF_dq = 1.;
+
+  // Compute dq / dsigma
+  const Vector6d dq_dsigma = mpm::materials::dq_dsigma(stress_neg);
+
+  // Compute dF / dMi
+  const double dF_dMi =
+      (mean_p + p_cohesion) * (-1. + std::log(mean_p + p_cohesion) -
+                               std::log(p_image + p_cohesion + p_dilation));
+
+  // Compute dMi / dMtheta
+  const double dMi_dMtheta =
+      1. - (chi_image_ * N_ * std::fabs(psi_image) / Mtc_);
+
+  // Compute dMtheta / dtheta
+  const double dMtheta_dtheta =
+      (3. * std::pow(Mtc_, 2) * sin(3. / 2. * lode_angle)) / (2. * (3. + Mtc_));
+
+  // Compute dtheta / dsigma
+  const Vector6d dtheta_dsigma = mpm::materials::dtheta_dsigma(stress_neg);
+
+  // dF_dsigma is in compression negative
+  const Vector6d dF_dsigma =
+      (dF_dp * dp_dsigma) + (dF_dq * dq_dsigma) +
+      (dF_dMi * dMi_dMtheta * dMtheta_dtheta * dtheta_dsigma);
+
+  // Derivatives in respect to p_image
+  const double dF_dpi = (-1. * M_image * (mean_p + p_cohesion)) /
+                        (p_image + p_cohesion + p_dilation);
+
+  const double dpi_depsd =
+      hardening_modulus_ * (M_image / M_image_tc) *
+      std::pow((mean_p / p_image), 2) *
+      (std::exp(-1. * chi_image_ * psi_image / Mtc_) - (p_image / mean_p)) *
+      p_image;
+
+  const double dF_dsigma_v = (dF_dsigma(0) + dF_dsigma(1) + dF_dsigma(2)) / 3.;
+  const double dF_dsigma_deviatoric =
+      std::sqrt(2. / 3.) * std::sqrt(std::pow(dF_dsigma(0) - dF_dsigma_v, 2) +
+                                     std::pow(dF_dsigma(1) - dF_dsigma_v, 2) +
+                                     std::pow(dF_dsigma(2) - dF_dsigma_v, 2) +
+                                     std::pow(dF_dsigma(3), 2) / 2. +
+                                     std::pow(dF_dsigma(4), 2) / 2. +
+                                     std::pow(dF_dsigma(5), 2) / 2.);
+
+  // Compute hardering term
+  double hardening_term;
+  if (bond_model_) {
+    // Derivatives in respect to p_cohesion
+    const double dF_dpcohesion =
+        M_image *
+        ((-1. * (mean_p + p_cohesion) / (p_image + p_cohesion + p_dilation)) +
+         std::log(mean_p + p_cohesion) -
+         std::log(p_image + p_cohesion + p_dilation));
+
+    const double dpcohesion_depsd =
+        -p_cohesion_initial_ * m_cohesion_ *
+        exp(-m_cohesion_ * (*state_vars).at("pdstrain"));
+
+    // Derivatives in respect to p_dilation
+    const double dF_dpdilation = (-1. * M_image * (mean_p + p_cohesion)) /
+                                 (p_image + p_cohesion + p_dilation);
+
+    const double dpdilation_depsd =
+        -p_dilation_initial_ * m_dilation_ *
+        exp(-m_dilation_ * (*state_vars).at("pdstrain"));
+
+    hardening_term = dF_dpi * dpi_depsd * dF_dsigma_deviatoric +
+                     dF_dpcohesion * dpcohesion_depsd * dF_dsigma_deviatoric +
+                     dF_dpdilation * dpdilation_depsd * dF_dsigma_deviatoric;
+  } else {
+    hardening_term = dF_dpi * dpi_depsd * dF_dsigma_deviatoric;
+  }
+
+  if (!hardening) hardening_term = 0.;
+
+  // Construct dep matrix
+  Matrix6x6 dep =
+      de - (de * dF_dsigma * dF_dsigma.transpose() * de) /
+               (dF_dsigma.transpose() * de * dF_dsigma - hardening_term);
+
+  return dep;
 }
 
 //! Compute stress invariants
@@ -209,16 +389,10 @@ void mpm::NorSand<Tdim>::compute_state_variables(
   const double M_image = (*state_vars).at("M_image");
   const double p_cohesion = (*state_vars).at("p_cohesion");
   const double p_dilation = (*state_vars).at("p_dilation");
-  double e_image;
-  double p_image;
 
-  if (yield_type == mpm::norsand::FailureState::Elastic) {
-    // Keep the same pressure image and void ratio image at critical state
-    p_image = (*state_vars).at("p_image");
-    e_image = (*state_vars).at("e_image");
-  } else {
+  if (yield_type == mpm::norsand::FailureState::Yield) {
     // Compute and update pressure image
-    p_image =
+    const double p_image =
         std::pow(std::exp(1. - (dev_q / ((mean_p + p_cohesion) * M_image))),
                  -1) *
             (mean_p + p_cohesion) -
@@ -226,8 +400,11 @@ void mpm::NorSand<Tdim>::compute_state_variables(
     (*state_vars).at("p_image") = p_image;
 
     // Compute and update void ratio image
-    // e_image = e_max_ - (e_max_ - e_min_) / log(crushing_pressure_ / p_image);
-    e_image = check_low(gamma_ - lambda_ * log(p_image / reference_pressure_));
+    double e_image =
+        (use_bolton_csl_)
+            ? (e_max_ - (e_max_ - e_min_) / log(crushing_pressure_ / p_image))
+            : (gamma_ - lambda_ * log(p_image / reference_pressure_));
+    e_image = check_low(e_image);
 
     (*state_vars).at("e_image") = e_image;
   }
@@ -315,120 +492,6 @@ typename mpm::norsand::FailureState mpm::NorSand<Tdim>::compute_yield_state(
   return yield_type;
 }
 
-//! Compute plastic tensor
-template <unsigned Tdim>
-void mpm::NorSand<Tdim>::compute_plastic_tensor(const Vector6d& stress,
-                                                mpm::dense_map* state_vars) {
-
-  // Note that in this subroutine, stress is compression positive
-
-  // Initialize invariants
-  double mean_p = 0.;
-  double dev_q = 0.;
-  double lode_angle = 0.;
-  double mtheta = 0.;
-
-  // Get invariants
-  this->compute_stress_invariants(stress, &mean_p, &dev_q, &lode_angle,
-                                  &mtheta);
-
-  // Get state variables and image parameters
-  // note: M_image is at current stress
-  const double M_image = (*state_vars).at("M_image");
-  const double M_image_tc = (*state_vars).at("M_image_tc");
-  const double psi_image = (*state_vars).at("psi_image");
-  const double p_image = (*state_vars).at("p_image");
-  const double p_cohesion = (*state_vars).at("p_cohesion");
-  const double p_dilation = (*state_vars).at("p_dilation");
-
-  // Compute derivatives
-  // Compute dF / dp
-  const double dF_dp = M_image * (std::log(mean_p + p_cohesion) -
-                                  std::log(p_image + p_cohesion + p_dilation));
-
-  // Compute dp / dsigma
-  const Vector6d dp_dsigma = mpm::materials::dp_dsigma();
-
-  // Compute dF / dq
-  const double dF_dq = 1.;
-
-  // Compute dq / dsigma
-  const Vector6d dq_dsigma = mpm::materials::dq_dsigma(stress);
-
-  // Compute dF / dMi
-  const double dF_dMi =
-      (mean_p + p_cohesion) * (-1. + std::log(mean_p + p_cohesion) -
-                               std::log(p_image + p_cohesion + p_dilation));
-
-  // Compute dMi / dMtheta
-  const double dMi_dMtheta =
-      1. - (chi_image_ * N_ * std::fabs(psi_image) / Mtc_);
-
-  // Compute dMtheta / dtheta
-  const double dMtheta_dtheta =
-      (3. * std::pow(Mtc_, 2) * sin(3. / 2. * lode_angle)) / (2. * (3. + Mtc_));
-
-  // Compute dtheta / dsigma
-  const Vector6d dtheta_dsigma = mpm::materials::dtheta_dsigma(stress);
-
-  // dF_dsigma is in compression negative
-  const Vector6d dF_dsigma =
-      (dF_dp * dp_dsigma) + (dF_dq * dq_dsigma) +
-      (dF_dMi * dMi_dMtheta * dMtheta_dtheta * dtheta_dsigma);
-
-  // Derivatives in respect to p_image
-  const double dF_dpi = (-1. * M_image * (mean_p + p_cohesion)) /
-                        (p_image + p_cohesion + p_dilation);
-
-  const double dpi_depsd =
-      hardening_modulus_ * (M_image / M_image_tc) *
-      std::pow((mean_p / p_image), 2) *
-      (std::exp(-1. * chi_image_ * psi_image / Mtc_) - (p_image / mean_p)) *
-      p_image;
-
-  const double dF_dsigma_v = (dF_dsigma(0) + dF_dsigma(1) + dF_dsigma(2)) / 3.;
-  const double dF_dsigma_deviatoric =
-      std::sqrt(2. / 3.) * std::sqrt(std::pow(dF_dsigma(0) - dF_dsigma_v, 2) +
-                                     std::pow(dF_dsigma(1) - dF_dsigma_v, 2) +
-                                     std::pow(dF_dsigma(2) - dF_dsigma_v, 2) +
-                                     std::pow(dF_dsigma(3), 2) / 2. +
-                                     std::pow(dF_dsigma(4), 2) / 2. +
-                                     std::pow(dF_dsigma(5), 2) / 2.);
-
-  // Compute hardering term
-  double hardening_term;
-  if (bond_model_) {
-    // Derivatives in respect to p_cohesion
-    const double dF_dpcohesion =
-        M_image *
-        ((-1. * (mean_p + p_cohesion) / (p_image + p_cohesion + p_dilation)) +
-         std::log(mean_p + p_cohesion) -
-         std::log(p_image + p_cohesion + p_dilation));
-
-    const double dpcohesion_depsd =
-        -p_cohesion_initial_ * m_cohesion_ *
-        exp(-m_cohesion_ * (*state_vars).at("pdstrain"));
-
-    // Derivatives in respect to p_dilation
-    const double dF_dpdilation = (-1. * M_image * (mean_p + p_cohesion)) /
-                                 (p_image + p_cohesion + p_dilation);
-
-    const double dpdilation_depsd =
-        -p_dilation_initial_ * m_dilation_ *
-        exp(-m_dilation_ * (*state_vars).at("pdstrain"));
-
-    hardening_term = dF_dpi * dpi_depsd * dF_dsigma_deviatoric +
-                     dF_dpcohesion * dpcohesion_depsd * dF_dsigma_deviatoric +
-                     dF_dpdilation * dpdilation_depsd * dF_dsigma_deviatoric;
-  } else {
-    hardening_term = dF_dpi * dpi_depsd * dF_dsigma_deviatoric;
-  }
-
-  // Construct Dp matrix
-  this->dp_ = (de_ * dF_dsigma * dF_dsigma.transpose() * de_) /
-              (dF_dsigma.transpose() * de_ * dF_dsigma - hardening_term);
-}
-
 //! Compute stress
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::NorSand<Tdim>::compute_stress(
@@ -439,23 +502,11 @@ Eigen::Matrix<double, 6, 1> mpm::NorSand<Tdim>::compute_stress(
   Vector6d stress_neg = -1 * stress;
   Vector6d dstrain_neg = -1 * dstrain;
 
-  // Get stress invariants
-  const double mean_p = check_low(mpm::materials::p(stress_neg));
-
-  // Elastic step
-  // Bulk modulus computation
-  bulk_modulus_ = (1. + (*state_vars).at("void_ratio")) / kappa_ * mean_p +
-                  m_modulus_ * ((*state_vars).at("p_cohesion") +
-                                (*state_vars).at("p_dilation"));
-  // Shear modulus computation
-  shear_modulus_ = 3. * bulk_modulus_ * (1. - 2. * poisson_ratio_) /
-                   (2.0 * (1. + poisson_ratio_));
-
   // Set elastic tensor
-  this->compute_elastic_tensor();
+  const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
 
   // Trial stress - elastic
-  Vector6d trial_stress = stress_neg + (this->de_ * dstrain_neg);
+  Vector6d trial_stress = stress_neg + (de * dstrain_neg);
 
   // Compute image parameters at current stress
   this->compute_image_parameters(state_vars);
@@ -467,27 +518,24 @@ Eigen::Matrix<double, 6, 1> mpm::NorSand<Tdim>::compute_stress(
 
   // Return the updated stress in elastic state
   if (yield_type == mpm::norsand::FailureState::Elastic) {
-
     // Update state variables
     this->compute_state_variables(trial_stress, dstrain_neg, state_vars,
                                   yield_type);
+    (*state_vars).at("yield_state") = 0.;
 
     // Update p_cohesion
     this->compute_p_bond(state_vars);
 
-    // Return elastic stress
     return (-trial_stress);
-  }
+  } else
+    (*state_vars).at("yield_state") = 1.;
 
-  // Set plastic tensor
-  this->compute_plastic_tensor(stress_neg, state_vars);
-
-  // Plastic step
   // Compute D matrix used in stress update
-  Matrix6x6 D_matrix = this->de_ - this->dp_;
+  const Matrix6x6 dep =
+      this->compute_elasto_plastic_tensor(stress, dstrain, ptr, state_vars);
 
   // Update stress
-  Vector6d updated_stress = stress_neg + D_matrix * dstrain_neg;
+  Vector6d updated_stress = stress_neg + dep * dstrain_neg;
 
   // Update state variables
   this->compute_state_variables(updated_stress, dstrain_neg, state_vars,
@@ -495,7 +543,7 @@ Eigen::Matrix<double, 6, 1> mpm::NorSand<Tdim>::compute_stress(
 
   // Compute incremental plastic strain, still in tension positive
   Vector6d dstress = updated_stress - stress_neg;
-  Vector6d dpstrain = dstrain_neg - (this->de_.inverse() * dstress);
+  Vector6d dpstrain = dstrain_neg - (de.inverse() * dstress);
   if (Tdim == 2) dpstrain(4) = dpstrain(5) = 0.;
 
   // Update plastic strain

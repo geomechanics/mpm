@@ -185,6 +185,11 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
       const Eigen::MatrixXd& nodal_coordinates,
       const std::vector<std::vector<unsigned>>& nodal_properties) override;
 
+  //! Return the degree of shape function
+  mpm::ElementDegree degree() const override {
+    return mpm::ElementDegree::Quadratic;
+  };
+
  private:
   //! Compute B-Spline Basis Function using the recursive De Boor's algorithm
   //! for single direction

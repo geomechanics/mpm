@@ -606,7 +606,18 @@ class Mesh {
   //! Upgrade cells to nonlocal cells
   //! \ingroup Nonlocal
   //! \param[in] cell_type string indicating the cell type
-  bool upgrade_cells_to_nonlocal(const std::string& cell_type);
+  //! \param[in] cell_neighbourhood size of nonlocal cell neighbourhood
+  bool upgrade_cells_to_nonlocal(const std::string& cell_type,
+                                 unsigned cell_neighbourhood);
+
+  //! Return node neighbours id set given a size of cell neighbourhood via in a
+  //! recursion strategy
+  //! \ingroup Nonlocal
+  //! \param[in] cell cell pointer
+  //! \param[in] cell_neighbourhood size of nonlocal cell neighbourhood
+  std::set<mpm::Index> cell_neighbours_nodes_id(
+      const std::shared_ptr<mpm::Cell<Tdim>>& cell,
+      unsigned cell_neighbourhood);
 
   //! Assign nonlocal node type
   //! \ingroup Nonlocal

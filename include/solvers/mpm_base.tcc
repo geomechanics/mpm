@@ -270,7 +270,6 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Use Nonlocal basis
   if (cell_type.back() == 'B') {
-    node_neighbourhood_ = 2;
     this->initialise_nonlocal_mesh(mesh_props);
   }
 
@@ -1511,31 +1510,41 @@ template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
   //! Shape function name
   const auto cell_type = mesh_props["cell_type"].template get<std::string>();
+  try {
+    if (cell_type.back() == 'B') {
+      // Cell and node neighbourhood for quadratic B-Spline
+      cell_neighbourhood_ = 1;
+      node_neighbourhood_ = 3;
 
-  if (cell_type.back() == 'B') {
-    mesh_->iterate_over_nodes(std::bind(
-        &mpm::NodeBase<Tdim>::initialise_nonlocal_node, std::placeholders::_1));
+      // Initialise nonlocal node
+      mesh_->iterate_over_nodes(
+          std::bind(&mpm::NodeBase<Tdim>::initialise_nonlocal_node,
+                    std::placeholders::_1));
 
-    //! Read nodal type from entity sets
-    if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end() &&
-        mesh_props["nonlocal_mesh_properties"].find("node_types") !=
-            mesh_props["nonlocal_mesh_properties"].end()) {
+      //! Read nodal type from entity sets
+      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end() &&
+          mesh_props["nonlocal_mesh_properties"].find("node_types") !=
+              mesh_props["nonlocal_mesh_properties"].end()) {
 
-      // Iterate over node type
-      for (const auto& node_type :
-           mesh_props["nonlocal_mesh_properties"]["node_types"]) {
-        // Set id
-        int nset_id = node_type.at("nset_id").template get<int>();
-        // Direction
-        unsigned dir = node_type.at("dir").template get<unsigned>();
-        // Type
-        unsigned type = node_type.at("type").template get<unsigned>();
-        // Assign nodal nonlocal type
-        mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+        // Iterate over node type
+        for (const auto& node_type :
+             mesh_props["nonlocal_mesh_properties"]["node_types"]) {
+          // Set id
+          int nset_id = node_type.at("nset_id").template get<int>();
+          // Direction
+          unsigned dir = node_type.at("dir").template get<unsigned>();
+          // Type
+          unsigned type = node_type.at("type").template get<unsigned>();
+          // Assign nodal nonlocal type
+          mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+        }
       }
-    }
 
-    //! Update number of nodes in cell
-    mesh_->upgrade_cells_to_nonlocal(cell_type);
+      //! Update number of nodes in cell
+      mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_);
+    }
+  } catch (std::exception& exception) {
+    console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,
+                   __LINE__, exception.what());
   }
 }

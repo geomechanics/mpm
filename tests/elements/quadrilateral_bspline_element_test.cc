@@ -88,7 +88,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
     // Initialising upgrade properties
     SECTION("2D BSpline element regular element - nnodes = 16") {
       Eigen::Matrix<double, 16, Dim> nodal_coords;
-      nodal_coords << -1., -1., 1., -1., -1., 1., 1., 1., -3., -3., -1., -3.,
+      nodal_coords << -1., -1., 1., -1., 1., 1., -1., 1., -3., -3., -1., -3.,
           1., -3., 3., -3., -3., -1., 3., -1., -3., 1., 3., 1., -3., 3., -1.,
           3., 1., 3., 3., 3.;
 
@@ -135,7 +135,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 16, Dim> gradsf_ans;
-          gradsf_ans << -0.25, -0.25, 0.25, -0.25, -0.25, 0.25, 0.25, 0.25, 0,
+          gradsf_ans << -0.25, -0.25, 0.25, -0.25, 0.25, 0.25, -0.25, 0.25, 0,
               0, -0, 0, 0, 0, 0, 0, 0, -0, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0,
               0, 0;
 
@@ -146,7 +146,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         }
 
         // Coordinates is (1,1) after upgrade
-        SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
+        SECTION("2D BSpline element for coordinates(1,1) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 1., 1.;
           auto shapefn = quad->shapefn(coords, Eigen::Vector2d::Zero(),
@@ -156,22 +156,22 @@ TEST_CASE("Quadrilateral bspline elements are checked",
           REQUIRE(shapefn.size() == 16);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-          REQUIRE(shapefn(0) == Approx(0.09375).epsilon(Tolerance));
-          REQUIRE(shapefn(1) == Approx(0.015625).epsilon(Tolerance));
+          REQUIRE(shapefn(0) == Approx(0.015625).epsilon(Tolerance));
+          REQUIRE(shapefn(1) == Approx(0.09375).epsilon(Tolerance));
           REQUIRE(shapefn(2) == Approx(0.5625).epsilon(Tolerance));
           REQUIRE(shapefn(3) == Approx(0.09375).epsilon(Tolerance));
           REQUIRE(shapefn(4) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(5) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(6) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(7) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(8) == Approx(0.015625).epsilon(Tolerance));
-          REQUIRE(shapefn(9) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(10) == Approx(0.09375).epsilon(Tolerance));
-          REQUIRE(shapefn(11) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(12) == Approx(0.015625).epsilon(Tolerance));
-          REQUIRE(shapefn(13) == Approx(0.09375).epsilon(Tolerance));
-          REQUIRE(shapefn(14) == Approx(0.015625).epsilon(Tolerance));
-          REQUIRE(shapefn(15) == Approx(0).epsilon(Tolerance));
+          REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
+          REQUIRE(shapefn(9) == Approx(0.015625).epsilon(Tolerance));
+          REQUIRE(shapefn(10) == Approx(0).epsilon(Tolerance));
+          REQUIRE(shapefn(11) == Approx(0.09375).epsilon(Tolerance));
+          REQUIRE(shapefn(12) == Approx(0).epsilon(Tolerance));
+          REQUIRE(shapefn(13) == Approx(0.015625).epsilon(Tolerance));
+          REQUIRE(shapefn(14) == Approx(0.09375).epsilon(Tolerance));
+          REQUIRE(shapefn(15) == Approx(0.015625).epsilon(Tolerance));
 
           // Check gradient of shape functions
           auto gradsf = quad->grad_shapefn(coords, Eigen::Vector2d::Zero(),
@@ -180,135 +180,38 @@ TEST_CASE("Quadrilateral bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 16, Dim> gradsf_ans;
-          gradsf_ans << 0, -0.1875, 0.03125, -0.03125, 0, 0, 0.1875, 0, -0, 0,
-              0, 0, 0, 0, 0, 0, -0.03125, -0.03125, 0, -0, -0.1875, 0, 0, 0,
-              -0.03125, 0.03125, 0, 0.1875, 0.03125, 0.03125, 0, 0;
+          gradsf_ans << -0.03125, -0.03125, 0, -0.1875, 0, 0, -0.1875, 0, 0, 0,
+              -0, 0, 0, 0, 0, 0, 0, -0, 0.03125, -0.03125, 0, 0, 0.1875, 0, 0,
+              0, -0.03125, 0.03125, 0, 0.1875, 0.03125, 0.03125;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
         }
-      }
 
-      SECTION("2D BSpline element regular element north west support") {
-        std::vector<std::vector<unsigned>> nodal_props{
-            {2, 0}, {0, 0}, {0, 3}, {2, 3}, {1, 0}, {2, 0}, {0, 0}, {0, 0},
-            {1, 0}, {0, 0}, {1, 3}, {0, 3}, {1, 4}, {2, 4}, {0, 4}, {0, 4}};
+        // Coordinates is (0,0)
+        SECTION(
+            "Four noded local sf quadrilateral element for coordinates(0,0)") {
+          Eigen::Matrix<double, Dim, 1> coords;
+          coords.setZero();
+          auto shapefn = quad->shapefn_local(coords, Eigen::Vector2d::Zero(),
+                                             Eigen::Vector2d::Zero());
 
-        REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
-            nodal_coords, nodal_props));
+          // Check shape function
+          REQUIRE(shapefn.size() == 4);
 
-        // // Coordinates is (0,0) after upgrade
-        // SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
-        //   Eigen::Matrix<double, Dim, 1> coords;
-        //   coords.setZero();
-        //   auto shapefn = quad->shapefn(coords, Eigen::Vector2d::Zero(),
-        //                                Eigen::Vector2d::Zero());
-
-        //   // Check shape function
-        //   REQUIRE(shapefn.size() == 16);
-        //   REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
-
-        // REQUIRE(shapefn(0) == Approx(0.25).epsilon(Tolerance));
-        // REQUIRE(shapefn(1) == Approx(0.25).epsilon(Tolerance));
-        // REQUIRE(shapefn(2) == Approx(0.25).epsilon(Tolerance));
-        // REQUIRE(shapefn(3) == Approx(0.25).epsilon(Tolerance));
-        // REQUIRE(shapefn(4) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(5) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(6) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(7) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(8) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(9) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(10) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(11) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(12) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(13) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(14) == Approx(0.).epsilon(Tolerance));
-        // REQUIRE(shapefn(15) == Approx(0.).epsilon(Tolerance));
-
-        // // Check gradient of shape functions
-        // auto gradsf = quad->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-        //                                  Eigen::Vector2d::Zero());
-        // REQUIRE(gradsf.rows() == 16);
-        // REQUIRE(gradsf.cols() == Dim);
-
-        // Eigen::Matrix<double, 16, Dim> gradsf_ans;
-        // gradsf_ans << -0.25, -0.25, 0.25, -0.25, -0.25, 0.25, 0.25, 0.25,
-        // 0,
-        //     0, -0, 0, 0, 0, 0, 0, 0, -0, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0,
-        //     0, 0, 0;
-
-        // for (unsigned i = 0; i < gradsf.rows(); ++i)
-        //   for (unsigned j = 0; j < gradsf.cols(); ++j)
-        //     REQUIRE(gradsf(i, j) ==
-        //             Approx(gradsf_ans(i, j)).epsilon(Tolerance));
-        // }
-
-        // // Coordinates is (1,1) after upgrade
-        // SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
-        //   Eigen::Matrix<double, Dim, 1> coords;
-        //   coords << 1., 1.;
-        //   auto shapefn = quad->shapefn(coords, Eigen::Vector2d::Zero(),
-        //                                Eigen::Vector2d::Zero());
-
-        //   // Check shape function
-        //   REQUIRE(shapefn.size() == 16);
-        //   REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
-
-        //   REQUIRE(shapefn(0) == Approx(0.09375).epsilon(Tolerance));
-        //   REQUIRE(shapefn(1) == Approx(0.015625).epsilon(Tolerance));
-        //   REQUIRE(shapefn(2) == Approx(0.5625).epsilon(Tolerance));
-        //   REQUIRE(shapefn(3) == Approx(0.09375).epsilon(Tolerance));
-        //   REQUIRE(shapefn(4) == Approx(0).epsilon(Tolerance));
-        //   REQUIRE(shapefn(5) == Approx(0).epsilon(Tolerance));
-        //   REQUIRE(shapefn(6) == Approx(0).epsilon(Tolerance));
-        //   REQUIRE(shapefn(7) == Approx(0).epsilon(Tolerance));
-        //   REQUIRE(shapefn(8) == Approx(0.015625).epsilon(Tolerance));
-        //   REQUIRE(shapefn(9) == Approx(0).epsilon(Tolerance));
-        //   REQUIRE(shapefn(10) == Approx(0.09375).epsilon(Tolerance));
-        //   REQUIRE(shapefn(11) == Approx(0).epsilon(Tolerance));
-        //   REQUIRE(shapefn(12) == Approx(0.015625).epsilon(Tolerance));
-        //   REQUIRE(shapefn(13) == Approx(0.09375).epsilon(Tolerance));
-        //   REQUIRE(shapefn(14) == Approx(0.015625).epsilon(Tolerance));
-        //   REQUIRE(shapefn(15) == Approx(0).epsilon(Tolerance));
-
-        //   // Check gradient of shape functions
-        //   auto gradsf = quad->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-        //                                    Eigen::Vector2d::Zero());
-        //   REQUIRE(gradsf.rows() == 16);
-        //   REQUIRE(gradsf.cols() == Dim);
-
-        //   Eigen::Matrix<double, 16, Dim> gradsf_ans;
-        //   gradsf_ans << 0, -0.1875, 0.03125, -0.03125, 0, 0, 0.1875, 0, -0,
-        //   0,
-        //       0, 0, 0, 0, 0, 0, -0.03125, -0.03125, 0, -0, -0.1875, 0, 0, 0,
-        //       -0.03125, 0.03125, 0, 0.1875, 0.03125, 0.03125, 0, 0;
-
-        //   for (unsigned i = 0; i < gradsf.rows(); ++i)
-        //     for (unsigned j = 0; j < gradsf.cols(); ++j)
-        //       REQUIRE(gradsf(i, j) ==
-        //               Approx(gradsf_ans(i, j)).epsilon(Tolerance));
-        // }
+          REQUIRE(shapefn(0) == Approx(0.25).epsilon(Tolerance));
+          REQUIRE(shapefn(1) == Approx(0.25).epsilon(Tolerance));
+          REQUIRE(shapefn(2) == Approx(0.25).epsilon(Tolerance));
+          REQUIRE(shapefn(3) == Approx(0.25).epsilon(Tolerance));
+        }
       }
     }
 
-    //! nnodes = 12 arrangement
-    //!   9-----------8-----------7-----------6
-    //!   |           |           |           |
-    //!   |           |           |           |
-    //!   |           |           |           |
-    //!   |           |           |           |
-    //!   10----------3-----------2-----------5
-    //!   |           |           |           |
-    //!   |           | particle  |           |
-    //!   |           | location  |           |
-    //!   |           |           |           |
-    //!   11----------0-----------1-----------4
-
     SECTION("2D BSpline element mesh edge - nnodes = 12") {
       Eigen::Matrix<double, 12, Dim> nodal_coords;
-      nodal_coords << -1., -1., 1., -1., -1., 1., 1., 1., 3., -1, 3., 1, 3., 3.,
+      nodal_coords << -1., -1., 1., -1., 1., 1., -1., 1., 3., -1, 3., 1, 3., 3.,
           1., 3., -1., 3., -3., 3, -3., 1, -3., -1.;
 
       std::vector<std::vector<unsigned>> nodal_props{
@@ -350,7 +253,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
 
         Eigen::Matrix<double, 12, Dim> gradsf_ans;
         gradsf_ans << -0.3333333333, -0.3333333333, 0.3333333333, -0.3333333333,
-            -0.1666666667, 0.3333333333, 0.1666666667, 0.3333333333, 0, -0, 0,
+            0.1666666667, 0.3333333333, -0.1666666667, 0.3333333333, 0, -0, 0,
             0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, -0;
 
         for (unsigned i = 0; i < gradsf.rows(); ++i)
@@ -370,12 +273,12 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(shapefn.size() == 12);
         REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-        REQUIRE(shapefn(0) == Approx(0.350911).epsilon(Tolerance));
-        REQUIRE(shapefn(1) == Approx(0.558594).epsilon(Tolerance));
-        REQUIRE(shapefn(2) == Approx(0.031901).epsilon(Tolerance));
-        REQUIRE(shapefn(3) == Approx(0.0507812).epsilon(Tolerance));
-        REQUIRE(shapefn(4) == Approx(0.00716146).epsilon(Tolerance));
-        REQUIRE(shapefn(5) == Approx(0.000651042).epsilon(Tolerance));
+        REQUIRE(shapefn(0) == Approx(0.257812).epsilon(Tolerance));
+        REQUIRE(shapefn(1) == Approx(0.630208).epsilon(Tolerance));
+        REQUIRE(shapefn(2) == Approx(0.0572917).epsilon(Tolerance));
+        REQUIRE(shapefn(3) == Approx(0.0234375).epsilon(Tolerance));
+        REQUIRE(shapefn(4) == Approx(0.0286458).epsilon(Tolerance));
+        REQUIRE(shapefn(5) == Approx(0.00260417).epsilon(Tolerance));
         REQUIRE(shapefn(6) == Approx(0).epsilon(Tolerance));
         REQUIRE(shapefn(7) == Approx(0).epsilon(Tolerance));
         REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
@@ -390,14 +293,130 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(gradsf.cols() == Dim);
 
         Eigen::Matrix<double, 12, Dim> gradsf_ans;
-        gradsf_ans << -0.401042, -0.127604, 0.34375, -0.203125, -0.0364583,
-            0.127604, 0.03125, 0.203125, 0.0572917, -0.00260417, 0.00520833,
-            0.00260417, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, -0;
+        gradsf_ans << -0.34375, -0.09375, 0.229167, -0.229167, 0.0208333,
+            0.229167, -0.03125, 0.09375, 0.114583, -0.0104167, 0.0104167,
+            0.0104167, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, -0;
 
         for (unsigned i = 0; i < gradsf.rows(); ++i)
           for (unsigned j = 0; j < gradsf.cols(); ++j)
             REQUIRE(gradsf(i, j) ==
                     Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+      }
+    }
+
+    SECTION("2D BSpline element mesh corner - nnodes = 9") {
+      Eigen::Matrix<double, 9, Dim> nodal_coords;
+      nodal_coords << -1., -1., 1., -1., 1., 1., -1., 1., 3., -1, 3., 1, 3., 3.,
+          1., 3., -1., 3.;
+
+      std::vector<std::vector<unsigned>> nodal_props{{1, 1}, {2, 1}, {2, 2},
+                                                     {1, 2}, {0, 1}, {0, 2},
+                                                     {0, 0}, {2, 0}, {1, 0}};
+
+      REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
+          nodal_coords, nodal_props));
+
+      // Coordinates is (0,0) after upgrade
+      SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
+        Eigen::Matrix<double, Dim, 1> coords;
+        coords.setZero();
+        auto shapefn = quad->shapefn(coords, Eigen::Vector2d::Zero(),
+                                     Eigen::Vector2d::Zero());
+
+        // Check shape function
+        REQUIRE(shapefn.size() == 9);
+        REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
+
+        REQUIRE(shapefn(0) == Approx(0.444444).epsilon(Tolerance));
+        REQUIRE(shapefn(1) == Approx(0.222222).epsilon(Tolerance));
+        REQUIRE(shapefn(2) == Approx(0.111111).epsilon(Tolerance));
+        REQUIRE(shapefn(3) == Approx(0.222222).epsilon(Tolerance));
+        REQUIRE(shapefn(4) == Approx(0).epsilon(Tolerance));
+        REQUIRE(shapefn(5) == Approx(0).epsilon(Tolerance));
+        REQUIRE(shapefn(6) == Approx(0).epsilon(Tolerance));
+        REQUIRE(shapefn(7) == Approx(0).epsilon(Tolerance));
+        REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
+
+        // Check gradient of shape functions
+        auto gradsf = quad->grad_shapefn(coords, Eigen::Vector2d::Zero(),
+                                         Eigen::Vector2d::Zero());
+        REQUIRE(gradsf.rows() == 9);
+        REQUIRE(gradsf.cols() == Dim);
+
+        Eigen::Matrix<double, 9, Dim> gradsf_ans;
+        gradsf_ans << -0.444444, -0.444444, 0.444444, -0.222222, 0.222222,
+            0.222222, -0.222222, 0.444444, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0;
+
+        for (unsigned i = 0; i < gradsf.rows(); ++i)
+          for (unsigned j = 0; j < gradsf.cols(); ++j)
+            REQUIRE(gradsf(i, j) ==
+                    Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+      }
+
+      // Coordinates is (0.5,0.5) after upgrade
+      SECTION("2D BSpline element for coordinates(0.5,0.5) after upgrade") {
+        Eigen::Matrix<double, Dim, 1> coords;
+        coords << 0.5, 0.5;
+        auto shapefn = quad->shapefn(coords, Eigen::Vector2d::Zero(),
+                                     Eigen::Vector2d::Zero());
+
+        // Check shape function
+        REQUIRE(shapefn.size() == 9);
+        REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
+
+        REQUIRE(shapefn(0) == Approx(0.140625).epsilon(Tolerance));
+        REQUIRE(shapefn(1) == Approx(0.222656).epsilon(Tolerance));
+        REQUIRE(shapefn(2) == Approx(0.352539).epsilon(Tolerance));
+        REQUIRE(shapefn(3) == Approx(0.222656).epsilon(Tolerance));
+        REQUIRE(shapefn(4) == Approx(0.0117188).epsilon(Tolerance));
+        REQUIRE(shapefn(5) == Approx(0.0185547).epsilon(Tolerance));
+        REQUIRE(shapefn(6) == Approx(0.000976562).epsilon(Tolerance));
+        REQUIRE(shapefn(7) == Approx(0.0185547).epsilon(Tolerance));
+        REQUIRE(shapefn(8) == Approx(0.0117188).epsilon(Tolerance));
+
+        // Check gradient of shape functions
+        auto gradsf = quad->grad_shapefn(coords, Eigen::Vector2d::Zero(),
+                                         Eigen::Vector2d::Zero());
+        REQUIRE(gradsf.rows() == 9);
+        REQUIRE(gradsf.cols() == Dim);
+
+        Eigen::Matrix<double, 9, Dim> gradsf_ans;
+        gradsf_ans << -0.1875, -0.1875, 0.140625, -0.296875, 0.222656, 0.222656,
+            -0.296875, 0.140625, 0.046875, -0.015625, 0.0742188, 0.0117188,
+            0.00390625, 0.00390625, 0.0117188, 0.0742188, -0.015625, 0.046875;
+
+        for (unsigned i = 0; i < gradsf.rows(); ++i)
+          for (unsigned j = 0; j < gradsf.cols(); ++j)
+            REQUIRE(gradsf(i, j) ==
+                    Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+        // Check dn_dx of shape functions
+        auto dn_dx =
+            quad->dn_dx(coords, Eigen::Vector2d::Zero(),
+                        Eigen::Vector2d::Zero(), Eigen::Vector2d::Zero());
+        REQUIRE(dn_dx.rows() == 9);
+        REQUIRE(dn_dx.cols() == Dim);
+
+        for (unsigned i = 0; i < dn_dx.rows(); ++i)
+          for (unsigned j = 0; j < dn_dx.cols(); ++j)
+            REQUIRE(dn_dx(i, j) == Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+      }
+
+      // Coordinates is (-1,-1)
+      SECTION(
+          "Four noded local sf quadrilateral element for coordinates(-1,-1)") {
+        Eigen::Matrix<double, Dim, 1> coords;
+        coords << -1., -1.;
+        auto shapefn = quad->shapefn_local(coords, Eigen::Vector2d::Zero(),
+                                           Eigen::Vector2d::Zero());
+
+        // Check shape function
+        REQUIRE(shapefn.size() == 4);
+
+        REQUIRE(shapefn(0) == Approx(1.0).epsilon(Tolerance));
+        REQUIRE(shapefn(1) == Approx(0.).epsilon(Tolerance));
+        REQUIRE(shapefn(2) == Approx(0.).epsilon(Tolerance));
+        REQUIRE(shapefn(3) == Approx(0.).epsilon(Tolerance));
       }
     }
   }

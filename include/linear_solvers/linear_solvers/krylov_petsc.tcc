@@ -123,7 +123,7 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
       PetscReal rnorm;
       if (verbosity_ >= 2) {
         for (int i = 0; i < its; i++) {
-          KSPMonitorTrueResidualNorm(solver, i, rnorm, vf);
+          KSPMonitorTrueResidual(solver, i, rnorm, vf);
         }
       }
     }

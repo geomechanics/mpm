@@ -881,7 +881,7 @@ bool mpm::Cell<Tdim>::assign_nonlocal_elementptr(
 //! Initialising nonlocal cell-element properties
 template <unsigned Tdim>
 bool mpm::Cell<Tdim>::initialiase_nonlocal() {
-  bool status = true;
+  bool status = false;
   try {
     // Node property
     std::vector<std::vector<unsigned>> nodal_properties(this->nnodes());

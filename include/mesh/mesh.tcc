@@ -2171,7 +2171,7 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
       for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
         std::set<mpm::Index> nodes_id = (*citr)->nodes_id();
         std::set<mpm::Index> neighbour_nodes_id =
-            cell_neighbours_nodes_id(*citr, cell_neighbourhood);
+            cell_neighbourhood_nodes_id(*citr, cell_neighbourhood);
         std::set<mpm::Index> additional_nodes_id;
         std::set_difference(
             neighbour_nodes_id.begin(), neighbour_nodes_id.end(),
@@ -2216,12 +2216,12 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
 
 //! Return node neighbours id set given a size of cell neighbourhood
 template <unsigned Tdim>
-std::set<mpm::Index> mpm::Mesh<Tdim>::cell_neighbours_nodes_id(
+std::set<mpm::Index> mpm::Mesh<Tdim>::cell_neighbourhood_nodes_id(
     const std::shared_ptr<mpm::Cell<Tdim>>& cell, unsigned cell_neighbourhood) {
-  if (cell_neighbourhood == 0) return cell->nodes_id();
-  std::set<mpm::Index> neighbour_nodes_id;
+  std::set<mpm::Index> neighbour_nodes_id = cell->nodes_id();
+  if (cell_neighbourhood == 0) return neighbour_nodes_id;
   for (const auto& neighbour_cell_id : cell->neighbours()) {
-    const auto& node_id = cell_neighbours_nodes_id(
+    const auto& node_id = cell_neighbourhood_nodes_id(
         map_cells_[neighbour_cell_id], cell_neighbourhood - 1);
     neighbour_nodes_id.insert(node_id.begin(), node_id.end());
   }

@@ -615,7 +615,7 @@ class Mesh {
   //! \ingroup Nonlocal
   //! \param[in] cell cell pointer
   //! \param[in] cell_neighbourhood size of nonlocal cell neighbourhood
-  std::set<mpm::Index> cell_neighbours_nodes_id(
+  std::set<mpm::Index> cell_neighbourhood_nodes_id(
       const std::shared_ptr<mpm::Cell<Tdim>>& cell,
       unsigned cell_neighbourhood);
 

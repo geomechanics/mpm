@@ -295,6 +295,22 @@ TEST_CASE("Mesh cell neighbours 2D", "[MeshCell][2D][mpi]") {
       REQUIRE(cell7->neighbours() == n7);
       REQUIRE(cell8->neighbours() == n8);
 
+      SECTION("Cell neighbourhood id") {
+        std::set<mpm::Index> n0 = {0, 1, 2, 3};
+        std::set<mpm::Index> n1 = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+        std::set<mpm::Index> n2 = {0, 1, 2,  3,  4,  5,  6,  7,
+                                   8, 9, 10, 11, 12, 13, 14, 15};
+
+        auto neighbourhood_id = mesh->cell_neighbourhood_nodes_id(cell0, 0);
+        REQUIRE(neighbourhood_id == n0);
+
+        neighbourhood_id = mesh->cell_neighbourhood_nodes_id(cell0, 1);
+        REQUIRE(neighbourhood_id == n1);
+
+        neighbourhood_id = mesh->cell_neighbourhood_nodes_id(cell0, 2);
+        REQUIRE(neighbourhood_id == n2);
+      }
+
       SECTION("Locate particles in mesh") {
         coords << 3., 1.5;
         std::shared_ptr<mpm::ParticleBase<Dim>> particle1 =
@@ -987,6 +1003,24 @@ TEST_CASE("Mesh cell neighbours 3D", "[MeshCell][3D][mpi]") {
       REQUIRE(cell6->initialise() == true);
       REQUIRE(cell7->initialise() == true);
       REQUIRE(cell8->initialise() == true);
+
+      SECTION("Cell neighbourhood id") {
+        std::set<mpm::Index> n0 = {0, 1, 2, 3, 4, 5, 6, 7};
+        std::set<mpm::Index> n1 = {0, 1,  2,  3,  4,  5,  6,  7,  8,
+                                   9, 10, 11, 12, 13, 14, 15, 16, 17};
+        std::set<mpm::Index> n2 = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10,
+                                   11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+                                   22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+
+        auto neighbourhood_id = mesh->cell_neighbourhood_nodes_id(cell0, 0);
+        REQUIRE(neighbourhood_id == n0);
+
+        neighbourhood_id = mesh->cell_neighbourhood_nodes_id(cell0, 1);
+        REQUIRE(neighbourhood_id == n1);
+
+        neighbourhood_id = mesh->cell_neighbourhood_nodes_id(cell0, 2);
+        REQUIRE(neighbourhood_id == n2);
+      }
 
       SECTION("Locate particles in mesh") {
         coords << 3., 1.5, 1.5;

@@ -2315,5 +2315,12 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       // Check element length
       REQUIRE(quad->unit_element_length() == Approx(2).epsilon(Tolerance));
     }
+
+    SECTION("Nonlocal functions check fail") {
+      // Check illegal functions
+      Eigen::MatrixXd error;
+      REQUIRE_THROWS(quad->initialise_bspline_connectivity_properties(
+          error, std::vector<std::vector<unsigned>>()));
+    }
   }
 }

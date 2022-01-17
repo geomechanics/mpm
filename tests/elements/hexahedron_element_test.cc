@@ -2508,5 +2508,12 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // Check element length
       REQUIRE(hex->unit_element_length() == Approx(2).epsilon(Tolerance));
     }
+
+    SECTION("Nonlocal functions check fail") {
+      // Check illegal functions
+      Eigen::MatrixXd error;
+      REQUIRE_THROWS(hex->initialise_bspline_connectivity_properties(
+          error, std::vector<std::vector<unsigned>>()));
+    }
   }
 }

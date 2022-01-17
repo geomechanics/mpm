@@ -1412,5 +1412,12 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // Check number of faces
       REQUIRE(tri->nfaces() == 3);
     }
+
+    SECTION("Nonlocal functions check fail") {
+      // Check illegal functions
+      Eigen::MatrixXd error;
+      REQUIRE_THROWS(tri->initialise_bspline_connectivity_properties(
+          error, std::vector<std::vector<unsigned>>()));
+    }
   }
 }

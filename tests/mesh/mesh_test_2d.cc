@@ -305,6 +305,34 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                 Approx(ext_forces.at(i)).epsilon(Tolerance));
       }
     }
+
+    // Test nonlocal mesh functions
+    SECTION("Check nonlocal mesh functions") {
+      tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
+      node_sets[0] = std::vector<mpm::Index>{0, 3};
+      std::vector<unsigned> n0 = {4, 1};
+      std::vector<unsigned> n1 = {4, 0};
+      std::vector<unsigned> n2 = {4, 0};
+      std::vector<unsigned> n3 = {4, 1};
+
+      REQUIRE_NOTHROW(node0->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node1->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node2->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node3->initialise_nonlocal_node());
+
+      REQUIRE(mesh->create_node_sets(node_sets, true) == true);
+
+      REQUIRE(mesh->assign_nodal_nonlocal_type(0, 1, 1) == true);
+      REQUIRE(mesh->assign_nodal_nonlocal_type(-1, 0, 4) == true);
+
+      REQUIRE(node0->nonlocal_node_type() == n0);
+      REQUIRE(node1->nonlocal_node_type() == n1);
+      REQUIRE(node2->nonlocal_node_type() == n2);
+      REQUIRE(node3->nonlocal_node_type() == n3);
+
+      REQUIRE_THROWS(mesh->upgrade_cells_to_nonlocal("ED2Q4", 0));
+      REQUIRE(mesh->upgrade_cells_to_nonlocal("ED2Q4P2B", 1) == true);
+    }
   }
 
   // Check add / remove node

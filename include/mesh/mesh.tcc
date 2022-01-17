@@ -2236,8 +2236,8 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
   try {
     if (!nodes_.size())
       throw std::runtime_error(
-          "No nodes have been assigned in mesh, cannot assign concentrated "
-          "force");
+          "No nodes have been assigned in mesh, cannot assign nonlocal node "
+          "type");
 
     // Set id of -1, is all nodes
     Vector<NodeBase<Tdim>> nodes =

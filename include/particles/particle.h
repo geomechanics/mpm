@@ -420,6 +420,11 @@ class Particle : public ParticleBase<Tdim> {
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   void update_stress_strain() noexcept override;
+
+  //! Function to reinitialise consitutive law to be run at the beginning of
+  //! each time step
+  //! \ingroup Implicit
+  void initialise_constitutive_law() noexcept override;
   /**@}*/
 
  protected:
@@ -540,6 +545,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, Tdim, 1> acceleration_;
   //! Stresses at the last time step
   Eigen::Matrix<double, 6, 1> previous_stress_;
+  //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
+  Eigen::MatrixXd constitutive_matrix_;
   /**@}*/
 
 };  // Particle class

@@ -65,10 +65,12 @@ Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_stress(
   return (stress + dstress);
 }
 
-//! Compute contitutive relations matrix
+//! Compute consistent tangent matrix
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 6> mpm::LinearElastic<Tdim>::compute_dmatrix(
-    const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+Eigen::Matrix<double, 6, 6>
+    mpm::LinearElastic<Tdim>::compute_consistent_tangent_matrix(
+        const Vector6d& stress, const Vector6d& prev_stress,
+        const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
+        mpm::dense_map* state_vars) {
   return de_;
 }

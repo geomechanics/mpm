@@ -542,5 +542,9 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
 
     // Check pressure value
     REQUIRE(state_vars.at("pressure") == Approx(0.000e+00).epsilon(Tolerance));
+
+    // Compute consistent tangent false
+    REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
+        stress, stress, dstrain, particle.get(), &state_vars));
   }
 }

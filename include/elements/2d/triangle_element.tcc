@@ -488,5 +488,5 @@ void mpm::TriangleElement<Tdim, Tnfunctions>::
         const std::vector<std::vector<unsigned>>& nodal_properties) {
   throw std::runtime_error(
       "Function to initialise nonlocal connectivity is not implemented for "
-      "Quad<Tdim, Tnfunctions> ");
+      "Triangle<Tdim, Tnfunctions> ");
 }

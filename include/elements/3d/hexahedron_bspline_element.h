@@ -134,9 +134,9 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
   //! \param[in] point_coord point coordinate in one direction
   //! \param[in] nodal_coord nodal coordinate in one direction
   //! dimension
-  //! \param[in] knot_vector Knot vector type associated with direction
+  //! \param[in] node_type Node type associated with direction
   //! \param[in] poly_order Polynomial degree
-  //! \param[in] index Index associated to local knot_vector
+  //! \param[in] index Index associated to local BSplineKnotVector
   double kernel(double point_coord, double nodal_coord, unsigned node_type,
                 unsigned poly_order, unsigned index = 0) const;
 
@@ -144,9 +144,9 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
   //! algorithm for single direction
   //! \param[in] point_coord point coordinate in one direction
   //! \param[in] nodal_coord nodal coordinate in one direction dimension
-  //! \param[in] knot_vector Knot vector type associated with direction
+  //! \param[in] node_type Node type associated with direction
   //! \param[in] poly_order Polynomial degree
-  //! \param[in] index Index associated to local knot_vector
+  //! \param[in] index Index associated to local BSplineKnotVector
   double gradient(double point_coord, double nodal_coord, unsigned node_type,
                   unsigned poly_order, unsigned index = 0) const;
 
@@ -157,8 +157,8 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
   //! LowerIntermediate = 2,
   //! UpperIntermediate = 3
   //! UpperBoundary = 4,
-  //! LowerBoundary2 = 5,
-  //! UpperBoundary2 = 6
+  //! LowerBoundaryVirtual = 5, (automatically defined)
+  //! UpperBoundaryVirtual = 6 (automatically defined)
   std::vector<double> knot(unsigned node_type) const {
     return BSplineKnotVector[node_type];
   }

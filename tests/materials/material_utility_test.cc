@@ -7,7 +7,7 @@
 #include "material_utility.h"
 
 //! \brief Check materials namespace functions
-TEST_CASE("materials utility is checked", "[materials]") {
+TEST_CASE("materials utility is checked", "[material]") {
 
   // Tolerance
   const double Tolerance = 1.E-6;

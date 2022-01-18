@@ -177,6 +177,9 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(4) = 0.0000000;
     dstrain(5) = 0.0000000;
 
+    // Initialise elastic state
+    material->initialise(&state_vars);
+
     // Compute stress
     auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
@@ -247,6 +250,9 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(3) = 0.0000000;
     dstrain(4) = 0.0000000;
     dstrain(5) = 0.0000000;
+
+    // Initialise elastic state
+    material->initialise(&state_vars);
 
     // Compute stress
     auto updated_stress =
@@ -329,6 +335,9 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(4) = 0.0000000;
     dstrain(5) = 0.0000000;
 
+    // Initialise elastic state
+    material->initialise(&state_vars);
+
     // Compute stress
     auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
@@ -402,6 +411,9 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(3) = 0.0000000;
     dstrain(4) = 0.0000000;
     dstrain(5) = 0.0000000;
+
+    // Initialise elastic state
+    material->initialise(&state_vars);
 
     // Compute stress
     auto updated_stress =

@@ -175,6 +175,7 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
+    material->initialise(&state_vars);
     auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
@@ -300,6 +301,7 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
     // Compute updated stress two times to get yielding
     mpm::dense_map state_vars = material->initialise_state_variables();
+    material->initialise(&state_vars);
     auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
     updated_stress = material->compute_stress(updated_stress, dstrain,
@@ -540,6 +542,7 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
+    material->initialise(&state_vars);
     auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
@@ -665,6 +668,7 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
 
     // Compute updated stress two times to get yielding
     mpm::dense_map state_vars = material->initialise_state_variables();
+    material->initialise(&state_vars);
     auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
     updated_stress = material->compute_stress(updated_stress, dstrain,

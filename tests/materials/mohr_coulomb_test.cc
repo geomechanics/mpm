@@ -292,6 +292,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
               Approx(2.0 * -0.11559730).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -393,6 +397,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
               Approx(2.0 * -0.09302255).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -587,6 +595,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       REQUIRE(dp_dsigma_trial(3) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -817,6 +829,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
               Approx(2.0 * 0.51857529).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -915,6 +931,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
               Approx(2.0 * -0.09302255).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -1111,6 +1131,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
               Approx(2.0 * 0.37388074).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -1338,6 +1362,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
               Approx(2.0 * 0.51856235).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -1436,6 +1464,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
               Approx(2.0 * -0.09302255).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -1631,6 +1663,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
               Approx(2.0 * 0.37387070).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -1872,6 +1908,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(2.0 * 0.50946739).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -2028,6 +2068,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(2.0 * 0.51856235).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -2194,6 +2238,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(2.0 * 0.42790303).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -2408,6 +2456,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(2.0 * -0.33338284).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -2565,6 +2617,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(2.0 * 0.34293905).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -2731,6 +2787,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(2.0 * 0.42599199).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(4) == Approx(0.).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) == Approx(0.).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -2985,6 +3045,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(2.0 * 0.27805767).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) ==
               Approx(2.0 * 0.40514467).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -3152,6 +3216,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(2.0 * 0.28781782).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) ==
               Approx(2.0 * 0.41867392).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -3326,6 +3394,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(2.0 * 0.23084287).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) ==
               Approx(2.0 * 0.34626431).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -3549,6 +3621,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(2.0 * 0.01666924).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) ==
               Approx(2.0 * -0.10091892).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -3717,6 +3793,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(2.0 * 0.01217858).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) ==
               Approx(2.0 * 0.03214063).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
@@ -3891,6 +3971,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(2.0 * 0.14416835).epsilon(Tolerance));
       REQUIRE(dp_dsigma_trial(5) ==
               Approx(2.0 * 0.21625252).epsilon(Tolerance));
+
+      // Initialise elastic state
+      material->initialise(&state_variables);
+
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),

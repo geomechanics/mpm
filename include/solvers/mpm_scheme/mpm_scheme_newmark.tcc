@@ -25,6 +25,11 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+      // Initialise material
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
+                    std::placeholders::_1));
     }
   }  // Wait to complete
 }

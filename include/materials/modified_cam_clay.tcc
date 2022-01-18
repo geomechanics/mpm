@@ -2,14 +2,14 @@
 template <unsigned Tdim>
 mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
                                             const Json& material_properties)
-    : Material<Tdim>(id, material_properties) {
+    : InfinitesimalElastoPlastic<Tdim>(id, material_properties) {
   try {
-    // General parameters
+    // Elastic parameters
     // Density
     density_ = material_properties.at("density").template get<double>();
-    // Young's modulus
-    youngs_modulus_ =
-        material_properties.at("youngs_modulus").template get<double>();
+    // Initial shear modulus
+    shear_modulus_ =
+        material_properties.at("shear_modulus").template get<double>();
     // Poisson ratio
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
@@ -19,25 +19,50 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
     e_ref_ = material_properties.at("e_ref").template get<double>();
     // Reference mean pressure
     p_ref_ = material_properties.at("p_ref").template get<double>();
-    // Over consolidation ratio
-    ocr_ = material_properties.at("ocr").template get<double>();
     // Initial preconsolidation pressure
     pc0_ = material_properties.at("pc0").template get<double>();
     // M (or triaxial compression M (Mtc) in "Three invariants type")
-    m_ = material_properties.at("m").template get<double>();
+    if (material_properties.contains("m")) {
+      m_ = material_properties.at("m").template get<double>();
+    } else if (material_properties.contains("friction_cs")) {
+      const double friction_cs =
+          material_properties.at("friction_cs").template get<double>() * M_PI /
+          180.;
+      const double sin_friction_cs = sin(friction_cs);
+      m_ = (6 * sin_friction_cs) / (3 - sin_friction_cs);
+    } else
+      throw std::runtime_error("Critical state ratio M is undefined!");
     // Lambda
     lambda_ = material_properties.at("lambda").template get<double>();
     // Kappa
     kappa_ = material_properties.at("kappa").template get<double>();
-    // e0
-    e0_ = e_ref_ - lambda_ * log(pc0_ / ocr_ / p_ref_) - kappa_ * log(ocr_);
+    // Initial void ratio computed from different sources e0
+    // From initial porosity
+    if (material_properties.contains("porosity")) {
+      const double n =
+          material_properties.at("porosity").template get<double>();
+      e0_ = n / (1. - n);
+    }
+    // From initial void ratio
+    else if (material_properties.contains("void_ratio_initial")) {
+      e0_ = material_properties.at("void_ratio_initial").template get<double>();
+    }
+    // From OCR
+    else if (material_properties.contains("ocr")) {
+      ocr_ = material_properties.at("ocr").template get<double>();
+      e0_ = e_ref_ - lambda_ * log(pc0_ / ocr_ / p_ref_) - kappa_ * log(ocr_);
+    } else
+      throw std::runtime_error("Initial void ratio is undefined!");
     // Three invariants option
-    three_invariants_ =
-        material_properties.at("three_invariants").template get<bool>();
+    if (material_properties.contains("three_invariants"))
+      three_invariants_ =
+          material_properties.at("three_invariants").template get<bool>();
     // Subloading option
-    subloading_ = material_properties.at("subloading").template get<bool>();
+    if (material_properties.contains("subloading"))
+      subloading_ = material_properties.at("subloading").template get<bool>();
     // Bonding option
-    bonding_ = material_properties.at("bonding").template get<bool>();
+    if (material_properties.contains("bonding"))
+      bonding_ = material_properties.at("bonding").template get<bool>();
     // Subloading surface ratio
     if (subloading_) {
       // Material constant controling plastic deformation
@@ -50,11 +75,11 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
       s_h_ = material_properties.at("s_h").template get<double>();
       // Material constants a
       mc_a_ = material_properties.at("mc_a").template get<double>();
-      // Material constants a
+      // Material constants b
       mc_b_ = material_properties.at("mc_b").template get<double>();
-      // Material constants a
+      // Material constants c
       mc_c_ = material_properties.at("mc_c").template get<double>();
-      // Material constants a
+      // Material constants d
       mc_d_ = material_properties.at("mc_d").template get<double>();
       // Degradation
       m_degradation_ =
@@ -74,12 +99,13 @@ mpm::ModifiedCamClay<Tdim>::ModifiedCamClay(unsigned id,
 template <unsigned Tdim>
 mpm::dense_map mpm::ModifiedCamClay<Tdim>::initialise_state_variables() {
   mpm::dense_map state_vars = {
-      // Elastic modulus
+      // Yield state: 0: elastic, 1: yield
+      {"yield_state", 0},
       // Bulk modulus
-      {"bulk_modulus", youngs_modulus_ / (2 * (1 + poisson_ratio_))},
+      {"bulk_modulus", 2. * shear_modulus_ * (1. + poisson_ratio_) /
+                           (3. * (1. - 2. * poisson_ratio_))},
       // Shear modulus
-      {"shear_modulus", 3 * youngs_modulus_ * (1 - 2 * poisson_ratio_) /
-                            (2 * (1 + poisson_ratio_))},
+      {"shear_modulus", shear_modulus_},
       // Stress invariants
       // Volumetric stress
       {"p", 0.},
@@ -123,17 +149,19 @@ mpm::dense_map mpm::ModifiedCamClay<Tdim>::initialise_state_variables() {
 template <unsigned Tdim>
 std::vector<std::string> mpm::ModifiedCamClay<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
-      "bulk_modulus", "shear_modulus", "p",           "q",        "theta",
-      "pc",           "void_ratio",    "delta_phi",   "m_theta",  "f_function",
-      "dpvstrain",    "dpdstrain",     "pvstrain",    "pdstrain", "chi",
-      "pcd",          "pcc",           "subloading_r"};
+      "yield_state", "bulk_modulus", "shear_modulus", "p",           "q",
+      "theta",       "pc",           "void_ratio",    "delta_phi",   "m_theta",
+      "f_function",  "dpvstrain",    "dpdstrain",     "pvstrain",    "pdstrain",
+      "chi",         "pcd",          "pcc",           "subloading_r"};
   return state_vars;
 }
 
 //! Compute elastic tensor
 template <unsigned Tdim>
-bool mpm::ModifiedCamClay<Tdim>::compute_elastic_tensor(
-    mpm::dense_map* state_vars) {
+Eigen::Matrix<double, 6, 6> mpm::ModifiedCamClay<Tdim>::compute_elastic_tensor(
+    const Vector6d& stress, mpm::dense_map* state_vars) {
+  // Compute trial stress invariants
+  this->compute_stress_invariants(stress, state_vars);
   // Compute elastic modulus based on stress status
   if ((*state_vars).at("p") > std::numeric_limits<double>::epsilon()) {
     // Bulk modulus
@@ -160,23 +188,40 @@ bool mpm::ModifiedCamClay<Tdim>::compute_elastic_tensor(
   const double a2 = (*state_vars).at("bulk_modulus") - (2.0 / 3.0) * G;
   // Compute elastic stiffness matrix
   // clang-format off
-  de_(0,0)=a1;    de_(0,1)=a2;    de_(0,2)=a2;    de_(0,3)=0;    de_(0,4)=0;    de_(0,5)=0;
-  de_(1,0)=a2;    de_(1,1)=a1;    de_(1,2)=a2;    de_(1,3)=0;    de_(1,4)=0;    de_(1,5)=0;
-  de_(2,0)=a2;    de_(2,1)=a2;    de_(2,2)=a1;    de_(2,3)=0;    de_(2,4)=0;    de_(2,5)=0;
-  de_(3,0)= 0;    de_(3,1)= 0;    de_(3,2)= 0;    de_(3,3)=G;    de_(3,4)=0;    de_(3,5)=0;
-  de_(4,0)= 0;    de_(4,1)= 0;    de_(4,2)= 0;    de_(4,3)=0;    de_(4,4)=G;    de_(4,5)=0;
-  de_(5,0)= 0;    de_(5,1)= 0;    de_(5,2)= 0;    de_(5,3)=0;    de_(5,4)=0;    de_(5,5)=G;
+  Matrix6x6 de = Matrix6x6::Zero();
+  de(0,0)=a1;    de(0,1)=a2;    de(0,2)=a2;    de(0,3)=0;    de(0,4)=0;    de(0,5)=0;
+  de(1,0)=a2;    de(1,1)=a1;    de(1,2)=a2;    de(1,3)=0;    de(1,4)=0;    de(1,5)=0;
+  de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;    de(2,3)=0;    de(2,4)=0;    de(2,5)=0;
+  de(3,0)= 0;    de(3,1)= 0;    de(3,2)= 0;    de(3,3)=G;    de(3,4)=0;    de(3,5)=0;
+  de(4,0)= 0;    de(4,1)= 0;    de(4,2)= 0;    de(4,3)=0;    de(4,4)=G;    de(4,5)=0;
+  de(5,0)= 0;    de(5,1)= 0;    de(5,2)= 0;    de(5,3)=0;    de(5,4)=0;    de(5,5)=G;
   // clang-format on
-  return true;
+  return de;
 }
 
 //! Compute plastic tensor (used for drained test)
 template <unsigned Tdim>
-bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
-    const Vector6d& stress, mpm::dense_map* state_vars) {
+Eigen::Matrix<double, 6, 6>
+    mpm::ModifiedCamClay<Tdim>::compute_elasto_plastic_tensor(
+        const Vector6d& stress, const Vector6d& dstrain,
+        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars,
+        bool hardening) {
+
+  mpm::modifiedcamclay::FailureState yield_type =
+      yield_type_.at(int((*state_vars).at("yield_state")));
+  // Return the updated stress in elastic state
+  const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
+  if (yield_type == mpm::modifiedcamclay::FailureState::Elastic) {
+    return de;
+  }
+
   // Current stress
   const double p = (*state_vars).at("p");
   const double q = (*state_vars).at("q");
+  // Update Mtheta
+  if (three_invariants_)
+    (*state_vars).at("m_theta") =
+        m_ - std::pow(m_, 2) / (3 + m_) * cos(1.5 * (*state_vars).at("theta"));
   // Preconsolidation pressure
   const double pc = (*state_vars).at("pc");
   // Bonding parameters
@@ -215,7 +260,7 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
                      3 * (*state_vars).at("shear_modulus") * (df_dq * df_dq);
 
   // Hardening parameter
-  double hardening = upsilon * pc * df_dp * df_dpc;
+  double hardening_par = upsilon * pc * df_dp * df_dpc;
   // Compute bonding
   if (bonding_) {
     // Compute pcd hardening parameter
@@ -225,7 +270,7 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
     const double hardening_pcc =
         df_dpcc * (-m_degradation_ * mc_d_ * pcc) * df_dq;
     // Update hardening parameter
-    hardening += (hardening_pcd + hardening_pcc);
+    hardening_par += (hardening_pcd + hardening_pcc);
   }
   // Compute subloading
   if (subloading_) {
@@ -237,7 +282,7 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
         std::sqrt(std::pow((*state_vars).at("dpvstrain"), 2) +
                   std::pow((*state_vars).at("dpdstrain"), 2));
     // Update hardening parameter
-    hardening += hardening_subloading;
+    hardening_par += hardening_subloading;
   }
   // Compute the deviatoric stress
   auto dev_stress = stress;
@@ -270,9 +315,11 @@ bool mpm::ModifiedCamClay<Tdim>::compute_plastic_tensor(
     }
   }
   // Compute plastic tensor
-  this->dp_ = (a1 * l_l + a2 * (n_l + l_n) + a3 * (n_n)) / (num - hardening);
+  if (!hardening) hardening_par = 0.;
+  Matrix6x6 dep =
+      (a1 * l_l + a2 * (n_l + l_n) + a3 * (n_n)) / (num - hardening_par);
 
-  return true;
+  return dep;
 }
 
 //! Compute stress invariants
@@ -312,7 +359,7 @@ Eigen::Matrix<double, 6, 1>
 
 //! Compute yield function and yield state
 template <unsigned Tdim>
-typename mpm::ModifiedCamClay<Tdim>::FailureState
+typename mpm::modifiedcamclay::FailureState
     mpm::ModifiedCamClay<Tdim>::compute_yield_state(
         mpm::dense_map* state_vars) {
   // Get stress invariants
@@ -327,14 +374,14 @@ typename mpm::ModifiedCamClay<Tdim>::FailureState
   // Subloading surface ratio
   const double subloading_r = (*state_vars).at("subloading_r");
   // Initialise yield status (0: elastic, 1: yield)
-  auto yield_type = FailureState::Elastic;
+  auto yield_type = mpm::modifiedcamclay::FailureState::Elastic;
   // Compute yield functions
   (*state_vars).at("f_function") =
       std::pow(q / m_theta, 2) +
       (p + pcc) * (p - subloading_r * (pc + pcd + pcc));
-  // Tension failure
+  // Yielding
   if ((*state_vars).at("f_function") > std::numeric_limits<double>::epsilon())
-    yield_type = FailureState::Yield;
+    yield_type = mpm::modifiedcamclay::FailureState::Yield;
 
   return yield_type;
 }
@@ -371,7 +418,8 @@ void mpm::ModifiedCamClay<Tdim>::compute_subloading_parameters(
   const double dpvstrain = (*state_vars).at("dpvstrain");
   const double dpdstrain = (*state_vars).at("dpdstrain");
   // Initialise subloading surface ratio
-  if ((*state_vars).at("subloading_r") == 1.0)
+  if (std::abs((*state_vars).at("subloading_r") - 1.0) <
+      std::numeric_limits<double>::epsilon())
     (*state_vars).at("subloading_r") = p / (pc + pcd + pcc);
   else
     // Update subloading surface ratio
@@ -526,14 +574,12 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
   const int itrstep = 100;
   // Maximum subiteration step number
   const int substep = 100;
-  // Compute current mean pressure
-  (*state_vars).at("p") = -(stress(0) + stress(1) + stress(2)) / 3.;
   // Set elastic tensor
-  this->compute_elastic_tensor(state_vars);
+  const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
   //-------------------------------------------------------------------------
   // Elastic step
   // Compute trial stress
-  const Vector6d trial_stress = stress + (this->de_ * dstrain);
+  const Vector6d trial_stress = stress + (de * dstrain);
   // Initialise vector n
   Vector6d n_trial = Vector6d::Zero();
   // Compute trial stress invariants
@@ -556,7 +602,11 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
   // Check yield status
   auto yield_type = this->compute_yield_state(state_vars);
   // Return the updated stress in elastic state
-  if (yield_type == FailureState::Elastic) return trial_stress;
+  if (yield_type == mpm::modifiedcamclay::FailureState::Elastic) {
+    (*state_vars).at("yield_state") = 0.;
+    return trial_stress;
+  } else
+    (*state_vars).at("yield_state") = 1.;
   //-------------------------------------------------------------------------
   // Plastic step
   // Counters for interations
@@ -632,11 +682,7 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
       // Type-1 Equation(3.16)
       updated_stress = (*state_vars).at("q") * n_trial;
       for (int i = 0; i < 3; ++i) updated_stress(i) -= (*state_vars).at("p");
-      // Compute stress invariants
-      this->compute_stress_invariants(updated_stress, state_vars);
-      // Compute deviatoric stress tensor
-      n_trial =
-          this->compute_deviatoric_stress_tensor(trial_stress, state_vars);
+      (*state_vars).at("theta") = mpm::materials::lode_angle(updated_stress);
       // Update Mtheta
       (*state_vars).at("m_theta") =
           m_ -

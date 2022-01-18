@@ -7,23 +7,25 @@
 
 #include "Eigen/Dense"
 
-#include "material.h"
+#include "infinitesimal_elasto_plastic.h"
 
 namespace mpm {
+
+namespace modifiedcamclay {
+//! Failure state
+enum class FailureState { Elastic = 0, Yield = 1 };
+}  // namespace modifiedcamclay
 
 //! ModifiedCamClay class
 //! \brief Modified Cam Clay material model
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class ModifiedCamClay : public Material<Tdim> {
+class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
  public:
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
   //! Define a Matrix of 6 x 6
   using Matrix6x6 = Eigen::Matrix<double, 6, 6>;
-
-  //! Failure state
-  enum FailureState { Elastic = 0, Yield = 1 };
 
   //! Constructor with id and material properties
   //! \param[in] material_properties Material properties
@@ -44,6 +46,13 @@ class ModifiedCamClay : public Material<Tdim> {
 
   //! State variables
   std::vector<std::string> state_variables() const override;
+
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  void initialise(mpm::dense_map* state_vars) override {
+    (*state_vars).at("yield_state") = 0;
+  };
 
   //! Compute stress
   //! \param[in] stress Stress
@@ -72,7 +81,8 @@ class ModifiedCamClay : public Material<Tdim> {
   //! Compute yield function and yield state
   //! \param[in] state_vars History-dependent state variables
   //! \retval yield_type Yield type (elastic or yield)
-  FailureState compute_yield_state(mpm::dense_map* state_vars);
+  mpm::modifiedcamclay::FailureState compute_yield_state(
+      mpm::dense_map* state_vars);
 
   //! Compute bonding parameters
   //! \param[in] chi Degredation
@@ -106,18 +116,6 @@ class ModifiedCamClay : public Material<Tdim> {
   void compute_dg_dpc(const mpm::dense_map* state_vars, const double pc_n,
                       const double p_trial, double* g_function, double* dg_dpc);
 
-  //! Compute elastic tensor
-  //! \param[in] state_vars History-dependent state variables
-  //! \retval status of computation
-  bool compute_elastic_tensor(mpm::dense_map* state_vars);
-
-  //! Compute plastic tensor
-  //! \param[in] stress Stress
-  //! \param[in] state_vars History-dependent state variables
-  //! \retval status of computation
-  bool compute_plastic_tensor(const Vector6d& stress,
-                              mpm::dense_map* state_vars);
-
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -127,15 +125,31 @@ class ModifiedCamClay : public Material<Tdim> {
   using Material<Tdim>::console_;
 
  private:
-  //! Elastic stiffness matrix
-  Matrix6x6 de_;
-  //! Plastic stiffness matrix
-  Matrix6x6 dp_;
+  //! Compute elastic tensor
+  //! \param[in] stress Stress
+  //! \param[in] state_vars History-dependent state variables
+  Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
+      const Vector6d& stress, mpm::dense_map* state_vars);
+
+  //! Compute constitutive relations matrix for elasto-plastic material
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] hardening Boolean to consider hardening, default=true. If
+  //! perfect-plastic tensor is needed pass false
+  //! \retval dmatrix Constitutive relations mattrix
+  Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
+                                          const Vector6d& dstrain,
+                                          const ParticleBase<Tdim>* ptr,
+                                          mpm::dense_map* state_vars,
+                                          bool hardening = true) override;
+
   //! General parameters
   //! Density
   double density_{std::numeric_limits<double>::max()};
-  //! Youngs modulus
-  double youngs_modulus_{std::numeric_limits<double>::max()};
+  //! Shear Modulus
+  double shear_modulus_{std::numeric_limits<double>::max()};
   //! Poisson ratio
   double poisson_ratio_{std::numeric_limits<double>::max()};
   //! Modified Cam Clay parameters
@@ -156,7 +170,7 @@ class ModifiedCamClay : public Material<Tdim> {
   //! Kappa
   double kappa_{std::numeric_limits<double>::max()};
   //! Three invariants
-  bool three_invariants_{false};
+  bool three_invariants_{true};
   //! Subloading surface properties
   //! Subloading status
   bool subloading_{false};
@@ -179,6 +193,10 @@ class ModifiedCamClay : public Material<Tdim> {
   double m_shear_ = {std::numeric_limits<double>::epsilon()};
   //! Hydrate saturation
   double s_h_{std::numeric_limits<double>::epsilon()};
+  //! Failure state map
+  std::map<int, mpm::modifiedcamclay::FailureState> yield_type_ = {
+      {0, mpm::modifiedcamclay::FailureState::Elastic},
+      {1, mpm::modifiedcamclay::FailureState::Yield}};
 };  // ModifiedCamClay class
 }  // namespace mpm
 

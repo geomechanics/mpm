@@ -130,6 +130,7 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
   std::vector<unsigned> material_id{{1}};
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  std::vector<double> initial_stress{{-1.0, -1.0, -1.0, 0.0}};
 
   // 3D
   if (dim == 3) {
@@ -142,6 +143,7 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
     material = "LinearElastic3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
+    initial_stress = {{-1.0, -1.0, -1.0, 0.0, 0.0, 0.0}};
   }
 
   Json json_file = {
@@ -154,7 +156,9 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
         {"boundary_conditions",
          {{"displacement_constraints",
            {{"file", "displacement-constraints-unitcell.txt"}}}}},
-        {"cell_type", cell_type}}},
+        {"cell_type", cell_type},
+        {"particle_stresses",
+         {{"type", "isotropic"}, {"value", initial_stress}}}}},
       {"particles",
        {{{"group_id", 0},
          {"generator",
@@ -245,6 +249,7 @@ bool write_json_unitcell_navierstokes(unsigned dim, const std::string& analysis,
   std::vector<unsigned> material_id{{2}};
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  auto initial_stress_file = "initial-stresses-2d.txt";
 
   // 3D
   if (dim == 3) {
@@ -257,6 +262,7 @@ bool write_json_unitcell_navierstokes(unsigned dim, const std::string& analysis,
     material = "Newtonian3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
+    initial_stress_file = "initial-stresses-3d.txt";
   }
 
   Json json_file = {
@@ -273,7 +279,9 @@ bool write_json_unitcell_navierstokes(unsigned dim, const std::string& analysis,
            {{{"phase_id", 1},
              {"file", "pore-pressure-constraints-unitcell.txt"}}}},
           {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
-        {"cell_type", cell_type}}},
+        {"cell_type", cell_type},
+        {"particle_stresses",
+         {{"type", "file"}, {"location", initial_stress_file}}}}},
       {"particles",
        {{{"group_id", 0},
          {"generator",
@@ -364,6 +372,7 @@ bool write_json_unitcell_twophase(unsigned dim, const std::string& analysis,
   std::vector<unsigned> material_id{{1, 2}};
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  auto initial_pp_file = "initial-pore-pressure-2d.txt";
 
   // 3D
   if (dim == 3) {
@@ -377,6 +386,7 @@ bool write_json_unitcell_twophase(unsigned dim, const std::string& analysis,
     liquid_material = "Newtonian3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
+    initial_pp_file = "initial-pore-pressure-3d.txt";
   }
 
   Json json_file = {
@@ -393,7 +403,9 @@ bool write_json_unitcell_twophase(unsigned dim, const std::string& analysis,
            {{{"phase_id", 1},
              {"file", "pore-pressure-constraints-unitcell.txt"}}}},
           {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
-        {"cell_type", cell_type}}},
+        {"cell_type", cell_type},
+        {"particles_pore_pressures",
+         {{"type", "file"}, {"location", initial_pp_file}}}}},
       {"particles",
        {{{"group_id", 0},
          {"generator",
@@ -612,6 +624,23 @@ bool write_particles_2d_unitcell() {
   }
   file.close();
 
+  // Map of pore pressure
+  std::map<mpm::Index, double> particles_pore_pressures;
+  particles_pore_pressures.emplace(std::make_pair(0, 10.5));
+  particles_pore_pressures.emplace(std::make_pair(1, -40.5));
+  particles_pore_pressures.emplace(std::make_pair(2, -60.5));
+  particles_pore_pressures.emplace(std::make_pair(3, 80.5));
+
+  // Dump initial stresses as an input file to be read
+  file.open("initial-pore-pressure-2d.txt");
+  file << particles_stresses.size() << "\n";
+  // Write particle coordinates
+  for (const auto& pore : particles_pore_pressures) {
+    file << pore.first << "\t";
+    file << pore.second << "\n";
+  }
+  file.close();
+
   return true;
 }
 
@@ -781,6 +810,23 @@ bool write_particles_3d_unitcell() {
   for (const auto& stress : particles_stresses) {
     for (unsigned i = 0; i < stress.size(); ++i) file << stress[i] << "\t";
     file << "\n";
+  }
+  file.close();
+
+  // Map of pore pressure
+  std::map<mpm::Index, double> particles_pore_pressures;
+  particles_pore_pressures.emplace(std::make_pair(0, 10.5));
+  particles_pore_pressures.emplace(std::make_pair(1, -40.5));
+  particles_pore_pressures.emplace(std::make_pair(2, -60.5));
+  particles_pore_pressures.emplace(std::make_pair(3, 80.5));
+
+  // Dump initial stresses as an input file to be read
+  file.open("initial-pore-pressure-3d.txt");
+  file << particles_stresses.size() << "\n";
+  // Write particle coordinates
+  for (const auto& pore : particles_pore_pressures) {
+    file << pore.first << "\t";
+    file << pore.second << "\n";
   }
   file.close();
 

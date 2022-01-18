@@ -39,8 +39,7 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
       // Crushing pressure
       crushing_pressure_ =
           material_properties["crushing_pressure"].template get<double>();
-      // TODO: Need to find a way how to compute Lambda for Bolton's CSL eq
-      // Lambda volumetric
+      // Lambda volumetric tangent to CSL at designated stress range
       lambda_ = material_properties.at("lambda").template get<double>();
     }
 
@@ -93,8 +92,6 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
     Mtc_ = (6 * sin_friction_cs) / (3 - sin_friction_cs);
     Mte_ = (6 * sin_friction_cs) / (3 + sin_friction_cs);
 
-    // TODO: Need to find a way how to compute Lambda for Bolton's CSL eq
-    // Lambda volumetric
     chi_image_ = chi_ / (1. - ((chi_ * lambda_) / Mtc_));
 
     // Properties
@@ -164,7 +161,7 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elastic_tensor(
     const Vector6d& stress, mpm::dense_map* state_vars) {
 
-  // Get stress invariants
+  // Note that in this subroutine, stress_neg is set to be compression positive
   Vector6d stress_neg = -1 * stress;
   const double mean_p = check_low(mpm::materials::p(stress_neg));
 
@@ -211,7 +208,7 @@ Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elasto_plastic_tensor(
     return de;
   }
 
-  // Note that in this subroutine, stress is set to be compression positive
+  // Note that in this subroutine, stress_neg is set to be compression positive
   Vector6d stress_neg = -1 * stress;
 
   // Initialize invariants

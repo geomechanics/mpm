@@ -161,7 +161,8 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elastic_tensor(
     const Vector6d& stress, mpm::dense_map* state_vars) {
 
-  // Note that in this subroutine, stress_neg is set to be compression positive
+  // Note that stress (tension positive) should be converted to stress_neg
+  // (compression positive) for this subroutine
   Vector6d stress_neg = -1 * stress;
   const double mean_p = check_low(mpm::materials::p(stress_neg));
 
@@ -208,7 +209,8 @@ Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elasto_plastic_tensor(
     return de;
   }
 
-  // Note that in this subroutine, stress_neg is set to be compression positive
+  // Note that stress (tension positive) should be converted to stress_neg
+  // (compression positive) for this subroutine
   Vector6d stress_neg = -1 * stress;
 
   // Initialize invariants

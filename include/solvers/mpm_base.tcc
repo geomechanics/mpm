@@ -1253,7 +1253,7 @@ void mpm::MPMBase<Tdim>::particles_stresses(
               std::bind(&mpm::ParticleBase<Tdim>::initial_stress,
                         std::placeholders::_1, in_stress));
         } else {
-          throw std::runtime_error("Specified gravity dimension is invalid");
+          throw std::runtime_error("Initial stress dimension is invalid");
         }
       }
     } else

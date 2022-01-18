@@ -316,10 +316,10 @@ Eigen::Matrix<double, 6, 6>
   }
   // Compute plastic tensor
   if (!hardening) hardening_par = 0.;
-  Matrix6x6 dp =
+  Matrix6x6 dep =
       (a1 * l_l + a2 * (n_l + l_n) + a3 * (n_n)) / (num - hardening_par);
 
-  return dp;
+  return dep;
 }
 
 //! Compute stress invariants

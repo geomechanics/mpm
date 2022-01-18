@@ -69,13 +69,7 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
                                                   const Vector6d& dstrain,
                                                   const ParticleBase<Tdim>* ptr,
                                                   mpm::dense_map* state_vars,
-                                                  bool hardening = true) {
-    auto error = Matrix6x6::Zero();
-    throw std::runtime_error(
-        "Calling the base class function (compute_elasto_plastic_tensor) in "
-        "Material:: illegal operation!");
-    return error;
-  };
+                                                  bool hardening = true) = 0;
 
 };  // MohrCoulomb class
 }  // namespace mpm

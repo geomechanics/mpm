@@ -155,16 +155,12 @@ TEST_CASE("Implicit Cell is checked for 2D case", "[cell][2D][Implicit]") {
                 Approx(cell_stiffness_matrix(i, j)).epsilon(Tolerance));
 
     // Constitutive relations matrix
-    // TODO: Use "compute_consistent_tangent_matrix"
-    Eigen::Matrix<double, 6, 6> dmatrix;
-    // clang-format off
-    dmatrix <<  1.2,       0.4,       0.4,       0.0,       0.0,       0.0,
-                0.4,       1.2,       0.4,       0.0,       0.0,       0.0,
-                0.4,       0.4,       1.2,       0.0,       0.0,       0.0,
-                0.0,       0.0,       0.0,       0.4,       0.0,       0.0,
-                0.0,       0.0,       0.0,       0.0,       0.4,       0.0,
-                0.0,       0.0,       0.0,       0.0,       0.0,       0.4;
-    // clang-format on
+    Eigen::Matrix<double, 6, 6> dmatrix =
+        material->compute_consistent_tangent_matrix(
+            Eigen::Matrix<double, 6, 1>::Zero(),
+            Eigen::Matrix<double, 6, 1>::Zero(),
+            Eigen::Matrix<double, 6, 1>::Zero(), particle.get(),
+            &state_variables);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
     reduced_dmatrix = particle->reduce_dmatrix(dmatrix);
@@ -416,16 +412,12 @@ TEST_CASE("Implicit Cell is checked for 3D case", "[cell][3D][Implicit]") {
                 Approx(cell_stiffness_matrix(i, j)).epsilon(Tolerance));
 
     // Constitutive relations matrix
-    // TODO: Use "compute_consistent_tangent_matrix"
-    Eigen::Matrix<double, 6, 6> dmatrix;
-    // clang-format off
-    dmatrix <<  1.2,       0.4,       0.4,       0.0,       0.0,       0.0,
-                0.4,       1.2,       0.4,       0.0,       0.0,       0.0,
-                0.4,       0.4,       1.2,       0.0,       0.0,       0.0,
-                0.0,       0.0,       0.0,       0.4,       0.0,       0.0,
-                0.0,       0.0,       0.0,       0.0,       0.4,       0.0,
-                0.0,       0.0,       0.0,       0.0,       0.0,       0.4;
-    // clang-format on
+    Eigen::Matrix<double, 6, 6> dmatrix =
+        material->compute_consistent_tangent_matrix(
+            Eigen::Matrix<double, 6, 1>::Zero(),
+            Eigen::Matrix<double, 6, 1>::Zero(),
+            Eigen::Matrix<double, 6, 1>::Zero(), particle.get(),
+            &state_variables);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
     reduced_dmatrix = particle->reduce_dmatrix(dmatrix);

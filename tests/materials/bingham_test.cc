@@ -964,5 +964,9 @@ TEST_CASE("Bingham is checked in 3D", "[material][bingham][3D]") {
     REQUIRE(check_stress(5) == Approx(-199.6516840678).epsilon(Tolerance));
 
     REQUIRE(state_vars.at("pressure") == Approx(0.0000000).epsilon(Tolerance));
+
+    // Compute consistent tangent false
+    REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
+        stress, stress, dstrain, particle.get(), &state_vars));
   }
 }

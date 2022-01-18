@@ -178,16 +178,35 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(5) = 0.0000000;
 
     // Compute stress
-    stress =
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-193727.6266809207).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-193727.6266809207).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-212544.7466381585).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-193727.6266809207).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-193727.6266809207).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-212544.7466381585).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check << 21953306.6168, 9408559.97862, 9408559.97862,             0,             0,             0,
+                 9408559.97862, 21953306.6168, 9408559.97862,             0,             0,             0,
+                 9408559.97862, 9408559.97862, 21953306.6168,             0,             0,             0,
+                             0,             0,             0, 6272373.31908,             0,             0,
+                             0,             0,             0,             0, 6272373.31908,             0,
+                             0,             0,             0,             0,             0, 6272373.31908;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 
   //! Check compute stress in plastic status
@@ -230,20 +249,39 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(5) = 0.0000000;
 
     // Compute stress
-    stress =
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-192882.4825752268).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-192882.4825752268).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-211655.0108685302).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-192882.4825752268).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-192882.4825752268).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-211655.0108685302).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
 
     // Check pc
     REQUIRE(state_vars.at("pc") ==
             Approx(200368.9146817101).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check << 8235958.42502, 8235958.42502, 9835542.18666,             0,             0,             0,
+                 8235958.42502, 8235958.42502, 9835542.18666,             0,             0,             0,
+                 9835542.18666, 9835542.18666, 11745796.3134,             0,             0,             0,
+                             0,             0,             0,             0,             0,             0,
+                             0,             0,             0,             0,             0,             0,
+                             0,             0,             0,             0,             0,             0;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 
   //! Check compute stress in plastic status with bonded properties
@@ -292,19 +330,38 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(5) = 0.0000000;
 
     // Compute stress
-    stress =
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-193727.6266809207).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-193727.6266809207).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-212544.7466381585).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-193727.6266809207).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-193727.6266809207).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-212544.7466381585).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
 
     // Check pc
     REQUIRE(state_vars.at("pc") == Approx(300000).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check <<  21953306.6168, 9408559.97862, 9408559.97862,             0,             0,             0,
+                  9408559.97862, 21953306.6168, 9408559.97862,             0,             0,             0,
+                  9408559.97862, 9408559.97862, 21953306.6168,             0,             0,             0,
+                              0,             0,             0, 6272373.31908,             0,             0,
+                              0,             0,             0,             0, 6272373.31908,             0,
+                              0,             0,             0,             0,             0, 6272373.31908;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 
   //! Check compute stress in plastic status with subloading properties
@@ -347,21 +404,40 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     dstrain(5) = 0.0000000;
 
     // Compute stress
-    stress =
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-162537.902087049).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-162537.902087049).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-162537.90208594).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-162537.902087049).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-162537.902087049).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-162537.90208594).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
 
     // Check pc
     REQUIRE(state_vars.at("pc") ==
             Approx(325075.8041776047).epsilon(Tolerance));
     // Check subloading_r
     REQUIRE(state_vars.at("subloading_r") == Approx(0.5).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check << 7731196.20198, 7731196.20198, 7731196.20188,             0,             0,             0,
+                 7731196.20198, 7731196.20198, 7731196.20188,             0,             0,             0,
+                 7731196.20188, 7731196.20188, 7731196.20178,             0,             0,             0,
+                             0,             0,             0,             0,             0,             0,
+                             0,             0,             0,             0,             0,             0,
+                             0,             0,             0,             0,             0,             0;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 }

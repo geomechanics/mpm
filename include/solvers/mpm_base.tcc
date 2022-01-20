@@ -269,7 +269,7 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   this->cell_entity_sets(mesh_props, check_duplicates);
 
   // Use Nonlocal basis
-  if (cell_type.back() == 'B') {
+  if (cell_type.back() == 'B' || cell_type.back() == 'L') {
     this->initialise_nonlocal_mesh(mesh_props);
   }
 
@@ -1550,9 +1550,10 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                     std::placeholders::_1));
 
       //! Read nodal type from entity sets
-      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end() &&
-          mesh_props["nonlocal_mesh_properties"].find("node_types") !=
-              mesh_props["nonlocal_mesh_properties"].end()) {
+      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end()) {
+        const auto sf_type = mesh_props["nonlocal_mesh_properties"]["type"]
+                                 .template get<std::string>();
+        assert(sf_type == "BSPLINE");
 
         // Iterate over node type
         for (const auto& node_type :
@@ -1567,10 +1568,33 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
           mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
         }
       }
+    } else if (cell_type.back() == 'L') {
+      //! Read nodal type from entity sets
+      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end()) {
+        const auto sf_type = mesh_props["nonlocal_mesh_properties"]["type"]
+                                 .template get<std::string>();
+        assert(sf_type == "LME");
 
-      //! Update number of nodes in cell
-      mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_);
+        // Gamma parameter
+        double gamma = mesh_props["nonlocal_mesh_properties"]["gamma"]
+                           .template get<double>();
+        // Support tolerance
+        double tol0 = 1.e-6;
+        // Average mesh size
+        double h = mesh_props["nonlocal_mesh_properties"]["mesh_size"]
+                       .template get<double>();
+
+        // TODO: Calculate support radius automatically
+
+        // TODO: Cell and node neighbourhood for LME
+        cell_neighbourhood_ = 2;
+        node_neighbourhood_ = 3;
+      }
     }
+
+    //! Update number of nodes in cell
+    mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_);
+
   } catch (std::exception& exception) {
     console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,
                    __LINE__, exception.what());

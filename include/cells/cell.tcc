@@ -885,14 +885,20 @@ bool mpm::Cell<Tdim>::initialiase_nonlocal() {
   try {
     // Node property
     std::vector<std::vector<unsigned>> nodal_properties(this->nnodes());
-    // Loop over the cell node to get node type
-    for (unsigned i = 0; i < nodes_.size(); ++i)
-      nodal_properties[i] = nodes_[i]->nonlocal_node_type();
 
     // Initialise element
-    if (element_->shapefn_type() == mpm::ShapefnType::BSPLINE)
+    if (element_->shapefn_type() == mpm::ShapefnType::BSPLINE) {
+      // Loop over the cell node to get node type
+      for (unsigned i = 0; i < nodes_.size(); ++i)
+        nodal_properties[i] = nodes_[i]->nonlocal_node_type();
+
       this->element_->initialise_bspline_connectivity_properties(
           this->nodal_coordinates_, nodal_properties);
+    }
+    // TODO:
+    // else if (element_->shapefn_type() == mpm::ShapefnType::LME)
+    //   this->element_->initialise_lme_connectivity_properties(
+    //       this->nodal_coordinates_);
     else
       throw std::runtime_error(
           "Initialise nonlocal cell failed! Element type is not compatible.");

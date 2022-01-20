@@ -862,7 +862,7 @@ void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
 template <unsigned Tdim, unsigned Tnfunctions>
 void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
     initialise_lme_connectivity_properties(
-        double beta, const Eigen::MatrixXd& nodal_coordinates) {
+        double beta, double radius, const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
       "Function to initialise nonlocal connectivity is not implemented for "
       "Quad<Tdim, Tnfunctions> ");

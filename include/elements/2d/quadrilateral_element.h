@@ -235,9 +235,12 @@ class QuadrilateralElement : public Element<Tdim> {
       const std::vector<std::vector<unsigned>>& nodal_properties) override;
 
   //! Assign nodal connectivity property for LME elements
+  //! \param[in] beta Coldness function of the system
+  //! \param[in] radius Support radius of the kernel
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   void initialise_lme_connectivity_properties(
-      double beta, const Eigen::MatrixXd& nodal_coordinates) override;
+      double beta, double radius,
+      const Eigen::MatrixXd& nodal_coordinates) override;
 
  private:
   //! Logger

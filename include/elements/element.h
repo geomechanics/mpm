@@ -181,9 +181,11 @@ class Element {
       const std::vector<std::vector<unsigned>>& nodal_properties) = 0;
 
   //! Assign nodal connectivity property for LME elements
+  //! \param[in] beta Coldness function of the system
+  //! \param[in] radius Support radius of the kernel
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   virtual void initialise_lme_connectivity_properties(
-      double beta, const Eigen::MatrixXd& nodal_coordinates) = 0;
+      double beta, double radius, const Eigen::MatrixXd& nodal_coordinates) = 0;
 };
 
 }  // namespace mpm

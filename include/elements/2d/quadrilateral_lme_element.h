@@ -187,11 +187,13 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
       const VectorDim& point,
       const Eigen::MatrixXd& nodal_coordinates) const override;
 
-  //! Assign nodal connectivity property for lme elements
-  //! \param[in] beta Beta parameter that govern the shape of LME shape function
+  //! Assign nodal connectivity property for LME elements
+  //! \param[in] beta Coldness function of the system
+  //! \param[in] radius Support radius of the kernel
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   void initialise_lme_connectivity_properties(
-      double beta, const Eigen::MatrixXd& nodal_coordinates) override;
+      double beta, double radius,
+      const Eigen::MatrixXd& nodal_coordinates) override;
 
   //! Return the degree of shape function
   mpm::ElementDegree degree() const override {

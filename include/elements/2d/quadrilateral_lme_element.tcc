@@ -1,12 +1,13 @@
 //! Assign nodal connectivity property for LME elements
 template <unsigned Tdim>
 void mpm::QuadrilateralLMEElement<Tdim>::initialise_lme_connectivity_properties(
-    double beta, const Eigen::MatrixXd& nodal_coordinates) {
+    double beta, double radius, const Eigen::MatrixXd& nodal_coordinates) {
   assert(nodal_coordinates.rows() == nodal_properties.size());
 
   this->nconnectivity_ = nodal_coordinates.rows();
   this->nodal_coordinates_ = nodal_coordinates;
   this->beta_ = beta;
+  this->support_radius_ = radius;
   this->lambda_.setZero();
 }
 

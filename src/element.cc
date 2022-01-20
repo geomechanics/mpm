@@ -6,6 +6,7 @@
 #include "quadrilateral_bspline_element.h"
 #include "quadrilateral_element.h"
 #include "quadrilateral_gimp_element.h"
+#include "quadrilateral_lme_element.h"
 #include "triangle_element.h"
 
 // Triangle 3-noded element
@@ -33,6 +34,10 @@ static Register<mpm::Element<2>, mpm::QuadrilateralGIMPElement<2, 16>>
 // Quadrilateral BSpline element of second order polynomial
 static Register<mpm::Element<2>, mpm::QuadrilateralBSplineElement<2, 2>>
     quad_bspline4_p2("ED2Q4P2B");
+
+// Quadrilateral LME element of second order polynomial
+static Register<mpm::Element<2>, mpm::QuadrilateralLMEElement<2>> quad_lme(
+    "ED2Q4L");
 
 // Hexahedron 8-noded element
 static Register<mpm::Element<3>, mpm::HexahedronElement<3, 8>> hex8("ED3H8");

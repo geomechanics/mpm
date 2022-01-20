@@ -272,6 +272,11 @@ class HexahedronElement : public Element<Tdim> {
       const Eigen::MatrixXd& nodal_coordinates,
       const std::vector<std::vector<unsigned>>& nodal_properties) override;
 
+  //! Assign nodal connectivity property for LME elements
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  void initialise_lme_connectivity_properties(
+      double beta, const Eigen::MatrixXd& nodal_coordinates) override;
+
  private:
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

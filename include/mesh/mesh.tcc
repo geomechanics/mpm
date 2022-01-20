@@ -2153,10 +2153,11 @@ void mpm::Mesh<Tdim>::initialise_nodal_properties() {
 
 //! Upgrade cells to nonlocal cells
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
-                                                unsigned cell_neighbourhood) {
+bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(
+    const std::string& cell_type, unsigned cell_neighbourhood,
+    const tsl::robin_map<std::string, double>& nonlocal_properties) {
   bool status = true;
-  if (cell_type.back() != 'B') {
+  if (cell_type.back() != 'B' || cell_type.back() != 'L') {
     throw std::runtime_error(
         "Unable to upgrade cell to a nonlocal for cell type: " + cell_type);
     status = false;
@@ -2201,7 +2202,7 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
 
         if ((*citr)->nnodes() == new_nnodes) {
           // Reinitialise cell
-          (*citr)->initialiase_nonlocal();
+          (*citr)->initialiase_nonlocal(nonlocal_properties);
         }
       }
     }

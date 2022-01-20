@@ -880,7 +880,8 @@ bool mpm::Cell<Tdim>::assign_nonlocal_elementptr(
 
 //! Initialising nonlocal cell-element properties
 template <unsigned Tdim>
-bool mpm::Cell<Tdim>::initialiase_nonlocal() {
+bool mpm::Cell<Tdim>::initialiase_nonlocal(
+    const tsl::robin_map<std::string, double>& nonlocal_properties) {
   bool status = false;
   try {
     // Node property
@@ -894,12 +895,11 @@ bool mpm::Cell<Tdim>::initialiase_nonlocal() {
 
       this->element_->initialise_bspline_connectivity_properties(
           this->nodal_coordinates_, nodal_properties);
-    }
-    // TODO:
-    // else if (element_->shapefn_type() == mpm::ShapefnType::LME)
-    //   this->element_->initialise_lme_connectivity_properties(
-    //       this->nodal_coordinates_);
-    else
+    } else if (element_->shapefn_type() == mpm::ShapefnType::LME) {
+      this->element_->initialise_lme_connectivity_properties(
+          nonlocal_properties.at("beta"),
+          nonlocal_properties.at("support_radius"), this->nodal_coordinates_);
+    } else
       throw std::runtime_error(
           "Initialise nonlocal cell failed! Element type is not compatible.");
 

@@ -1539,6 +1539,9 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
   //! Shape function name
   const auto cell_type = mesh_props["cell_type"].template get<std::string>();
   try {
+    // Initialise additional properties
+    tsl::robin_map<std::string, double> nonlocal_properties;
+
     if (cell_type.back() == 'B') {
       // Cell and node neighbourhood for quadratic B-Spline
       cell_neighbourhood_ = 1;
@@ -1580,20 +1583,37 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                            .template get<double>();
         // Support tolerance
         double tol0 = 1.e-6;
+        if (mesh_props["nonlocal_mesh_properties"].contains(
+                "support_tolerance"))
+          tol0 = mesh_props["nonlocal_mesh_properties"]["support_tolerance"]
+                     .template get<double>();
+
         // Average mesh size
         double h = mesh_props["nonlocal_mesh_properties"]["mesh_size"]
                        .template get<double>();
 
-        // TODO: Calculate support radius automatically
+        // Calculate beta
+        double beta = gamma / (h * h);
+        nonlocal_properties.insert(
+            std::pair<std::string, double>("beta", beta));
 
-        // TODO: Cell and node neighbourhood for LME
+        // Calculate support radius automatically
+        double r = h * std::sqrt(-std::log(tol0) / gamma);
+        nonlocal_properties.insert(
+            std::pair<std::string, double>("support_radius", r));
+
+        // Cell and node neighbourhood for LME
         cell_neighbourhood_ = 2;
-        node_neighbourhood_ = 3;
+        node_neighbourhood_ = 5;
       }
+    } else {
+      throw std::runtime_error(
+          "Unable to initialise nonlocal mesh for cell type: " + cell_type);
     }
 
     //! Update number of nodes in cell
-    mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_);
+    mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_,
+                                     nonlocal_properties);
 
   } catch (std::exception& exception) {
     console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,

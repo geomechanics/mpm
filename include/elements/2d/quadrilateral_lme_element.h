@@ -210,7 +210,7 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
   //! Nodal coordinates vector (n_connectivity_ x Tdim)
   Eigen::MatrixXd nodal_coordinates_;
   //! Lambda (Tdim)
-  VectorDim lambda_;
+  mutable VectorDim lambda_;
 };
 
 }  // namespace mpm

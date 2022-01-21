@@ -188,7 +188,7 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
       const Eigen::MatrixXd& nodal_coordinates) const override;
 
   //! Assign nodal connectivity property for LME elements
-  //! \param[in] beta Coldness function of the system
+  //! \param[in] beta Coldness function of the system in the range of [0,inf)
   //! \param[in] radius Support radius of the kernel
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   void initialise_lme_connectivity_properties(
@@ -205,7 +205,7 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
   std::unique_ptr<spdlog::logger> console_;
   //! Number of connectivity
   unsigned nconnectivity_{4};
-  //! Beta parameter
+  //! Beta parameter with range of [0,inf)
   double beta_;
   //! Support radius
   double support_radius_;

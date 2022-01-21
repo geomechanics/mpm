@@ -35,6 +35,10 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
+    //! Create relative coordinate vector
+    const auto rel_coordinates =
+        (-nodal_coordinates_.transpose()).colwise() + pcoord;
+
     // Initialise lambda as zero vector
     VectorDim lambda = VectorDim::Zero();
 
@@ -42,10 +46,10 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     double sum_exp_f = 0.;
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      const double distance = (pcoord - ncoord).norm();
+      const double distance = (rel_coordinates.col(n)).norm();
       if (distance < this->support_radius_) {
-        f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
+        f(n) =
+            -beta_ * std::pow(distance, 2) + lambda.dot(rel_coordinates.col(n));
         sum_exp_f += std::exp(f(n));
       }
     }
@@ -53,16 +57,14 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     //! Compute p in each connectivity
     Eigen::VectorXd p = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      const double distance = (pcoord - ncoord).norm();
+      const double distance = (rel_coordinates.col(n)).norm();
       if (distance < this->support_radius_) p(n) = std::exp(f(n)) / sum_exp_f;
     }
 
     //! Compute vector r
     VectorDim r = VectorDim::Zero();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      r += p(n) * (pcoord - ncoord);
+      r += p(n) * (rel_coordinates.col(n));
     }
 
     //! Begin Newton-Raphson iteration
@@ -76,8 +78,8 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
         Eigen::MatrixXd J(Tdim, Tdim);
         J.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          J += p(n) * (pcoord - ncoord) * (pcoord - ncoord).transpose();
+          J += p(n) * (rel_coordinates.col(n)) *
+               (rel_coordinates.col(n)).transpose();
         }
         J -= r * r.transpose();
 
@@ -89,18 +91,17 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
         //! Compute functional f in each connectivity
         sum_exp_f = 0.;
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          const double distance = (pcoord - ncoord).norm();
+          const double distance = (rel_coordinates.col(n)).norm();
           if (distance < this->support_radius_) {
-            f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
+            f(n) = -beta_ * std::pow(distance, 2) +
+                   lambda.dot(rel_coordinates.col(n));
             sum_exp_f += std::exp(f(n));
           }
         }
 
         //! Compute p in each connectivity
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          const double distance = (pcoord - ncoord).norm();
+          const double distance = (rel_coordinates.col(n)).norm();
           if (distance < this->support_radius_)
             p(n) = std::exp(f(n)) / sum_exp_f;
         }
@@ -108,8 +109,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
         //! Compute vector r
         r.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          r += p(n) * (pcoord - ncoord);
+          r += p(n) * (rel_coordinates.col(n));
         }
 
         //! Check convergence
@@ -152,6 +152,10 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
+    //! Create relative coordinate vector
+    const auto rel_coordinates =
+        (-nodal_coordinates_.transpose()).colwise() + pcoord;
+
     // Initialise lambda as zero vector
     VectorDim lambda = VectorDim::Zero();
 
@@ -159,10 +163,10 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     double sum_exp_f = 0.;
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      const double distance = (pcoord - ncoord).norm();
+      const double distance = (rel_coordinates.col(n)).norm();
       if (distance < this->support_radius_) {
-        f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
+        f(n) =
+            -beta_ * std::pow(distance, 2) + lambda.dot(rel_coordinates.col(n));
         sum_exp_f += std::exp(f(n));
       }
     }
@@ -170,24 +174,22 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     //! Compute p in each connectivity
     Eigen::VectorXd p = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      const double distance = (pcoord - ncoord).norm();
+      const double distance = (rel_coordinates.col(n)).norm();
       if (distance < this->support_radius_) p(n) = std::exp(f(n)) / sum_exp_f;
     }
 
     //! Compute vector r
     VectorDim r = VectorDim::Zero();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      r += p(n) * (pcoord - ncoord);
+      r += p(n) * (rel_coordinates.col(n));
     }
 
     //! Compute matrix J
     Eigen::MatrixXd J(Tdim, Tdim);
     J.setZero();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      J += p(n) * (pcoord - ncoord) * (pcoord - ncoord).transpose();
+      J += p(n) * (rel_coordinates.col(n)) *
+           (rel_coordinates.col(n)).transpose();
     }
     J -= r * r.transpose();
 
@@ -206,18 +208,17 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
         //! Compute functional f in each connectivity
         sum_exp_f = 0.;
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          const double distance = (pcoord - ncoord).norm();
+          const double distance = (rel_coordinates.col(n)).norm();
           if (distance < this->support_radius_) {
-            f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
+            f(n) = -beta_ * std::pow(distance, 2) +
+                   lambda.dot(rel_coordinates.col(n));
             sum_exp_f += std::exp(f(n));
           }
         }
 
         //! Compute p in each connectivity
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          const double distance = (pcoord - ncoord).norm();
+          const double distance = (rel_coordinates.col(n)).norm();
           if (distance < this->support_radius_)
             p(n) = std::exp(f(n)) / sum_exp_f;
         }
@@ -225,15 +226,14 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
         //! Compute vector r
         r.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          r += p(n) * (pcoord - ncoord);
+          r += p(n) * (rel_coordinates.col(n));
         }
 
         //! Compute matrix J
         J.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const auto& ncoord = nodal_coordinates_.row(n).transpose();
-          J += p(n) * (pcoord - ncoord) * (pcoord - ncoord).transpose();
+          J += p(n) * (rel_coordinates.col(n)) *
+               (rel_coordinates.col(n)).transpose();
         }
         J -= r * r.transpose();
 
@@ -245,8 +245,7 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
 
     // Compute shape function gradient
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const auto& ncoord = nodal_coordinates_.row(n).transpose();
-      const VectorDim grad_p = -p(n) * J.inverse() * (pcoord - ncoord);
+      const VectorDim grad_p = -p(n) * J.inverse() * (rel_coordinates.col(n));
       grad_shapefn.row(n) = grad_p.transpose();
     }
 

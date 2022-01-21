@@ -607,6 +607,8 @@ class Mesh {
   //! \ingroup Nonlocal
   //! \param[in] cell_type string indicating the cell type
   //! \param[in] cell_neighbourhood size of nonlocal cell neighbourhood
+  //! \param[in] nonlocal_properties A map of selected nonlocal element
+  //! properties
   bool upgrade_cells_to_nonlocal(
       const std::string& cell_type, unsigned cell_neighbourhood,
       const tsl::robin_map<std::string, double>& nonlocal_properties);

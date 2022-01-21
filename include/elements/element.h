@@ -181,7 +181,7 @@ class Element {
       const std::vector<std::vector<unsigned>>& nodal_properties) = 0;
 
   //! Assign nodal connectivity property for LME elements
-  //! \param[in] beta Coldness function of the system
+  //! \param[in] beta Coldness function of the system in the range of [0,inf)
   //! \param[in] radius Support radius of the kernel
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   virtual void initialise_lme_connectivity_properties(

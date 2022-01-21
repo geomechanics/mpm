@@ -1593,18 +1593,18 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                        .template get<double>();
 
         // Calculate beta
-        double beta = gamma / (h * h);
+        const double beta = gamma / (h * h);
         nonlocal_properties.insert(
             std::pair<std::string, double>("beta", beta));
 
         // Calculate support radius automatically
-        double r = h * std::sqrt(-std::log(tol0) / gamma);
+        const double r = std::sqrt(-std::log(tol0) / gamma) * h;
         nonlocal_properties.insert(
             std::pair<std::string, double>("support_radius", r));
 
         // Cell and node neighbourhood for LME
-        cell_neighbourhood_ = 2;
-        node_neighbourhood_ = 5;
+        cell_neighbourhood_ = static_cast<unsigned>(floor(r / h));
+        node_neighbourhood_ = 1 + 2 * cell_neighbourhood_;
       }
     } else {
       throw std::runtime_error(

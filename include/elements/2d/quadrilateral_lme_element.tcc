@@ -8,7 +8,6 @@ void mpm::QuadrilateralLMEElement<Tdim>::initialise_lme_connectivity_properties(
   this->nodal_coordinates_ = nodal_coordinates;
   this->beta_ = beta;
   this->support_radius_ = radius;
-  this->lambda_.setZero();
 }
 
 //! Return shape functions of a Quadrilateral BSpline Element at a given
@@ -36,6 +35,9 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
+    // Initialise lambda as zero vector
+    VectorDim lambda = VectorDim::Zero();
+
     //! Compute functional f in each connectivity
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     double sum_exp_f = 0.;
@@ -43,7 +45,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       const auto& ncoord = nodal_coordinates_.row(n).transpose();
       const double distance = (pcoord - ncoord).norm();
       if (distance < this->support_radius_) {
-        f(n) = -beta_ * distance + lambda_.dot(pcoord - ncoord);
+        f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
         sum_exp_f += std::exp(f(n));
       }
     }
@@ -81,7 +83,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
 
         //! Compute Delta lambda
         VectorDim dlambda = J.inverse() * (-r);
-        lambda_ = lambda_ + dlambda;
+        lambda = lambda + dlambda;
 
         //! Reevaluate f, p, and r
         //! Compute functional f in each connectivity
@@ -90,7 +92,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
           const auto& ncoord = nodal_coordinates_.row(n).transpose();
           const double distance = (pcoord - ncoord).norm();
           if (distance < this->support_radius_) {
-            f(n) = -beta_ * distance + lambda_.dot(pcoord - ncoord);
+            f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
             sum_exp_f += std::exp(f(n));
           }
         }
@@ -150,6 +152,9 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
+    // Initialise lambda as zero vector
+    VectorDim lambda = VectorDim::Zero();
+
     //! Compute functional f in each connectivity
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     double sum_exp_f = 0.;
@@ -157,7 +162,7 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
       const auto& ncoord = nodal_coordinates_.row(n).transpose();
       const double distance = (pcoord - ncoord).norm();
       if (distance < this->support_radius_) {
-        f(n) = -beta_ * distance + lambda_.dot(pcoord - ncoord);
+        f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
         sum_exp_f += std::exp(f(n));
       }
     }
@@ -193,9 +198,9 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
       unsigned it = 1;
       unsigned max_it = 10;
       while (!convergence) {
-        //! Compute Delta lambda_
+        //! Compute Delta lambda
         VectorDim dlambda = J.inverse() * (-r);
-        lambda_ = lambda_ + dlambda;
+        lambda = lambda + dlambda;
 
         //! Reevaluate f, p, and r
         //! Compute functional f in each connectivity
@@ -204,7 +209,7 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
           const auto& ncoord = nodal_coordinates_.row(n).transpose();
           const double distance = (pcoord - ncoord).norm();
           if (distance < this->support_radius_) {
-            f(n) = -beta_ * distance + lambda_.dot(pcoord - ncoord);
+            f(n) = -beta_ * std::pow(distance, 2) + lambda.dot(pcoord - ncoord);
             sum_exp_f += std::exp(f(n));
           }
         }

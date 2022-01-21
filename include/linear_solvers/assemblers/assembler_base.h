@@ -22,23 +22,29 @@ template <unsigned Tdim>
 class AssemblerBase {
  public:
   //! Constructor
-  //! \param[in] node_neighbourhood Number of node neighbourhood considered
+  //! \param[in] node_neighbourhood Number of node neighbourhood considered for
+  //! structured elements
   AssemblerBase(unsigned node_neighbourhood) {
     //! Global degrees of freedom
     active_dof_ = 0;
     //! Assign sparse row size
     switch (node_neighbourhood) {
-      case 0:
-        sparse_row_size_ = (Tdim == 2) ? 9 : 27;
+      case 0:  // Self
+        sparse_row_size_ = (Tdim == 2) ? 1 : 1;
         break;
       case 1:
-        sparse_row_size_ = (Tdim == 2) ? 25 : 125;
+        sparse_row_size_ = (Tdim == 2) ? 9 : 27;
         break;
       case 2:
+        sparse_row_size_ = (Tdim == 2) ? 25 : 125;
+        break;
+      case 3:
         sparse_row_size_ = (Tdim == 2) ? 49 : 343;
         break;
       default:
-        sparse_row_size_ = (Tdim == 2) ? 9 : 27;
+        throw std::runtime_error(
+            "The node neighbourhood passed in AssemblerBase constructor is "
+            "invalid");
     }
   }
 
@@ -63,6 +69,10 @@ class AssemblerBase {
   //! Create a pair between nodes and index in Matrix / Vector
   bool assign_global_node_indices(unsigned nactive_node,
                                   unsigned nglobal_active_node);
+
+  //! Null-space treatment of a sparse matrix
+  void apply_null_space_treatment(
+      Eigen::SparseMatrix<double>& coefficient_matrix, unsigned nblock = 1);
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

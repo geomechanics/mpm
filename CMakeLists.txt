@@ -218,10 +218,12 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/factory_test.cc
     ${mpm_SOURCE_DIR}/tests/geometry_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/hexahedron_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/hexahedron_bspline_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/hexahedron_gimp_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/hexahedron_quadrature_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_gimp_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_bspline_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_quadrature_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/triangle_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/triangle_quadrature_test.cc

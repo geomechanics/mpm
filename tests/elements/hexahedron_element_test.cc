@@ -18,6 +18,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
 
     // Check degree
     REQUIRE(hex->degree() == mpm::ElementDegree::Linear);
+    REQUIRE(hex->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0, 0, 0)
     SECTION("Eight noded hexahedron element for coordinates(0, 0, 0)") {
@@ -984,6 +985,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
 
     // Check degree
     REQUIRE(hex->degree() == mpm::ElementDegree::Quadratic);
+    REQUIRE(hex->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0, 0, 0)
     SECTION("Twenty noded hexahedron element for coordinates(0, 0, 0)") {
@@ -2505,6 +2507,13 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
     SECTION("Hexahedron element length") {
       // Check element length
       REQUIRE(hex->unit_element_length() == Approx(2).epsilon(Tolerance));
+    }
+
+    SECTION("Nonlocal functions check fail") {
+      // Check illegal functions
+      Eigen::MatrixXd error;
+      REQUIRE_THROWS(hex->initialise_bspline_connectivity_properties(
+          error, std::vector<std::vector<unsigned>>()));
     }
   }
 }

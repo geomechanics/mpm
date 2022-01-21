@@ -475,6 +475,33 @@ class NodeBase {
 
   /**@}*/
 
+  /**
+   * \defgroup Nonlocal Functions dealing with MPM with nonlocal shape function
+   */
+  /**@{*/
+
+  //! Function that initialise variables for nonlocal MPM
+  //! \ingroup Nonlocal
+  virtual void initialise_nonlocal_node() noexcept = 0;
+
+  //! Assign nodal nonlocal type
+  //! \ingroup Nonlocal
+  //! \param[in] dir Direction of node type
+  //! \param[in] type Integer denoting the node type
+  //! \brief: The list of node type is
+  //! Regular = 0 (Default),
+  //! LowerBoundary = 1,
+  //! LowerIntermediate = 2,
+  //! UpperIntermediate = 3
+  //! UpperBoundary = 4
+  virtual void assign_nonlocal_node_type(unsigned dir, unsigned type) = 0;
+
+  //! Function which return nodal nonlocal type vector
+  //! \ingroup Nonlocal
+  virtual std::vector<unsigned> nonlocal_node_type() const = 0;
+
+  /**@}*/
+
 };  // NodeBase class
 }  // namespace mpm
 

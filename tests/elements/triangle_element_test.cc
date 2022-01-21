@@ -18,6 +18,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
     // Check degree
     REQUIRE(tri->degree() == mpm::ElementDegree::Linear);
+    REQUIRE(tri->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0,0)
     SECTION("Three noded triangle element for coordinates(0,0)") {
@@ -672,6 +673,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
     // Check degree
     REQUIRE(tri->degree() == mpm::ElementDegree::Quadratic);
+    REQUIRE(tri->shapefn_type() == mpm::ShapefnType::NORMAL_MPM);
 
     // Coordinates is (0,0)
     SECTION("Six noded triangle element for coordinates(0,0)") {
@@ -1409,6 +1411,13 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
       // Check number of faces
       REQUIRE(tri->nfaces() == 3);
+    }
+
+    SECTION("Nonlocal functions check fail") {
+      // Check illegal functions
+      Eigen::MatrixXd error;
+      REQUIRE_THROWS(tri->initialise_bspline_connectivity_properties(
+          error, std::vector<std::vector<unsigned>>()));
     }
   }
 }

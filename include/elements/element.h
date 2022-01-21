@@ -17,7 +17,7 @@ namespace mpm {
 enum ElementDegree { Linear = 1, Quadratic = 2 };
 
 // Element Shapefn
-enum ShapefnType { NORMAL_MPM = 1, GIMP = 2, CPDI = 3 };
+enum ShapefnType { NORMAL_MPM = 1, GIMP = 2, CPDI = 3, BSPLINE = 4 };
 
 //! Base class of shape functions
 //! \brief Base class that stores the information about shape functions
@@ -171,6 +171,14 @@ class Element {
   virtual VectorDim natural_coordinates_analytical(
       const VectorDim& point,
       const Eigen::MatrixXd& nodal_coordinates) const = 0;
+
+  //! Assign nodal connectivity property for bspline elements
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  //! \param[in] nodal_properties Vector determining node type for each
+  //! dimension
+  virtual void initialise_bspline_connectivity_properties(
+      const Eigen::MatrixXd& nodal_coordinates,
+      const std::vector<std::vector<unsigned>>& nodal_properties) = 0;
 };
 
 }  // namespace mpm

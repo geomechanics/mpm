@@ -567,7 +567,7 @@ inline Eigen::MatrixXi
 template <>
 inline Eigen::VectorXi
     mpm::HexahedronElement<3, 8>::face_indices(unsigned face_id) const {
-  
+
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 4, 1>> face_indices_hexahedron{
       {0, Eigen::Matrix<int, 4, 1>(0, 1, 5, 4)},
@@ -585,7 +585,7 @@ inline Eigen::VectorXi
 template <>
 inline Eigen::VectorXi
     mpm::HexahedronElement<3, 20>::face_indices(unsigned face_id) const {
-  
+
   //! Face ids and its associated nodal indices
   // clang-format off
   const std::map<unsigned, Eigen::Matrix<int, 8, 1>> face_indices_hexahedron{
@@ -681,4 +681,15 @@ inline Eigen::Matrix<double, Tdim, 1>
       "Analytical solution for Hex<Tdim, Tnfunctions> has not been "
       "implemented");
   return xi;
+}
+
+//! Assign nodal connectivity property for bspline elements
+template <unsigned Tdim, unsigned Tnfunctions>
+void mpm::HexahedronElement<Tdim, Tnfunctions>::
+    initialise_bspline_connectivity_properties(
+        const Eigen::MatrixXd& nodal_coordinates,
+        const std::vector<std::vector<unsigned>>& nodal_properties) {
+  throw std::runtime_error(
+      "Function to initialise nonlocal connectivity is not implemented for "
+      "Hex<Tdim, Tnfunctions> ");
 }

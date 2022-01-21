@@ -87,9 +87,6 @@ class MPMBase : public MPM {
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
 
-  //! Write HDF5 files
-  void write_hdf5_twophase(mpm::Index step, mpm::Index max_steps) override;
-
   //! Domain decomposition
   //! \param[in] initial_step Start of simulation or later steps
   void mpi_domain_decompose(bool initial_step = false) override;
@@ -185,6 +182,10 @@ class MPMBase : public MPM {
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);
 
+  //! Initialise nonlocal mesh
+  //! \param[in] mesh_prop Mesh properties
+  void initialise_nonlocal_mesh(const Json& mesh_prop);
+
   //! Initialise particle types
   void initialise_particle_types();
 
@@ -254,8 +255,16 @@ class MPMBase : public MPM {
   double damping_factor_{0.};
   //! Locate particles
   bool locate_particles_{true};
-  //! Nonlocal node neighbourhood
-  unsigned node_neighbourhood_{0};
+
+  /**
+   * \defgroup Nonlocal Variables for nonlocal MPM
+   * @{
+   */
+  // Cell neighbourhood: default 0 for linear element
+  unsigned cell_neighbourhood_{0};
+  // Node neighbourhood: default 1 for linear element
+  unsigned node_neighbourhood_{1};
+  /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING
   // graph pass the address of the container of cell

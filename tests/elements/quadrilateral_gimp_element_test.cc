@@ -19,6 +19,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
     // Check degree
     REQUIRE(quad->degree() == mpm::ElementDegree::Linear);
+    REQUIRE(quad->shapefn_type() == mpm::ShapefnType::GIMP);
 
     // Coordinates is (0,0) Size is (0,0)
     SECTION(

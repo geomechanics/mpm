@@ -254,7 +254,7 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Create cells from file
   bool cell_status =
       mesh_->create_cells(gid,                                  // global id
-                          element,                              // element tyep
+                          element,                              // element type
                           mesh_io->read_mesh_cells(mesh_file),  // Node ids
                           check_duplicates);                    // Check dups
 
@@ -267,6 +267,11 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign cell sets
   this->cell_entity_sets(mesh_props, check_duplicates);
+
+  // Use Nonlocal basis
+  if (cell_type.back() == 'B') {
+    this->initialise_nonlocal_mesh(mesh_props);
+  }
 
   auto cells_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Read cells: {} ms", mpi_rank,
@@ -518,22 +523,11 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
 
     // Load particle information from file
-    mesh_->write_particles_hdf5(particles_file);
+    if (attribute == "particles" || attribute == "fluid_particles")
+      mesh_->write_particles_hdf5(particles_file);
+    else if (attribute == "twophase_particles")
+      mesh_->write_particles_hdf5_twophase(particles_file);
   }
-}
-
-//! Write HDF5 files for twophase particles
-template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::write_hdf5_twophase(mpm::Index step,
-                                             mpm::Index max_steps) {
-  // Write hdf5 file for single phase particle
-  std::string attribute = "twophase_particles";
-  std::string extension = ".h5";
-
-  auto particles_file =
-      io_->output_file(attribute, extension, uuid_, step, max_steps).string();
-
-  mesh_->write_particles_hdf5_twophase(particles_file);
 }
 
 #ifdef USE_VTK
@@ -1536,5 +1530,49 @@ void mpm::MPMBase<Tdim>::initialise_linear_solver(
             std::string,
             std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>(
             dof, lin_solver));
+  }
+}
+
+//! Initialise nonlocal mesh
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
+  //! Shape function name
+  const auto cell_type = mesh_props["cell_type"].template get<std::string>();
+  try {
+    if (cell_type.back() == 'B') {
+      // Cell and node neighbourhood for quadratic B-Spline
+      cell_neighbourhood_ = 1;
+      node_neighbourhood_ = 3;
+
+      // Initialise nonlocal node
+      mesh_->iterate_over_nodes(
+          std::bind(&mpm::NodeBase<Tdim>::initialise_nonlocal_node,
+                    std::placeholders::_1));
+
+      //! Read nodal type from entity sets
+      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end() &&
+          mesh_props["nonlocal_mesh_properties"].find("node_types") !=
+              mesh_props["nonlocal_mesh_properties"].end()) {
+
+        // Iterate over node type
+        for (const auto& node_type :
+             mesh_props["nonlocal_mesh_properties"]["node_types"]) {
+          // Set id
+          int nset_id = node_type.at("nset_id").template get<int>();
+          // Direction
+          unsigned dir = node_type.at("dir").template get<unsigned>();
+          // Type
+          unsigned type = node_type.at("type").template get<unsigned>();
+          // Assign nodal nonlocal type
+          mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+        }
+      }
+
+      //! Update number of nodes in cell
+      mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_);
+    }
+  } catch (std::exception& exception) {
+    console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,
+                   __LINE__, exception.what());
   }
 }

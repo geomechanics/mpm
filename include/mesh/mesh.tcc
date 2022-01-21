@@ -2150,3 +2150,106 @@ void mpm::Mesh<Tdim>::initialise_nodal_properties() {
   // Call initialise_properties function from the nodal properties
   nodal_properties_->initialise_nodal_properties();
 }
+
+//! Upgrade cells to nonlocal cells
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
+                                                unsigned cell_neighbourhood) {
+  bool status = true;
+  if (cell_type.back() != 'B') {
+    throw std::runtime_error(
+        "Unable to upgrade cell to a nonlocal for cell type: " + cell_type);
+    status = false;
+  }
+
+  try {
+    // Construct cell-additional-node vector
+    std::vector<std::set<mpm::Index>> cell_node_vector(cells_.size());
+#pragma omp parallel
+    {
+#pragma omp for schedule(runtime)
+      for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+        std::set<mpm::Index> nodes_id = (*citr)->nodes_id();
+        std::set<mpm::Index> neighbour_nodes_id =
+            cell_neighbourhood_nodes_id(*citr, cell_neighbourhood);
+        std::set<mpm::Index> additional_nodes_id;
+        std::set_difference(
+            neighbour_nodes_id.begin(), neighbour_nodes_id.end(),
+            nodes_id.begin(), nodes_id.end(),
+            std::inserter(additional_nodes_id, additional_nodes_id.end()));
+
+        cell_node_vector[(*citr)->id()] = additional_nodes_id;
+      }
+
+#pragma omp for schedule(runtime)
+      for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+        // Add new nodes in cell
+        unsigned nnodes = (*citr)->nnodes();
+        unsigned new_nnodes = nnodes + cell_node_vector[(*citr)->id()].size();
+        if ((*citr)->upgrade_status(new_nnodes)) {
+          // Reassign cell element
+          std::shared_ptr<mpm::Element<Tdim>> element =
+              Factory<mpm::Element<Tdim>>::instance()->create(cell_type);
+          status = (*citr)->assign_nonlocal_elementptr(element);
+
+          // Add nodes to cell
+          for (auto nid : cell_node_vector[(*citr)->id()]) {
+            (*citr)->add_node(nnodes, map_nodes_[nid]);
+            ++nnodes;
+          }
+        }
+
+        if ((*citr)->nnodes() == new_nnodes) {
+          // Reinitialise cell
+          (*citr)->initialiase_nonlocal();
+        }
+      }
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+
+  return status;
+}
+
+//! Return node neighbours id set given a size of cell neighbourhood
+template <unsigned Tdim>
+std::set<mpm::Index> mpm::Mesh<Tdim>::cell_neighbourhood_nodes_id(
+    const std::shared_ptr<mpm::Cell<Tdim>>& cell, unsigned cell_neighbourhood) {
+  std::set<mpm::Index> neighbour_nodes_id = cell->nodes_id();
+  if (cell_neighbourhood == 0) return neighbour_nodes_id;
+  for (const auto& neighbour_cell_id : cell->neighbours()) {
+    const auto& node_id = cell_neighbourhood_nodes_id(
+        map_cells_[neighbour_cell_id], cell_neighbourhood - 1);
+    neighbour_nodes_id.insert(node_id.begin(), node_id.end());
+  }
+  return neighbour_nodes_id;
+}
+
+//! Assign nonlocal node type
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
+                                                 unsigned node_type) {
+  bool status = true;
+  try {
+    if (!nodes_.size())
+      throw std::runtime_error(
+          "No nodes have been assigned in mesh, cannot assign nonlocal node "
+          "type");
+
+    // Set id of -1, is all nodes
+    Vector<NodeBase<Tdim>> nodes =
+        (set_id == -1) ? this->nodes_ : node_sets_.at(set_id);
+
+#pragma omp parallel for schedule(runtime)
+    for (auto nitr = nodes.cbegin(); nitr != nodes.cend(); ++nitr) {
+      (*nitr)->assign_nonlocal_node_type(dir, node_type);
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}

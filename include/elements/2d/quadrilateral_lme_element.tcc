@@ -2,8 +2,6 @@
 template <unsigned Tdim>
 void mpm::QuadrilateralLMEElement<Tdim>::initialise_lme_connectivity_properties(
     double beta, double radius, const Eigen::MatrixXd& nodal_coordinates) {
-  assert(nodal_coordinates.rows() == nodal_properties.size());
-
   this->nconnectivity_ = nodal_coordinates.rows();
   this->nodal_coordinates_ = nodal_coordinates;
   this->beta_ = beta;

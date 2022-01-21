@@ -2157,7 +2157,7 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(
     const std::string& cell_type, unsigned cell_neighbourhood,
     const tsl::robin_map<std::string, double>& nonlocal_properties) {
   bool status = true;
-  if (cell_type.back() != 'B' || cell_type.back() != 'L') {
+  if (!(cell_type.back() == 'B' || cell_type.back() == 'L')) {
     throw std::runtime_error(
         "Unable to upgrade cell to a nonlocal for cell type: " + cell_type);
     status = false;

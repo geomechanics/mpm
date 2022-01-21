@@ -330,8 +330,12 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
       REQUIRE(node2->nonlocal_node_type() == n2);
       REQUIRE(node3->nonlocal_node_type() == n3);
 
-      REQUIRE_THROWS(mesh->upgrade_cells_to_nonlocal("ED2Q4", 0));
-      REQUIRE(mesh->upgrade_cells_to_nonlocal("ED2Q4P2B", 1) == true);
+      // Empty map
+      tsl::robin_map<std::string, double> nonlocal_properties;
+      REQUIRE_THROWS(
+          mesh->upgrade_cells_to_nonlocal("ED2Q4", 0, nonlocal_properties));
+      REQUIRE(mesh->upgrade_cells_to_nonlocal("ED2Q4P2B", 1,
+                                              nonlocal_properties) == true);
     }
   }
 

@@ -693,8 +693,10 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     REQUIRE(cell->initialise() == true);
 
     // nonlocal functions - test fail
+    // Empty map
+    tsl::robin_map<std::string, double> nonlocal_properties;
     REQUIRE(cell->upgrade_status(4) == false);
-    REQUIRE(cell->initialiase_nonlocal() == false);
+    REQUIRE(cell->initialiase_nonlocal(nonlocal_properties) == false);
     REQUIRE_THROWS(cell->assign_nonlocal_elementptr(bspline_element));
 
     // nonlocal functions - test successful
@@ -723,7 +725,7 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     REQUIRE(nonlocal_cell->add_node(15, node15) == true);
     REQUIRE(nonlocal_cell->nnodes() == 16);
 
-    REQUIRE(nonlocal_cell->initialiase_nonlocal() == true);
+    REQUIRE(nonlocal_cell->initialiase_nonlocal(nonlocal_properties) == true);
   }
 }
 

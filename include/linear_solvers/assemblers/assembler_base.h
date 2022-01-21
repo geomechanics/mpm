@@ -41,6 +41,12 @@ class AssemblerBase {
       case 3:
         sparse_row_size_ = (Tdim == 2) ? 49 : 343;
         break;
+      case 4:
+        sparse_row_size_ = (Tdim == 2) ? 81 : 729;
+        break;
+      case 5:
+        sparse_row_size_ = (Tdim == 2) ? 121 : 1331;
+        break;
       default:
         throw std::runtime_error(
             "The node neighbourhood passed in AssemblerBase constructor is "

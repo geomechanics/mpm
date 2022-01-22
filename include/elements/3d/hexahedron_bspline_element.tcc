@@ -39,7 +39,8 @@ inline Eigen::VectorXd
     auto local_shapefn =
         this->shapefn_local(xi, particle_size, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
-      pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
+      pcoord.noalias() +=
+          local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Compute shape function following a multiplicative rule
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
@@ -92,7 +93,8 @@ inline Eigen::MatrixXd
     auto local_shapefn =
         this->shapefn_local(xi, particle_size, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
-      pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
+      pcoord.noalias() +=
+          local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Compute the shape function gradient following a multiplicative rule
     for (unsigned n = 0; n < this->nconnectivity_; ++n)

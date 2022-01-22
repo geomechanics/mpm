@@ -51,12 +51,11 @@ inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell() {
     assert(this->material() != nullptr);
 
     // Reduce constitutive relations matrix depending on the dimension
-    Eigen::MatrixXd reduced_dmatrix;
-    reduced_dmatrix = this->reduce_dmatrix(constitutive_matrix_);
+    const Eigen::MatrixXd reduced_dmatrix =
+        this->reduce_dmatrix(constitutive_matrix_);
 
     // Calculate B matrix
-    Eigen::MatrixXd bmatrix;
-    bmatrix = this->compute_bmatrix();
+    const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
 
     // Compute local material stiffness matrix
     cell_->compute_local_material_stiffness_matrix(bmatrix, reduced_dmatrix,
@@ -282,22 +281,23 @@ void mpm::Particle<Tdim>::compute_updated_position_newmark(double dt) noexcept {
   Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
       Eigen::Matrix<double, Tdim, 1>::Zero();
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodal_displacement +=
+    nodal_displacement.noalias() +=
         shapefn_[i] * nodes_[i]->displacement(mpm::ParticlePhase::Solid);
-    nodal_acceleration +=
+    nodal_acceleration.noalias() +=
         shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
   }
 
   // Update particle velocity from interpolated nodal acceleration
-  this->velocity_ += 0.5 * (this->acceleration_ + nodal_acceleration) * dt;
+  this->velocity_.noalias() +=
+      0.5 * (this->acceleration_ + nodal_acceleration) * dt;
 
   // Update acceleration
   this->acceleration_ = nodal_acceleration;
 
   // New position  current position + displacement increment
-  this->coordinates_ += nodal_displacement;
+  this->coordinates_.noalias() += nodal_displacement;
   // Update displacement
-  this->displacement_ += nodal_displacement;
+  this->displacement_.noalias() += nodal_displacement;
 }
 
 // Update stress and strain after convergence of Newton-Raphson iteration
@@ -313,7 +313,7 @@ void mpm::Particle<Tdim>::update_stress_strain() noexcept {
   this->previous_stress_ = this->stress_;
 
   // Update total strain
-  this->strain_ += this->dstrain_;
+  this->strain_.noalias() += this->dstrain_;
 
   // Volumetric strain increment
   this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();

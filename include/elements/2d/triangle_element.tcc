@@ -265,7 +265,7 @@ inline Eigen::MatrixXd mpm::TriangleElement<Tdim, Tnfunctions>::ni_nj_matrix(
     const Eigen::Matrix<double, Tnfunctions, 1> shape_fn =
         this->shapefn(xi, Eigen::Matrix<double, Tdim, 1>::Zero(),
                       Eigen::Matrix<double, Tdim, 1>::Zero());
-    ni_nj_matrix += (shape_fn * shape_fn.transpose());
+    ni_nj_matrix.noalias() += (shape_fn * shape_fn.transpose());
   }
   return ni_nj_matrix;
 }
@@ -302,7 +302,7 @@ inline Eigen::MatrixXd mpm::TriangleElement<Tdim, Tnfunctions>::laplace_matrix(
     // dN/dx = [J]^-1 * dN/dxi
     const Eigen::MatrixXd grad_shapefn = grad_sf * jacobian.inverse();
 
-    laplace_matrix += (grad_shapefn * grad_shapefn.transpose());
+    laplace_matrix.noalias() += (grad_shapefn * grad_shapefn.transpose());
   }
   return laplace_matrix;
 }

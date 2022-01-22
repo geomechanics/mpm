@@ -13,7 +13,7 @@ void mpm::QuadrilateralLMEElement<Tdim>::initialise_lme_connectivity_properties(
 template <unsigned Tdim>
 inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     const Eigen::Matrix<double, Tdim, 1>& xi,
-    Eigen::Matrix<double, Tdim, 1>& particle_size,
+    Eigen::Matrix<double, Tdim, 1>& lambda,
     const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
 
   //! To store shape functions
@@ -21,15 +21,14 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       Eigen::VectorXd::Constant(this->nconnectivity_, 1.0);
 
   if (this->nconnectivity_ == 4)
-    return mpm::QuadrilateralElement<Tdim, 4>::shapefn(xi, particle_size,
+    return mpm::QuadrilateralElement<Tdim, 4>::shapefn(xi, lambda,
                                                        deformation_gradient);
 
   try {
     //! Convert local coordinates to real coordinates
     Eigen::Matrix<double, Tdim, 1> pcoord;
     pcoord.setZero();
-    auto local_shapefn =
-        this->shapefn_local(xi, particle_size, deformation_gradient);
+    auto local_shapefn = this->shapefn_local(xi, lambda, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord.noalias() +=
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
@@ -37,9 +36,6 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     //! Create relative coordinate vector
     const auto rel_coordinates =
         (-nodal_coordinates_.transpose()).colwise() + pcoord;
-
-    // Initialise lambda as zero vector
-    VectorDim lambda = VectorDim::Zero();
 
     //! Compute functional f in each connectivity
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
@@ -132,7 +128,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
 template <unsigned Tdim>
 inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     const Eigen::Matrix<double, Tdim, 1>& xi,
-    Eigen::Matrix<double, Tdim, 1>& particle_size,
+    Eigen::Matrix<double, Tdim, 1>& lambda,
     const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
 
   //! To store grad shape functions
@@ -140,14 +136,13 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
 
   if (this->nconnectivity_ == 4)
     return mpm::QuadrilateralElement<Tdim, 4>::grad_shapefn(
-        xi, particle_size, deformation_gradient);
+        xi, lambda, deformation_gradient);
 
   try {
     //! Convert local coordinates to real coordinates
     Eigen::Matrix<double, Tdim, 1> pcoord;
     pcoord.setZero();
-    auto local_shapefn =
-        this->shapefn_local(xi, particle_size, deformation_gradient);
+    auto local_shapefn = this->shapefn_local(xi, lambda, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord.noalias() +=
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
@@ -155,9 +150,6 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     //! Create relative coordinate vector
     const auto rel_coordinates =
         (-nodal_coordinates_.transpose()).colwise() + pcoord;
-
-    // Initialise lambda as zero vector
-    VectorDim lambda = VectorDim::Zero();
 
     //! Compute functional f in each connectivity
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
@@ -260,9 +252,9 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
 template <unsigned Tdim>
 inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::dn_dx(
     const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-    VectorDim& particle_size, const VectorDim& deformation_gradient) const {
+    VectorDim& lambda, const VectorDim& deformation_gradient) const {
   // Get gradient shape functions
-  return this->grad_shapefn(xi, particle_size, deformation_gradient);
+  return this->grad_shapefn(xi, lambda, deformation_gradient);
 }
 
 //! Return the B-matrix of a Quadrilateral Element at a given local
@@ -270,11 +262,11 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::dn_dx(
 template <unsigned Tdim>
 inline std::vector<Eigen::MatrixXd> mpm::QuadrilateralLMEElement<Tdim>::bmatrix(
     const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-    VectorDim& particle_size, const VectorDim& deformation_gradient) const {
+    VectorDim& lambda, const VectorDim& deformation_gradient) const {
 
   // Get gradient shape functions
   Eigen::MatrixXd grad_sf =
-      this->grad_shapefn(xi, particle_size, deformation_gradient);
+      this->grad_shapefn(xi, lambda, deformation_gradient);
 
   // B-Matrix
   std::vector<Eigen::MatrixXd> bmatrix;
@@ -316,9 +308,9 @@ inline std::vector<Eigen::MatrixXd> mpm::QuadrilateralLMEElement<Tdim>::bmatrix(
 //! local coordinate, with particle size and deformation gradient
 template <unsigned Tdim>
 inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn_local(
-    const VectorDim& xi, VectorDim& particle_size,
+    const VectorDim& xi, VectorDim& lambda,
     const VectorDim& deformation_gradient) const {
-  return mpm::QuadrilateralElement<Tdim, 4>::shapefn(xi, particle_size,
+  return mpm::QuadrilateralElement<Tdim, 4>::shapefn(xi, lambda,
                                                      deformation_gradient);
 }
 
@@ -327,11 +319,11 @@ template <unsigned Tdim>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::QuadrilateralLMEElement<Tdim>::jacobian(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
+        VectorDim& lambda, const VectorDim& deformation_gradient) const {
 
   // Get gradient shape functions
   const Eigen::MatrixXd grad_shapefn =
-      this->grad_shapefn(xi, particle_size, deformation_gradient);
+      this->grad_shapefn(xi, lambda, deformation_gradient);
 
   try {
     // Check if matrices dimensions are correct
@@ -354,10 +346,10 @@ template <unsigned Tdim>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::QuadrilateralLMEElement<Tdim>::jacobian_local(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
+        VectorDim& lambda, const VectorDim& deformation_gradient) const {
   // Jacobian dx_i/dxi_j
   return mpm::QuadrilateralElement<2, 4>::jacobian(
-      xi, nodal_coordinates, particle_size, deformation_gradient);
+      xi, nodal_coordinates, lambda, deformation_gradient);
 }
 
 //! Compute natural coordinates of a point (analytical)

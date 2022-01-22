@@ -21,7 +21,7 @@ template <unsigned Tdim, unsigned Tpolynomial>
 inline Eigen::VectorXd
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::shapefn(
         const Eigen::Matrix<double, Tdim, 1>& xi,
-        const Eigen::Matrix<double, Tdim, 1>& particle_size,
+        Eigen::Matrix<double, Tdim, 1>& particle_size,
         const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
 
   //! To store shape functions
@@ -76,7 +76,7 @@ template <unsigned Tdim, unsigned Tpolynomial>
 inline Eigen::MatrixXd
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::grad_shapefn(
         const Eigen::Matrix<double, Tdim, 1>& xi,
-        const Eigen::Matrix<double, Tdim, 1>& particle_size,
+        Eigen::Matrix<double, Tdim, 1>& particle_size,
         const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
 
   //! To store grad shape functions
@@ -146,8 +146,7 @@ template <unsigned Tdim, unsigned Tpolynomial>
 inline Eigen::MatrixXd
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::dn_dx(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
   // Get gradient shape functions
   return this->grad_shapefn(xi, particle_size, deformation_gradient);
 }
@@ -158,8 +157,7 @@ template <unsigned Tdim, unsigned Tpolynomial>
 inline std::vector<Eigen::MatrixXd>
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::bmatrix(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
 
   // Get gradient shape functions
   Eigen::MatrixXd grad_sf =
@@ -206,7 +204,7 @@ inline std::vector<Eigen::MatrixXd>
 template <unsigned Tdim, unsigned Tpolynomial>
 inline Eigen::VectorXd
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::shapefn_local(
-        const VectorDim& xi, const VectorDim& particle_size,
+        const VectorDim& xi, VectorDim& particle_size,
         const VectorDim& deformation_gradient) const {
   return mpm::QuadrilateralElement<Tdim, 4>::shapefn(xi, particle_size,
                                                      deformation_gradient);
@@ -217,8 +215,7 @@ template <unsigned Tdim, unsigned Tpolynomial>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::jacobian(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
 
   // Get gradient shape functions
   const Eigen::MatrixXd grad_shapefn =
@@ -245,8 +242,7 @@ template <unsigned Tdim, unsigned Tpolynomial>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::jacobian_local(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
   // Jacobian dx_i/dxi_j
   return mpm::QuadrilateralElement<2, 4>::jacobian(
       xi, nodal_coordinates, particle_size, deformation_gradient);

@@ -43,7 +43,7 @@ class Element {
   //! \param[in] particle_size Particle size
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::VectorXd shapefn(
-      const VectorDim& xi, const VectorDim& particle_size,
+      const VectorDim& xi, VectorDim& particle_size,
       const VectorDim& deformation_gradient) const = 0;
 
   //! Evaluate local shape functions at given coordinates
@@ -51,7 +51,7 @@ class Element {
   //! \param[in] particle_size Particle size
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::VectorXd shapefn_local(
-      const VectorDim& xi, const VectorDim& particle_size,
+      const VectorDim& xi, VectorDim& particle_size,
       const VectorDim& deformation_gradient) const = 0;
 
   //! Evaluate gradient of shape functions
@@ -59,7 +59,7 @@ class Element {
   //! \param[in] particle_size Particle size
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::MatrixXd grad_shapefn(
-      const VectorDim& xi, const VectorDim& particle_size,
+      const VectorDim& xi, VectorDim& particle_size,
       const VectorDim& deformation_gradient) const = 0;
 
   //! Compute Jacobian
@@ -70,7 +70,7 @@ class Element {
   //! \retval jacobian Jacobian matrix
   virtual Eigen::Matrix<double, Tdim, Tdim> jacobian(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
+      VectorDim& particle_size,
       const VectorDim& deformation_gradient) const = 0;
 
   //! Compute Jacobian local
@@ -81,7 +81,7 @@ class Element {
   //! \retval jacobian Jacobian matrix
   virtual Eigen::Matrix<double, Tdim, Tdim> jacobian_local(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
+      VectorDim& particle_size,
       const VectorDim& deformation_gradient) const = 0;
 
   //! Return the dN/dx at a given local coord
@@ -91,7 +91,7 @@ class Element {
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::MatrixXd dn_dx(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
+      VectorDim& particle_size,
       const VectorDim& deformation_gradient) const = 0;
 
   //! Evaluate the B matrix at given local coordinates for a real cell
@@ -102,7 +102,7 @@ class Element {
   //! \retval bmatrix B matrix
   virtual std::vector<Eigen::MatrixXd> bmatrix(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
+      VectorDim& particle_size,
       const VectorDim& deformation_gradient) const = 0;
 
   //! Evaluate the Ni Nj matrix

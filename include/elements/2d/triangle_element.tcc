@@ -12,7 +12,7 @@
 template <>
 inline Eigen::VectorXd mpm::TriangleElement<2, 3>::shapefn(
     const Eigen::Matrix<double, 2, 1>& xi,
-    const Eigen::Matrix<double, 2, 1>& particle_size,
+    Eigen::Matrix<double, 2, 1>& particle_size,
     const Eigen::Matrix<double, 2, 1>& deformation_gradient) const {
   Eigen::Matrix<double, 3, 1> shapefn;
   shapefn(0) = 1 - (xi(0) + xi(1));
@@ -26,7 +26,7 @@ inline Eigen::VectorXd mpm::TriangleElement<2, 3>::shapefn(
 template <>
 inline Eigen::MatrixXd mpm::TriangleElement<2, 3>::grad_shapefn(
     const Eigen::Matrix<double, 2, 1>& xi,
-    const Eigen::Matrix<double, 2, 1>& particle_size,
+    Eigen::Matrix<double, 2, 1>& particle_size,
     const Eigen::Matrix<double, 2, 1>& deformation_gradient) const {
   Eigen::Matrix<double, 3, 2> grad_shapefn;
 
@@ -69,7 +69,7 @@ inline Eigen::MatrixXd mpm::TriangleElement<2, 3>::unit_cell_coordinates()
 template <>
 inline Eigen::VectorXd mpm::TriangleElement<2, 6>::shapefn(
     const Eigen::Matrix<double, 2, 1>& xi,
-    const Eigen::Matrix<double, 2, 1>& particle_size,
+    Eigen::Matrix<double, 2, 1>& particle_size,
     const Eigen::Matrix<double, 2, 1>& deformation_gradient) const {
   Eigen::Matrix<double, 6, 1> shapefn;
   shapefn(0) = (1. - xi(0) - xi(1)) * (1. - 2. * xi(0) - 2. * xi(1));
@@ -86,7 +86,7 @@ inline Eigen::VectorXd mpm::TriangleElement<2, 6>::shapefn(
 template <>
 inline Eigen::MatrixXd mpm::TriangleElement<2, 6>::grad_shapefn(
     const Eigen::Matrix<double, 2, 1>& xi,
-    const Eigen::Matrix<double, 2, 1>& particle_size,
+    Eigen::Matrix<double, 2, 1>& particle_size,
     const Eigen::Matrix<double, 2, 1>& deformation_gradient) const {
   Eigen::Matrix<double, 6, 2> grad_shapefn;
   grad_shapefn(0, 0) = 4. * xi(0) + 4. * xi(1) - 3.;
@@ -141,7 +141,7 @@ inline mpm::ElementDegree mpm::TriangleElement<2, 6>::degree() const {
 //! coordinate, with particle size and deformation gradient
 template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::VectorXd mpm::TriangleElement<Tdim, Tnfunctions>::shapefn_local(
-    const VectorDim& xi, const VectorDim& particle_size,
+    const VectorDim& xi, VectorDim& particle_size,
     const VectorDim& deformation_gradient) const {
   return this->shapefn(xi, particle_size, deformation_gradient);
 }
@@ -151,8 +151,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::TriangleElement<Tdim, Tnfunctions>::jacobian(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
 
   // Get gradient shape functions
   const Eigen::MatrixXd grad_shapefn =
@@ -180,8 +179,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::TriangleElement<Tdim, Tnfunctions>::jacobian_local(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
   // Jacobian dx_i/dxi_j
   return this->jacobian(xi, nodal_coordinates, particle_size,
                         deformation_gradient);
@@ -191,8 +189,7 @@ inline Eigen::Matrix<double, Tdim, Tdim>
 template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::MatrixXd mpm::TriangleElement<Tdim, Tnfunctions>::dn_dx(
     const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-    const VectorDim& particle_size,
-    const VectorDim& deformation_gradient) const {
+    VectorDim& particle_size, const VectorDim& deformation_gradient) const {
   // Get gradient shape functions
   Eigen::MatrixXd grad_sf =
       this->grad_shapefn(xi, particle_size, deformation_gradient);
@@ -212,8 +209,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline std::vector<Eigen::MatrixXd>
     mpm::TriangleElement<Tdim, Tnfunctions>::bmatrix(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const VectorDim& deformation_gradient) const {
   // Get gradient shape functions
   Eigen::MatrixXd grad_sf =
       this->grad_shapefn(xi, particle_size, deformation_gradient);
@@ -258,13 +254,16 @@ inline std::vector<Eigen::MatrixXd>
 template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::MatrixXd mpm::TriangleElement<Tdim, Tnfunctions>::ni_nj_matrix(
     const std::vector<VectorDim>& xi_s) const {
+
+  // Zeros
+  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
+
   // Ni Nj matrix
   Eigen::Matrix<double, Tnfunctions, Tnfunctions> ni_nj_matrix;
   ni_nj_matrix.setZero();
   for (const auto& xi : xi_s) {
     const Eigen::Matrix<double, Tnfunctions, 1> shape_fn =
-        this->shapefn(xi, Eigen::Matrix<double, Tdim, 1>::Zero(),
-                      Eigen::Matrix<double, Tdim, 1>::Zero());
+        this->shapefn(xi, zeros, zeros);
     ni_nj_matrix.noalias() += (shape_fn * shape_fn.transpose());
   }
   return ni_nj_matrix;
@@ -285,14 +284,15 @@ inline Eigen::MatrixXd mpm::TriangleElement<Tdim, Tnfunctions>::laplace_matrix(
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }
 
+  // Zeros
+  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
+
   // Laplace matrix
   Eigen::Matrix<double, Tnfunctions, Tnfunctions> laplace_matrix;
   laplace_matrix.setZero();
   for (const auto& xi : xi_s) {
     // Get gradient shape functions
-    const Eigen::MatrixXd grad_sf =
-        this->grad_shapefn(xi, Eigen::Matrix<double, Tdim, 1>::Zero(),
-                           Eigen::Matrix<double, Tdim, 1>::Zero());
+    const Eigen::MatrixXd grad_sf = this->grad_shapefn(xi, zeros, zeros);
 
     // Jacobian dx_i/dxi_j
     const Eigen::Matrix<double, Tdim, Tdim> jacobian =

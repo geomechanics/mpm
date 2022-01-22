@@ -100,8 +100,7 @@ std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points() {
   const Eigen::MatrixXd nodal_coords = nodal_coordinates_.transpose();
 
   // Zeros
-  const Eigen::Matrix<double, Tdim, 1> zeros =
-      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
 
   // Get local coordinates of gauss points and transform to global
   for (unsigned i = 0; i < quadratures.cols(); ++i) {
@@ -553,8 +552,7 @@ inline Eigen::Matrix<double, Tdim, 1>
   xi.fill(std::numeric_limits<double>::max());
 
   // Zeros
-  const Eigen::Matrix<double, Tdim, 1> zero =
-      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
 
   // Matrix of nodal coordinates
   const Eigen::MatrixXd nodal_coords = nodal_coordinates_.transpose();

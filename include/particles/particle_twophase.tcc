@@ -658,18 +658,19 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
     acceleration.setZero();
 
     for (unsigned i = 0; i < nodes_.size(); ++i)
-      acceleration +=
+      acceleration.noalias() +=
           shapefn_(i) * nodes_[i]->acceleration(mpm::ParticlePhase::Liquid);
 
     // Update particle velocity from interpolated nodal acceleration
-    this->liquid_velocity_ += acceleration * dt;
+    this->liquid_velocity_.noalias() += acceleration * dt;
   } else {
     // Get interpolated nodal velocity
     Eigen::Matrix<double, Tdim, 1> velocity;
     velocity.setZero();
 
     for (unsigned i = 0; i < nodes_.size(); ++i)
-      velocity += shapefn_(i) * nodes_[i]->velocity(mpm::ParticlePhase::Liquid);
+      velocity.noalias() +=
+          shapefn_(i) * nodes_[i]->velocity(mpm::ParticlePhase::Liquid);
 
     // Update particle velocity to interpolated nodal velocity
     this->liquid_velocity_ = velocity;

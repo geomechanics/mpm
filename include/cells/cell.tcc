@@ -243,7 +243,7 @@ void mpm::Cell<Tdim>::compute_centroid() {
   // Calculate the centroid of the cell
   centroid_.setZero();
   for (unsigned i = 0; i < indices.size(); ++i)
-    centroid_ += nodes_[indices(i)]->coordinates();
+    centroid_.noalias() += nodes_[indices(i)]->coordinates();
 
   centroid_ /= indices.size();
 }
@@ -506,7 +506,7 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       Eigen::Matrix<double, 3, 1> centre;
       centre.setZero();
       for (unsigned i = 0; i < indices.size(); ++i)
-        centre += nodal_coordinates_.row(i);
+        centre.noalias() += nodal_coordinates_.row(i);
       centre /= indices.size();
 
       xi(0) = 2. * (point(0) - centre(0)) / xlength;

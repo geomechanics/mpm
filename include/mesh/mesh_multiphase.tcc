@@ -140,7 +140,7 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
                                                    "gaussian");
 
       // Inverse of renormalization matrix B
-      renormalization_matrix_inv +=
+      renormalization_matrix_inv.noalias() +=
           (particle->mass() / particle->mass_density()) * kernel_gradient *
           rel_coord.transpose();
     }
@@ -178,7 +178,7 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
                                                      -rel_coord, "gaussian");
 
         // Sum of kernel by volume
-        temporary_vec +=
+        temporary_vec.noalias() +=
             (particle->mass() / particle->mass_density()) * kernel_gradient;
       }
       normal = -renormalization_matrix_inv.inverse() * temporary_vec;

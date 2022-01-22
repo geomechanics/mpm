@@ -417,12 +417,12 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // Correction stress based on stress
   if (fabs(yield) < Tolerance) {
     // Compute updated stress
-    updated_stress -= (lambda * de * dp_dsigma);
+    updated_stress += -(lambda * de * dp_dsigma);
     // Compute incremental of plastic deviatoric strain
     dpdstrain = lambda * dp_dq;
   } else {
     // Compute updated stress
-    updated_stress -= (lambda_trial * de * dp_dsigma_trial);
+    updated_stress += -(lambda_trial * de * dp_dsigma_trial);
     // Compute incremental of plastic deviatoric strain
     dpdstrain = lambda_trial * dp_dq_trial;
   }
@@ -456,7 +456,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         ((df_dsigma_trial.transpose() * de).dot(dp_dsigma_trial.transpose()) +
          softening_trial);
     // Correct stress back to the yield surface
-    updated_stress -= (lambda_trial * de * dp_dsigma_trial);
+    updated_stress += -(lambda_trial * de * dp_dsigma_trial);
     // Update incremental of plastic deviatoric strain
     dpdstrain += lambda_trial * dp_dq_trial;
   }

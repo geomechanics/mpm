@@ -11,6 +11,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
   const unsigned Dim = 2;
   const double Tolerance = 1.E-7;
 
+  Eigen::Vector2d zero = Eigen::Vector2d::Zero();
+
   //! Check for center element nodes
   SECTION("16 Node Quadrilateral GIMP Element") {
     const unsigned nfunctions = 16;
@@ -413,8 +415,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
     SECTION("Four noded local sf quadrilateral element for coordinates(0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = quad->shapefn_local(coords, Eigen::Vector2d::Zero(),
-                                         Eigen::Vector2d::Zero());
+      auto shapefn = quad->shapefn_local(coords, zero, zero);
 
       // Check shape function
       REQUIRE(shapefn.size() == 4);
@@ -496,8 +497,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       // clang-format on
 
       // Get Jacobian
-      auto jac = quad->jacobian_local(xi, coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto jac = quad->jacobian_local(xi, coords, zero, zero);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -549,8 +549,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       gradsf *= 2;
 
       // Check dN/dx
-      auto dn_dx = quad->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                               Eigen::Vector2d::Zero());
+      auto dn_dx = quad->dn_dx(xi, coords, zero, zero);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {

@@ -10,6 +10,8 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
   const unsigned Dim = 3;
   const double Tolerance = 1.E-7;
 
+  Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+
   //! Check for center element nodes
   SECTION("64 Node hexrilateral GIMP Element") {
     const unsigned nfunctions = 64;
@@ -592,8 +594,7 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
     SECTION("Eight noded local sf hexahedron element for coordinates(0,0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn_local(coords, Eigen::Vector3d::Zero(),
-                                        Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn_local(coords, zero, zero);
 
       // Check shape function
       REQUIRE(shapefn.size() == 8);
@@ -672,17 +673,14 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
           -3., 3, 1., -3., 3, 3., -3., 3;
 
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = hex->bmatrix(xi, coords, zero, zero);
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(xi, zero, zero);
       //  gradsf *= 2.;
 
       // Check dN/dx
-      auto dn_dx = hex->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = hex->dn_dx(xi, coords, zero, zero);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {

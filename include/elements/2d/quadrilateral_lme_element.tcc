@@ -31,7 +31,8 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     auto local_shapefn =
         this->shapefn_local(xi, particle_size, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
-      pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
+      pcoord.noalias() +=
+          local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Create relative coordinate vector
     const auto rel_coordinates =
@@ -62,7 +63,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
     //! Compute vector r
     VectorDim r = VectorDim::Zero();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      r += p(n) * (rel_coordinates.col(n));
+      r.noalias() += p(n) * (rel_coordinates.col(n));
     }
 
     //! Begin Newton-Raphson iteration
@@ -76,10 +77,10 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
         Eigen::MatrixXd J(Tdim, Tdim);
         J.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          J += p(n) * (rel_coordinates.col(n)) *
-               (rel_coordinates.col(n)).transpose();
+          J.noalias() += p(n) * (rel_coordinates.col(n)) *
+                         (rel_coordinates.col(n)).transpose();
         }
-        J -= r * r.transpose();
+        J.noalias() += -r * r.transpose();
 
         //! Compute Delta lambda
         VectorDim dlambda = J.inverse() * (-r);
@@ -107,7 +108,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
         //! Compute vector r
         r.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          r += p(n) * (rel_coordinates.col(n));
+          r.noalias() += p(n) * (rel_coordinates.col(n));
         }
 
         //! Check convergence
@@ -148,7 +149,8 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     auto local_shapefn =
         this->shapefn_local(xi, particle_size, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
-      pcoord += local_shapefn(i) * nodal_coordinates_.row(i).transpose();
+      pcoord.noalias() +=
+          local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Create relative coordinate vector
     const auto rel_coordinates =
@@ -179,17 +181,17 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     //! Compute vector r
     VectorDim r = VectorDim::Zero();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      r += p(n) * (rel_coordinates.col(n));
+      r.noalias() += p(n) * (rel_coordinates.col(n));
     }
 
     //! Compute matrix J
     Eigen::MatrixXd J(Tdim, Tdim);
     J.setZero();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      J += p(n) * (rel_coordinates.col(n)) *
-           (rel_coordinates.col(n)).transpose();
+      J.noalias() += p(n) * (rel_coordinates.col(n)) *
+                     (rel_coordinates.col(n)).transpose();
     }
-    J -= r * r.transpose();
+    J.noalias() += -r * r.transpose();
 
     //! Begin Newton-Raphson iteration
     const double tolerance = 1.e-12;
@@ -224,16 +226,16 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
         //! Compute vector r
         r.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          r += p(n) * (rel_coordinates.col(n));
+          r.noalias() += p(n) * (rel_coordinates.col(n));
         }
 
         //! Compute matrix J
         J.setZero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          J += p(n) * (rel_coordinates.col(n)) *
-               (rel_coordinates.col(n)).transpose();
+          J.noalias() += p(n) * (rel_coordinates.col(n)) *
+                         (rel_coordinates.col(n)).transpose();
         }
-        J -= r * r.transpose();
+        J.noalias() += -r * r.transpose();
 
         //! Check convergence
         if (r.norm() <= tolerance || it == max_it) convergence = true;

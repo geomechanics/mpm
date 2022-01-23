@@ -1,6 +1,6 @@
 //! Assign nodal connectivity property for bspline elements
-template <unsigned Tdim, unsigned Tnfunctions>
-void mpm::HexahedronBSplineElement<Tdim, Tnfunctions>::
+template <unsigned Tdim, unsigned Tpolynomial>
+void mpm::HexahedronBSplineElement<Tdim, Tpolynomial>::
     initialise_bspline_connectivity_properties(
         const Eigen::MatrixXd& nodal_coordinates,
         const std::vector<std::vector<unsigned>>& nodal_properties) {

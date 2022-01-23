@@ -8,7 +8,7 @@ void mpm::QuadrilateralLMEElement<Tdim>::initialise_lme_connectivity_properties(
   this->support_radius_ = radius;
 }
 
-//! Return shape functions of a Quadrilateral BSpline Element at a given
+//! Return shape functions of a Quadrilateral LME Element at a given
 //! local coordinate
 template <unsigned Tdim>
 inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
@@ -123,7 +123,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
   return shapefn;
 }
 
-//! Return gradient of shape functions of a Quadrilateral BSpline Element at a
+//! Return gradient of shape functions of a Quadrilateral LME Element at a
 //! given local coordinate
 template <unsigned Tdim>
 inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
@@ -304,7 +304,7 @@ inline std::vector<Eigen::MatrixXd> mpm::QuadrilateralLMEElement<Tdim>::bmatrix(
   return bmatrix;
 }
 
-//! Return local shape functions of a BSpline Quadrilateral Element at a given
+//! Return local shape functions of a LME Quadrilateral Element at a given
 //! local coordinate, with particle size and deformation gradient
 template <unsigned Tdim>
 inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn_local(

@@ -219,6 +219,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/geometry_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/hexahedron_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/hexahedron_bspline_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/hexahedron_lme_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/hexahedron_gimp_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/hexahedron_quadrature_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_element_test.cc

@@ -3,6 +3,7 @@
 #include "hexahedron_bspline_element.h"
 #include "hexahedron_element.h"
 #include "hexahedron_gimp_element.h"
+#include "hexahedron_lme_element.h"
 #include "quadrilateral_bspline_element.h"
 #include "quadrilateral_element.h"
 #include "quadrilateral_gimp_element.h"
@@ -35,7 +36,7 @@ static Register<mpm::Element<2>, mpm::QuadrilateralGIMPElement<2, 16>>
 static Register<mpm::Element<2>, mpm::QuadrilateralBSplineElement<2, 2>>
     quad_bspline4_p2("ED2Q4P2B");
 
-// Quadrilateral LME element of second order polynomial
+// Quadrilateral LME element
 static Register<mpm::Element<2>, mpm::QuadrilateralLMEElement<2>> quad_lme(
     "ED2Q4L");
 
@@ -52,3 +53,7 @@ static Register<mpm::Element<3>, mpm::HexahedronGIMPElement<3, 64>> hex_gimp64(
 // Hexahedron BSpline element of second order polynomial
 static Register<mpm::Element<3>, mpm::HexahedronBSplineElement<3, 2>>
     hex_bspline8_p2("ED3H8P2B");
+
+// Hexahedron LME element
+static Register<mpm::Element<3>, mpm::HexahedronLMEElement<3>> hex_lme(
+    "ED3H8L");

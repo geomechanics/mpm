@@ -9,12 +9,17 @@
 #include "quadrilateral_gimp_element.h"
 #include "quadrilateral_lme_element.h"
 #include "triangle_element.h"
+#include "triangle_lme_element.h"
 
 // Triangle 3-noded element
 static Register<mpm::Element<2>, mpm::TriangleElement<2, 3>> tri3("ED2T3");
 
 // Triangle 6-noded element
 static Register<mpm::Element<2>, mpm::TriangleElement<2, 6>> tri6("ED2T6");
+
+// Triangle LME element
+static Register<mpm::Element<2>, mpm::TriangleLMEElement<2>> quad_lme(
+    "ED2T3L");
 
 // Quadrilateral 4-noded element
 static Register<mpm::Element<2>, mpm::QuadrilateralElement<2, 4>> quad4(

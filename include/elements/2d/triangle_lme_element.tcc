@@ -22,7 +22,7 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
 
   if (this->nconnectivity_ == 4)
     return mpm::TriangleElement<Tdim, 3>::shapefn(xi, lambda,
-                                                       deformation_gradient);
+                                                  deformation_gradient);
 
   try {
     //! Convert local coordinates to real coordinates
@@ -135,8 +135,8 @@ inline Eigen::MatrixXd mpm::TriangleLMEElement<Tdim>::grad_shapefn(
   Eigen::MatrixXd grad_shapefn(this->nconnectivity_, Tdim);
 
   if (this->nconnectivity_ == 3)
-    return mpm::TriangleElement<Tdim, 3>::grad_shapefn(
-        xi, lambda, deformation_gradient);
+    return mpm::TriangleElement<Tdim, 3>::grad_shapefn(xi, lambda,
+                                                       deformation_gradient);
 
   try {
     //! Convert local coordinates to real coordinates
@@ -311,7 +311,7 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn_local(
     const VectorDim& xi, VectorDim& lambda,
     const VectorDim& deformation_gradient) const {
   return mpm::TriangleElement<Tdim, 3>::shapefn(xi, lambda,
-                                                     deformation_gradient);
+                                                deformation_gradient);
 }
 
 //! Compute Jacobian with particle size and deformation gradient
@@ -348,8 +348,8 @@ inline Eigen::Matrix<double, Tdim, Tdim>
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
         VectorDim& lambda, const VectorDim& deformation_gradient) const {
   // Jacobian dx_i/dxi_j
-  return mpm::TriangleElement<2, 3>::jacobian(
-      xi, nodal_coordinates, lambda, deformation_gradient);
+  return mpm::TriangleElement<2, 3>::jacobian(xi, nodal_coordinates, lambda,
+                                              deformation_gradient);
 }
 
 //! Compute natural coordinates of a point (analytical)

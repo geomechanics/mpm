@@ -1,5 +1,5 @@
-#ifndef MPM_LME_ELEMENT_H
-#define MPM_LME_ELEMENT_H
+#ifndef MPM_LME_TRI_ELEMENT_H
+#define MPM_LME_TRI_ELEMENT_H
 
 #include "triangle_element.h"
 
@@ -46,14 +46,14 @@ namespace mpm {
 //!
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class TriangularLMEElement : public TriangleElement<2, 3> {
+class TriangleLMEElement : public TriangleElement<2, 3> {
 
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
   //! constructor with number of shape functions
-  TriangularLMEElement() : TriangleElement<2, 3>() {
+  TriangleLMEElement() : TriangleElement<2, 3>() {
     static_assert(Tdim == 2, "Invalid dimension for a LME element");
 
     //! Logger
@@ -175,4 +175,4 @@ class TriangularLMEElement : public TriangleElement<2, 3> {
 }  // namespace mpm
 #include "triangle_lme_element.tcc"
 
-#endif  // MPM_LME_ELEMENT_H
+#endif  // MPM_LME_TRI_ELEMENT_H

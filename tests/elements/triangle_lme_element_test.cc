@@ -24,15 +24,15 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
     // Coordinates is (0,0) before upgraded
     SECTION("2D LME for coordinates in the barycentre before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
-      coords << 1. / 6., 1. / 6.;
+      coords << 0.16666666666, 0.16666666666;
       auto shapefn = tri->shapefn(coords, zero, zero);
 
       // Check shape function
       REQUIRE(shapefn.size() == 3);
 
-      REQUIRE(shapefn(0) == Approx(4. / 6.).epsilon(Tolerance));
-      REQUIRE(shapefn(1) == Approx(1. / 6.).epsilon(Tolerance));
-      REQUIRE(shapefn(2) == Approx(1. / 6.).epsilon(Tolerance));
+      REQUIRE(shapefn(0) == Approx(0.66666666666).epsilon(Tolerance));
+      REQUIRE(shapefn(1) == Approx(0.16666666666).epsilon(Tolerance));
+      REQUIRE(shapefn(2) == Approx(0.16666666666).epsilon(Tolerance));
 
       // Check gradient of shape functions
       auto gradsf = tri->grad_shapefn(coords, zero, zero);
@@ -50,13 +50,13 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
     // Initialising upgrade properties
     SECTION("2D triangle LME element regular element - nnodes = 16") {
       Eigen::Matrix<double, 16, Dim> nodal_coords;
-      nodal_coords << -1., -1., 1., -1., 1., 1., -1., 1., -3., -3., -1., -3.,
-          1., -3., 3., -3., -3., -1., 3., -1., -3., 1., 3., 1., -3., 3., -1.,
-          3., 1., 3., 3., 3.;
+      nodal_coords << 0., 0., 1., 0., 0., 1., 1., 1., 2., 0., 2., 1., 2., 2.,
+          1., 2., 0., 2., -1., 2., -1., 1., -1., 0., -1., -1., 0., -1., 1., -1.,
+          2., -1.;
 
       SECTION("2D triangle LME regular element no support") {
-        double gamma = 20.0;
-        double h = 2.0;
+        double gamma = 3;
+        double h = 1.0;
 
         // Calculate beta
         double beta = gamma / (h * h);
@@ -71,16 +71,16 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
         // Coordinates is (0,0) after upgrade
         SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
-          coords << -2. / 3., -2. / 3.;
+          coords << 1. / 3., 1. / 3.;
           auto shapefn = tri->shapefn(coords, zero, zero);
 
           // Check shape function
           REQUIRE(shapefn.size() == 16);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-          REQUIRE(shapefn(0) == Approx(1. / 6.).epsilon(Tolerance));
-          REQUIRE(shapefn(1) == Approx(4. / 6.).epsilon(Tolerance));
-          REQUIRE(shapefn(2) == Approx(1. / 6.).epsilon(Tolerance));
+          REQUIRE(shapefn(0) == Approx(1. / 3.).epsilon(Tolerance));
+          REQUIRE(shapefn(1) == Approx(1. / 3.).epsilon(Tolerance));
+          REQUIRE(shapefn(2) == Approx(1. / 3.).epsilon(Tolerance));
           REQUIRE(shapefn(3) == Approx(0.0).epsilon(Tolerance));
           REQUIRE(shapefn(4) == Approx(0.).epsilon(Tolerance));
           REQUIRE(shapefn(5) == Approx(0.).epsilon(Tolerance));
@@ -101,7 +101,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 16, Dim> gradsf_ans;
-          gradsf_ans << 1.0, 0.0, -1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0, 0, -0, 0,
+          gradsf_ans << -1.0, -1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0, 0, -0, 0,
               0, 0, 0, 0, 0, -0, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)

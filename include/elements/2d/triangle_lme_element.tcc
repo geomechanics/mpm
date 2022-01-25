@@ -20,7 +20,7 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
   Eigen::VectorXd shapefn =
       Eigen::VectorXd::Constant(this->nconnectivity_, 1.0);
 
-  if (this->nconnectivity_ == 4)
+  if (this->nconnectivity_ == 3)
     return mpm::TriangleElement<Tdim, 3>::shapefn(xi, lambda,
                                                   deformation_gradient);
 

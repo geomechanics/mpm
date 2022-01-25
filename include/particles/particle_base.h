@@ -369,10 +369,12 @@ class ParticleBase {
   virtual inline bool map_material_stiffness_matrix_to_cell() = 0;
 
   //! Reduce constitutive relations matrix depending on the dimension
+  //! \ingroup Implicit
   virtual inline Eigen::MatrixXd reduce_dmatrix(
       const Eigen::MatrixXd& dmatrix) = 0;
 
   //! Compute B matrix
+  //! \ingroup Implicit
   virtual inline Eigen::MatrixXd compute_bmatrix() = 0;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)

@@ -389,6 +389,7 @@ class Particle : public ParticleBase<Tdim> {
       const Eigen::MatrixXd& dmatrix) noexcept override;
 
   //! Compute B matrix of a particle, based on local coordinates
+  //! \ingroup Implicit
   inline Eigen::MatrixXd compute_bmatrix() noexcept override;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)

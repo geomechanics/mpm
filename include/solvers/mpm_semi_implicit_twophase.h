@@ -79,6 +79,8 @@ class MPMSemiImplicitTwoPhase : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::stress_update_;
   //! velocity update
   using mpm::MPMBase<Tdim>::velocity_update_;
+  //! Anti-locking treatment
+  using mpm::MPMBase<Tdim>::anti_locking_;
   //! Gravity
   using mpm::MPMBase<Tdim>::gravity_;
   //! Mesh object

@@ -157,7 +157,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,
-                                set_node_concentrated_force_);
+                                set_node_concentrated_force_, anti_locking_);
 
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",

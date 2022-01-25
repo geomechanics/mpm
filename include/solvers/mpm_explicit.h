@@ -61,6 +61,8 @@ class MPMExplicit : public MPMBase<Tdim> {
 
   //! velocity update
   using mpm::MPMBase<Tdim>::velocity_update_;
+  //! Anti-locking treatment
+  using mpm::MPMBase<Tdim>::anti_locking_;
   //! Gravity
   using mpm::MPMBase<Tdim>::gravity_;
   //! Mesh object

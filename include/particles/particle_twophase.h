@@ -80,7 +80,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   void map_traction_force() noexcept override;
 
   //! Map internal force
-  inline void map_internal_force() noexcept override;
+  inline void map_internal_force(bool anti_locking) noexcept override;
 
   //! Compute updated position of the particle and kinematics of both solid and
   //! liquid phase \param[in] dt Analysis time step \param[in] velocity_update

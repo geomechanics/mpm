@@ -390,7 +390,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     // Compute local cell stiffness matrices
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::map_material_stiffness_matrix_to_cell,
-        std::placeholders::_1));
+        std::placeholders::_1, anti_locking_));
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_mass_matrix_to_cell,
                   std::placeholders::_1, newmark_beta_, dt_));
@@ -400,7 +400,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
 
     // Compute local residual force
     mpm_scheme_->compute_forces(gravity_, phase_, step_,
-                                set_node_concentrated_force_);
+                                set_node_concentrated_force_, anti_locking_);
 
     // Assemble global residual force RHS vector
     assembler_->assemble_residual_force_right();

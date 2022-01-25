@@ -725,7 +725,7 @@ void mpm::Particle<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<1>::map_internal_force() noexcept {
+inline void mpm::Particle<1>::map_internal_force(bool anti_locking) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -738,14 +738,29 @@ inline void mpm::Particle<1>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<2>::map_internal_force() noexcept {
+inline void mpm::Particle<2>::map_internal_force(bool anti_locking) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 2, 1> force;
-    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
-    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
 
+    if (!anti_locking) {
+      force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
+      force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
+    }
+    // Anti-locking treatment with B-bar method
+    else {
+      force[0] = (dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) *
+                     stress_[0] +
+                 (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[1] +
+                 (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[2] +
+                 dn_dx_(i, 1) * stress_[3];
+      force[1] = (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[0] +
+                 (dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) *
+                     stress_[1] +
+                 (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[2] +
+                 dn_dx_(i, 0) * stress_[3];
+    }
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
@@ -754,20 +769,42 @@ inline void mpm::Particle<2>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<3>::map_internal_force() noexcept {
+inline void mpm::Particle<3>::map_internal_force(bool anti_locking) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 3, 1> force;
-    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
-               dn_dx_(i, 2) * stress_[5];
 
-    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
-               dn_dx_(i, 2) * stress_[4];
+    if (!anti_locking) {
+      force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
+                 dn_dx_(i, 2) * stress_[5];
 
-    force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
-               dn_dx_(i, 0) * stress_[5];
+      force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
+                 dn_dx_(i, 2) * stress_[4];
 
+      force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
+                 dn_dx_(i, 0) * stress_[5];
+    }
+    // Anti-locking treatment with B-bar method
+    else {
+      force[0] = (dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) *
+                     stress_[0] +
+                 (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[1] +
+                 (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[2] +
+                 dn_dx_(i, 1) * stress_[3] + dn_dx_(i, 2) * stress_[5];
+
+      force[1] = (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[0] +
+                 (dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) *
+                     stress_[1] +
+                 (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[2] +
+                 dn_dx_(i, 0) * stress_[3] + dn_dx_(i, 2) * stress_[4];
+
+      force[2] = (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * stress_[0] +
+                 (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * stress_[1] +
+                 (dn_dx_(i, 2) + (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3.) *
+                     stress_[2] +
+                 dn_dx_(i, 1) * stress_[4] + dn_dx_(i, 0) * stress_[5];
+    }
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);

@@ -262,7 +262,7 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
         // Iterate over each particle to compute nodal internal force
         mesh_->iterate_over_particles(
             std::bind(&mpm::ParticleBase<Tdim>::map_internal_force,
-                      std::placeholders::_1));
+                      std::placeholders::_1, anti_locking_));
       }
 
 #pragma omp section

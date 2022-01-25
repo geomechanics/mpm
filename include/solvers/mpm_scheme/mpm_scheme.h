@@ -52,10 +52,11 @@ class MPMScheme {
   //! \param[in] gravity Acceleration due to gravity
   //! \param[in] step Number of step in solver
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
+  //! \param[in] anti_locking Boolean of anti-locking treatment
   //! is applied or not
   virtual inline void compute_forces(
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-      unsigned step, bool concentrated_nodal_forces);
+      unsigned step, bool concentrated_nodal_forces, bool anti_locking);
 
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Velocity or acceleration update flag

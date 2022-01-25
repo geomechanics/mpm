@@ -251,7 +251,7 @@ class ParticleBase {
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
 
   //! Map internal force
-  virtual void map_internal_force() noexcept = 0;
+  virtual void map_internal_force(bool anti_locking) noexcept = 0;
 
   //! Map particle pressure to nodes
   virtual bool map_pressure_to_nodes(
@@ -366,16 +366,23 @@ class ParticleBase {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  virtual inline bool map_material_stiffness_matrix_to_cell() = 0;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  virtual inline bool map_material_stiffness_matrix_to_cell(
+      bool anti_locking) = 0;
 
   //! Reduce constitutive relations matrix depending on the dimension
   //! \ingroup Implicit
-  virtual inline Eigen::MatrixXd reduce_dmatrix(
-      const Eigen::MatrixXd& dmatrix) = 0;
+  //! \param[in] dmatrix Constitutive relations matrix in 3D
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  //! \retval reduced_dmatrix Reduced constitutive relation matrix for spatial
+  //! dimension
+  virtual inline Eigen::MatrixXd reduce_dmatrix(const Eigen::MatrixXd& dmatrix,
+                                                bool anti_locking) = 0;
 
   //! Compute B matrix
   //! \ingroup Implicit
-  virtual inline Eigen::MatrixXd compute_bmatrix() = 0;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  virtual inline Eigen::MatrixXd compute_bmatrix(bool anti_locking) = 0;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit

@@ -163,7 +163,7 @@ TEST_CASE("Implicit Cell is checked for 2D case", "[cell][2D][Implicit]") {
             &state_variables);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
-    reduced_dmatrix = particle->reduce_dmatrix(dmatrix);
+    reduced_dmatrix = particle->reduce_dmatrix(dmatrix, false);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 3, 3> particle_reduced_dmatrix;
@@ -180,7 +180,7 @@ TEST_CASE("Implicit Cell is checked for 2D case", "[cell][2D][Implicit]") {
 
     // Calculate B matrix
     Eigen::MatrixXd bmatrix;
-    bmatrix = particle->compute_bmatrix();
+    bmatrix = particle->compute_bmatrix(false);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 3, 8> particle_bmatrix;
@@ -420,7 +420,7 @@ TEST_CASE("Implicit Cell is checked for 3D case", "[cell][3D][Implicit]") {
             &state_variables);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
-    reduced_dmatrix = particle->reduce_dmatrix(dmatrix);
+    reduced_dmatrix = particle->reduce_dmatrix(dmatrix, false);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> particle_reduced_dmatrix;
@@ -440,7 +440,7 @@ TEST_CASE("Implicit Cell is checked for 3D case", "[cell][3D][Implicit]") {
 
     // Calculate B matrix
     Eigen::MatrixXd bmatrix;
-    bmatrix = particle->compute_bmatrix();
+    bmatrix = particle->compute_bmatrix(false);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 24> particle_bmatrix;

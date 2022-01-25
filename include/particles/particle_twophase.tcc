@@ -462,7 +462,8 @@ void mpm::TwoPhaseParticle<Tdim>::map_liquid_traction_force() noexcept {
 
 //! Map both mixture and liquid internal force
 template <unsigned Tdim>
-inline void mpm::TwoPhaseParticle<Tdim>::map_internal_force() noexcept {
+inline void mpm::TwoPhaseParticle<Tdim>::map_internal_force(
+    bool anti_locking) noexcept {
   mpm::TwoPhaseParticle<Tdim>::map_mixture_internal_force();
   mpm::TwoPhaseParticle<Tdim>::map_liquid_internal_force();
 }

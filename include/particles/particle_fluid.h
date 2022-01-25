@@ -39,7 +39,7 @@ class FluidParticle : public mpm::Particle<Tdim> {
   void compute_stress() noexcept override;
 
   //! Map internal force
-  inline void map_internal_force() noexcept override;
+  inline void map_internal_force(bool anti_locking) noexcept override;
 
   //! ----------------------------------------------------------------
   //! Semi-Implicit integration functions based on Chorin's Projection

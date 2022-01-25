@@ -118,7 +118,7 @@ inline void mpm::MPMScheme<Tdim>::pressure_smoothing(unsigned phase) {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-    unsigned step, bool concentrated_nodal_forces) {
+    unsigned step, bool concentrated_nodal_forces, bool anti_locking) {
   // Spawn a task for external force
 #pragma omp parallel sections
   {
@@ -144,8 +144,9 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
     {
       // Spawn a task for internal force
       // Iterate over each particle to compute nodal internal force
-      mesh_->iterate_over_particles(std::bind(
-          &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::map_internal_force,
+                    std::placeholders::_1, anti_locking));
     }
   }  // Wait for tasks to finish
 

@@ -196,7 +196,7 @@ class Particle : public ParticleBase<Tdim> {
   void map_body_force(const VectorDim& pgravity) noexcept override;
 
   //! Map internal force
-  inline void map_internal_force() noexcept override;
+  inline void map_internal_force(bool anti_locking) noexcept override;
 
   //! Assign velocity to the particle
   //! \param[in] velocity A vector of particle velocity
@@ -378,19 +378,22 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  inline bool map_material_stiffness_matrix_to_cell() override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  inline bool map_material_stiffness_matrix_to_cell(bool anti_locking) override;
 
   //! Reduce constitutive relations matrix depending on the dimension
   //! \ingroup Implicit
   //! \param[in] dmatrix Constitutive relations matrix in 3D
+  //! \param[in] anti_locking Boolean of anti-locking treatment
   //! \retval reduced_dmatrix Reduced constitutive relation matrix for spatial
   //! dimension
-  inline Eigen::MatrixXd reduce_dmatrix(
-      const Eigen::MatrixXd& dmatrix) noexcept override;
+  inline Eigen::MatrixXd reduce_dmatrix(const Eigen::MatrixXd& dmatrix,
+                                        bool anti_locking) noexcept override;
 
   //! Compute B matrix of a particle, based on local coordinates
   //! \ingroup Implicit
-  inline Eigen::MatrixXd compute_bmatrix() noexcept override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  inline Eigen::MatrixXd compute_bmatrix(bool anti_locking) noexcept override;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit

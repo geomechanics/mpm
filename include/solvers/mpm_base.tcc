@@ -73,6 +73,18 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       velocity_update_ = false;
     }
 
+    // Anti-locking treatment
+    try {
+      anti_locking_ = analysis_["anti_locking"].template get<bool>();
+    } catch (std::exception& exception) {
+      console_->warn(
+          "{} #{}: Anti-locking treatment parameter is not specified, using "
+          "default "
+          "as false",
+          __FILE__, __LINE__, exception.what());
+      anti_locking_ = false;
+    }
+
     // Damping
     try {
       if (analysis_.find("damping") != analysis_.end()) {

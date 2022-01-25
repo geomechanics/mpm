@@ -231,6 +231,8 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
   //! velocity update
   bool velocity_update_{false};
+  //! Anti-locking treatment
+  bool anti_locking_{false};
   //! Gravity
   Eigen::Matrix<double, Tdim, 1> gravity_;
   //! Mesh object

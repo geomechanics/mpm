@@ -82,6 +82,7 @@ jobs:
   benchmarks:
     docker:
       - image: quay.io/cbgeo/mpm
+    resource_class: large
     steps:
       - checkout
       # GCC

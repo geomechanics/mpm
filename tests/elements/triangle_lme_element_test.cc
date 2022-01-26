@@ -57,7 +57,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
           -std::sqrt(3), 0.5, -std::sqrt(3);
 
       SECTION("2D triangle LME regular element no support") {
-        double gamma = 25;
+        double gamma = 10;  // 20;
         double h = 1.0;
 
         // Calculate beta

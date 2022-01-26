@@ -20,6 +20,7 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
   Eigen::VectorXd shapefn =
       Eigen::VectorXd::Constant(this->nconnectivity_, 1.0);
 
+  //! Substitute the TriLME by the FEM shape funtion in the limit of the simplex
   if (this->nconnectivity_ == 3)
     return mpm::TriangleElement<Tdim, 3>::shapefn(xi, lambda,
                                                   deformation_gradient);
@@ -62,7 +63,7 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
       r.noalias() += p(n) * (rel_coordinates.col(n));
     }
 
-    //! Begin Newton-Raphson iteration
+    //! Begin regularized Newton-Raphson iteration
     const double tolerance = 1.e-12;
     if (r.norm() > tolerance) {
       bool convergence = false;
@@ -77,6 +78,18 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
                          (rel_coordinates.col(n)).transpose();
         }
         J.noalias() += -r * r.transpose();
+
+        //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+        for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
+
+        //! Check reciprocal condition number
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
+        const double rcond =
+            svd.singularValues()(svd.singularValues().size() - 1) /
+            svd.singularValues()(0);
+        if (rcond < 1E-8)
+          throw std::runtime_error(
+              "Error in TriLME: The Hessian matrix is singular");
 
         //! Compute Delta lambda
         VectorDim dlambda = J.inverse() * (-r);
@@ -362,7 +375,7 @@ inline Eigen::Matrix<double, Tdim, 1>
   Eigen::Matrix<double, 2, 1> xi;
   xi.fill(std::numeric_limits<double>::max());
   throw std::runtime_error(
-      "Analytical solution for QuadLME<Tdim> has "
+      "Analytical solution for TriLME<Tdim> has "
       "not been "
       "implemented");
   return xi;

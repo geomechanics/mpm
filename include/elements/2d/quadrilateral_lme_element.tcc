@@ -62,7 +62,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       r.noalias() += p(n) * (rel_coordinates.col(n));
     }
 
-    //! Begin Newton-Raphson iteration
+    //! Begin regularized Newton-Raphson iteration
     const double tolerance = 1.e-12;
     if (r.norm() > tolerance) {
       bool convergence = false;
@@ -77,6 +77,18 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
                          (rel_coordinates.col(n)).transpose();
         }
         J.noalias() += -r * r.transpose();
+
+        //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+        for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
+
+        //! Check reciprocal condition number
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
+        const double rcond =
+            svd.singularValues()(svd.singularValues().size() - 1) /
+            svd.singularValues()(0);
+        if (rcond < 1E-8)
+          throw std::runtime_error(
+              "Error in QuadLME: The Hessian matrix is singular");
 
         //! Compute Delta lambda
         VectorDim dlambda = J.inverse() * (-r);

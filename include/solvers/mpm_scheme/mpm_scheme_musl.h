@@ -27,13 +27,17 @@ class MPMSchemeMUSL : public MPMScheme<Tdim> {
   //! Precompute stress
   //! \param[in] phase Phase to smooth postssure
   //! \param[in] postssure_smoothing Enable or disable postssure smoothing
-  virtual inline void precompute_stress_strain(
-      unsigned phase, bool pressure_smoothing) override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  virtual inline void precompute_stress_strain(unsigned phase,
+                                               bool pressure_smoothing,
+                                               bool anti_locking) override;
   //! Postcompute stress
   //! \param[in] phase Phase to smooth postssure
   //! \param[in] postssure_smoothing Enable or disable postssure smoothing
-  virtual inline void postcompute_stress_strain(
-      unsigned phase, bool pressure_smoothing) override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  virtual inline void postcompute_stress_strain(unsigned phase,
+                                                bool pressure_smoothing,
+                                                bool anti_locking) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] phase Phase to smooth pressure

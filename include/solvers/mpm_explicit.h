@@ -24,7 +24,8 @@ class MPMExplicit : public MPMBase<Tdim> {
 
   //! Compute stress strain
   //! \param[in] phase Phase to smooth pressure
-  void compute_stress_strain(unsigned phase);
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  void compute_stress_strain(unsigned phase, bool anti_locking);
 
  protected:
   // Generate a unique id for the analysis

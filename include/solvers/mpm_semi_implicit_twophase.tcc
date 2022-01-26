@@ -9,10 +9,12 @@ mpm::MPMSemiImplicitTwoPhase<Tdim>::MPMSemiImplicitTwoPhase(
 
 //! MPM Semi-implicit TwoPhase compute stress strain
 template <unsigned Tdim>
-void mpm::MPMSemiImplicitTwoPhase<Tdim>::compute_stress_strain() {
+void mpm::MPMSemiImplicitTwoPhase<Tdim>::compute_stress_strain(
+    bool anti_locking) {
   // Iterate over each particle to calculate strain of soil_skeleton
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_strain, std::placeholders::_1, dt_));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_strain, std::placeholders::_1,
+                dt_, anti_locking));
   // Iterate over each particle to update particle volume
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));
@@ -232,7 +234,8 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
     // Update stress first
-    if (this->stress_update_ == "usf") this->compute_stress_strain();
+    if (this->stress_update_ == "usf")
+      this->compute_stress_strain(anti_locking_);
 
       // Spawn a task for external force
 #pragma omp parallel sections
@@ -365,7 +368,8 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     mesh_->apply_particle_velocity_constraints();
 
     // Update stress first
-    if (this->stress_update_ == "usl") this->compute_stress_strain();
+    if (this->stress_update_ == "usl")
+      this->compute_stress_strain(anti_locking_);
 
     // Locate particle
     auto unlocatable_particles = mesh_->locate_particles_mesh();

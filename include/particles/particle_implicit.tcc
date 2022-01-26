@@ -258,7 +258,7 @@ inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept {
   // Define strain rincrement
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -275,17 +275,39 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_increment(
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
 
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
-    strain_increment[0] += dn_dx(i, 0) * displacement[0];
-    strain_increment[1] += dn_dx(i, 1) * displacement[1];
-    strain_increment[3] +=
-        dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+  if (!anti_locking) {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
+      strain_increment[0] += dn_dx(i, 0) * displacement[0];
+      strain_increment[1] += dn_dx(i, 1) * displacement[1];
+      strain_increment[3] +=
+          dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+    }
+  }
+  // Anti-locking treatment with B-bar method
+  // Normal strain in z direction should be computed
+  else {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
+      strain_increment[0] +=
+          (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) *
+              displacement[0] +
+          (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * displacement[1];
+      strain_increment[1] +=
+          (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * displacement[0] +
+          (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) *
+              displacement[1];
+      strain_increment[2] +=
+          (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * displacement[0] +
+          (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * displacement[1];
+      strain_increment[3] +=
+          dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+    }
   }
 
   if (std::fabs(strain_increment[0]) < 1.E-15) strain_increment[0] = 0.;
@@ -297,22 +319,52 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_increment(
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
 
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> displacement = nodes_[i]->displacement(phase);
-    strain_increment[0] += dn_dx(i, 0) * displacement[0];
-    strain_increment[1] += dn_dx(i, 1) * displacement[1];
-    strain_increment[2] += dn_dx(i, 2) * displacement[2];
-    strain_increment[3] +=
-        dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
-    strain_increment[4] +=
-        dn_dx(i, 2) * displacement[1] + dn_dx(i, 1) * displacement[2];
-    strain_increment[5] +=
-        dn_dx(i, 2) * displacement[0] + dn_dx(i, 0) * displacement[2];
+  if (!anti_locking) {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 3, 1> displacement = nodes_[i]->displacement(phase);
+      strain_increment[0] += dn_dx(i, 0) * displacement[0];
+      strain_increment[1] += dn_dx(i, 1) * displacement[1];
+      strain_increment[2] += dn_dx(i, 2) * displacement[2];
+      strain_increment[3] +=
+          dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+      strain_increment[4] +=
+          dn_dx(i, 2) * displacement[1] + dn_dx(i, 1) * displacement[2];
+      strain_increment[5] +=
+          dn_dx(i, 2) * displacement[0] + dn_dx(i, 0) * displacement[2];
+    }
+  }
+  // Anti-locking treatment with B-bar method
+  // Normal strain in z direction should be computed
+  else {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 3, 1> displacement = nodes_[i]->displacement(phase);
+      strain_increment[0] +=
+          (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) *
+              displacement[0] +
+          (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * displacement[1] +
+          (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * displacement[2];
+      strain_increment[1] +=
+          (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * displacement[0] +
+          (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) *
+              displacement[1] +
+          (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * displacement[2];
+      strain_increment[2] +=
+          (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * displacement[0] +
+          (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * displacement[1];
+      +(dn_dx(i, 2) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) *
+          displacement[2];
+      strain_increment[3] +=
+          dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+      strain_increment[4] +=
+          dn_dx(i, 2) * displacement[1] + dn_dx(i, 1) * displacement[2];
+      strain_increment[5] +=
+          dn_dx(i, 2) * displacement[0] + dn_dx(i, 0) * displacement[2];
+    }
   }
 
   for (unsigned i = 0; i < strain_increment.size(); ++i)
@@ -322,10 +374,10 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
 
 // Compute strain of the particle using nodal displacement
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain_newmark() noexcept {
+void mpm::Particle<Tdim>::compute_strain_newmark(bool anti_locking) noexcept {
   // Compute strain increment from previous time step
-  this->dstrain_ =
-      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+  this->dstrain_ = this->compute_strain_increment(
+      dn_dx_, mpm::ParticlePhase::Solid, anti_locking);
 }
 
 // Compute stress using implicit updating scheme

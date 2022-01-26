@@ -7,13 +7,14 @@ mpm::MPMSchemeUSL<Tdim>::MPMSchemeUSL(
 //! Precompute stresses and strains
 template <unsigned Tdim>
 inline void mpm::MPMSchemeUSL<Tdim>::precompute_stress_strain(
-    unsigned phase, bool pressure_smoothing) {}
+    unsigned phase, bool pressure_smoothing, bool anti_locking) {}
 
 //! Postcompute stresses and strains
 template <unsigned Tdim>
 inline void mpm::MPMSchemeUSL<Tdim>::postcompute_stress_strain(
-    unsigned phase, bool pressure_smoothing) {
-  mpm::MPMScheme<Tdim>::compute_stress_strain(phase, pressure_smoothing);
+    unsigned phase, bool pressure_smoothing, bool anti_locking) {
+  mpm::MPMScheme<Tdim>::compute_stress_strain(phase, pressure_smoothing,
+                                              anti_locking);
 }
 
 //! Postcompute nodal kinematics - map mass and momentum to nodes

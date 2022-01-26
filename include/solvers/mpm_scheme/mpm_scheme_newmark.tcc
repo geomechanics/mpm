@@ -86,11 +86,12 @@ inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
 //! Compute stress and strain by Newmark scheme
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
-    unsigned phase, bool pressure_smoothing) {
+    unsigned phase, bool pressure_smoothing, bool anti_locking) {
 
   // Iterate over each particle to calculate strain using nodal displacement
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_strain_newmark, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_strain_newmark,
+                std::placeholders::_1, anti_locking));
 
   // Pressure smoothing
   if (pressure_smoothing) this->pressure_smoothing(phase);
@@ -103,13 +104,13 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
 //! Precompute stresses and strains
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::precompute_stress_strain(
-    unsigned phase, bool pressure_smoothing) {}
+    unsigned phase, bool pressure_smoothing, bool anti_locking) {}
 
 //! Postcompute stresses and strains
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::postcompute_stress_strain(
-    unsigned phase, bool pressure_smoothing) {
-  this->compute_stress_strain(phase, pressure_smoothing);
+    unsigned phase, bool pressure_smoothing, bool anti_locking) {
+  this->compute_stress_strain(phase, pressure_smoothing, anti_locking);
 }
 
 // Compute forces

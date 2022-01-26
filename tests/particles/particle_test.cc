@@ -994,7 +994,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain
-    particle->compute_strain(dt);
+    particle->compute_strain(dt, false);
     // Strain
     Eigen::Matrix<double, 6, 1> strain;
     strain << 0., 0.25, 0., 0.050, 0., 0.;
@@ -1013,7 +1013,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
 
     // Update volume strain rate
     REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
-    particle->compute_strain(dt);
+    particle->compute_strain(dt, false);
     REQUIRE_NOTHROW(particle->update_volume());
     REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
 
@@ -2380,7 +2380,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain
-    particle->compute_strain(dt);
+    particle->compute_strain(dt, false);
     // Strain
     Eigen::Matrix<double, 6, 1> strain;
     strain << 0.00000, 0.07500, 0.40000, -0.02500, 0.35000, -0.05000;
@@ -2399,7 +2399,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
 
     // Update volume strain rate
     REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
-    particle->compute_strain(dt);
+    particle->compute_strain(dt, false);
     REQUIRE_NOTHROW(particle->update_volume());
     REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
 

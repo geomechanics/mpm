@@ -627,7 +627,7 @@ void mpm::Particle<
 // Compute strain rate of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_rate(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept {
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
@@ -643,15 +643,33 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_rate(
 // Compute strain rate of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_rate(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept {
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(i, 0) * vel[0];
-    strain_rate[1] += dn_dx(i, 1) * vel[1];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+  if (!anti_locking) {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+      strain_rate[0] += dn_dx(i, 0) * vel[0];
+      strain_rate[1] += dn_dx(i, 1) * vel[1];
+      strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+    }
+  }
+  // Anti-locking treatment with B-bar method
+  // Normal strain in z direction should be computed
+  else {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+      strain_rate[0] +=
+          (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) * vel[0] +
+          (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * vel[1];
+      strain_rate[1] +=
+          (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * vel[0] +
+          (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) * vel[1];
+      strain_rate[2] += (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * vel[0] +
+                        (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * vel[1];
+      strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+    }
   }
 
   if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
@@ -663,18 +681,41 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_rate(
 // Compute strain rate of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_rate(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept {
   // Define strain rate
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(i, 0) * vel[0];
-    strain_rate[1] += dn_dx(i, 1) * vel[1];
-    strain_rate[2] += dn_dx(i, 2) * vel[2];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
-    strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
-    strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+  if (!anti_locking) {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+      strain_rate[0] += dn_dx(i, 0) * vel[0];
+      strain_rate[1] += dn_dx(i, 1) * vel[1];
+      strain_rate[2] += dn_dx(i, 2) * vel[2];
+      strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+      strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
+      strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+    }
+  }
+  // Anti-locking treatment with B-bar method
+  // Normal strain in z direction should be computed
+  else {
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+      Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+      strain_rate[0] +=
+          (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) * vel[0] +
+          (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * vel[1] +
+          (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * vel[2];
+      strain_rate[1] +=
+          (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * vel[0] +
+          (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) * vel[1] +
+          (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * vel[2];
+      strain_rate[2] += (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * vel[0] +
+                        (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * vel[1];
+      +(dn_dx(i, 2) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) * vel[2];
+      strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+      strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
+      strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+    }
   }
 
   for (unsigned i = 0; i < strain_rate.size(); ++i)
@@ -684,9 +725,11 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_rate(
 
 // Compute strain of the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
+void mpm::Particle<Tdim>::compute_strain(double dt,
+                                         bool anti_locking) noexcept {
   // Assign strain rate
-  strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
+  strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid,
+                                           anti_locking);
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
   // Update strain
@@ -695,7 +738,8 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   // Compute at centroid
   // Strain rate for reduced integration
   const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
-      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid,
+                                false);
 
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();

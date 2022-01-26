@@ -224,7 +224,7 @@ class ParticleBase {
   virtual double pressure(unsigned phase = mpm::ParticlePhase::Solid) const = 0;
 
   //! Compute strain
-  virtual void compute_strain(double dt) noexcept = 0;
+  virtual void compute_strain(double dt, bool anti_locking) noexcept = 0;
 
   //! Strain
   virtual Eigen::Matrix<double, 6, 1> strain() const = 0;
@@ -393,7 +393,8 @@ class ParticleBase {
 
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
-  virtual void compute_strain_newmark() = 0;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  virtual void compute_strain_newmark(bool anti_locking) = 0;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit

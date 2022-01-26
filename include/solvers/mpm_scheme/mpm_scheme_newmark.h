@@ -28,19 +28,25 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
+  //! \param[in] anti_locking Boolean of anti-locking treatment
   virtual inline void compute_stress_strain(unsigned phase,
-                                            bool pressure_smoothing) override;
+                                            bool pressure_smoothing,
+                                            bool anti_locking) override;
 
   //! Precompute stress
   //! \param[in] phase Phase to smooth postssure
   //! \param[in] postssure_smoothing Enable or disable postssure smoothing
-  virtual inline void precompute_stress_strain(
-      unsigned phase, bool pressure_smoothing) override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  virtual inline void precompute_stress_strain(unsigned phase,
+                                               bool pressure_smoothing,
+                                               bool anti_locking) override;
   //! Postcompute stress
   //! \param[in] phase Phase to smooth postssure
   //! \param[in] postssure_smoothing Enable or disable postssure smoothing
-  virtual inline void postcompute_stress_strain(
-      unsigned phase, bool pressure_smoothing) override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  virtual inline void postcompute_stress_strain(unsigned phase,
+                                                bool pressure_smoothing,
+                                                bool anti_locking) override;
 
   //! Compute forces
   //! \param[in] gravity Acceleration due to gravity

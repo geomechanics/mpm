@@ -23,7 +23,8 @@ class MPMExplicitTwoPhase : public MPMBase<Tdim> {
   bool solve() override;
 
   //! Compute stress strain
-  void compute_stress_strain();
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  void compute_stress_strain(bool anti_locking);
 
  protected:
   // Generate a unique id for the analysis

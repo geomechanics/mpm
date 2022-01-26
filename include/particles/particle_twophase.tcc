@@ -388,11 +388,11 @@ void mpm::TwoPhaseParticle<Tdim>::compute_pore_pressure(double dt) noexcept {
 
   // Compute at centroid
   // get phase-wise strain rate at cell centre
-  auto strain_rate_centroid =
-      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+  auto strain_rate_centroid = this->compute_strain_rate(
+      dn_dx_centroid_, mpm::ParticlePhase::Solid, false);
 
-  auto liquid_strain_rate_centroid =
-      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Liquid);
+  auto liquid_strain_rate_centroid = this->compute_strain_rate(
+      dn_dx_centroid_, mpm::ParticlePhase::Liquid, false);
 
   // update pressure
   this->state_variables_[mpm::ParticlePhase::Liquid].at("pressure") +=

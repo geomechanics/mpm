@@ -158,7 +158,8 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain
   //! \param[in] dt Analysis time step
-  void compute_strain(double dt) noexcept override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  void compute_strain(double dt, bool anti_locking) noexcept override;
 
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override { return strain_; }
@@ -196,6 +197,7 @@ class Particle : public ParticleBase<Tdim> {
   void map_body_force(const VectorDim& pgravity) noexcept override;
 
   //! Map internal force
+  //! \param[in] anti_locking Boolean of anti-locking treatment
   inline void map_internal_force(bool anti_locking) noexcept override;
 
   //! Assign velocity to the particle
@@ -403,7 +405,8 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
-  void compute_strain_newmark() noexcept override;
+  //! \param[in] anti_locking Boolean of anti-locking treatment
+  void compute_strain_newmark(bool anti_locking) noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
@@ -444,9 +447,10 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
+  //! \param[in] anti_locking Boolean of anti-locking treatment
   //! \retval strain rate at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+      const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept;
 
   //! Compute pack size
   //! \retval pack size of serialized object
@@ -460,9 +464,10 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
+  //! \param[in] anti_locking Boolean of anti-locking treatment
   //! \retval strain increment at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+      const Eigen::MatrixXd& dn_dx, unsigned phase, bool anti_locking) noexcept;
   /**@}*/
 
   //! particle id

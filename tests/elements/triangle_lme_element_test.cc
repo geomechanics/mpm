@@ -3,6 +3,8 @@
 
 #include "catch.hpp"
 
+#include <iostream>
+
 #include "triangle_lme_element.h"
 
 //! \brief Check triangle lme element class
@@ -48,14 +50,16 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
     }
 
     // Initialising upgrade properties
-    SECTION("2D triangle LME element regular element - nnodes = 16") {
-      Eigen::Matrix<double, 16, Dim> nodal_coords;
-      nodal_coords << 0., 0., 1., 0., 0., 1., 1., 1., 2., 0., 2., 1., 2., 2.,
-          1., 2., 0., 2., -1., 2., -1., 1., -1., 0., -1., -1., 0., -1., 1., -1.,
-          2., -1.;
+    SECTION("2D triangle LME element regular element - nnodes = 14") {
+      Eigen::Matrix<double, 14, Dim> nodal_coords;
+      nodal_coords << -0.5, 0.0, 0.5, 0.0, 0.0, 0.5 * std::sqrt(3), 0.0,
+          -0.5 * std::sqrt(3), 1.0, -0.5 * std::sqrt(3), 1.5, 0.0, 1.0,
+          0.5 * std::sqrt(3), 0.5, std::sqrt(3), -0.5, std::sqrt(3), -1.0,
+          0.5 * std::sqrt(3), -1.5, 0.0, -1.0, -0.5 * std::sqrt(3), -0.5,
+          -std::sqrt(3), 0.5, -std::sqrt(3);
 
       SECTION("2D triangle LME regular element no support") {
-        double gamma = 3;
+        double gamma = 25;
         double h = 1.0;
 
         // Calculate beta
@@ -75,13 +79,13 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
           auto shapefn = tri->shapefn(coords, zero, zero);
 
           // Check shape function
-          REQUIRE(shapefn.size() == 16);
+          REQUIRE(shapefn.size() == 14);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(1. / 3.).epsilon(Tolerance));
           REQUIRE(shapefn(1) == Approx(1. / 3.).epsilon(Tolerance));
           REQUIRE(shapefn(2) == Approx(1. / 3.).epsilon(Tolerance));
-          REQUIRE(shapefn(3) == Approx(0.0).epsilon(Tolerance));
+          REQUIRE(shapefn(3) == Approx(0.).epsilon(Tolerance));
           REQUIRE(shapefn(4) == Approx(0.).epsilon(Tolerance));
           REQUIRE(shapefn(5) == Approx(0.).epsilon(Tolerance));
           REQUIRE(shapefn(6) == Approx(0.).epsilon(Tolerance));
@@ -92,17 +96,16 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
           REQUIRE(shapefn(11) == Approx(0.).epsilon(Tolerance));
           REQUIRE(shapefn(12) == Approx(0.).epsilon(Tolerance));
           REQUIRE(shapefn(13) == Approx(0.).epsilon(Tolerance));
-          REQUIRE(shapefn(14) == Approx(0.).epsilon(Tolerance));
-          REQUIRE(shapefn(15) == Approx(0.).epsilon(Tolerance));
 
           // Check gradient of shape functions
           auto gradsf = tri->grad_shapefn(coords, zero, zero);
-          REQUIRE(gradsf.rows() == 16);
+          REQUIRE(gradsf.rows() == 14);
           REQUIRE(gradsf.cols() == Dim);
 
-          Eigen::Matrix<double, 16, Dim> gradsf_ans;
-          gradsf_ans << -1.0, -1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0, 0, -0, 0,
-              0, 0, 0, 0, 0, -0, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0;
+          Eigen::Matrix<double, 14, Dim> gradsf_ans;
+          gradsf_ans << -1.0, -1.0 / std::sqrt(3), 1.0, -1.0 / std::sqrt(3),
+              0.0, 2.0 / std::sqrt(3), 0.0, 0.0, 0, 0, -0, 0, 0, 0, 0, 0, 0, -0,
+              0, -0, 0, 0, 0, 0, 0, 0, -0, 0;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)

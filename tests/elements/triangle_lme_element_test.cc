@@ -3,8 +3,6 @@
 
 #include "catch.hpp"
 
-#include <iostream>
-
 #include "triangle_lme_element.h"
 
 //! \brief Check triangle lme element class

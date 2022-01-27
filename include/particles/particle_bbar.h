@@ -97,38 +97,10 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   /**@}*/
 
  protected:
-  //! particle id
-  using ParticleBase<Tdim>::id_;
-  //! coordinates
-  using ParticleBase<Tdim>::coordinates_;
-  //! Reference coordinates (in a cell)
-  using ParticleBase<Tdim>::xi_;
-  //! Cell
-  using ParticleBase<Tdim>::cell_;
-  //! Cell id
-  using ParticleBase<Tdim>::cell_id_;
   //! Nodes
   using ParticleBase<Tdim>::nodes_;
-  //! Status
-  using ParticleBase<Tdim>::status_;
-  //! Material
-  using ParticleBase<Tdim>::material_;
-  //! Material id
-  using ParticleBase<Tdim>::material_id_;
-  //! State variables
-  using ParticleBase<Tdim>::state_variables_;
-  //! Neighbour particles
-  using ParticleBase<Tdim>::neighbours_;
-  //! Volumetric mass density (mass / volume)
-  using Particle<Tdim>::mass_density_;
-  //! Mass
-  using Particle<Tdim>::mass_;
   //! Volume
   using Particle<Tdim>::volume_;
-  //! Size of particle
-  using Particle<Tdim>::size_;
-  //! Size of particle in natural coordinates
-  using Particle<Tdim>::natural_size_;
   //! Stresses
   using Particle<Tdim>::stress_;
   //! Strains
@@ -145,45 +117,13 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   using Particle<Tdim>::velocity_;
   //! Displacement
   using Particle<Tdim>::displacement_;
-  //! Particle velocity constraints
-  using Particle<Tdim>::particle_velocity_constraints_;
-  //! Free surface
-  using Particle<Tdim>::free_surface_;
-  //! Free surface
-  using Particle<Tdim>::normal_;
-  //! Set traction
-  using Particle<Tdim>::set_traction_;
-  //! Surface Traction (given as a stress; force/area)
-  using Particle<Tdim>::traction_;
-  //! Shape functions
-  using Particle<Tdim>::shapefn_;
   //! dN/dX
   using Particle<Tdim>::dn_dx_;
   //! dN/dX at cell centroid
   using Particle<Tdim>::dn_dx_centroid_;
-  //! Map of scalar properties
-  using Particle<Tdim>::scalar_properties_;
-  //! Map of vector properties
-  using Particle<Tdim>::vector_properties_;
-  //! Map of tensor properties
-  using Particle<Tdim>::tensor_properties_;
-  //! Pack size
-  using Particle<Tdim>::pack_size_;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
-
-  /**
-   * \defgroup ImplicitVariables Variables dealing with implicit MPM
-   */
-  /**@{*/
-  //! Acceleration
-  using Particle<Tdim>::acceleration_;
-  //! Stresses at the last time step
-  using Particle<Tdim>::previous_stress_;
-  //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
-  using Particle<Tdim>::constitutive_matrix_;
-  /**@}*/
 
 };  // ParticleBbar class
 }  // namespace mpm

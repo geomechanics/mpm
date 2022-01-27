@@ -42,10 +42,26 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   //! Delete assignment operator
   ParticleBbar& operator=(const ParticleBbar<Tdim>&) = delete;
 
+  //! Compute strain
+  //! \param[in] dt Analysis time step
+  void compute_strain(double dt) noexcept override;
+
+  //! Map internal force
+  inline void map_internal_force() noexcept override;
+
   //! Type of particle
   std::string type() const override {
     return (Tdim == 2) ? "P2DBBAR" : "P3DBBAR";
   }
+
+ protected:
+  //! Compute strain rate
+  //! \ingroup Implicit
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval strain rate at particle inside a cell
+  inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
  protected:
   //! particle id

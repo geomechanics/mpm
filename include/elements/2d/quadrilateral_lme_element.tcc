@@ -81,15 +81,6 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
         //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
         for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
 
-        //! Check reciprocal condition number
-        Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
-        const double rcond =
-            svd.singularValues()(svd.singularValues().size() - 1) /
-            svd.singularValues()(0);
-        if (rcond < 1E-8)
-          throw std::runtime_error(
-              "Error in QuadLME: The Hessian matrix is singular");
-
         //! Compute Delta lambda
         VectorDim dlambda = J.inverse() * (-r);
         lambda = lambda + dlambda;
@@ -120,7 +111,22 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
         }
 
         //! Check convergence
-        if (r.norm() < tolerance || it == max_it) convergence = true;
+        if (r.norm() < tolerance) {
+          convergence = true;
+        } else if (it == max_it) {
+
+          console_->warn("Max number of iteration for particle in QuadLME");
+          convergence = true;
+
+          //! Check condition number
+          Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
+          const double rcond =
+              svd.singularValues()(svd.singularValues().size() - 1) /
+              svd.singularValues()(0);
+          if (rcond < 1E-8) console_->warn("The Hessian matrix is singular");
+
+          convergence = true;
+        }
         it++;
       }
     }
@@ -197,6 +203,9 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     }
     J.noalias() += -r * r.transpose();
 
+    //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+    for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
+
     //! Begin Newton-Raphson iteration
     const double tolerance = 1.e-12;
     if (r.norm() > tolerance) {
@@ -240,6 +249,9 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
                          (rel_coordinates.col(n)).transpose();
         }
         J.noalias() += -r * r.transpose();
+
+        //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+        for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
 
         //! Check convergence
         if (r.norm() <= tolerance || it == max_it) convergence = true;

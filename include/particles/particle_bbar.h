@@ -54,6 +54,26 @@ class ParticleBbar : public mpm::Particle<Tdim> {
     return (Tdim == 2) ? "P2DBBAR" : "P3DBBAR";
   }
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Reduce constitutive relations matrix depending on the dimension
+  //! \ingroup Implicit
+  //! \param[in] dmatrix Constitutive relations matrix in 3D
+  //! \retval reduced_dmatrix Reduced constitutive relation matrix for spatial
+  //! dimension
+  inline Eigen::MatrixXd reduce_dmatrix(
+      const Eigen::MatrixXd& dmatrix) noexcept override;
+
+  //! Compute B matrix of a particle, based on local coordinates
+  inline Eigen::MatrixXd compute_bmatrix() noexcept override;
+
+  //! Compute strain using nodal displacement
+  //! \ingroup Implicit
+  void compute_strain_newmark() noexcept override;
+  /**@}*/
+
  protected:
   //! Compute strain rate
   //! \ingroup Implicit
@@ -62,6 +82,19 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   //! \retval strain rate at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Compute strain increment
+  //! \ingroup Implicit
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval strain increment at particle inside a cell
+  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+  /**@}*/
 
  protected:
   //! particle id
@@ -156,5 +189,6 @@ class ParticleBbar : public mpm::Particle<Tdim> {
 }  // namespace mpm
 
 #include "particle_bbar.tcc"
+#include "particle_bbar_implicit.tcc"
 
 #endif  // MPM_PARTICLE_BBAR_H__

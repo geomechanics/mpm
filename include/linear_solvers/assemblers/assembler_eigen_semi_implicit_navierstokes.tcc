@@ -187,7 +187,7 @@ void mpm::AssemblerEigenSemiImplicitNavierStokes<
     Tdim>::apply_pressure_constraints() {
   try {
     // Modify poisson_rhs_vector_
-    poisson_rhs_vector_ -= laplacian_matrix_ * pressure_constraints_;
+    poisson_rhs_vector_ += -laplacian_matrix_ * pressure_constraints_;
 
     // Apply free surface
     if (!free_surface_.empty()) {

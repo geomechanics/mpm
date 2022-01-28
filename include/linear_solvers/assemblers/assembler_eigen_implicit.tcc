@@ -142,7 +142,8 @@ template <unsigned Tdim>
 void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
   try {
     // Modify residual_force_rhs_vector_
-    residual_force_rhs_vector_ -= stiffness_matrix_ * displacement_constraints_;
+    residual_force_rhs_vector_ +=
+        -stiffness_matrix_ * displacement_constraints_;
 
     // Apply displacement constraints
     for (Eigen::SparseVector<double>::InnerIterator it(

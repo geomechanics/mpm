@@ -188,9 +188,9 @@ inline Eigen::Matrix<double, 6, 1>
         (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * displacement[2];
     strain_increment[2] +=
         (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * displacement[0] +
-        (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * displacement[1];
-    +(dn_dx(i, 2) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) *
-        displacement[2];
+        (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * displacement[1] +
+        (dn_dx(i, 2) + (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3.) *
+            displacement[2];
     strain_increment[3] +=
         dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
     strain_increment[4] +=

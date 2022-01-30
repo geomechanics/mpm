@@ -82,7 +82,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleBbar<3>::compute_strain_rate(
     strain_rate[2] +=
         (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * vel[0] +
         (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * vel[1] +
-        (dn_dx(i, 2) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) * vel[2];
+        (dn_dx(i, 2) + (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3.) * vel[2];
     strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
     strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
     strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];

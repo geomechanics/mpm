@@ -129,6 +129,5 @@ class ParticleBbar : public mpm::Particle<Tdim> {
 }  // namespace mpm
 
 #include "particle_bbar.tcc"
-#include "particle_bbar_implicit.tcc"
 
 #endif  // MPM_PARTICLE_BBAR_H__

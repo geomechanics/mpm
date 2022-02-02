@@ -45,19 +45,16 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleBbar<2>::compute_strain_rate(
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
     // clang-format off
-    strain_rate[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3.) * vel[0] +
-                      (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * vel[1];
-    strain_rate[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * vel[0] +
-                      (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) * vel[1];
-    strain_rate[2] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * vel[0] +
-                      (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * vel[1];
+    strain_rate[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2.) * vel[0] +
+                      (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2. * vel[1];
+    strain_rate[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2. * vel[0] +
+                      (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2.) * vel[1];
     strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
     // clang-format on
   }
 
   if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
   if (std::fabs(strain_rate[1]) < 1.E-15) strain_rate[1] = 0.;
-  if (std::fabs(strain_rate[2]) < 1.E-15) strain_rate[2] = 0.;
   if (std::fabs(strain_rate[3]) < 1.E-15) strain_rate[3] = 0.;
   return strain_rate;
 }
@@ -113,13 +110,11 @@ inline void mpm::ParticleBbar<2>::map_internal_force() noexcept {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 2, 1> force;
     // clang-format off
-    force[0] = (dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) * stress_[0] +
-               (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[1] +
-               (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[2] +
+    force[0] = (dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2.) * stress_[0] +
+               (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2. * stress_[1] +
                dn_dx_(i, 1) * stress_[3];
-    force[1] = (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[0] +
-               (dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) * stress_[1] +
-               (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[2] +
+    force[1] = (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2. * stress_[0] +
+               (dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2.) * stress_[1] +
                dn_dx_(i, 0) * stress_[3];
     // clang-format on
 
@@ -176,20 +171,18 @@ inline Eigen::MatrixXd mpm::ParticleBbar<1>::compute_bmatrix() noexcept {
 template <>
 inline Eigen::MatrixXd mpm::ParticleBbar<2>::compute_bmatrix() noexcept {
   Eigen::MatrixXd bmatrix;
-  bmatrix.resize(4, 2 * this->nodes_.size());
+  bmatrix.resize(3, 2 * this->nodes_.size());
   bmatrix.setZero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     // clang-format off
-    bmatrix(0, 2 * i) = dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.;
-    bmatrix(1, 2 * i) =                (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.;
-    bmatrix(2, 2 * i) =                (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.;
-    bmatrix(3, 2 * i) = dn_dx_(i, 1);
+    bmatrix(0, 2 * i) = dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2.;
+    bmatrix(1, 2 * i) =                (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2.;
+    bmatrix(2, 2 * i) = dn_dx_(i, 1);
 
-    bmatrix(0, 2 * i + 1) =                (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.;
-    bmatrix(1, 2 * i + 1) = dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.;
-    bmatrix(2, 2 * i + 1) =                (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.;
-    bmatrix(3, 2 * i + 1) = dn_dx_(i, 0);
+    bmatrix(0, 2 * i + 1) =                (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2.;
+    bmatrix(1, 2 * i + 1) = dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2.;
+    bmatrix(2, 2 * i + 1) = dn_dx_(i, 0);
     // clang-format on
   }
   return bmatrix;
@@ -245,26 +238,19 @@ inline Eigen::MatrixXd mpm::ParticleBbar<2>::reduce_dmatrix(
     const Eigen::MatrixXd& dmatrix) noexcept {
 
   // Convert to 3x3 matrix in 2D
-  Eigen::MatrixXd dmatrix4x4;
-  dmatrix4x4.resize(4, 4);
-  dmatrix4x4(0, 0) = dmatrix(0, 0);
-  dmatrix4x4(0, 1) = dmatrix(0, 1);
-  dmatrix4x4(0, 2) = dmatrix(0, 2);
-  dmatrix4x4(0, 3) = dmatrix(0, 3);
-  dmatrix4x4(1, 0) = dmatrix(1, 0);
-  dmatrix4x4(1, 1) = dmatrix(1, 1);
-  dmatrix4x4(1, 2) = dmatrix(1, 2);
-  dmatrix4x4(1, 3) = dmatrix(1, 3);
-  dmatrix4x4(2, 0) = dmatrix(2, 0);
-  dmatrix4x4(2, 1) = dmatrix(2, 1);
-  dmatrix4x4(2, 2) = dmatrix(2, 2);
-  dmatrix4x4(2, 3) = dmatrix(2, 3);
-  dmatrix4x4(3, 0) = dmatrix(3, 0);
-  dmatrix4x4(3, 1) = dmatrix(3, 1);
-  dmatrix4x4(3, 2) = dmatrix(3, 2);
-  dmatrix4x4(3, 3) = dmatrix(3, 3);
+  Eigen::MatrixXd dmatrix3x3;
+  dmatrix3x3.resize(3, 3);
+  dmatrix3x3(0, 0) = dmatrix(0, 0);
+  dmatrix3x3(0, 1) = dmatrix(0, 1);
+  dmatrix3x3(0, 2) = dmatrix(0, 3);
+  dmatrix3x3(1, 0) = dmatrix(1, 0);
+  dmatrix3x3(1, 1) = dmatrix(1, 1);
+  dmatrix3x3(1, 2) = dmatrix(1, 3);
+  dmatrix3x3(2, 0) = dmatrix(3, 0);
+  dmatrix3x3(2, 1) = dmatrix(3, 1);
+  dmatrix3x3(2, 2) = dmatrix(3, 3);
 
-  return dmatrix4x4;
+  return dmatrix3x3;
 }
 
 //! Reduce constitutive relations matrix depending on the dimension
@@ -304,19 +290,16 @@ inline Eigen::Matrix<double, 6, 1>
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
     // clang-format off
-    strain_increment[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3.) * displacement[0] +
-                           (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * displacement[1];
-    strain_increment[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * displacement[0] +
-                           (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) * displacement[1];
-    strain_increment[2] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * displacement[0] +
-                           (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * displacement[1];
+    strain_increment[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2.) * displacement[0] +
+                           (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2. * displacement[1];
+    strain_increment[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2. * displacement[0] +
+                           (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2.) * displacement[1];
     strain_increment[3] += dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
     // clang-format on
   }
 
   if (std::fabs(strain_increment[0]) < 1.E-15) strain_increment[0] = 0.;
   if (std::fabs(strain_increment[1]) < 1.E-15) strain_increment[1] = 0.;
-  if (std::fabs(strain_increment[2]) < 1.E-15) strain_increment[2] = 0.;
   if (std::fabs(strain_increment[3]) < 1.E-15) strain_increment[3] = 0.;
   return strain_increment;
 }

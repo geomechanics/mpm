@@ -495,7 +495,7 @@ TEST_CASE("Implicit Cell is checked for 3D case", "[cell][3D][Implicit]") {
     for (unsigned i = 0; i < cell_stiffness_matrix.rows(); ++i)
       for (unsigned j = 0; j < cell_stiffness_matrix.cols(); ++j)
         REQUIRE(stiffness_matrix(i, j) ==
-                Approx(stiffness_matrix(i, j)).epsilon(Tolerance));
+                Approx(cell_stiffness_matrix(i, j)).epsilon(Tolerance));
 
     // Initialize cell stiffness matrix
     REQUIRE(cell->initialise_element_stiffness_matrix() == true);

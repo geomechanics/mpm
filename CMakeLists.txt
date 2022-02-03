@@ -211,6 +211,7 @@ target_link_libraries(mpm git)
 if(MPM_BUILD_TESTING)
   SET(test_src
     ${mpm_SOURCE_DIR}/tests/test_main.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_test.cc
     ${mpm_SOURCE_DIR}/tests/cells/cell_test.cc
     ${mpm_SOURCE_DIR}/tests/cells/cell_vector_test.cc
@@ -257,7 +258,9 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/nodes/node_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_cell_crossing_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_twophase_test.cc

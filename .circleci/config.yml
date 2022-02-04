@@ -26,6 +26,7 @@ jobs:
   clang:
     docker:
       - image: quay.io/cbgeo/mpm
+    resource_class: large
     steps:
       - checkout
       # Clang
@@ -43,6 +44,7 @@ jobs:
   cppcheck:
     docker:
       - image: quay.io/cbgeo/mpm
+    resource_class: large
     steps:
       - checkout
       - run:

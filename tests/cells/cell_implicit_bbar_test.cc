@@ -15,8 +15,6 @@
 #include "quadrilateral_element.h"
 #include "quadrilateral_quadrature.h"
 
-#include <iostream>
-
 //! \brief Check cell class for 2D case with B-bar method
 TEST_CASE("Implicit Cell is checked for 2D case with B-bar method",
           "[cell][2D][Implicit][Bbar]") {

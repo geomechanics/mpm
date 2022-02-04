@@ -13,8 +13,8 @@
 namespace mpm {
 
 //! ParticleBbar class
-//! \brief Class that stores the information about second-phase (liquid)
-//! particles
+//! \brief Class that introduce B-Bar formulation to the standard single-phase
+//! particle
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
 class ParticleBbar : public mpm::Particle<Tdim> {
@@ -42,10 +42,6 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   //! Delete assignment operator
   ParticleBbar& operator=(const ParticleBbar<Tdim>&) = delete;
 
-  //! Compute strain
-  //! \param[in] dt Analysis time step
-  void compute_strain(double dt) noexcept override;
-
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
@@ -58,20 +54,9 @@ class ParticleBbar : public mpm::Particle<Tdim> {
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
-  //! Reduce constitutive relations matrix depending on the dimension
-  //! \ingroup Implicit
-  //! \param[in] dmatrix Constitutive relations matrix in 3D
-  //! \retval reduced_dmatrix Reduced constitutive relation matrix for spatial
-  //! dimension
-  inline Eigen::MatrixXd reduce_dmatrix(
-      const Eigen::MatrixXd& dmatrix) noexcept override;
-
   //! Compute B matrix of a particle, based on local coordinates
-  inline Eigen::MatrixXd compute_bmatrix() noexcept override;
-
-  //! Compute strain using nodal displacement
   //! \ingroup Implicit
-  void compute_strain_newmark() noexcept override;
+  inline Eigen::MatrixXd compute_bmatrix() noexcept override;
   /**@}*/
 
  protected:
@@ -81,7 +66,7 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   //! \param[in] phase Index to indicate phase
   //! \retval strain rate at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -93,7 +78,7 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   //! \param[in] phase Index to indicate phase
   //! \retval strain increment at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
   /**@}*/
 
  protected:

@@ -10,7 +10,6 @@
 #include "hexahedron_element.h"
 #include "hexahedron_quadrature.h"
 #include "node.h"
-#include "particle.h"
 #include "particle_bbar.h"
 #include "quadrilateral_element.h"
 #include "quadrilateral_quadrature.h"

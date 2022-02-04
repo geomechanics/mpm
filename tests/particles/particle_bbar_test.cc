@@ -9,7 +9,6 @@
 #include "linear_function.h"
 #include "material.h"
 #include "node.h"
-#include "particle.h"
 #include "particle_bbar.h"
 #include "pod_particle.h"
 #include "quadrilateral_element.h"

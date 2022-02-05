@@ -114,16 +114,16 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
         if (r.norm() < tolerance) {
           convergence = true;
         } else if (it == max_it) {
-
-          console_->warn("Max number of iteration for particle in HexLME");
-          convergence = true;
+          console_->warn(
+              "Max number of iteration for shapefn computation is "
+              "reached!");
 
           //! Check condition number
           Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
           const double rcond =
               svd.singularValues()(svd.singularValues().size() - 1) /
               svd.singularValues()(0);
-          if (rcond < 1E-8) console_->warn("The Hessian matrix is singular");
+          if (rcond < 1E-8) console_->warn("The Hessian matrix is singular!");
 
           convergence = true;
         }

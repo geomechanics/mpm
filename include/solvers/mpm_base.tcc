@@ -580,7 +580,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                .string();
 
       vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps);
+                                     max_steps, 1);
     }
 #endif
   }
@@ -601,7 +601,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                .string();
 
       vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps);
+                                     max_steps, 3);
     }
 #endif
   }

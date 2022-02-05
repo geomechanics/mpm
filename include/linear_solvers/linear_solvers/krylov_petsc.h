@@ -6,7 +6,6 @@
 #include "factory.h"
 #include "mpi.h"
 #include "solver_base.h"
-#include <iostream>
 
 #ifdef USE_PETSC
 #include <petscksp.h>

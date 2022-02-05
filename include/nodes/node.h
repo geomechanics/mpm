@@ -441,7 +441,7 @@ class Node : public NodeBase<Tdim> {
   //! solvers
   //! \retval status Computation status
   bool compute_acceleration_velocity_semi_implicit_corrector_cundall(
-      unsigned phase, double dt, double damping_factor);
+      unsigned phase, double dt, double damping_factor) override;
 
   //! Assign active id
   //! \ingroup MultiPhase

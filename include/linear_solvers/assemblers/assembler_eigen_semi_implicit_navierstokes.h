@@ -42,7 +42,7 @@ class AssemblerEigenSemiImplicitNavierStokes : public AssemblerBase<Tdim> {
   bool assign_pressure_constraints(double beta, double current_time) override;
 
   //! Apply pressure constraints to poisson equation
-  void apply_pressure_constraints();
+  void apply_pressure_constraints() override;
 
   //! Return pressure increment
   Eigen::VectorXd& pressure_increment() override { return pressure_increment_; }

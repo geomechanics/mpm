@@ -72,6 +72,9 @@ class QuadrilateralElement : public Element<Tdim> {
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
+  //! Define a matrix of size dimension
+  using MatrixDim = Eigen::Matrix<double, Tdim, Tdim>;
+
   //! constructor with number of shape functions
   QuadrilateralElement() : mpm::Element<Tdim>() {
     static_assert(Tdim == 2, "Invalid dimension for a quadrilateral element");
@@ -93,7 +96,7 @@ class QuadrilateralElement : public Element<Tdim> {
   //! \param[in] deformation_gradient Deformation gradient
   //! \retval shapefn Shape function of a given cell
   Eigen::VectorXd shapefn(const VectorDim& xi, VectorDim& particle_size,
-                          const VectorDim& deformation_gradient) const override;
+                          const MatrixDim& deformation_gradient) const override;
 
   //! Evaluate local shape functions at given coordinates
   //! \param[in] xi given local coordinates
@@ -102,7 +105,7 @@ class QuadrilateralElement : public Element<Tdim> {
   //! \retval shapefn Shape function of a given cell
   Eigen::VectorXd shapefn_local(
       const VectorDim& xi, VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const override;
+      const MatrixDim& deformation_gradient) const override;
 
   //! Evaluate gradient of shape functions
   //! \param[in] xi given local coordinates
@@ -111,7 +114,7 @@ class QuadrilateralElement : public Element<Tdim> {
   //! \retval grad_shapefn Gradient of shape function of a given cell
   Eigen::MatrixXd grad_shapefn(
       const VectorDim& xi, VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const override;
+      const MatrixDim& deformation_gradient) const override;
 
   //! Compute Jacobian
   //! \param[in] xi given local coordinates
@@ -122,7 +125,7 @@ class QuadrilateralElement : public Element<Tdim> {
   Eigen::Matrix<double, Tdim, Tdim> jacobian(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
       VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const override;
+      const MatrixDim& deformation_gradient) const override;
 
   //! Compute Jacobian local
   //! \param[in] xi given local coordinates
@@ -133,7 +136,7 @@ class QuadrilateralElement : public Element<Tdim> {
   Eigen::Matrix<double, Tdim, Tdim> jacobian_local(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
       VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const override;
+      const MatrixDim& deformation_gradient) const override;
 
   //! Return the dN/dx at a given local coord
   //! \param[in] xi given local coordinates
@@ -143,7 +146,7 @@ class QuadrilateralElement : public Element<Tdim> {
   Eigen::MatrixXd dn_dx(const VectorDim& xi,
                         const Eigen::MatrixXd& nodal_coordinates,
                         VectorDim& particle_size,
-                        const VectorDim& deformation_gradient) const override;
+                        const MatrixDim& deformation_gradient) const override;
 
   //! Evaluate the B matrix at given local coordinates for a real cell
   //! \param[in] xi given local coordinates
@@ -154,7 +157,7 @@ class QuadrilateralElement : public Element<Tdim> {
   std::vector<Eigen::MatrixXd> bmatrix(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
       VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const override;
+      const MatrixDim& deformation_gradient) const override;
 
   //! Evaluate the Ni Nj matrix
   //! \param[in] xi_s Vector of local coordinates

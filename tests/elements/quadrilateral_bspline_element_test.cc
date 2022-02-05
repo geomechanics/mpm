@@ -12,6 +12,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
   const double Tolerance = 1.E-6;
 
   Eigen::Vector2d zero = Eigen::Vector2d::Zero();
+  Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
 
   //! Check for center element nodes
   SECTION("Quadratic Quadrilateral BSpline Element") {
@@ -27,7 +28,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
     SECTION("2D BSpline element for coordinates(0,0) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = quad->shapefn(coords, zero, zero);
+      auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 4);
@@ -38,7 +39,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       REQUIRE(shapefn(3) == Approx(0.25).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = quad->grad_shapefn(coords, zero, zero);
+      auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 4);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -56,7 +57,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
     SECTION("2D BSpline element for coordinates(1,1) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 1., 1.;
-      auto shapefn = quad->shapefn(coords, zero, zero);
+      auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 4);
@@ -67,7 +68,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       REQUIRE(shapefn(3) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = quad->grad_shapefn(coords, zero, zero);
+      auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 4);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -101,7 +102,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = quad->shapefn(coords, zero, zero);
+          auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 16);
@@ -125,7 +126,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
           REQUIRE(shapefn(15) == Approx(0.).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = quad->grad_shapefn(coords, zero, zero);
+          auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 16);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -144,7 +145,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         SECTION("2D BSpline element for coordinates(1,1) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 1., 1.;
-          auto shapefn = quad->shapefn(coords, zero, zero);
+          auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 16);
@@ -168,7 +169,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
           REQUIRE(shapefn(15) == Approx(0.015625).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = quad->grad_shapefn(coords, zero, zero);
+          auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 16);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -188,7 +189,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
             "Four noded local sf quadrilateral element for coordinates(0,0)") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = quad->shapefn_local(coords, zero, zero);
+          auto shapefn = quad->shapefn_local(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 4);
@@ -224,7 +225,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
 
           Eigen::Matrix<double, Dim, 1> psize;
           psize.setZero();
-          Eigen::Matrix<double, Dim, 1> defgrad;
+          Eigen::Matrix<double, Dim, Dim> defgrad;
           defgrad.setZero();
 
           Eigen::Matrix<double, Dim, 1> xi;
@@ -270,7 +271,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
           // clang-format on
 
           // Get Jacobian
-          auto jac = quad->jacobian_local(xi, coords, zero, zero);
+          auto jac = quad->jacobian_local(xi, coords, zero, zero_matrix);
 
           // Check size of jacobian
           REQUIRE(jac.size() == jacobian.size());
@@ -299,7 +300,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
         Eigen::Matrix<double, Dim, 1> coords;
         coords.setZero();
-        auto shapefn = quad->shapefn(coords, zero, zero);
+        auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
         // Check shape function
         REQUIRE(shapefn.size() == 12);
@@ -319,7 +320,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(shapefn(11) == Approx(0.).epsilon(Tolerance));
 
         // Check gradient of shape functions
-        auto gradsf = quad->grad_shapefn(coords, zero, zero);
+        auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
         REQUIRE(gradsf.rows() == 12);
         REQUIRE(gradsf.cols() == Dim);
 
@@ -338,7 +339,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       SECTION("2D BSpline element for coordinates(0.5,-0.5) after upgrade") {
         Eigen::Matrix<double, Dim, 1> coords;
         coords << 0.5, -0.5;
-        auto shapefn = quad->shapefn(coords, zero, zero);
+        auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
         // Check shape function
         REQUIRE(shapefn.size() == 12);
@@ -358,7 +359,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(shapefn(11) == Approx(0).epsilon(Tolerance));
 
         // Check gradient of shape functions
-        auto gradsf = quad->grad_shapefn(coords, zero, zero);
+        auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
         REQUIRE(gradsf.rows() == 12);
         REQUIRE(gradsf.cols() == Dim);
 
@@ -390,7 +391,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
         Eigen::Matrix<double, Dim, 1> coords;
         coords.setZero();
-        auto shapefn = quad->shapefn(coords, zero, zero);
+        auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
         // Check shape function
         REQUIRE(shapefn.size() == 9);
@@ -407,7 +408,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
 
         // Check gradient of shape functions
-        auto gradsf = quad->grad_shapefn(coords, zero, zero);
+        auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
         REQUIRE(gradsf.rows() == 9);
         REQUIRE(gradsf.cols() == Dim);
 
@@ -425,7 +426,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       SECTION("2D BSpline element for coordinates(0.5,0.5) after upgrade") {
         Eigen::Matrix<double, Dim, 1> coords;
         coords << 0.5, 0.5;
-        auto shapefn = quad->shapefn(coords, zero, zero);
+        auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
         // Check shape function
         REQUIRE(shapefn.size() == 9);
@@ -442,7 +443,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(shapefn(8) == Approx(0.0117188).epsilon(Tolerance));
 
         // Check gradient of shape functions
-        auto gradsf = quad->grad_shapefn(coords, zero, zero);
+        auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
         REQUIRE(gradsf.rows() == 9);
         REQUIRE(gradsf.cols() == Dim);
 
@@ -457,7 +458,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
                     Approx(gradsf_ans(i, j)).epsilon(Tolerance));
 
         // Check dn_dx of shape functions
-        auto dn_dx = quad->dn_dx(coords, zero, zero, zero);
+        auto dn_dx = quad->dn_dx(coords, zero, zero, zero_matrix);
         REQUIRE(dn_dx.rows() == 9);
         REQUIRE(dn_dx.cols() == Dim);
 
@@ -471,7 +472,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
           "Four noded local sf quadrilateral element for coordinates(-1,-1)") {
         Eigen::Matrix<double, Dim, 1> coords;
         coords << -1., -1.;
-        auto shapefn = quad->shapefn_local(coords, zero, zero);
+        auto shapefn = quad->shapefn_local(coords, zero, zero_matrix);
 
         // Check shape function
         REQUIRE(shapefn.size() == 4);

@@ -476,13 +476,15 @@ void mpm::Particle<Tdim>::compute_shapefn() noexcept {
 
   // Zero matrix
   Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, Tdim> zero_matrix =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
 
   // Compute shape function of the particle
-  shapefn_ = element->shapefn(this->xi_, this->natural_size_, zero);
+  shapefn_ = element->shapefn(this->xi_, this->natural_size_, zero_matrix);
 
   // Compute dN/dx
   dn_dx_ = element->dn_dx(this->xi_, cell_->nodal_coordinates(),
-                          this->natural_size_, zero);
+                          this->natural_size_, zero_matrix);
 }
 
 // Assign volume to the particle

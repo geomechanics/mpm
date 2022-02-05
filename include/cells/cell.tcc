@@ -42,12 +42,14 @@ bool mpm::Cell<Tdim>::initialise() {
       Eigen::Matrix<double, Tdim, 1> xi_centroid;
       xi_centroid.setZero();
 
-      Eigen::Matrix<double, Tdim, 1> zero;
-      zero.setZero();
+      Eigen::Matrix<double, Tdim, 1> zero =
+          Eigen::Matrix<double, Tdim, 1>::Zero();
+      Eigen::Matrix<double, Tdim, Tdim> zero_matrix =
+          Eigen::Matrix<double, Tdim, Tdim>::Zero();
 
       // dN/dX at the centroid
-      dn_dx_centroid_ =
-          element_->dn_dx(xi_centroid, this->nodal_coordinates_, zero, zero);
+      dn_dx_centroid_ = element_->dn_dx(xi_centroid, this->nodal_coordinates_,
+                                        zero, zero_matrix);
 
       status = true;
     } else {
@@ -101,12 +103,14 @@ std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points() {
 
   // Zeros
   Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, Tdim> zeros_matrix =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
 
   // Get local coordinates of gauss points and transform to global
   for (unsigned i = 0; i < quadratures.cols(); ++i) {
     const auto lpoint = quadratures.col(i);
     // Get shape functions
-    const auto sf = element_->shapefn(lpoint, zeros, zeros);
+    const auto sf = element_->shapefn(lpoint, zeros, zeros_matrix);
     const auto point = nodal_coords * sf;
     const auto xi = this->transform_real_to_unit_cell(point);
     bool status = true;
@@ -553,6 +557,8 @@ inline Eigen::Matrix<double, Tdim, 1>
 
   // Zeros
   Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, Tdim> zero_matrix =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
 
   // Matrix of nodal coordinates
   const Eigen::MatrixXd nodal_coords = nodal_coordinates_.transpose();
@@ -580,7 +586,7 @@ inline Eigen::Matrix<double, Tdim, 1>
         analytical_xi_in_cell = false;
 
     // Local shape function
-    const auto sf = element_->shapefn_local(analytical_xi, zero, zero);
+    const auto sf = element_->shapefn_local(analytical_xi, zero, zero_matrix);
     // f(x) = p(x) - p, where p is the real point
     analytical_residual = (nodal_coords * sf) - point;
     // Early exit
@@ -627,7 +633,7 @@ inline Eigen::Matrix<double, Tdim, 1>
     // Set xi to affine guess
     if (!affine_nan) {
       // Local shape function
-      const auto sf = element_->shapefn_local(affine_xi, zero, zero);
+      const auto sf = element_->shapefn_local(affine_xi, zero, zero_matrix);
 
       // f(x) = p(x) - p, where p is the real point
       affine_residual = (nodal_coords * sf) - point;
@@ -680,13 +686,13 @@ inline Eigen::Matrix<double, Tdim, 1>
   for (; iter < max_iterations; ++iter) {
     // Calculate local Jacobian
     const Eigen::Matrix<double, Tdim, Tdim> jacobian =
-        element_->jacobian_local(nr_xi, unit_cell, zero, zero);
+        element_->jacobian_local(nr_xi, unit_cell, zero, zero_matrix);
 
     // Set guess nr_xi to zero
     if (std::abs(jacobian.determinant()) < 1.0E-10) nr_xi.setZero();
 
     // Local shape function
-    const auto sf = element_->shapefn_local(nr_xi, zero, zero);
+    const auto sf = element_->shapefn_local(nr_xi, zero, zero_matrix);
 
     // Residual (f(x))
     // f(x) = p(x) - p, where p is the real point
@@ -705,7 +711,8 @@ inline Eigen::Matrix<double, Tdim, 1>
           nr_xi - (step_length * delta);
 
       // Trial shape function
-      const auto sf_trial = element_->shapefn_local(xi_trial, zero, zero);
+      const auto sf_trial =
+          element_->shapefn_local(xi_trial, zero, zero_matrix);
 
       // Trial residual: f(x) = p(x) - p, where p is the real point
       const Eigen::Matrix<double, Tdim, 1> nr_residual_trial =

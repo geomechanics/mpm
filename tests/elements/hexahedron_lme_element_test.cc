@@ -11,6 +11,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
   const double Tolerance = 1.E-6;
 
   Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
 
   //! Check for center element nodes
   SECTION("Quadratic Hexahedron BSpline Element") {
@@ -27,7 +28,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
       // Coordinate location of point (x,y)
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn(coords, zero, zero);
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 8);
@@ -42,7 +43,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
       REQUIRE(shapefn(7) == Approx(0.125).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, zero, zero);
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 8);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -79,7 +80,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
         "3D BSpline element for coordinate (-1., -1., -1.) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << -1., -1., -1.;
-      auto shapefn = hex->shapefn(coords, zero, zero);
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
       // Check shape function
       REQUIRE(shapefn.size() == 8);
 
@@ -93,7 +94,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
       REQUIRE(shapefn(7) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, zero, zero);
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 8);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -213,7 +214,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = hex->shapefn(coords, zero, zero);
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 64);
@@ -285,7 +286,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
           REQUIRE(shapefn(63) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, zero, zero);
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 64);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -489,7 +490,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
         //     {
         //   Eigen::Matrix<double, Dim, 1> coords;
         //   coords << 0.5, -0.5, 0.5;
-        //   auto shapefn = hex->shapefn(coords, zero, zero);
+        //   auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
         //   // Check shape function
         //   REQUIRE(shapefn.size() == 64);
@@ -561,7 +562,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
         //   REQUIRE(shapefn(63) == Approx(0).epsilon(Tolerance));
 
         //   // Check gradient of shape functions
-        //   auto gradsf = hex->grad_shapefn(coords, zero, zero);
+        //   auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
         //   REQUIRE(gradsf.rows() == 64);
         //   REQUIRE(gradsf.cols() == Dim);
 
@@ -603,7 +604,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
         //     {
         //   Eigen::Matrix<double, Dim, 1> coords;
         //   coords.setZero();
-        //   auto shapefn = hex->shapefn_local(coords, zero, zero);
+        //   auto shapefn = hex->shapefn_local(coords, zero, zero_matrix);
 
         //   // Check shape function
         //   REQUIRE(shapefn.size() == 8);
@@ -637,7 +638,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
 
         //   Eigen::Matrix<double, Dim, 1> psize;
         //   psize.setZero();
-        //   Eigen::Matrix<double, Dim, 1> defgrad;
+        //   Eigen::Matrix<double, Dim, Dim> defgrad;
         //   defgrad.setZero();
 
         //   Eigen::Matrix<double, Dim, 1> xi;
@@ -685,13 +686,13 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
         //       1, -3., -3., 3, -1., -3., 3, 1., -3., 3, 3., -3., 3;
 
         //   // Get B-Matrix
-        //   auto bmatrix = hex->bmatrix(xi, coords, zero, zero);
+        //   auto bmatrix = hex->bmatrix(xi, coords, zero, zero_matrix);
 
         //   // Check gradient of shape functions
-        //   auto gradsf = hex->grad_shapefn(xi, zero, zero);
+        //   auto gradsf = hex->grad_shapefn(xi, zero, zero_matrix);
 
         //   // Check dN/dx
-        //   auto dn_dx = hex->dn_dx(xi, coords, zero, zero);
+        //   auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
         //   REQUIRE(dn_dx.rows() == 64);
         //   REQUIRE(dn_dx.cols() == Dim);
         //   for (unsigned i = 0; i < 64; ++i) {
@@ -809,7 +810,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //     SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
     //       Eigen::Matrix<double, Dim, 1> coords;
     //       coords.setZero();
-    //       auto shapefn = hex->shapefn(coords, zero, zero);
+    //       auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
     //       // Check shape function
     //       REQUIRE(shapefn.size() == 48);
@@ -865,7 +866,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //       REQUIRE(shapefn(47) == Approx(0).epsilon(Tolerance));
 
     //       // Check gradient of shape functions
-    //       auto gradsf = hex->grad_shapefn(coords, zero, zero);
+    //       auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
     //       REQUIRE(gradsf.rows() == 48);
     //       REQUIRE(gradsf.cols() == Dim);
 
@@ -895,7 +896,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //         {
     //       Eigen::Matrix<double, Dim, 1> coords;
     //       coords << 0.5, -0.5, 0.5;
-    //       auto shapefn = hex->shapefn(coords, zero, zero);
+    //       auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
     //       // Check shape function
     //       REQUIRE(shapefn.size() == 48);
@@ -951,7 +952,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //       REQUIRE(shapefn(47) == Approx(0).epsilon(Tolerance));
 
     //       // Check gradient of shape functions
-    //       auto gradsf = hex->grad_shapefn(coords, zero, zero);
+    //       auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
     //       REQUIRE(gradsf.rows() == 48);
     //       REQUIRE(gradsf.cols() == Dim);
 
@@ -1041,7 +1042,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //     SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
     //       Eigen::Matrix<double, Dim, 1> coords;
     //       coords.setZero();
-    //       auto shapefn = hex->shapefn(coords, zero, zero);
+    //       auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
     //       // Check shape function
     //       REQUIRE(shapefn.size() == 36);
@@ -1085,7 +1086,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //       REQUIRE(shapefn(35) == Approx(0).epsilon(Tolerance));
 
     //       // Check gradient of shape functions
-    //       auto gradsf = hex->grad_shapefn(coords, zero, zero);
+    //       auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
     //       REQUIRE(gradsf.rows() == 36);
     //       REQUIRE(gradsf.cols() == Dim);
 
@@ -1112,7 +1113,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //         {
     //       Eigen::Matrix<double, Dim, 1> coords;
     //       coords << 0.5, -0.5, 0.5;
-    //       auto shapefn = hex->shapefn(coords, zero, zero);
+    //       auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
     //       // Check shape function
     //       REQUIRE(shapefn.size() == 36);
@@ -1156,7 +1157,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //       REQUIRE(shapefn(35) == Approx(0).epsilon(Tolerance));
 
     //       // Check gradient of shape functions
-    //       auto gradsf = hex->grad_shapefn(coords, zero, zero);
+    //       auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
     //       REQUIRE(gradsf.rows() == 36);
     //       REQUIRE(gradsf.cols() == Dim);
 
@@ -1231,7 +1232,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //     SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
     //       Eigen::Matrix<double, Dim, 1> coords;
     //       coords.setZero();
-    //       auto shapefn = hex->shapefn(coords, zero, zero);
+    //       auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
     //       // Check shape function
     //       REQUIRE(shapefn.size() == 27);
@@ -1266,7 +1267,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //       REQUIRE(shapefn(26) == Approx(0).epsilon(Tolerance));
 
     //       // Check gradient of shape functions
-    //       auto gradsf = hex->grad_shapefn(coords, zero, zero);
+    //       auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
     //       REQUIRE(gradsf.rows() == 27);
     //       REQUIRE(gradsf.cols() == Dim);
 
@@ -1292,7 +1293,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //         "upgrade") {
     //       Eigen::Matrix<double, Dim, 1> coords;
     //       coords << 0.5, -0.5, 0.5;
-    //       auto shapefn = hex->shapefn(coords, zero, zero);
+    //       auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
     //       // Check shape function
     //       REQUIRE(shapefn.size() == 27);
@@ -1327,7 +1328,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     //       REQUIRE(shapefn(26) == Approx(0).epsilon(Tolerance));
 
     //       // Check gradient of shape functions
-    //       auto gradsf = hex->grad_shapefn(coords, zero, zero);
+    //       auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
     //       REQUIRE(gradsf.rows() == 27);
     //       REQUIRE(gradsf.cols() == Dim);
 

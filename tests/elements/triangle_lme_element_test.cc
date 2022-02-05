@@ -11,6 +11,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
   const double Tolerance = 1.E-6;
 
   Eigen::Vector2d zero = Eigen::Vector2d::Zero();
+  Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
 
   //! Check for center element nodes
   SECTION("Linear Triangle LME Element") {
@@ -25,7 +26,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
     SECTION("2D LME for coordinates in the barycentre before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 0.16666666666, 0.16666666666;
-      auto shapefn = tri->shapefn(coords, zero, zero);
+      auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 3);
@@ -35,7 +36,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
       REQUIRE(shapefn(2) == Approx(0.16666666666).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(coords, zero, zero);
+      auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 3);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -74,7 +75,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
         SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 1. / 3., 1. / 3.;
-          auto shapefn = tri->shapefn(coords, zero, zero);
+          auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 14);
@@ -96,7 +97,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
           REQUIRE(shapefn(13) == Approx(0.).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = tri->grad_shapefn(coords, zero, zero);
+          auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 14);
           REQUIRE(gradsf.cols() == Dim);
 

@@ -12,6 +12,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
   const double Tolerance = 1.E-6;
 
   Eigen::Vector2d zero = Eigen::Vector2d::Zero();
+  Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
 
   //! Check for center element nodes
   SECTION("Quadratic Quadrilateral LME Element") {
@@ -26,7 +27,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
     SECTION("2D BSpline element for coordinates(0,0) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = quad->shapefn(coords, zero, zero);
+      auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 4);
@@ -37,7 +38,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
       REQUIRE(shapefn(3) == Approx(0.25).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = quad->grad_shapefn(coords, zero, zero);
+      auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 4);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -55,7 +56,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
     SECTION("2D BSpline element for coordinates(1,1) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 1., 1.;
-      auto shapefn = quad->shapefn(coords, zero, zero);
+      auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 4);
@@ -66,7 +67,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
       REQUIRE(shapefn(3) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = quad->grad_shapefn(coords, zero, zero);
+      auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 4);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -106,7 +107,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
         SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = quad->shapefn(coords, zero, zero);
+          auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 16);
@@ -130,7 +131,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
           REQUIRE(shapefn(15) == Approx(0.).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = quad->grad_shapefn(coords, zero, zero);
+          auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 16);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -235,7 +236,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
 
         //   Eigen::Matrix<double, Dim, 1> psize;
         //   psize.setZero();
-        //   Eigen::Matrix<double, Dim, 1> defgrad;
+        //   Eigen::Matrix<double, Dim, Dim> defgrad;
         //   defgrad.setZero();
 
         //   Eigen::Matrix<double, Dim, 1> xi;
@@ -487,7 +488,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
     //     // Check dn_dx of shape functions
     //     auto dn_dx =
     //         quad->dn_dx(coords, zero,
-    //                     zero, zero);
+    //                     zero, zero_matrix);
     //     REQUIRE(dn_dx.rows() == 9);
     //     REQUIRE(dn_dx.cols() == Dim);
 

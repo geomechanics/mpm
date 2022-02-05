@@ -1113,7 +1113,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5;
       Eigen::Matrix<double, Dim, Dim> defgrad;
-      defgrad << 0.5, 0.5;
+      defgrad << 0.5, 0.5, 0.5, 0.5;
 
       // Get B-Matrix
       auto bmatrix = tri->bmatrix(xi, coords, psize, defgrad);

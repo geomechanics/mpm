@@ -1152,7 +1152,7 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5;
       Eigen::Matrix<double, Dim, Dim> defgrad;
-      defgrad << 0.5, 0.5;
+      defgrad << 0.5, 0.5, 0.5, 0.5;
 
       // Get B-Matrix
       auto bmatrix = quad->bmatrix(xi, coords, psize, defgrad);
@@ -1614,7 +1614,7 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.1;
       Eigen::Matrix<double, Dim, Dim> defgrad;
-      defgrad << -0.25, 0.1;
+      defgrad << -0.25, 0.1, -0.25, 0.1;
 
       auto shapefn = quad->shapefn(coords, psize, defgrad);
 
@@ -1914,7 +1914,7 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize << -0.5, -0.5;
       Eigen::Matrix<double, Dim, Dim> defgrad;
-      defgrad << -0.5, -0.5;
+      defgrad << -0.5, -0.5, -0.5, -0.5;
 
       // Jacobian result
       Eigen::Matrix<double, Dim, Dim> jacobian;
@@ -2091,7 +2091,7 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize << -0.5, -0.5;
       Eigen::Matrix<double, Dim, Dim> defgrad;
-      defgrad << -0.5, -0.5;
+      defgrad << -0.5, -0.5, -0.5, -0.5;
 
       // Nodal coordinates
       Eigen::Matrix<double, 9, Dim> coords;

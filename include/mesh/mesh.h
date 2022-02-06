@@ -179,6 +179,9 @@ class Mesh {
   //! Number of cells in mesh rank
   mpm::Index ncells_rank(bool active_cells = false);
 
+  //! Compute average cell size
+  double compute_average_cell_size() const;
+
   //! Iterate over cells
   //! \tparam Toper Callable object typically a baseclass functor
   template <typename Toper>

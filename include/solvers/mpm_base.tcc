@@ -1589,8 +1589,12 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                      .template get<double>();
 
         // Average mesh size
-        double h = mesh_props["nonlocal_mesh_properties"]["mesh_size"]
-                       .template get<double>();
+        double h;
+        if (mesh_props["nonlocal_mesh_properties"].contains("mesh_size"))
+          h = mesh_props["nonlocal_mesh_properties"]["mesh_size"]
+                  .template get<double>();
+        else
+          h = mesh_->compute_average_cell_size();
 
         // Calculate beta
         const double beta = gamma / (h * h);

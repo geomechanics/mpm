@@ -287,6 +287,17 @@ void mpm::Mesh<Tdim>::find_cell_neighbours() {
   }
 }
 
+//! Compute average cell size
+template <unsigned Tdim>
+double mpm::Mesh<Tdim>::compute_average_cell_size() const {
+  double mesh_size = 0.0;
+#pragma omp parallel for schedule(runtime) reduction(+ : mesh_size)
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr)
+    mesh_size += (*citr)->mean_length();
+  mesh_size *= 1. / cells_.size();
+  return mesh_size;
+}
+
 //! Find global number of particles across MPI ranks / cell
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::find_nglobal_particles_cells() {

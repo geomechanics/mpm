@@ -17,7 +17,14 @@ namespace mpm {
 enum ElementDegree { Linear = 1, Quadratic = 2, Infinity = 99 };
 
 // Element Shapefn
-enum ShapefnType { NORMAL_MPM = 1, GIMP = 2, CPDI = 3, BSPLINE = 4, LME = 5 };
+enum ShapefnType {
+  NORMAL_MPM = 1,
+  GIMP = 2,
+  CPDI = 3,
+  BSPLINE = 4,
+  LME = 5,
+  ALME = 6
+};
 
 //! Base class of shape functions
 //! \brief Base class that stores the information about shape functions

@@ -900,7 +900,8 @@ bool mpm::Cell<Tdim>::initialiase_nonlocal(
 
       this->element_->initialise_bspline_connectivity_properties(
           this->nodal_coordinates_, nodal_properties);
-    } else if (element_->shapefn_type() == mpm::ShapefnType::LME) {
+    } else if ((element_->shapefn_type() == mpm::ShapefnType::LME) ||
+               (element_->shapefn_type() == mpm::ShapefnType::ALME)) {
       this->element_->initialise_lme_connectivity_properties(
           nonlocal_properties.at("beta"),
           nonlocal_properties.at("support_radius"), this->nodal_coordinates_);

@@ -592,6 +592,139 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     cell->nglobal_particles(5);
     REQUIRE(cell->nglobal_particles() == 5);
   }
+
+  SECTION("Test nonlocal functions") {
+    auto cell = std::make_shared<mpm::Cell<Dim>>(0, Nnodes, element, true);
+
+    // nonlocal element
+    // Quadratic B-Spline shape functions
+    std::shared_ptr<mpm::Element<Dim>> bspline_element =
+        Factory<mpm::Element<Dim>>::instance()->create("ED2Q4P2B");
+
+    // Additional nodes
+    coords << 0., 0.;
+    std::shared_ptr<mpm::NodeBase<Dim>> node0 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(0, coords);
+
+    coords << 2., 0.;
+    std::shared_ptr<mpm::NodeBase<Dim>> node1 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(1, coords);
+
+    coords << 2., 2.;
+    std::shared_ptr<mpm::NodeBase<Dim>> node2 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(2, coords);
+
+    coords << 0., 2.;
+    std::shared_ptr<mpm::NodeBase<Dim>> node3 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(3, coords);
+
+    coords << -2.0, -2.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node4 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(4, coords);
+
+    coords << 0.0, -2.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node5 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(5, coords);
+
+    coords << 2.0, -2.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node6 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(6, coords);
+
+    coords << 4.0, -2.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node7 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(7, coords);
+
+    coords << 4.0, 0.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node8 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(8, coords);
+
+    coords << 4.0, 2.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node9 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(9, coords);
+
+    coords << 4.0, 4.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node10 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(10, coords);
+
+    coords << 2.0, 4.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node11 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(11, coords);
+
+    coords << 0.0, 4.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node12 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(12, coords);
+
+    coords << -2.0, 4.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node13 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(13, coords);
+
+    coords << -2.0, 2.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node14 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(14, coords);
+
+    coords << -2.0, 0.0;
+    std::shared_ptr<mpm::NodeBase<Dim>> node15 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(15, coords);
+
+    // Initialise nonlocal nodes
+    node0->initialise_nonlocal_node();
+    node1->initialise_nonlocal_node();
+    node2->initialise_nonlocal_node();
+    node3->initialise_nonlocal_node();
+    node4->initialise_nonlocal_node();
+    node5->initialise_nonlocal_node();
+    node6->initialise_nonlocal_node();
+    node7->initialise_nonlocal_node();
+    node8->initialise_nonlocal_node();
+    node9->initialise_nonlocal_node();
+    node10->initialise_nonlocal_node();
+    node11->initialise_nonlocal_node();
+    node12->initialise_nonlocal_node();
+    node13->initialise_nonlocal_node();
+    node14->initialise_nonlocal_node();
+    node15->initialise_nonlocal_node();
+
+    REQUIRE(cell->add_node(0, node0) == true);
+    REQUIRE(cell->add_node(1, node1) == true);
+    REQUIRE(cell->add_node(2, node2) == true);
+    REQUIRE(cell->add_node(3, node3) == true);
+    REQUIRE(cell->nnodes() == 4);
+    // Initialise cell
+    REQUIRE(cell->initialise() == true);
+
+    // nonlocal functions - test fail
+    REQUIRE(cell->upgrade_status(4) == false);
+    REQUIRE(cell->initialiase_nonlocal() == false);
+    REQUIRE_THROWS(cell->assign_nonlocal_elementptr(bspline_element));
+
+    // nonlocal functions - test successful
+    auto nonlocal_cell =
+        std::make_shared<mpm::Cell<Dim>>(1, Nnodes, bspline_element, true);
+
+    REQUIRE(nonlocal_cell->add_node(0, node0) == true);
+    REQUIRE(nonlocal_cell->add_node(1, node1) == true);
+    REQUIRE(nonlocal_cell->add_node(2, node2) == true);
+    REQUIRE(nonlocal_cell->add_node(3, node3) == true);
+    REQUIRE(nonlocal_cell->nnodes() == 4);
+    REQUIRE(nonlocal_cell->upgrade_status(16) == true);
+    REQUIRE_NOTHROW(nonlocal_cell->assign_nonlocal_elementptr(bspline_element));
+
+    REQUIRE(nonlocal_cell->add_node(4, node4) == true);
+    REQUIRE(nonlocal_cell->add_node(5, node5) == true);
+    REQUIRE(nonlocal_cell->add_node(6, node6) == true);
+    REQUIRE(nonlocal_cell->add_node(7, node7) == true);
+    REQUIRE(nonlocal_cell->add_node(8, node8) == true);
+    REQUIRE(nonlocal_cell->add_node(9, node9) == true);
+    REQUIRE(nonlocal_cell->add_node(10, node10) == true);
+    REQUIRE(nonlocal_cell->add_node(11, node11) == true);
+    REQUIRE(nonlocal_cell->add_node(12, node12) == true);
+    REQUIRE(nonlocal_cell->add_node(13, node13) == true);
+    REQUIRE(nonlocal_cell->add_node(14, node14) == true);
+    REQUIRE(nonlocal_cell->add_node(15, node15) == true);
+    REQUIRE(nonlocal_cell->nnodes() == 16);
+
+    REQUIRE(nonlocal_cell->initialiase_nonlocal() == true);
+  }
 }
 
 //! \brief Check cell class for 3D case

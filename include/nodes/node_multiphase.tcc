@@ -69,7 +69,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::
     this->apply_friction_constraints(dt);
 
     // Velocity += acceleration * dt
-    this->velocity_ += this->acceleration_ * dt;
+    this->velocity_.noalias() += this->acceleration_ * dt;
 
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
@@ -134,7 +134,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::
     this->apply_friction_constraints(dt);
 
     // Velocity += acceleration * dt
-    this->velocity_ += this->acceleration_ * dt;
+    this->velocity_.noalias() += this->acceleration_ * dt;
 
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
@@ -171,7 +171,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::
     this->acceleration_.col(phase) += acceleration_corrected;
 
     // Update velocity
-    velocity_.col(phase) += acceleration_corrected * dt;
+    velocity_.col(phase).noalias() += acceleration_corrected * dt;
 
     // Apply friction constraints
     this->apply_friction_constraints(dt);
@@ -217,7 +217,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::
     this->acceleration_.col(phase) = acceleration_corrected;
 
     // Update velocity
-    velocity_.col(phase) += acceleration_corrected * dt;
+    velocity_.col(phase).noalias() += acceleration_corrected * dt;
 
     // Apply friction constraints
     this->apply_friction_constraints(dt);
@@ -262,7 +262,8 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_intermediate_acceleration_velocity(
   acceleration_.col(phase) = acceleration_inter.row(active_id_).transpose();
 
   // Update nodal intermediate velocity
-  velocity_.col(phase) += dt * acceleration_inter.row(active_id_).transpose();
+  velocity_.col(phase).noalias() +=
+      dt * acceleration_inter.row(active_id_).transpose();
 }
 
 //! Update correction force

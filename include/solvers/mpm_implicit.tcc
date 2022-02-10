@@ -197,7 +197,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
           assembler_->residual_force_rhs_vector(), true);
 
     // Iterations
-    while (!convergence && current_iteration_ <= max_iteration_) {
+    while (!convergence && current_iteration_ < max_iteration_) {
       // Initialisation of Newton-Raphson iteration
       this->initialise_newton_raphson_iteration();
 
@@ -219,7 +219,8 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       }
 
       // Finalisation of Newton-Raphson iteration
-      if (convergence) this->finalise_newton_raphson_iteration();
+      if (convergence || current_iteration_ == max_iteration_)
+        this->finalise_newton_raphson_iteration();
     }
 
     // Locate particles

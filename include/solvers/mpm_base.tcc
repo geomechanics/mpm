@@ -259,7 +259,7 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Create cells from file
   bool cell_status =
       mesh_->create_cells(gid,                                  // global id
-                          element,                              // element tyep
+                          element,                              // element type
                           mesh_io->read_mesh_cells(mesh_file),  // Node ids
                           check_duplicates);                    // Check dups
 
@@ -273,6 +273,11 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign cell sets
   this->cell_entity_sets(mesh_props, check_duplicates);
+
+  // Use Nonlocal basis
+  if (cell_type.back() == 'B') {
+    this->initialise_nonlocal_mesh(mesh_props);
+  }
 
   auto cells_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Read cells: {} ms", mpi_rank,
@@ -523,30 +528,13 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
     auto particles_file =
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
 
-    // Load particle information from file
-    mesh_->write_particles_hdf5(particles_file);
-
-    if (attribute == "particles")
+    if (attribute == "particles" || attribute == "fluid_particles")
       mesh_->write_particles_hdf5(particles_file);
     else if (attribute == "twophase_particles")
       mesh_->write_particles_hdf5_twophase(particles_file);
     else if (attribute == "xmpm_particles")
       mesh_->write_particles_hdf5_xmpm(particles_file);
   }
-}
-
-//! Write HDF5 files for twophase particles
-template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::write_hdf5_twophase(mpm::Index step,
-                                             mpm::Index max_steps) {
-  // Write hdf5 file for single phase particle
-  std::string attribute = "twophase_particles";
-  std::string extension = ".h5";
-
-  auto particles_file =
-      io_->output_file(attribute, extension, uuid_, step, max_steps).string();
-
-  mesh_->write_particles_hdf5_twophase(particles_file);
 }
 
 #ifdef USE_VTK
@@ -599,7 +587,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                .string();
 
       vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps);
+                                     max_steps, 1);
     }
 #endif
   }
@@ -620,7 +608,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                .string();
 
       vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps);
+                                     max_steps, 3);
     }
 #endif
   }
@@ -1234,19 +1222,40 @@ void mpm::MPMBase<Tdim>::particles_stresses(
     const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
   try {
     if (mesh_props.find("particles_stresses") != mesh_props.end()) {
-      std::string fparticles_stresses =
-          mesh_props["particles_stresses"].template get<std::string>();
-      if (!io_->file_name(fparticles_stresses).empty()) {
+      // Get generator type
+      const std::string type =
+          mesh_props["particles_stresses"]["type"].template get<std::string>();
+      if (type == "file") {
+        std::string fparticles_stresses =
+            mesh_props["particles_stresses"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fparticles_stresses).empty()) {
 
-        // Get stresses of all particles
-        const auto all_particles_stresses =
-            particle_io->read_particles_stresses(
-                io_->file_name(fparticles_stresses));
+          // Get stresses of all particles
+          const auto all_particles_stresses =
+              particle_io->read_particles_stresses(
+                  io_->file_name(fparticles_stresses));
 
-        // Read and assign particles stresses
-        if (!mesh_->assign_particles_stresses(all_particles_stresses))
-          throw std::runtime_error(
-              "Particles stresses are not properly assigned");
+          // Read and assign particles stresses
+          if (!mesh_->assign_particles_stresses(all_particles_stresses))
+            throw std::runtime_error(
+                "Particles stresses are not properly assigned");
+        }
+      } else if (type == "isotropic") {
+        Eigen::Matrix<double, 6, 1> in_stress;
+        in_stress.setZero();
+        if (mesh_props["particles_stresses"]["values"].is_array() &&
+            mesh_props["particles_stresses"]["values"].size() ==
+                in_stress.size()) {
+          for (unsigned i = 0; i < in_stress.size(); ++i) {
+            in_stress[i] = mesh_props["particles_stresses"]["values"].at(i);
+          }
+          mesh_->iterate_over_particles(
+              std::bind(&mpm::ParticleBase<Tdim>::initial_stress,
+                        std::placeholders::_1, in_stress));
+        } else {
+          throw std::runtime_error("Initial stress dimension is invalid");
+        }
       }
     } else
       throw std::runtime_error("Particle stresses JSON not found");
@@ -1306,6 +1315,13 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
             &mpm::ParticleBase<Tdim>::initialise_pore_pressure_watertable,
             std::placeholders::_1, dir_v, dir_h, this->gravity_,
             reference_points));
+      } else if (type == "isotropic") {
+        const double pore_pressure =
+            mesh_props["particles_pore_pressures"]["values"]
+                .template get<double>();
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::assign_pressure, std::placeholders::_1,
+            pore_pressure, mpm::ParticlePhase::Liquid));
       } else
         throw std::runtime_error(
             "Particle pore pressures generator type is not properly "
@@ -1521,5 +1537,49 @@ void mpm::MPMBase<Tdim>::initialise_linear_solver(
             std::string,
             std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>(
             dof, lin_solver));
+  }
+}
+
+//! Initialise nonlocal mesh
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
+  //! Shape function name
+  const auto cell_type = mesh_props["cell_type"].template get<std::string>();
+  try {
+    if (cell_type.back() == 'B') {
+      // Cell and node neighbourhood for quadratic B-Spline
+      cell_neighbourhood_ = 1;
+      node_neighbourhood_ = 3;
+
+      // Initialise nonlocal node
+      mesh_->iterate_over_nodes(
+          std::bind(&mpm::NodeBase<Tdim>::initialise_nonlocal_node,
+                    std::placeholders::_1));
+
+      //! Read nodal type from entity sets
+      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end() &&
+          mesh_props["nonlocal_mesh_properties"].find("node_types") !=
+              mesh_props["nonlocal_mesh_properties"].end()) {
+
+        // Iterate over node type
+        for (const auto& node_type :
+             mesh_props["nonlocal_mesh_properties"]["node_types"]) {
+          // Set id
+          int nset_id = node_type.at("nset_id").template get<int>();
+          // Direction
+          unsigned dir = node_type.at("dir").template get<unsigned>();
+          // Type
+          unsigned type = node_type.at("type").template get<unsigned>();
+          // Assign nodal nonlocal type
+          mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+        }
+      }
+
+      //! Update number of nodes in cell
+      mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_);
+    }
+  } catch (std::exception& exception) {
+    console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,
+                   __LINE__, exception.what());
   }
 }

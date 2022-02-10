@@ -308,6 +308,48 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
                 Approx(ext_forces.at(i)).epsilon(Tolerance));
       }
     }
+
+    // Test nonlocal mesh functions
+    SECTION("Check nonlocal mesh functions") {
+      tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
+      node_sets[0] = std::vector<mpm::Index>{0, 3};
+      node_sets[1] = std::vector<mpm::Index>{1, 2, 4, 5, 6, 7};
+      std::vector<unsigned> n0 = {4, 1, 0};
+      std::vector<unsigned> n1 = {4, 0, 3};
+      std::vector<unsigned> n2 = {4, 0, 3};
+      std::vector<unsigned> n3 = {4, 1, 0};
+      std::vector<unsigned> n4 = {4, 0, 3};
+      std::vector<unsigned> n5 = {4, 0, 3};
+      std::vector<unsigned> n6 = {4, 0, 3};
+      std::vector<unsigned> n7 = {4, 0, 3};
+
+      REQUIRE_NOTHROW(node0->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node1->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node2->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node3->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node4->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node5->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node6->initialise_nonlocal_node());
+      REQUIRE_NOTHROW(node7->initialise_nonlocal_node());
+
+      REQUIRE(mesh->create_node_sets(node_sets, true) == true);
+
+      REQUIRE(mesh->assign_nodal_nonlocal_type(0, 1, 1) == true);
+      REQUIRE(mesh->assign_nodal_nonlocal_type(1, 2, 3) == true);
+      REQUIRE(mesh->assign_nodal_nonlocal_type(-1, 0, 4) == true);
+
+      REQUIRE(node0->nonlocal_node_type() == n0);
+      REQUIRE(node1->nonlocal_node_type() == n1);
+      REQUIRE(node2->nonlocal_node_type() == n2);
+      REQUIRE(node3->nonlocal_node_type() == n3);
+      REQUIRE(node4->nonlocal_node_type() == n4);
+      REQUIRE(node5->nonlocal_node_type() == n5);
+      REQUIRE(node6->nonlocal_node_type() == n6);
+      REQUIRE(node7->nonlocal_node_type() == n7);
+
+      REQUIRE_THROWS(mesh->upgrade_cells_to_nonlocal("ED3H8", 0));
+      REQUIRE(mesh->upgrade_cells_to_nonlocal("ED3H8P2B", 1) == true);
+    }
   }
 
   // Check add / remove node

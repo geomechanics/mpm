@@ -441,7 +441,7 @@ class Node : public NodeBase<Tdim> {
   //! solvers
   //! \retval status Computation status
   bool compute_acceleration_velocity_semi_implicit_corrector_cundall(
-      unsigned phase, double dt, double damping_factor);
+      unsigned phase, double dt, double damping_factor) override;
 
   //! Assign active id
   //! \ingroup MultiPhase
@@ -518,6 +518,36 @@ class Node : public NodeBase<Tdim> {
     return correction_force_.col(phase);
   }
 
+  /**@}*/
+
+  /**
+   * \defgroup Nonlocal Functions dealing with MPM with nonlocal shape function
+   */
+  /**@{*/
+
+  //! Function that initialise variables for nonlocal MPM
+  //! \ingroup Nonlocal
+  void initialise_nonlocal_node() noexcept override;
+
+  //! Assign nodal nonlocal type
+  //! \ingroup Nonlocal
+  //! \param[in] dir Direction of node type
+  //! \param[in] type Integer denoting the node type
+  //! \brief: The list of node type is
+  //! Regular = 0 (Default),
+  //! LowerBoundary = 1,
+  //! LowerIntermediate = 2,
+  //! UpperIntermediate = 3
+  //! UpperBoundary = 4
+  void assign_nonlocal_node_type(unsigned dir, unsigned type) override {
+    nonlocal_node_type_[dir] = type;
+  }
+
+  //! Function which return nodal nonlocal type vector
+  //! \ingroup Nonlocal
+  std::vector<unsigned> nonlocal_node_type() const override {
+    return nonlocal_node_type_;
+  }
   /**@}*/
 
  protected:
@@ -618,6 +648,14 @@ class Node : public NodeBase<Tdim> {
   Eigen::Matrix<double, Tdim, Tnphases> correction_force_;
   //! Drag force
   Eigen::Matrix<double, Tdim, 1> drag_force_coefficient_;
+  /**@}*/
+
+  /**
+   * \defgroup NonlocalMeshVariables Variables for nonlocal MPM
+   * @{
+   */
+  //! Node type vector in each direction
+  std::vector<unsigned> nonlocal_node_type_;
   /**@}*/
 };  // Node class
 }  // namespace mpm

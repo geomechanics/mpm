@@ -16,7 +16,7 @@ void mpm::FluidParticle<Tdim>::compute_stress() noexcept {
   mpm::Particle<Tdim>::compute_stress();
 
   // Calculate fluid turbulent stress
-  this->stress_ += this->compute_turbulent_stress();
+  this->stress_.noalias() += this->compute_turbulent_stress();
 }
 
 // Compute turbulent stress

@@ -18,6 +18,7 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
 
     // Check degree
     REQUIRE(hex->degree() == mpm::ElementDegree::Linear);
+    REQUIRE(hex->shapefn_type() == mpm::ShapefnType::GIMP);
 
     // Coordinates is (0,0,0) Size is (0,0,0)
     SECTION(

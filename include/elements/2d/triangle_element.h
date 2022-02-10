@@ -196,6 +196,14 @@ class TriangleElement : public Element<Tdim> {
       const VectorDim& point,
       const Eigen::MatrixXd& nodal_coordinates) const override;
 
+  //! Assign nodal connectivity property for bspline elements
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  //! \param[in] nodal_properties Vector determining node type for each
+  //! dimension
+  void initialise_bspline_connectivity_properties(
+      const Eigen::MatrixXd& nodal_coordinates,
+      const std::vector<std::vector<unsigned>>& nodal_properties) override;
+
  private:
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

@@ -23,7 +23,7 @@ void mpm::Cell<Tdim>::compute_local_material_stiffness_matrix(
     double pvolume, double multiplier) noexcept {
 
   std::lock_guard<std::mutex> guard(cell_mutex_);
-  stiffness_matrix_ +=
+  stiffness_matrix_.noalias() +=
       bmatrix.transpose() * dmatrix * bmatrix * multiplier * pvolume;
 }
 

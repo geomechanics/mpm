@@ -47,7 +47,7 @@ inline bool mpm::ConvergenceCriterionSolution::check_convergence(
     // Convergence check
     if (solution_norm < this->tolerance_) convergence = true;
 
-    if (mpi_rank == 0 && this->verbosity_ == 2)
+    if (mpi_rank == 0 && this->verbosity_ >= 2)
       console_->info("Solution norm: {}.", solution_norm);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

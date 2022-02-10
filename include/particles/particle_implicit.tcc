@@ -11,6 +11,23 @@ void mpm::Particle<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
   }
 }
 
+//! Function to reinitialise material to be run at the beginning of each time
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::initialise_constitutive_law() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+
+  // Reset material to be Elastic
+  material_[mpm::ParticlePhase::Solid]->initialise(
+      &state_variables_[mpm::ParticlePhase::Solid]);
+
+  // Compute initial consititutive matrix
+  this->constitutive_matrix_ =
+      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
+          stress_, previous_stress_, dstrain_, this,
+          &state_variables_[mpm::ParticlePhase::Solid]);
+}
+
 //! Map inertial force
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_inertial_force() noexcept {
@@ -32,20 +49,13 @@ inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell() {
   try {
     // Check if material ptr is valid
     assert(this->material() != nullptr);
-    // Calculate constitutive relations matrix
-    Eigen::MatrixXd dmatrix;
-    dmatrix =
-        (this->material())
-            ->compute_dmatrix(stress_, dstrain_, this,
-                              &state_variables_[mpm::ParticlePhase::Solid]);
 
     // Reduce constitutive relations matrix depending on the dimension
-    Eigen::MatrixXd reduced_dmatrix;
-    reduced_dmatrix = this->reduce_dmatrix(dmatrix);
+    const Eigen::MatrixXd reduced_dmatrix =
+        this->reduce_dmatrix(constitutive_matrix_);
 
     // Calculate B matrix
-    Eigen::MatrixXd bmatrix;
-    bmatrix = this->compute_bmatrix();
+    const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
 
     // Compute local material stiffness matrix
     cell_->compute_local_material_stiffness_matrix(bmatrix, reduced_dmatrix,
@@ -132,13 +142,13 @@ inline Eigen::MatrixXd mpm::Particle<2>::reduce_dmatrix(
   dmatrix3x3.resize(3, 3);
   dmatrix3x3(0, 0) = dmatrix(0, 0);
   dmatrix3x3(0, 1) = dmatrix(0, 1);
-  dmatrix3x3(0, 2) = dmatrix(0, 4);
+  dmatrix3x3(0, 2) = dmatrix(0, 3);
   dmatrix3x3(1, 0) = dmatrix(1, 0);
   dmatrix3x3(1, 1) = dmatrix(1, 1);
-  dmatrix3x3(1, 2) = dmatrix(1, 4);
-  dmatrix3x3(2, 0) = dmatrix(4, 0);
-  dmatrix3x3(2, 1) = dmatrix(4, 1);
-  dmatrix3x3(2, 2) = dmatrix(4, 4);
+  dmatrix3x3(1, 2) = dmatrix(1, 3);
+  dmatrix3x3(2, 0) = dmatrix(3, 0);
+  dmatrix3x3(2, 1) = dmatrix(3, 1);
+  dmatrix3x3(2, 2) = dmatrix(3, 3);
 
   return dmatrix3x3;
 }
@@ -247,11 +257,17 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
+  // Clone state variables
+  auto temp_state_variables = state_variables_[mpm::ParticlePhase::Solid];
   // Calculate stress
-  this->stress_ =
-      (this->material())
-          ->compute_stress(previous_stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+  this->stress_ = (this->material())
+                      ->compute_stress(previous_stress_, dstrain_, this,
+                                       &temp_state_variables);
+
+  // Compute current consititutive matrix
+  this->constitutive_matrix_ =
+      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
+          stress_, previous_stress_, dstrain_, this, &temp_state_variables);
 }
 
 // Compute updated position of the particle by Newmark scheme
@@ -265,32 +281,39 @@ void mpm::Particle<Tdim>::compute_updated_position_newmark(double dt) noexcept {
   Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
       Eigen::Matrix<double, Tdim, 1>::Zero();
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodal_displacement +=
+    nodal_displacement.noalias() +=
         shapefn_[i] * nodes_[i]->displacement(mpm::ParticlePhase::Solid);
-    nodal_acceleration +=
+    nodal_acceleration.noalias() +=
         shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
   }
 
   // Update particle velocity from interpolated nodal acceleration
-  this->velocity_ += 0.5 * (this->acceleration_ + nodal_acceleration) * dt;
+  this->velocity_.noalias() +=
+      0.5 * (this->acceleration_ + nodal_acceleration) * dt;
 
   // Update acceleration
   this->acceleration_ = nodal_acceleration;
 
   // New position  current position + displacement increment
-  this->coordinates_ += nodal_displacement;
+  this->coordinates_.noalias() += nodal_displacement;
   // Update displacement
-  this->displacement_ += nodal_displacement;
+  this->displacement_.noalias() += nodal_displacement;
 }
 
 // Update stress and strain after convergence of Newton-Raphson iteration
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::update_stress_strain() noexcept {
+  // Update converged stress
+  this->stress_ =
+      (this->material())
+          ->compute_stress(previous_stress_, dstrain_, this,
+                           &state_variables_[mpm::ParticlePhase::Solid]);
+
   // Update initial stress of the time step
   this->previous_stress_ = this->stress_;
 
   // Update total strain
-  this->strain_ += this->dstrain_;
+  this->strain_.noalias() += this->dstrain_;
 
   // Volumetric strain increment
   this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();

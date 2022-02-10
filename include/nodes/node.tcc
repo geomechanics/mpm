@@ -282,7 +282,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
     this->apply_friction_constraints(dt);
 
     // Velocity += acceleration * dt
-    this->velocity_.col(phase) += this->acceleration_.col(phase) * dt;
+    this->velocity_.col(phase).noalias() += this->acceleration_.col(phase) * dt;
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
     this->apply_velocity_constraints();
@@ -318,7 +318,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
     this->apply_friction_constraints(dt);
 
     // Velocity += acceleration * dt
-    this->velocity_.col(phase) += this->acceleration_.col(phase) * dt;
+    this->velocity_.col(phase).noalias() += this->acceleration_.col(phase) * dt;
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
     this->apply_velocity_constraints();
@@ -632,7 +632,7 @@ void mpm::Node<Tdim, Tdof,
         property_handle_->property("masses", prop_id_, *mitr);
 
     // displacement of the center of mass
-    contact_displacement_ += material_displacement / mass_(0, 0);
+    contact_displacement_.noalias() += material_displacement / mass_(0, 0);
     // assign nodal-multimaterial displacement by dividing it by this
     // material's mass
     property_handle_->assign_property(
@@ -677,6 +677,13 @@ void mpm::Node<Tdim, Tdof,
                                       normal_unit_vector, Tdim);
   }
   node_mutex_.unlock();
+}
+
+//! Function that initialise variables for nonlocal MPM
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {
+  nonlocal_node_type_.resize(Tdim);
+  std::fill(nonlocal_node_type_.begin(), nonlocal_node_type_.end(), 0);
 }
 
 //! Assign displacement constraints

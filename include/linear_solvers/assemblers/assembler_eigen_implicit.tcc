@@ -60,6 +60,9 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assemble_stiffness_matrix() {
     // Fast assembly from triplets
     stiffness_matrix_.setFromTriplets(tripletList.begin(), tripletList.end());
 
+    // Apply null-space treatment
+    this->apply_null_space_treatment(stiffness_matrix_, Tdim);
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -139,7 +142,8 @@ template <unsigned Tdim>
 void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
   try {
     // Modify residual_force_rhs_vector_
-    residual_force_rhs_vector_ -= stiffness_matrix_ * displacement_constraints_;
+    residual_force_rhs_vector_ +=
+        -stiffness_matrix_ * displacement_constraints_;
 
     // Apply displacement constraints
     for (Eigen::SparseVector<double>::InnerIterator it(

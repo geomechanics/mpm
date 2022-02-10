@@ -54,7 +54,7 @@ inline bool mpm::ConvergenceCriterionResidual::check_convergence(
     double relative_residual_norm = residual_norm / initial_residual_norm_;
     if (relative_residual_norm < this->tolerance_) convergence = true;
 
-    if (mpi_rank == 0 && this->verbosity_ == 2) {
+    if (mpi_rank == 0 && this->verbosity_ >= 2) {
       console_->info("Residual norm: {}.", residual_norm);
       console_->info("Relative residual norm: {}.", relative_residual_norm);
     }

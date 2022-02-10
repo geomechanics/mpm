@@ -1,7 +1,7 @@
 //! Constructor with cell id, number of nodes and element
 template <unsigned Tdim>
 mpm::Cell<Tdim>::Cell(Index id, unsigned nnodes,
-                      const std::shared_ptr<const Element<Tdim>>& elementptr,
+                      const std::shared_ptr<Element<Tdim>>& elementptr,
                       bool isoparametric)
     : id_{id}, nnodes_{nnodes}, isoparametric_{isoparametric} {
   // Check if the dimension is between 1 & 3
@@ -243,7 +243,7 @@ void mpm::Cell<Tdim>::compute_centroid() {
   // Calculate the centroid of the cell
   centroid_.setZero();
   for (unsigned i = 0; i < indices.size(); ++i)
-    centroid_ += nodes_[indices(i)]->coordinates();
+    centroid_.noalias() += nodes_[indices(i)]->coordinates();
 
   centroid_ /= indices.size();
 }
@@ -506,7 +506,7 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       Eigen::Matrix<double, 3, 1> centre;
       centre.setZero();
       for (unsigned i = 0; i < indices.size(); ++i)
-        centre += nodal_coordinates_.row(i);
+        centre.noalias() += nodal_coordinates_.row(i);
       centre /= indices.size();
 
       xi(0) = 2. * (point(0) - centre(0)) / xlength;
@@ -843,4 +843,64 @@ inline unsigned mpm::Cell<Tdim>::rank() const {
 template <unsigned Tdim>
 inline unsigned mpm::Cell<Tdim>::previous_mpirank() const {
   return this->previous_mpirank_;
+}
+
+//! Function that check and return the status whether the cell is upgradable
+template <unsigned Tdim>
+bool mpm::Cell<Tdim>::upgrade_status(unsigned new_nnodes) {
+  bool status = true;
+  if (this->nnodes_ < new_nnodes &&
+      element_->shapefn_type() != mpm::ShapefnType::NORMAL_MPM) {
+    this->nnodes_ = new_nnodes;
+    this->nodal_coordinates_.conservativeResizeLike(
+        Eigen::MatrixXd::Zero(this->nnodes_, Tdim));
+  } else {
+    status = false;
+    console_->warn(
+        "Upgrading cell id: {} fails. Cell is either not-compatible to upgrade "
+        "or has been upgraded before.",
+        this->id_);
+  }
+  return status;
+}
+
+//! Assign a new elementptr for nonlocal element with a specific node size
+template <unsigned Tdim>
+bool mpm::Cell<Tdim>::assign_nonlocal_elementptr(
+    const std::shared_ptr<Element<Tdim>>& elementptr) {
+  bool status = true;
+  if (element_->shapefn_type() == elementptr->shapefn_type()) {
+    element_ = elementptr;
+  } else {
+    status = false;
+    throw std::runtime_error("Assigning new nonlocal element_ptr fails!");
+  }
+  return status;
+}
+
+//! Initialising nonlocal cell-element properties
+template <unsigned Tdim>
+bool mpm::Cell<Tdim>::initialiase_nonlocal() {
+  bool status = false;
+  try {
+    // Node property
+    std::vector<std::vector<unsigned>> nodal_properties(this->nnodes());
+    // Loop over the cell node to get node type
+    for (unsigned i = 0; i < nodes_.size(); ++i)
+      nodal_properties[i] = nodes_[i]->nonlocal_node_type();
+
+    // Initialise element
+    if (element_->shapefn_type() == mpm::ShapefnType::BSPLINE)
+      this->element_->initialise_bspline_connectivity_properties(
+          this->nodal_coordinates_, nodal_properties);
+    else
+      throw std::runtime_error(
+          "Initialise nonlocal cell failed! Element type is not compatible.");
+
+    // Reinitialise cell
+    status = initialise();
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  }
+  return status;
 }

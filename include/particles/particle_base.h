@@ -370,7 +370,8 @@ class ParticleBase {
 
   //! Map particle levelset to nodes
   //! \ingroup XMPM
-  virtual void map_levelset_to_nodes() {
+  //! \param[in] discontinuity_id
+  virtual void map_levelset_to_nodes(unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function (map_levelset_to_nodes) in "
         "ParticleBase:: "
@@ -389,7 +390,8 @@ class ParticleBase {
 
   //! Map levelset from nodes to particles
   //! \ingroup XMPM
-  virtual void map_levelset_to_particle() {
+  //! \param[in] discontintuity id
+  virtual void map_levelset_to_particle(unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function (map_levelset_to_particle) in "
         "ParticleBase:: "
@@ -406,10 +408,15 @@ class ParticleBase {
         "illegal operation!");
   };
 
-  //! to do
-  //! virtual void check_levelset(){};
+  //! Detect the corresponding particle has levelset_values
+  virtual void check_levelset(unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (check_levelset) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  };
 
-  //! return levelset values
+  //! Return levelset values
   //! \ingroup XMPM
   virtual double levelset_phi(int discontinuity_id = 0) {
     throw std::runtime_error(
@@ -419,13 +426,14 @@ class ParticleBase {
     return 0;
   }
 
-  //! compute the minimum eigenvalue of the acoustic tensor
+  //! Compute the minimum eigenvalue of the acoustic tensor
   //! \ingroup XMPM
   //! \param[in] the normal direction of the previous discontinuity
   //! \param[in] do the initiation detection loop
+  //! \param[in] the discontinuity id
   //! \retval whether initiate or propagate
-  virtual bool minimum_acoustic_tensor(VectorDim& normal_cell,
-                                       bool initiation) {
+  virtual bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation,
+                                       unsigned dis_id = 0) {
     throw std::runtime_error(
         "Calling the base class function (minimum_acoustic_tensor) in "
         "ParticleBase:: "
@@ -433,6 +441,32 @@ class ParticleBase {
     return 0;
   };
 
+  //! Map particle mass to nodes
+  //! \ingroup XMPM
+  virtual void map_mass_to_nodes() {
+    throw std::runtime_error(
+        "Calling the base class function (map_mass_to_nodes) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+  //! Map particle mass_h to nodes
+  //! \ingroup XMPM
+  //! \param[in] the discontinuity id
+  virtual void map_mass_h_to_nodes(int discontinuity_id) {
+    throw std::runtime_error(
+        "Calling the base class function (map_mass_h_to_nodes) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+  //! Reset the size of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] the number of the discontinuity
+  virtual void reset_discontinuity_size(int size) {
+    throw std::runtime_error(
+        "Calling the base class function (initialise_discontinuity_size) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
   /**@}*/
 
   /**

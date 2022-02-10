@@ -663,3 +663,46 @@ std::vector<std::tuple<mpm::Index, unsigned, double>>
   }
   return forces;
 }
+
+//! Return id and levelset values
+template <unsigned Tdim>
+std::vector<std::tuple<mpm::Index, double>>
+    mpm::IOMeshAscii<Tdim>::read_id_levelset(const std::string& levelset_file) {
+
+  // levelset values
+  std::vector<std::tuple<mpm::Index, double>> phis;
+  phis.clear();
+
+  // input file stream
+  std::fstream file;
+  file.open(levelset_file.c_str(), std::ios::in);
+
+  try {
+    if (file.is_open() && file.good()) {
+      // Line
+      std::string line;
+      while (std::getline(file, line)) {
+        boost::algorithm::trim(line);
+        std::istringstream istream(line);
+        // ignore comment lines (# or !) or blank lines
+        if ((line.find('#') == std::string::npos) &&
+            (line.find('!') == std::string::npos) && (line != "")) {
+          // ID
+          mpm::Index id;
+          // phi
+          double phi;
+          while (istream.good()) {
+            // Read stream
+            istream >> id >> phi;
+            phis.emplace_back(std::make_tuple(id, phi));
+          }
+        }
+      }
+    }
+    file.close();
+  } catch (std::exception& exception) {
+    console_->error("Read levelet values : {}", exception.what());
+    file.close();
+  }
+  return phis;
+}

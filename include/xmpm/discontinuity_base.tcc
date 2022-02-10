@@ -1,7 +1,8 @@
 //! Constructor
 template <unsigned Tdim>
-mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(const Json& json_generator) {
-
+mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(const Json& json_generator,
+                                                unsigned id) {
+  id_ = id;
   friction_coef_ = 0;
   std::string logger = "discontinuity";
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
@@ -10,19 +11,8 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(const Json& json_generator) {
 
     id_ = json_generator.at("id").template get<int>();
 
-    auto description =
+    description_type_ =
         json_generator.at("description_type").template get<std::string>();
-    if (description == "particle_levelset")
-      description_type_ == mpm::DescriptionType::particle_levelset;
-    else if (description == "node_levelset")
-      description_type_ == mpm::DescriptionType::node_levelset;
-    else if (description == "mark_points")
-      description_type_ == mpm::DescriptionType::mark_points;
-    else {
-      throw std::runtime_error(
-          "The description_type is uncorrect!"
-          "illegal operation!");
-    }
 
     if (json_generator.contains("friction_coefficient_average"))
       friction_coef_average_ = json_generator.at("friction_coefficient_average")
@@ -60,6 +50,26 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(const Json& json_generator) {
   }
 }
 
+//! Constructor for the initiation
+template <unsigned Tdim>
+mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
+    unsigned id, std::tuple<double, double, double, double, double, int, bool>&
+                     initiation_property) {
+
+  id_ = id;
+  std::string logger = "discontinuity";
+  console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+  description_type_ == "mark_points";
+
+  cohesion_ = std::get<0>(initiation_property);
+  friction_coef_ = std::get<1>(initiation_property);
+  contact_distance_ = std::get<2>(initiation_property);
+  width_ = std::get<3>(initiation_property);
+  maximum_pdstrain_ = std::get<4>(initiation_property);
+  move_direction_ = std::get<5>(initiation_property);
+  friction_coef_average_ = std::get<6>(initiation_property);
+}
+
 //! Create points from file
 template <unsigned Tdim>
 bool mpm::DiscontinuityBase<Tdim>::create_points(
@@ -89,7 +99,7 @@ void mpm::DiscontinuityBase<Tdim>::locate_discontinuity_mesh(
     const Vector<Cell<Tdim>>& cells,
     const Map<Cell<Tdim>>& map_cells) noexcept {
   for (auto& point : this->points_)
-    point.locate_discontinuity_mesh(cells, map_cells);
+    point.locate_discontinuity_mesh(cells, map_cells, id_);
 }
 
 // Compute updated position of the particle
@@ -116,7 +126,7 @@ void mpm::DiscontinuityBase<Tdim>::insert_particles(
   }
   // add points
   mpm::discontinuity_point<Tdim> point(coordinates);
-  point.locate_discontinuity_mesh(cells, map_cells);
+  point.locate_discontinuity_mesh(cells, map_cells, id_);
   point.compute_shapefn();
   points_.emplace_back(point);
 }

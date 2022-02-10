@@ -11,6 +11,8 @@
 #include "logger.h"
 #include "particle_base.h"
 #include "pod_particle_xmpm.h"
+#include <fstream>
+#include <iostream>
 
 namespace mpm {
 
@@ -56,6 +58,14 @@ class ParticleXMPM : public Particle<Tdim> {
   //! Map particle mass and momentum to nodes
   void map_mass_momentum_to_nodes() noexcept override;
 
+  //! Map particle mass to nodes
+  void map_mass_to_nodes() noexcept;
+
+  //! Map particle mass_h to nodes
+  //! \ingroup XMPM
+  //! \param[in] the discontinuity id
+  void map_mass_h_to_nodes(unsigned dis_id) noexcept;
+
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;
@@ -67,7 +77,8 @@ class ParticleXMPM : public Particle<Tdim> {
   inline void map_internal_force() noexcept override;
 
   //! Map particle levelset to nodes
-  void map_levelset_to_nodes() noexcept override;
+  //! \param[in] discontinuity_id
+  void map_levelset_to_nodes(unsigned dis_id) noexcept override;
 
   //! Map particle frictional_coef to nodes
   //! \param[in] friction_coef of the discontinuity
@@ -78,8 +89,9 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \param[in] dt Analysis time step
   void inline compute_displacement_gradient(double dt) override;
 
-  //! to do
-  //!   virtual void check_levelset() noexcept override;
+  //! Detect the corresponding particle has levelset_values
+  //! \param[in] discontinuity_id
+  virtual void check_levelset(unsigned dis_id) noexcept override;
 
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
@@ -95,7 +107,8 @@ class ParticleXMPM : public Particle<Tdim> {
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
   //! Map levelset from nodes to particles
-  void map_levelset_to_particle();
+  //! \param[in] discontintuity id
+  void map_levelset_to_particle(unsigned dis_id);
 
   //! return levelset values
   //! \retval particle levelset values
@@ -107,11 +120,18 @@ class ParticleXMPM : public Particle<Tdim> {
   //! compute the minimum eigenvalue of the acoustic tensor
   //! \param[in] the normal direction of the previous discontinuity
   //! \param[in] do the initiation detection loop
-  bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation);
+  //! \param[in] the discontinuity id
+  bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation,
+                               unsigned dis_id = 0);
 
   //! compute the initiation normal direction
   //! \param[in] initiation normal direction
   void compute_initiation_normal(VectorDim& normal);
+
+  //! Reset the size of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] the number of the discontinuity
+  void reset_discontinuity_size(int size) { levelset_phi_.resize(size, 0); };
 
  private:
   //! Assign the level set function values
@@ -203,7 +223,7 @@ class ParticleXMPM : public Particle<Tdim> {
 
  private:
   //! level set value： phi for discontinuity
-  double levelset_phi_[2];
+  std::vector<double> levelset_phi_;
 
   //! the minimum eigenvalue of the acoustic tensor
   double minimum_acoustic_eigenvalue_{1e16};

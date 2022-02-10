@@ -94,7 +94,7 @@ TEST_CASE("Particle_XMPM is checked for 3D case", "[particle][3D][XMPM]") {
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     double levelsetphi = 1;
-    REQUIRE_NOTHROW(particle->assign_levelsetphi(levelsetphi));
+    // REQUIRE_NOTHROW(particle->assign_levelsetphi(levelsetphi));
 
     // Assign hexahedron shape function
     std::shared_ptr<mpm::Element<Dim>> element =

@@ -1,52 +1,58 @@
 //! Assign discontinuity element type
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::assign_type_discontinuity(mpm::EnrichType type) {
+void mpm::Cell<Tdim>::assign_type_discontinuity(mpm::EnrichType type,
+                                                unsigned dis_id) {
   if (nparticles() == 0 && type != mpm::EnrichType::NeighbourTip_2)
     type = mpm::EnrichType::Regular;
-  if (discontinuity_element_ == nullptr)
-    discontinuity_element_ =
+  if (discontinuity_element_[dis_id] == nullptr)
+    discontinuity_element_[dis_id] =
         std::make_shared<mpm::DiscontinuityElement<Tdim>>(type);
   else
-    discontinuity_element_->assign_element_type(type);
+    discontinuity_element_[dis_id]->assign_element_type(type);
 }
 // Initialize discontinuity element type
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::initialise_element_properties_discontinuity() {
-  if (discontinuity_element_ == nullptr) return;
-  discontinuity_element_->initialise();
+  for (int i = 0; i < discontinuity_element_.size(); i++) {
+    if (discontinuity_element_[i] == nullptr) continue;
+    discontinuity_element_[i]->initialise();
+  }
 }
 
 // Return discontinuity element type
 template <unsigned Tdim>
-unsigned mpm::Cell<Tdim>::element_type_discontinuity() {
-  if (discontinuity_element_ == nullptr) return mpm::EnrichType::Regular;
-  return discontinuity_element_->element_type();
+unsigned mpm::Cell<Tdim>::element_type_discontinuity(unsigned dis_id) {
+  if (discontinuity_element_[dis_id] == nullptr)
+    return mpm::EnrichType::Regular;
+  return discontinuity_element_[dis_id]->element_type();
 }
 
 //! Find the potential tip element
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::potential_tip_element() {
-  if (this->discontinuity_element_ == nullptr) return;
-  if (this->discontinuity_element_->element_type() !=
+void mpm::Cell<Tdim>::potential_tip_element(unsigned dis_id) {
+  if (this->discontinuity_element_[dis_id] == nullptr) return;
+  if (this->discontinuity_element_[dis_id]->element_type() !=
       mpm::EnrichType::NeighbourTip_1)
     return;
   if (this->nparticles() == 0) return;
 
-  if (product_levelset() < 0)
-    this->discontinuity_element_->assign_element_type(
+  if (product_levelset(dis_id) < 0)
+    this->discontinuity_element_[dis_id]->assign_element_type(
         mpm::EnrichType::PotentialTip);
 }
 
 //! Determine tip element
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::tip_element() {
-  if (this->discontinuity_element_ == nullptr) return;
-  if (this->discontinuity_element_->element_type() != mpm::EnrichType::Crossed)
+void mpm::Cell<Tdim>::tip_element(unsigned dis_id) {
+  if (this->discontinuity_element_[dis_id] == nullptr) return;
+  if (this->discontinuity_element_[dis_id]->element_type() !=
+      mpm::EnrichType::Crossed)
     return;
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    if (nodes_[i]->discontinuity_enrich()) continue;
-    this->discontinuity_element_->assign_element_type(mpm::EnrichType::Tip);
+    if (nodes_[i]->discontinuity_enrich(dis_id)) continue;
+    this->discontinuity_element_[dis_id]->assign_element_type(
+        mpm::EnrichType::Tip);
   }
 }
 
@@ -54,22 +60,20 @@ void mpm::Cell<Tdim>::tip_element() {
 //! points
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_discontinuity_point(
-    std::vector<VectorDim>& coordinates) {
+    std::vector<VectorDim>& coordinates, unsigned dis_id) {
 
   std::vector<Eigen::Matrix<double, Tdim, 1>> intersections_list;
 
   Eigen::Matrix<double, Tdim, 1> center =
-      this->discontinuity_element_->cohesion_cor();
+      this->discontinuity_element_[dis_id]->cohesion_cor();
 
   int index_line[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {0, 4}, {1, 5},
                            {2, 6}, {3, 7}, {4, 5}, {5, 6}, {6, 7}, {7, 4}};
   for (int i = 0; i < 12; i++) {
 
     double phi[2];
-    phi[0] = nodes_[index_line[i][0]]->discontinuity_property("levelset_phi",
-                                                              1)(0, 0);
-    phi[1] = nodes_[index_line[i][1]]->discontinuity_property("levelset_phi",
-                                                              1)(0, 0);
+    phi[0] = nodes_[index_line[i][0]]->levelset_phi(dis_id);
+    phi[1] = nodes_[index_line[i][1]]->levelset_phi(dis_id);
     if (phi[0] * phi[1] >= 0) continue;
     Eigen::Matrix<double, Tdim, 1> intersection;
     Eigen::Matrix<double, Tdim, 1> cor0 =
@@ -93,63 +97,66 @@ void mpm::Cell<Tdim>::compute_discontinuity_point(
 
 //! Assign the normal direction of the discontinuity in the cell
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::assign_normal_discontinuity(VectorDim normal) {
-  this->discontinuity_element_->assign_normal_discontinuity(normal);
+void mpm::Cell<Tdim>::assign_normal_discontinuity(VectorDim normal,
+                                                  unsigned dis_id) {
+  this->discontinuity_element_[dis_id]->assign_normal_discontinuity(normal);
 }
 
 //! Assign the normal direction of the discontinuity in the cell
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::assign_normal_discontinuity(VectorDim normal, double d) {
-  this->discontinuity_element_->assign_normal_discontinuity(normal);
-  this->discontinuity_element_->assign_d(d);
+void mpm::Cell<Tdim>::assign_normal_discontinuity(VectorDim normal, double d,
+                                                  unsigned dis_id) {
+  this->discontinuity_element_[dis_id]->assign_normal_discontinuity(normal);
+  this->discontinuity_element_[dis_id]->assign_d(d);
 }
 
 //! Compute normal vector of discontinuity by the nodal level set values
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::compute_normal_vector_discontinuity() {
+void mpm::Cell<Tdim>::compute_normal_vector_discontinuity(unsigned dis_id) {
   VectorDim normal;
   normal.setZero();
   // determine the discontinuity plane by the enriched nodes
+
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    double phi = nodes_[i]->discontinuity_property("levelset_phi", 1)(0, 0);
+    double phi = nodes_[i]->levelset_phi(dis_id);
     for (unsigned int j = 0; j < Tdim; j++) {
       normal[j] += phi * dn_dx_centroid_(i, j);
     }
   }
   normal.normalize();
-  this->discontinuity_element_->assign_normal_discontinuity(normal);
+  this->discontinuity_element_[dis_id]->assign_normal_discontinuity(normal);
 }
 
 //! Compute the discontinuity plane by the nodal level set values
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::compute_plane_discontinuity(bool enrich) {
+void mpm::Cell<Tdim>::compute_plane_discontinuity(bool enrich,
+                                                  unsigned dis_id) {
   int enriched_node = 0;
-  auto normal = discontinuity_element_->normal_discontinuity();
+  auto normal = discontinuity_element_[dis_id]->normal_discontinuity();
   double dis = 0;
   // determine the discontinuity plane by the enriched nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     if (enrich)
-      if (!nodes_[i]->discontinuity_enrich()) continue;
+      if (!nodes_[i]->discontinuity_enrich(dis_id)) continue;
     enriched_node++;
     auto node_coordinate = nodes_[i]->coordinates();
     for (unsigned int j = 0; j < Tdim; j++)
       dis -= node_coordinate[j] * normal[j];
-    dis = nodes_[i]->discontinuity_property("levelset_phi", 1)(0, 0) + dis;
+    dis = nodes_[i]->levelset_phi(0) + dis;
   }
   // update the level set values of the unenriched nodes
   dis = dis / enriched_node;
-  this->discontinuity_element_->assign_d(dis);
+  this->discontinuity_element_[dis_id]->assign_d(dis);
 }
 
 // product of the maximum and minimum nodal level set value
 template <unsigned Tdim>
-double mpm::Cell<Tdim>::product_levelset() {
+double mpm::Cell<Tdim>::product_levelset(unsigned dis_id) {
   double levelset_max = -std::numeric_limits<double>::max();
   double levelset_min = std::numeric_limits<double>::max();
   for (unsigned i = 0; i < nodes_.size(); ++i) {
 
-    double levelset =
-        nodes_[i]->discontinuity_property("levelset_phi", 1)(0, 0);
+    double levelset = nodes_[i]->levelset_phi(dis_id);
     levelset_max = levelset > levelset_max ? levelset : levelset_max;
     levelset_min = levelset < levelset_min ? levelset : levelset_min;
   }
@@ -158,51 +165,49 @@ double mpm::Cell<Tdim>::product_levelset() {
 
 //! Determine the celltype by the nodal level set
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::determine_crossed() {
+void mpm::Cell<Tdim>::determine_crossed(unsigned dis_id) {
 
   double max_phi = -1e15, min_phi = 1e15;
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    double phi = nodes_[i]->discontinuity_property("levelset_phi", 1)(0, 0);
+    double phi = nodes_[i]->levelset_phi(dis_id);
     if (phi > max_phi) max_phi = phi;
     if (phi < min_phi) min_phi = phi;
   }
-
-  this->assign_type_discontinuity(mpm::EnrichType::Regular);
+  // to do
   if (max_phi * min_phi >= 0) return;
 
-  this->assign_type_discontinuity(mpm::EnrichType::Crossed);
+  this->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);
 }
 
 //! Compute the nodal level set values by plane equations
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::compute_nodal_levelset_equation() {
+void mpm::Cell<Tdim>::compute_nodal_levelset_equation(unsigned dis_id) {
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     auto coor = nodes_[i]->coordinates();
     double phi = 0;
     for (unsigned int j = 0; j < Tdim; j++)
-      phi += coor[j] * this->discontinuity_element_->normal_discontinuity()[j];
-    phi += this->discontinuity_element_->d_discontinuity();
-    Eigen::Matrix<double, 1, 1> phi_matrix;
-    phi_matrix(0, 0) = phi;
-    nodes_[i]->assign_discontinuity_property(true, "levelset_phi", phi_matrix,
-                                             0, 1);
+      phi += coor[j] *
+             this->discontinuity_element_[dis_id]->normal_discontinuity()[j];
+    phi += this->discontinuity_element_[dis_id]->d_discontinuity();
+    nodes_[i]->assign_levelset_phi(phi, dis_id);
   }
 }
 
 //! Compute the area of the discontinuity
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::compute_area_discontinuity() {
+void mpm::Cell<Tdim>::compute_area_discontinuity(unsigned dis_id) {
 
-  if (this->discontinuity_element_ == nullptr) return;
-  if (this->discontinuity_element_->element_type() != mpm::EnrichType::Crossed)
+  if (this->discontinuity_element_[dis_id] == nullptr) return;
+  if (this->discontinuity_element_[dis_id]->element_type() !=
+      mpm::EnrichType::Crossed)
     return;
   // compute the level set values
   Eigen::VectorXd phi_list(nnodes());
   phi_list.setZero();
 
-  auto normal = this->discontinuity_element_->normal_discontinuity();
-  auto d = this->discontinuity_element_->d_discontinuity();
+  auto normal = this->discontinuity_element_[dis_id]->normal_discontinuity();
+  auto d = this->discontinuity_element_[dis_id]->d_discontinuity();
   for (int i = 0; i < nodes_.size(); ++i) {
     phi_list[i] = normal.dot(nodes_[i]->coordinates()) + d;
   }
@@ -289,16 +294,16 @@ void mpm::Cell<Tdim>::compute_area_discontinuity() {
   }
   subcenters = subcenters / area;
 
-  this->discontinuity_element_->assign_area(area);
-  this->discontinuity_element_->assign_cohesion_cor(subcenters);
+  this->discontinuity_element_[dis_id]->assign_area(area);
+  this->discontinuity_element_[dis_id]->assign_cohesion_cor(subcenters);
 }
 
 //! Assign the area of the discontinuity to nodes
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::assign_cohesion_area() {
+void mpm::Cell<Tdim>::assign_cohesion_area(unsigned dis_id) {
 
-  auto centers = this->discontinuity_element_->cohesion_cor();
-  auto area = this->discontinuity_element_->area();
+  auto centers = this->discontinuity_element_[dis_id]->cohesion_cor();
+  auto area = this->discontinuity_element_[dis_id]->area();
 
   const Eigen::Matrix<double, Tdim, 1> zeros =
       Eigen::Matrix<double, Tdim, 1>::Zero();

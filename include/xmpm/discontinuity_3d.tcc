@@ -1,6 +1,13 @@
 template <unsigned Tdim>
-mpm::Discontinuity3D<Tdim>::Discontinuity3D(const Json& json_generator)
-    : DiscontinuityBase<Tdim>(json_generator) {}
+mpm::Discontinuity3D<Tdim>::Discontinuity3D(const Json& json_generator,
+                                            unsigned id)
+    : DiscontinuityBase<Tdim>(json_generator, id) {}
+
+template <unsigned Tdim>
+mpm::Discontinuity3D<Tdim>::Discontinuity3D(
+    unsigned id, std::tuple<double, double, double, double, double, int, bool>&
+                     initiation_property)
+    : DiscontinuityBase<Tdim>(id, initiation_property) {}
 
 // initialization
 template <unsigned Tdim>
@@ -125,7 +132,7 @@ void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
   }
   if (!vertical_distance)
     vertical_distance = std::numeric_limits<double>::min();
-  if (abs(min_distance) < width_)
+  if (abs(min_distance) < 3 * width_)
     phi_particle = vertical_distance;
   else
     phi_particle = 0;

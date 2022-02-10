@@ -74,15 +74,15 @@ bool mpm::discontinuity_point<Tdim>::compute_reference_location() noexcept {
 //! Locate points in a cell
 template <unsigned Tdim>
 void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
-    const Vector<Cell<Tdim>>& cells,
-    const Map<Cell<Tdim>>& map_cells) noexcept {
+    const Vector<Cell<Tdim>>& cells, const Map<Cell<Tdim>>& map_cells,
+    unsigned dis_id) noexcept {
   // Check the current cell if it is not invalid
   if (cell_id() != std::numeric_limits<mpm::Index>::max()) {
     // If a cell id is present, but not a cell locate the cell from map
     if (!cell_ptr()) assign_cell(map_cells[cell_id()]);
 
     if (compute_reference_location()) {
-      assign_cell_enrich(map_cells);
+      assign_cell_enrich(map_cells, dis_id);
       return;
     }
 
@@ -92,7 +92,7 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
     for (auto neighbour : neighbours) {
       if (map_cells[neighbour]->is_point_in_cell(coordinates_, &xi)) {
         assign_cell_xi(map_cells[neighbour], xi);
-        assign_cell_enrich(map_cells);
+        assign_cell_enrich(map_cells, dis_id);
         return;
       }
     }
@@ -105,7 +105,7 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
     Eigen::Matrix<double, Tdim, 1> xi;
     if ((*citr)->is_point_in_cell(coordinates(), &xi)) {
       assign_cell_xi(*citr, xi);
-      assign_cell_enrich(map_cells);
+      assign_cell_enrich(map_cells, dis_id);
     }
   }
 }
@@ -123,22 +123,38 @@ void mpm::discontinuity_point<Tdim>::compute_updated_position(
   unsigned int phase = 0;
   // need to do, points move with which side
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    if (nodes_[i]->discontinuity_enrich()) {
-      double nodal_mass = nodes_[i]->mass(phase) +
-                          move_direction * nodes_[i]->discontinuity_property(
-                                               "mass_enrich", 1)(0, 0);
-      if (nodal_mass < tolerance) continue;
+    // branch
+    double nodal_mass = nodes_[i]->mass(phase);
 
-      nodal_velocity += shapefn_[i] *
-                        (nodes_[i]->momentum(phase) +
-                         move_direction * nodes_[i]->discontinuity_property(
-                                              "momenta_enrich", 3)) /
-                        nodal_mass;
-    } else {
-      double nodal_mass = nodes_[i]->mass(phase);
-      if (nodal_mass < tolerance) continue;
-      nodal_velocity += shapefn_[i] * nodes_[i]->momentum(phase) / nodal_mass;
+    auto nodal_momentum = nodes_[i]->momentum(phase);
+
+    // if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+
+    auto nodal_mass_enrich = nodes_[i]->mass_enrich();
+
+    auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+
+      nodal_mass += nodal_mass_enrich[0] * move_direction;
+      nodal_momentum.col(0) += nodal_momentum_enrich.col(0) * move_direction;
+
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      nodal_mass += nodal_mass_enrich[0] * move_direction +
+                    nodal_mass_enrich[1] * move_direction +
+                    nodal_mass_enrich[2] * move_direction * move_direction;
+
+      nodal_momentum.col(0) +=
+          nodal_momentum_enrich.col(0) * move_direction +
+          nodal_momentum_enrich.col(1) * move_direction +
+          nodal_momentum_enrich.col(2) * move_direction * move_direction;
     }
+    if (nodal_mass < tolerance) continue;
+
+    nodal_velocity += shapefn_[i] * nodal_momentum / nodal_mass;
   }
   // New position  current position + velocity * dt
   this->coordinates_ += nodal_velocity * dt;
@@ -165,51 +181,32 @@ void mpm::discontinuity_point<Tdim>::compute_shapefn() noexcept {
 //! Assign the discontinuity enrich type to cell
 template <unsigned Tdim>
 void mpm::discontinuity_point<Tdim>::assign_cell_enrich(
-    const Map<Cell<Tdim>>& map_cells) {
+    const Map<Cell<Tdim>>& map_cells, unsigned dis_id) {
   if (cell_->nparticles() == 0) return;
-  cell_->assign_type_discontinuity(mpm::EnrichType::Crossed);
+  cell_->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);
   const auto neighbours_1 = cell_->neighbours();
   for (auto neighbour_1 : neighbours_1) {
-    if (map_cells[neighbour_1]->element_type_discontinuity() ==
+    if (map_cells[neighbour_1]->element_type_discontinuity(dis_id) ==
         mpm::EnrichType::Crossed)
       continue;
     map_cells[neighbour_1]->assign_type_discontinuity(
-        mpm::EnrichType::NeighbourTip_1);
+        mpm::EnrichType::NeighbourTip_1, dis_id);
     const auto neighbours_2 = map_cells[neighbour_1]->neighbours();
     for (auto neighbour_2 : neighbours_2) {
-      if (map_cells[neighbour_2]->element_type_discontinuity() ==
+      if (map_cells[neighbour_2]->element_type_discontinuity(dis_id) ==
               mpm::EnrichType::Regular ||
-          map_cells[neighbour_2]->element_type_discontinuity() ==
+          map_cells[neighbour_2]->element_type_discontinuity(dis_id) ==
               mpm::EnrichType::NeighbourTip_3)
         map_cells[neighbour_2]->assign_type_discontinuity(
-            mpm::EnrichType::NeighbourTip_2);
+            mpm::EnrichType::NeighbourTip_2, dis_id);
 
       const auto neighbours_3 = map_cells[neighbour_2]->neighbours();
       for (auto neighbour_3 : neighbours_3) {
-        if (map_cells[neighbour_3]->element_type_discontinuity() ==
+        if (map_cells[neighbour_3]->element_type_discontinuity(dis_id) ==
             mpm::EnrichType::Regular)
           map_cells[neighbour_3]->assign_type_discontinuity(
-              mpm::EnrichType::NeighbourTip_3);
+              mpm::EnrichType::NeighbourTip_3, dis_id);
       }
     }
-  }
-}
-
-//! Assign the discontinuity enrich to node
-template <unsigned Tdim>
-void mpm::discontinuity_point<Tdim>::assign_node_enrich(
-    const Map<Cell<Tdim>>& map_cells) {
-  if (cell_->element_type_discontinuity() != mpm::EnrichType::Crossed) return;
-  Eigen::Matrix<double, 1, 1> friction_coef;
-  friction_coef(0, 0) = friction_coef_;
-
-  Eigen::Matrix<double, 1, 1> cohesion;
-  cohesion(0, 0) = cohesion_;
-  nodes_ = cell_->nodes();
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->assign_discontinuity_enrich(true);
-    nodes_[i]->assign_discontinuity_property(true, "friction_coef",
-                                             friction_coef, 0, 1);
-    nodes_[i]->assign_discontinuity_property(true, "cohesion", cohesion, 0, 1);
   }
 }

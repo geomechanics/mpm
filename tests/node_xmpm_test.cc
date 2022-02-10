@@ -41,8 +41,7 @@ TEST_CASE("Node_xmpm is checked for 3D case", "[node][XMPM][3D]") {
   node->initialise_discontinuity_property_handle(prop_id, property_handle);
   // Check discontinuous property
   SECTION("Check discontinuous properties") {
-    REQUIRE_NOTHROW(node->assign_discontinuity_enrich(true));
-    REQUIRE(node->discontinuity_enrich() == true);
+    // REQUIRE_NOTHROW(node->assign_discontinuity_enrich(true));
     // // initialise discontinuity property handle
 
     REQUIRE(node->discontinuity_property(property, Dim)(0, 0) ==
@@ -156,7 +155,7 @@ TEST_CASE("Node_xmpm is checked for 3D case", "[node][XMPM][3D]") {
     REQUIRE_NOTHROW(property_handle->assign_property("mass_enrich", prop_id, 0,
                                                      mass_enrich, 1));
     // Apply constraints
-    node->apply_velocity_constraints_discontinuity();
+    node->apply_velocity_constraints();
 
     velocity << 10.5;
 

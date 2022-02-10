@@ -8,6 +8,13 @@
 
 namespace mpm {
 
+enum NodeEnrichType {
+  regular = 0,
+  single_enriched = 1,
+  double_enriched = 2,
+  multiple_enriched = 3
+};
+
 // Node XMPM class
 //! \brief class that stores the information about XMPM nodes
 //! \details Node XMPM class: id_ and coordinates.
@@ -37,26 +44,39 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! Initialise nodal properties
   void initialise() noexcept override;
 
+  //! Return the nodal levelset values
+  //! \ingroup XMPM
+  //! \param[in] the discontinuity_id
+  double levelset_phi(int dis_id) { return levelset_phi_[dis_id]; };
+
   //! Update the nodal levelset values
   //! \ingroup XMPM
   //! \param[in] the value of the nodal levelset_phi
-  void update_levelset_phi(int discontinuity_id, double phi) {
-    levelset_phi_[discontinuity_id] += phi;
+  //! \param[in] the discontinuity id
+  void update_levelset_phi(double phi, int dis_id) {
+    levelset_phi_[dis_id] += phi;
+  };
+
+  //! assign the nodal levelset values
+  //! \ingroup XMPM
+  //! \param[in] the value of the nodal levelset_phi
+  //! \param[in] the discontinuity id
+  void assign_levelset_phi(double phi, int dis_id) {
+    levelset_phi_[dis_id] = phi;
   };
 
   //! Update the nodal enriched mass
   //! \ingroup XMPM
   //! \param[in] the value of the enriched mass
-  void update_mass_enrich(double mass[3]) {
-    for (unsigned int i = 0; i < 3; i++) mass_enrich_[i] += mass[i];
+  void update_mass_enrich(Eigen::Matrix<double, 3, 1> mass) {
+    mass_enrich_ += mass;
   };
 
   //! Update the nodal enriched momentum
   //! \ingroup XMPM
   //! \param[in] the value of the enriched momentum
   void update_momentum_enrich(Eigen::Matrix<double, Tdim, 3> momentum) {
-    for (unsigned int i = 0; i < 3; i++)
-      momentum_enrich_.col(i) += momentum.col(i);
+    momentum_enrich_ += momentum;
   };
 
   //! Update the nodal enriched internal_force
@@ -64,8 +84,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] the value of the enriched momentum
   virtual void update_internal_force_enrich(
       Eigen::Matrix<double, Tdim, 3> internal_force) {
-    for (unsigned int i = 0; i < 3; i++)
-      internal_force.col(i) += internal_force.col(i);
+    internal_force_enrich_ += internal_force;
   }
 
   //! Update the nodal enriched external_force
@@ -73,13 +92,24 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] the value of the enriched external_force
   virtual void update_external_force_enrich(
       Eigen::Matrix<double, Tdim, 3> external_force) {
-    for (unsigned int i = 0; i < 3; i++)
-      external_force.col(i) += external_force.col(i);
+    external_force_enrich_ += external_force;
   }
 
+  //! Update the nodal mass_h_
+  //! \ingroup XMPM
+  //! \param[in] the value of mass_h_
+  void update_mass_h(double mass_h) { mass_h_ += mass_h; }
+
+  //! Initialise the nodal mass_h_
+  //! \ingroup XMPM
+  void initialise_mass_h() { mass_h_ = 0; }
+  //! Initialise the nodal mass_
+  //! \param[in] phase Index corresponding to the phase
+  //! \ingroup XMPM
+  void initialise_mass(unsigned phase) { mass_(phase) = 0; }
   //! Return mass_enrich_ at a given node for a given phase
   //! \ingroup XMPM
-  virtual double* mass_enrich() { return mass_enrich_; }
+  Eigen::Matrix<double, 3, 1> mass_enrich() { return mass_enrich_; }
   //! Return momentum_enrich_ at a given node for a given phase
   //! \ingroup XMPM
   virtual Eigen::Matrix<double, Tdim, 3> momentum_enrich() {
@@ -100,8 +130,121 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \ingroup XMPM
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
-  bool compute_momentum_discontinuity(unsigned phase,
-                                      double dt) noexcept override;
+  bool compute_momentum_discontinuity(unsigned phase, double dt) override;
+
+  //! Compute momentum for discontinuity with cundall damping factor
+  //! \ingroup XMPM
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Damping factor
+  bool compute_momentum_discontinuity_cundall(unsigned phase, double dt,
+                                              double damping_factor) override;
+
+  //! Determine node type
+  //! \param[in] the discontinuity_id
+  //! \ingroup XMPM
+  void determine_node_type(int discontinuity_id) override;
+
+  //! Return the discontinuity id at nodes
+  //! \retval discontinuity_id_
+  Eigen::Matrix<int, 2, 1> discontinuity_id() { return discontinuity_id_; }
+
+  //! Return enrich_type
+  //! \retval enrich_type_
+  int enrich_type() { return enrich_type_; }
+
+  //! Add a cell id
+  void add_cell_id(Index id) override;
+
+  //! Apply self-contact force of the discontinuity
+  //! \param[in] dt Time-step
+  void self_contact_discontinuity(double dt) override;
+
+  //! Initialise shared pointer to nodal properties pool for discontinuity
+  //! \param[in] prop_id Property id in the nodal property pool
+  //! \param[in] nodal_properties Shared pointer to nodal properties pool
+  void initialise_discontinuity_property_handle(
+      unsigned prop_id,
+      std::shared_ptr<mpm::NodalProperties> property_handle) override;
+
+  //! Assign whether the node is enriched
+  //! \param[in] discontinuity_enrich_: true or false
+  //! \param[in] discontinuity id
+  void assign_discontinuity_enrich(bool enrich, unsigned dis_id);
+
+  //! Return whether the node is enriched
+  //! \param[in] discontinuity id
+  bool discontinuity_enrich(unsigned dis_id) const {
+    bool status = false;
+    if (enrich_type_ == mpm::NodeEnrichType::regular) return status;
+    if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
+        discontinuity_id_[0] == dis_id) {
+      status = true;
+    } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
+      if (discontinuity_id_[0] == dis_id || discontinuity_id_[1] == dis_id)
+        status = true;
+    }
+    return status;
+  };
+
+  //! Update nodal property at the nodes from particle for discontinuity
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] property Property name
+  //! \param[in] property_value Property quantity from the particles in the cell
+  //! \param[in] discontinuity_id Id of the material within the property data
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  void update_discontinuity_property(bool update, const std::string& property,
+                                     const Eigen::MatrixXd& property_value,
+                                     unsigned discontinuity_id,
+                                     unsigned nprops);
+
+  //! assign nodal property at the nodes from particle for discontinuity
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] property Property name
+  //! \param[in] property_value Property quantity from the particles in the cell
+  //! \param[in] discontinuity_id Id of the material within the property data
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  void assign_discontinuity_property(bool update, const std::string& property,
+                                     const Eigen::MatrixXd& property_value,
+                                     unsigned discontinuity_id,
+                                     unsigned nprops);
+
+  //! Return data in the nodal discontinuity properties map at a specific index
+  //! \param[in] property Property name
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  Eigen::MatrixXd discontinuity_property(const std::string& property,
+                                         unsigned nprops = 1) override;
+
+  //! Return the discontinuity_prop_id
+  unsigned discontinuity_prop_id() const { return discontinuity_prop_id_; };
+
+  //! Apply velocity constraints
+  void apply_velocity_constraints() override;
+  //! Apply velocity filter
+  void apply_velocity_filter() override;
+
+  //! Return normal at a given node for a given phase
+  //! \param[in] the discontinuity id
+  VectorDim normal(unsigned dis_id) { return normal_[dis_id]; }
+
+  //! Assign normal at a given node
+  //! \ingroup XMPM
+  //! \param[in] the normal direction
+  //! \param[in] the discontinuity id
+  void assign_normal(VectorDim normal, unsigned dis_id) {
+    normal_[dis_id] = normal;
+  }
+
+  //! Reset the size of the discontinuity
+  //! \param[in] the number of the discontinuity
+  void reset_discontinuity_size(int size) {
+    levelset_phi_.resize(size, 0);
+    normal_.resize(size, VectorDim::Zero());
+  }
+
+  //! Return  connected cells
+  //! \retval cells_ connected cells
+  std::vector<Index> cells() { return cells_; }
 
  private:
   //! mass
@@ -112,14 +255,43 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   using Node<Tdim, Tdof, Tnphases>::internal_force_;
   //! Momentum
   using Node<Tdim, Tdof, Tnphases>::momentum_;
+  //! Logger
+  using Node<Tdim, Tdof, Tnphases>::console_;
+
+  //! Nodal property pool
+  using Node<Tdim, Tdof, Tnphases>::property_handle_;
+
+  //! Mutex
+  using Node<Tdim, Tdof, Tnphases>::node_mutex_;
+
+  //! cells ids
+  using Node<Tdim, Tdof, Tnphases>::cells_;
+
+  // need to be done
+  bool discontinuity_enrich_{false};
+
+  //! nodal discontinuity property id
+  unsigned discontinuity_prop_id_{std::numeric_limits<unsigned>::max()};
+
+  //! mass*h
+  double mass_h_{0};
+  //! cohesion
+  Eigen::Matrix<double, 2, 1> cohesion_;
+  //! contact distance
+  Eigen::Matrix<double, 2, 1> contact_distance_;
+  //! frictional coefficient
+  Eigen::Matrix<double, 2, 1> friction_coef_;
   //! Discontinuity enrich
-  bool dis_enrich_[2];
+  Eigen::Matrix<int, 2, 1> discontinuity_id_;
 
   //! Nodal levelset values
-  double levelset_phi_[2];
+  std::vector<double> levelset_phi_;
+
+  //! Nodal levelset values
+  std::vector<VectorDim> normal_;
 
   //! Enriched mass
-  double mass_enrich_[3];
+  Eigen::Matrix<double, 3, 1> mass_enrich_;
 
   //! Enriched momentum
   Eigen::Matrix<double, Tdim, 3> momentum_enrich_;
@@ -130,10 +302,15 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! Enriched external force
   Eigen::Matrix<double, Tdim, 3> external_force_enrich_;
 
+  //! Enrich type of the node
+  mpm::NodeEnrichType enrich_type_;
+
+  //! Contact dedection by distance
+  Eigen::Matrix<bool, 8, 1> contact_detection_;
 };  // Node XMPM class
 }  // namespace mpm
 
-#include "node_xmpm_branch.tcc"
+#include "node_xmpm.tcc"
 
 #endif  // MPM_NODE_XMPM_H_
 

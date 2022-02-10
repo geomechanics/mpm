@@ -47,13 +47,6 @@ class Node : public NodeBase<Tdim> {
       unsigned prop_id,
       std::shared_ptr<mpm::NodalProperties> property_handle) noexcept override;
 
-  //! Initialise shared pointer to nodal properties pool for discontinuity
-  //! \param[in] prop_id Property id in the nodal property pool
-  //! \param[in] nodal_properties Shared pointer to nodal properties pool
-  void initialise_discontinuity_property_handle(
-      unsigned prop_id,
-      std::shared_ptr<mpm::NodalProperties> property_handle) noexcept override;
-
   //! Assign coordinates
   //! \param[in] coord Assign coord as coordinates of the nodebase
   void assign_coordinates(const VectorDim& coord) override {
@@ -229,9 +222,6 @@ class Node : public NodeBase<Tdim> {
   //! Apply velocity constraints
   void apply_velocity_constraints() override;
 
-  //! Apply self-contact for discontinuity
-  void apply_velocity_constraints_discontinuity() override;
-
   //! Assign friction constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of friction constraint
@@ -294,90 +284,6 @@ class Node : public NodeBase<Tdim> {
 
   //! Compute multimaterial normal unit vector
   void compute_multimaterial_normal_unit_vector() override;
-
-  /**
-   * \defgroup XMPM Functions dealing with XMPM
-   */
-  /**@{*/
-  //! Initialise nodal properties for XMPM solver
-  //! \ingroup XMPM
-  void initialise_xmpm() noexcept override;
-
-  //! Assign whether the node is enriched
-  //! \ingroup XMPM
-  //! \param[in] discontinuity_enrich_: true or false
-  void assign_discontinuity_enrich(bool discontinuity) {
-    discontinuity_enrich_ = discontinuity;
-  };
-
-  //! Return whether the node is enriched
-  //! \ingroup XMPM
-  bool discontinuity_enrich() const { return discontinuity_enrich_; };
-
-  //! Update nodal property at the nodes from particle for discontinuity
-  //! \ingroup XMPM
-  //! \param[in] update A boolean to update (true) or assign (false)
-  //! \param[in] property Property name
-  //! \param[in] property_value Property quantity from the particles in the cell
-  //! \param[in] discontinuity_id Id of the material within the property data
-  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
-  void update_discontinuity_property(bool update, const std::string& property,
-                                     const Eigen::MatrixXd& property_value,
-                                     unsigned discontinuity_id,
-                                     unsigned nprops) noexcept;
-
-  //! assign nodal property at the nodes from particle for discontinuity
-  //! \ingroup XMPM
-  //! \param[in] update A boolean to update (true) or assign (false)
-  //! \param[in] property Property name
-  //! \param[in] property_value Property quantity from the particles in the cell
-  //! \param[in] discontinuity_id Id of the material within the property data
-  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
-  void assign_discontinuity_property(bool update, const std::string& property,
-                                     const Eigen::MatrixXd& property_value,
-                                     unsigned discontinuity_id,
-                                     unsigned nprops) noexcept;
-
-  //! Return data in the nodal discontinuity properties map at a specific index
-  //! \ingroup XMPM
-  //! \param[in] property Property name
-  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
-  Eigen::MatrixXd discontinuity_property(const std::string& property,
-                                         unsigned nprops = 1) noexcept override;
-
-  //! Compute momentum for discontinuity
-  //! \ingroup XMPM
-  //! \param[in] phase Index corresponding to the phase
-  //! \param[in] dt Timestep in analysis
-  bool compute_momentum_discontinuity(unsigned phase,
-                                      double dt) noexcept override;
-
-  //! Compute momentum for discontinuity with cundall damping factor
-  //! \ingroup XMPM
-  //! \param[in] phase Index corresponding to the phase
-  //! \param[in] dt Timestep in analysis
-  //! \param[in] damping_factor Damping factor
-  bool compute_momentum_discontinuity_cundall(
-      unsigned phase, double dt, double damping_factor) noexcept override;
-
-  //! Apply self-contact force of the discontinuity
-  //! \ingroup XMPM
-  //! \param[in] dt Time-step
-  void self_contact_discontinuity(double dt) noexcept override;
-
-  //! Return the discontinuity_prop_id
-  //! \ingroup XMPM
-  unsigned discontinuity_prop_id() const noexcept override {
-    return discontinuity_prop_id_;
-  };
-
-  //! Add a cell id
-  void add_cell_id(Index id) noexcept override;
-
-  //! Return  connected cells
-  //! \retval cells_ connected cells
-  std::vector<Index> cells() const { return cells_; }
-  /**@}*/
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -621,8 +527,6 @@ class Node : public NodeBase<Tdim> {
   Index id_{std::numeric_limits<Index>::max()};
   //! nodal property id
   unsigned prop_id_{std::numeric_limits<unsigned>::max()};
-  //! nodal discontinuity property id
-  unsigned discontinuity_prop_id_{std::numeric_limits<unsigned>::max()};
   //! shared ghost id
   Index ghost_id_{std::numeric_limits<Index>::max()};
   //! nodal coordinates
@@ -677,15 +581,12 @@ class Node : public NodeBase<Tdim> {
   std::unique_ptr<spdlog::logger> console_;
   //! MPI ranks
   std::set<unsigned> mpi_ranks_;
-  //! discontinuity enrich
-  // need to be done
-  bool discontinuity_enrich_{false};
-  //! cells ids including the node
-  std::vector<Index> cells_;
   //! Global index for active node (in each rank)
   Index active_id_{std::numeric_limits<Index>::max()};
   //! Global index for active node (globally)
   Index global_active_id_{std::numeric_limits<Index>::max()};
+  //! cells ids including the node
+  std::vector<Index> cells_;
 
   /**
    * \defgroup ImplicitVariables Variables dealing with implicit MPM
@@ -724,6 +625,5 @@ class Node : public NodeBase<Tdim> {
 #include "node.tcc"
 #include "node_implicit.tcc"
 #include "node_multiphase.tcc"
-#include "node_xmpm.tcc"
 
 #endif  // MPM_NODE_H_

@@ -13,12 +13,6 @@
 
 namespace mpm {
 
-enum DescriptionType {
-  particle_levelset = 1,
-  node_levelset = 2,
-  mark_points = 3
-};
-
 template <unsigned Tdim>
 struct discontinuity_point;
 
@@ -33,7 +27,16 @@ class DiscontinuityBase {
   //! Constructor with id
   //! \param[in] discontinuity id
   //! \param[in] discontinuity properties json
-  DiscontinuityBase(const Json& discontinuity_props);
+  DiscontinuityBase(const Json& discontinuity_props, unsigned id);
+
+  //! Constructor with id
+  //! \param[in] discontinuity id
+  //! \param[in] initiation properties: store the properties fot each newly
+  //! generated discontinuity: cohesion, friction_coef, contact_distance, width,
+  //! maximum_pdstrain move_direction, friction_coef_average
+  DiscontinuityBase(unsigned id,
+                    std::tuple<double, double, double, double, double, int,
+                               bool>& initiation_property);
 
   //! Destructor
   virtual ~DiscontinuityBase(){};
@@ -125,8 +128,11 @@ class DiscontinuityBase {
   //! to do:output mark points
   void output_markpoints(int step);
 
+  //! Return propagation
+  bool propagation() { return propagation_; }
+
   //! Return description type
-  int description_type() { return description_type_; }
+  std::string description_type() { return description_type_; }
 
  protected:
   //! Id
@@ -138,9 +144,9 @@ class DiscontinuityBase {
   //! Self-contact
   bool self_contact_{true};
   //! Friction coefficient
-  double friction_coef_;
+  double friction_coef_{0};
   //! Cohesion
-  double cohesion_;
+  double cohesion_{0};
   //! The width of the discontinuity
   double width_{std::numeric_limits<double>::max()};
   //! Move_direction
@@ -150,7 +156,7 @@ class DiscontinuityBase {
   //! Maximum pdstrain
   double maximum_pdstrain_{0};
   //! DescriptionType at the begining
-  DescriptionType description_type_{};
+  std::string description_type_;
   //! Compute the average friction coefficient from the neighbour particles
   bool friction_coef_average_{false};
   //! Proparate or not
@@ -197,11 +203,8 @@ struct discontinuity_point {
 
   //! Assign the discontinuity type to cell
   //! \param[in] map_cells map of cells
-  void assign_cell_enrich(const Map<Cell<Tdim>>& map_cells);
-
-  //! Assign the discontinuity enrich to node
-  //! \param[in] map_cells map of cells
-  void assign_node_enrich(const Map<Cell<Tdim>>& map_cells);
+  //! \param[in] the discontinuity id
+  void assign_cell_enrich(const Map<Cell<Tdim>>& map_cells, unsigned dis_id);
 
   //! Compute reference coordinates in a cell
   bool compute_reference_location() noexcept;
@@ -209,8 +212,10 @@ struct discontinuity_point {
   //! Locate particles in a cell
   //! \param[in] cells vector of cells
   //! \param[in] map_cells map of cells
+  //! \param[in] the discontinuity id
   void locate_discontinuity_mesh(const Vector<Cell<Tdim>>& cells,
-                                 const Map<Cell<Tdim>>& map_cells) noexcept;
+                                 const Map<Cell<Tdim>>& map_cells,
+                                 unsigned dis_id) noexcept;
 
   //! Compute updated position
   void compute_updated_position(double dt, int move_direction) noexcept;
@@ -306,6 +311,8 @@ struct discontinuity_surface {
   };
 
  private:
+  //！ The discontinuity id
+  unsigned id_;
   //! Points indices
   Eigen::Matrix<mpm::Index, 3, 1> points_;
   //！ The center coordinates

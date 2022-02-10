@@ -110,24 +110,12 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   // Initialise discontinuity
   this->initialise_discontinuity();
 
-  // Create nodal properties for discontinuity
-  // if (setdiscontinuity_) mesh_->create_nodal_properties_discontinuity();
-
   // Initialise loading conditions
   this->initialise_loads();
-
-  bool surfacemesh_ = false;
-  bool particle_levelset_ = false;
-  bool propagation_ = false;
-
-  // Initialise the levelset values for particles
-  if (surfacemesh_) mesh_->initialise_levelset_discontinuity();
 
   auto solver_begin = std::chrono::steady_clock::now();
 
   for (; step_ < nsteps_; ++step_) {
-    // FIXME: Modify this to a more generic function
-    bool nodal_update = false;
 
     if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
 
@@ -139,114 +127,35 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 #endif
 #endif
 
-    // Inject particles
-    mesh_->inject_particles(step_ * dt_);
-
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
 
-    // FIXME: Remove this before merging to master
-    // if (step_ == 0 || resume == true) {
-    //   // predefine level set values
-    //   mesh_->define_levelset();
-    //   resume = false;
-    // }
-
-    if (initiation_) initiation_ = !mesh_->initiation_discontinuity();
-
-    if (!initiation_) {  // setdiscontinuity_ &&
-      // Initialise nodal properties
-      mesh_->initialise_nodal_properties();
-
-      // Initialise element properties
-      mesh_->iterate_over_cells(std::bind(
-          &mpm::Cell<Tdim>::initialise_element_properties_discontinuity,
-          std::placeholders::_1));
-
-      if (!particle_levelset_) {
-        // locate points of discontinuity
-        mesh_->locate_discontinuity();
-
-        // Iterate over each points to compute shapefn
-        mesh_->compute_shapefn_discontinuity();
-      }
-
-      // obtain nodal volume
-
-      mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::map_volume_to_nodes,
-                    std::placeholders::_1));
-      if (!nodal_update) {
-        mesh_->iterate_over_particles(
-            std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_nodes,
-                      std::placeholders::_1));
-      }
-
-      // modify the nodal levelset_phi by mls
-      if (nodal_levelset_ == "mls") mesh_->modify_nodal_levelset_mls();
-
-      // obtain nodal frictional_coefficient
-      //   if (friction_coef_average_)
-      //     mesh_->iterate_over_particles(
-      //         std::bind(&mpm::ParticleBase<Tdim>::map_friction_coef_to_nodes,
-      //                   std::placeholders::_1,
-      //                   discontinuity_->friction_coef()));
-
-      if (propagation_) {
-        // find the potential tip element
-        mesh_->iterate_over_cells(std::bind(
-            &mpm::Cell<Tdim>::potential_tip_element, std::placeholders::_1));
-      }
-      //   if (particle_levelset_) {
-      //     // determine the celltype by the nodal level set
-      //     mesh_->iterate_over_cells(std::bind(&mpm::Cell<Tdim>::determine_crossed,
-      //                                         std::placeholders::_1));
-      //   }
-
-      // obtain the normal direction of non-regular cell
-      //   mesh_->compute_cell_normal_vector_discontinuity();
-
-      //   mesh_->iterate_over_cells(std::bind(
-      //       &mpm::Cell<Tdim>::compute_area_discontinuity,
-      //       std::placeholders::_1));
-
-      if (propagation_)
-        // remove the spurious potential tip element
-        mesh_->spurious_potential_tip_element();
-
-      //   // assign_node_enrich
-      //   mesh_->assign_node_enrich(friction_coef_average_, nodal_update);
-
-      //   mesh_->check_particle_levelset(particle_levelset_);
-
-      //   // obtain the normal direction of each cell and enrich nodes
-      //   mesh_->compute_nodal_normal_vector_discontinuity();
-
-      if (propagation_)  // find the tip element
-      {
-        mesh_->iterate_over_cells(
-            std::bind(&mpm::Cell<Tdim>::tip_element, std::placeholders::_1));
-      }
-
-      // mesh_->output_celltype(step_);
-      mesh_->selfcontact_detection();
+    if (initiation_) {
+      mesh_->initiation_discontinuity(maximum_pdstrain_, shield_width_,
+                                      maximum_num_, initiation_property_);
+      if (mesh_->discontinuity_num() >= maximum_num_) initiation_ = false;
     }
 
-    // mesh_->iterate_over_particles(std::bind(
-    //     &mpm::ParticleBase<Tdim>::check_levelset, std::placeholders::_1));
+    mesh_->propagation_discontinuity();
 
-    // Mass momentum and compute velocity at nodes
-    mpm_scheme_->compute_nodal_kinematics(phase);
+    // Assign mass and momentum to nodes
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
+                  std::placeholders::_1));
+    mesh_->iterate_over_nodes(std::bind(
+        &mpm::NodeBase<Tdim>::apply_velocity_filter, std::placeholders::_1));
 
-    // if (particle_levelset_ || nodal_update) mesh_->update_node_enrich();
+    mesh_->iterate_over_nodes(
+        std::bind(&mpm::NodeBase<Tdim>::apply_velocity_constraints,
+                  std::placeholders::_1));
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
 
     // Iterate over each particle to calculate dudx
-    // mesh_->iterate_over_particles(
-    //     std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
-    //               std::placeholders::_1, dt_));
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
+                  std::placeholders::_1, dt_));
 
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,
@@ -265,20 +174,8 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
                     std::placeholders::_1, phase, this->dt_),
           std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
-    if (!initiation_) {  // setdiscontinuity_ &&
-
-      if (propagation_) {
-        // find the next tip element
-        mesh_->next_tip_element_discontinuity();
-
-        // discontinuity growth
-        mesh_->update_discontinuity();
-      }
-
-      // Update the discontinuity position
-      if (!particle_levelset_)
-        mesh_->compute_updated_position_discontinuity(this->dt_);
-    }
+    // Update the discontinuity position
+    mesh_->compute_updated_position_discontinuity(this->dt_);
 
     // Iterate over each particle to compute updated position
     mesh_->iterate_over_particles(
@@ -304,11 +201,10 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       // HDF5 outputs
       this->write_hdf5(this->step_ + 1, this->nsteps_);
       // to do
-      mesh_->output_discontinuity(this->step_ + 1);
-      // mesh_->output_force(step_);
+      // mesh_->output_discontinuity(this->step_ + 1);
 #ifdef USE_VTK
       // VTK outputs
-      this->write_vtk(this->step_ + 1, this->nsteps_);
+      this->write_vtk(this->step_, this->nsteps_);
 #endif
 #ifdef USE_PARTIO
       // Partio outputs
@@ -348,50 +244,101 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
       if (discontinuity_props.contains("maximum_pdstrain"))
         maximum_pdstrain_ =
             discontinuity_props.at("maximum_pdstrain").template get<double>();
+
+      //! store the properties fot each newly generated discontinuity: cohesion,
+      //! friction_coef, contact_distance, width, move_direction,
+      //! friction_coef_average
+      double cohesion = 0;
+      double friction_coef = 0;
+      double contact_distance = 0;
+      double width = std::numeric_limits<double>::max();
+      int move_direction = 1;
+      bool friction_coef_average = false;
+      if (discontinuity_props.contains("friction_coefficient_average"))
+        friction_coef_average =
+            discontinuity_props.at("friction_coefficient_average")
+                .template get<bool>();
+      if (discontinuity_props.contains("friction_coefficient"))
+        friction_coef = discontinuity_props.at("friction_coefficient")
+                            .template get<double>();
+      // assign cohesion_ if it's given in input file
+      if (discontinuity_props.contains("cohesion"))
+        cohesion = discontinuity_props.at("cohesion").template get<double>();
+      // assign contact_distance_ if it's given in input file
+      if (discontinuity_props.contains("contact_distance"))
+        contact_distance =
+            discontinuity_props.at("contact_distance").template get<double>();
+
+      // assign move direction if it's given in input file
+      if (discontinuity_props.contains("move_direction"))
+        move_direction =
+            discontinuity_props.at("move_direction").template get<int>();
+      // assign width if it's given in input file
+      if (discontinuity_props.contains("width"))
+        width = discontinuity_props.at("width").template get<double>();
+
+      initiation_property_ = std::make_tuple(
+          cohesion, friction_coef, contact_distance, width, maximum_pdstrain_,
+          move_direction, friction_coef_average);
+
       auto json_generators = discontinuity_props["generator"];
+
       for (const auto& json_generator : json_generators) {
+
+        int dis_id = json_generator["id"].template get<int>();
         // Get discontinuity type
         const std::string type =
             json_generator["type"].template get<std::string>();
 
         // Create a new discontinuity surface from JSON object
-        auto discontinuity =
-            Factory<mpm::DiscontinuityBase<Tdim>, const Json&>::instance()
-                ->create(type, json_generator);
-        if (discontinuity->description_type() ==
-            mpm::DescriptionType::mark_points) {
-          // initiate with the mesh file
-          if (json_generator.contains("io_type") &&
-              json_generator.contains("file")) {
 
-            // Get discontinuity  input type
-            auto io_type =
-                json_generator["io_type"].template get<std::string>();
+        auto discontinuity = Factory<mpm::DiscontinuityBase<Tdim>, const Json&,
+                                     unsigned>::instance()
+                                 ->create(type, json_generator, dis_id);
 
-            // discontinuity file
-            std::string discontinuity_file = io_->file_name(
-                json_generator["file"].template get<std::string>());
-            // Create a mesh reader
-            auto discontunity_io =
-                Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+        // Get discontinuity  input type
+        auto io_type = json_generator["io_type"].template get<std::string>();
 
-            // Create points and cells from file
-            discontinuity->initialise(
-                discontunity_io->read_mesh_nodes(discontinuity_file),
-                discontunity_io->read_mesh_cells(discontinuity_file));
+        // discontinuity file
+        std::string discontinuity_file =
+            io_->file_name(json_generator["file"].template get<std::string>());
+
+        if (discontinuity->description_type() == "mark_points") {
+
+          // Create a mesh reader
+          auto discontunity_io =
+              Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+          // Create points and cells from file
+          discontinuity->initialise(
+              discontunity_io->read_mesh_nodes(discontinuity_file),
+              discontunity_io->read_mesh_cells(discontinuity_file));
+          mesh_->insert_discontinuity(discontinuity);
+
+        } else if (discontinuity->description_type() == "particle_levelset") {
+          mesh_->insert_discontinuity(discontinuity);
+          // Create a mesh reader
+          auto discontunity_io =
+              Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+          if (!discontinuity_file.empty()) {
+            mesh_->assign_particles_levelset(
+                discontunity_io->read_id_levelset(discontinuity_file), dis_id);
           }
-        } else {
-          // to do: read the mark points and directions
+
         }
 
-        // insert
-        discontinuity_ = discontinuity;
-      }
+        else if (discontinuity->description_type() == "node_levelset") {
+          mesh_->insert_discontinuity(discontinuity);
+          // Create a mesh reader
+          auto discontunity_io =
+              Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
 
-      // Add discontinuity
-      // discontinuity_ = discontinuity;
-      // Copy discontinuity to mesh
-      mesh_->initialise_discontinuity(this->discontinuity_);
+          if (!discontinuity_file.empty()) {
+            mesh_->assign_nodes_levelset(
+                discontunity_io->read_id_levelset(discontinuity_file), dis_id);
+          }
+        }
+      }
     }
   } catch (std::exception& exception) {
     console_->warn("{} #{}: No discontinuity is defined", __FILE__, __LINE__,

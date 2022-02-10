@@ -13,9 +13,17 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
-  //! Constructor with id
+  //! Constructor
   //! \param[in] discontinuity_props discontinuity properties
-  Discontinuity3D(const Json& discontinuity_props);
+  //! \param[in] discontinuity id
+  Discontinuity3D(const Json& discontinuity_props, unsigned id);
+
+  //! Constructor
+  //! \param[in] discontinuity id
+  //! \param[in] initiation properties
+  Discontinuity3D(unsigned id,
+                  std::tuple<double, double, double, double, double, int, bool>&
+                      initiation_property);
 
   //! Initialization
   //! \param[in] the coordinates of all points
@@ -56,6 +64,8 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   void compute_updated_position(const double dt) noexcept;
 
  protected:
+  //! Id
+  using mpm::DiscontinuityBase<Tdim>::id_;
   //! Vector of points
   using mpm::DiscontinuityBase<Tdim>::points_;
   //! Logger

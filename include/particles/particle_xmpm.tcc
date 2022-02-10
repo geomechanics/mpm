@@ -9,32 +9,34 @@ mpm::ParticleXMPM<Tdim>::ParticleXMPM(Index id, const VectorDim& coord)
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 
   // to do:
-  if (coordinates_[0] < 0.5)
-    velocity_[0] = -1;
-  else
-    velocity_[0] = 1;
-  if (coordinates_[1] < 0.5)
-    velocity_[1] = -1;
-  else
-    velocity_[1] = 1;
+  // if (coordinates_[1] < 0.5) {
+  //   velocity_[1] = 1;
+  // } else {
+  //   velocity_[1] = -1;
+  // }
 
-  if (coordinates_[0] < 0.5)
-    levelset_phi_[0] = -0.25;
-  else
-    levelset_phi_[0] = 0.25;
-  if (coordinates_[1] < 0.5)
-    levelset_phi_[1] = -0.25;
-  else
-    levelset_phi_[1] = 0.25;
+  // if (coordinates_[0] > 0.5) {
+  //   velocity_[0] = -1;
+  // } else
+  //   velocity_[0] = 1;
+
+  // if (coordinates_[0] < 0.5)
+  //   levelset_phi_[0] = -0.25;
+  // else
+  //   levelset_phi_[0] = 0.25;
+  // if (coordinates_[1] < 0.5)
+  //   levelset_phi_[1] = -0.25;
+  // else
+  //   levelset_phi_[1] = 0.25;
 }
 
 //! Initialise particle data from pod
 template <unsigned Tdim>
 bool mpm::ParticleXMPM<Tdim>::initialise_particle(PODParticle& particle) {
   bool status = mpm::Particle<Tdim>::initialise_particle(particle);
-  auto xmpm_particle = reinterpret_cast<PODParticleXMPM*>(&particle);
-  // levelset_phi
-  this->levelset_phi_[0] = xmpm_particle->levelset_phi;
+  // auto xmpm_particle = reinterpret_cast<PODParticleXMPM*>(&particle);
+  // to do: levelset_phi
+  // this->levelset_phi_[0] = xmpm_particle->levelset_phi;
 
   return status;
 }
@@ -139,7 +141,7 @@ std::shared_ptr<void> mpm::ParticleXMPM<Tdim>::pod() const {
   }
 
   // XMPM
-  particle_data->levelset_phi = levelset_phi_[0];
+  // particle_data->levelset_phi = levelset_phi_[0];
   return particle_data;
 }
 
@@ -149,11 +151,16 @@ void mpm::ParticleXMPM<Tdim>::initialise() {
 
   du_dx_.setZero();
 
-  this->scalar_properties_["levelset"] = [&]() { return levelset_phi_[0]; };
-  this->scalar_properties_["levelset_branch"] = [&]() {
+  this->scalar_properties_["levelsetf"] = [&]() {
+    if (levelset_phi_.size() < 1) return 0.;
+    return levelset_phi_[0];
+  };
+  this->scalar_properties_["levelsets"] = [&]() {
+    if (levelset_phi_.size() < 2) return 0.;
     return levelset_phi_[1];
   };
 
+  // this->scalar_properties_["levelsett"] = [&]() { return levelset_phi_[2]; };
   this->scalar_properties_["minimum_acoustic_eigenvalue"] = [&]() {
     return minimum_acoustic_eigenvalue_;
   };
@@ -168,68 +175,85 @@ void mpm::ParticleXMPM<Tdim>::map_mass_momentum_to_nodes() noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 
-  // Map mass and momentum to nodes
-  // for (unsigned i = 0; i < nodes_.size(); ++i) {
-  //   nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-  //                          mass_ * shapefn_[i]);
-  //   nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-  //                              mass_ * shapefn_[i] * velocity_);
-  //   if (nodes_[i]->discontinuity_enrich()) {
-  //     // Unit 1x1 Eigen matrix to be used with scalar quantities
-  //     Eigen::Matrix<double, 1, 1> nodal_mass;
-  //     nodal_mass(0, 0) = sgn(levelset_phi_[0]) * mass_ * shapefn_[i];
-  //     // Map enriched mass and momentum to nodes
-  //     nodes_[i]->update_discontinuity_property(true, "mass_enrich",
-  //     nodal_mass,
-  //                                              0, 1);
-  //     nodes_[i]->update_discontinuity_property(true, "momenta_enrich",
-  //                                              velocity_ * nodal_mass, 0,
-  //                                              Tdim);
-  //   }
-  // }
-  // branch
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
                            mass_ * shapefn_[i]);
     nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
                                mass_ * shapefn_[i] * velocity_);
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
 
-    double mass_enrich[3];
-    mass_enrich[0] = sgn(levelset_phi_[0]) * mass_ * shapefn_[i];
-    mass_enrich[1] = sgn(levelset_phi_[1]) * mass_ * shapefn_[i];
-    mass_enrich[2] =
-        sgn(levelset_phi_[0]) * sgn(levelset_phi_[1]) * mass_ * shapefn_[i];
+      Eigen::Matrix<double, 3, 1> mass_enrich;
+      mass_enrich.setZero();
+      mass_enrich[0] =
+          sgn(levelset_phi_[discontinuity_id[0]]) * mass_ * shapefn_[i];
 
-    Eigen::Matrix<double, Tdim, 3> momentum_enrich;
-    for (unsigned j = 0; j < 3; j++) {
-      momentum_enrich.col(j) = velocity_ * mass_enrich[j];
+      Eigen::Matrix<double, Tdim, 3> momentum_enrich;
+      momentum_enrich.setZero();
+      momentum_enrich.col(0) = velocity_ * mass_enrich[0];
+
+      nodes_[i]->update_mass_enrich(mass_enrich);
+      nodes_[i]->update_momentum_enrich(momentum_enrich);
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+
+      Eigen::Matrix<double, 3, 1> mass_enrich;
+      mass_enrich.setZero();
+      mass_enrich[0] =
+          sgn(levelset_phi_[discontinuity_id[0]]) * mass_ * shapefn_[i];
+      mass_enrich[1] =
+          sgn(levelset_phi_[discontinuity_id[1]]) * mass_ * shapefn_[i];
+      mass_enrich[2] = sgn(levelset_phi_[discontinuity_id[0]]) *
+                       sgn(levelset_phi_[discontinuity_id[1]]) * mass_ *
+                       shapefn_[i];
+
+      Eigen::Matrix<double, Tdim, 3> momentum_enrich;
+      momentum_enrich.setZero();
+      for (unsigned j = 0; j < 3; j++) {
+        momentum_enrich.col(j) = velocity_ * mass_enrich[j];
+      }
+
+      nodes_[i]->update_mass_enrich(mass_enrich);
+      nodes_[i]->update_momentum_enrich(momentum_enrich);
     }
+  }
+}
 
-    nodes_[i]->update_mass_enrich(mass_enrich);
-    nodes_[i]->update_momentum_enrich(momentum_enrich);
+//! Map particle mass to nodes
+template <unsigned Tdim>
+void mpm::ParticleXMPM<Tdim>::map_mass_to_nodes() noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
+                           mass_ * shapefn_[i]);
+  }
+}
+
+//! Map particle mass*h to nodes
+template <unsigned Tdim>
+void mpm::ParticleXMPM<Tdim>::map_mass_h_to_nodes(unsigned dis_id) noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->update_mass_h(mass_ * shapefn_[i] * sgn(levelset_phi_[dis_id]));
   }
 }
 
 //! Map particle levelset to nodes
 template <unsigned Tdim>
-void mpm::ParticleXMPM<Tdim>::map_levelset_to_nodes() noexcept {
+void mpm::ParticleXMPM<Tdim>::map_levelset_to_nodes(unsigned dis_id) noexcept {
   double volume_node;
-  Eigen::Matrix<double, 1, 1> levelset;
   // Map levelset to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     volume_node = nodes_[i]->volume(mpm::ParticlePhase::Solid);
-    // Unit 1x1 Eigen matrix to be used with scalar quantities
-    levelset(0, 0) = levelset_phi_[0] * volume_ * shapefn_[i] / volume_node;
-    // Map levelset to nodes
-    nodes_[i]->update_discontinuity_property(true, "levelset_phi", levelset, 0,
-                                             1);
-
-    // for branch
-    int num_discontinuity = 2;
-    for (int j = 0; j < num_discontinuity; j++) {
-      nodes_[i]->update_levelset_phi(
-          j, levelset_phi_[j] * volume_ * shapefn_[i] / volume_node);
-    }
+    nodes_[i]->update_levelset_phi(
+        levelset_phi_[dis_id] * volume_ * shapefn_[i] / volume_node, dis_id);
   }
 }
 
@@ -268,6 +292,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleXMPM<3>::compute_strain_rate(
   const double tolerance = 1.E-16;
   Eigen::Vector3d vel;
   vel.setZero();
+
   // Compute corresponding nodal velocity
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
 
@@ -275,21 +300,34 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleXMPM<3>::compute_strain_rate(
     double nodal_mass = nodes_[i]->mass(phase);
     auto nodal_mass_enrich = nodes_[i]->mass_enrich();
 
-    nodal_mass +=
-        nodal_mass_enrich[0] * sgn(levelset_phi_[0]) +
-        nodal_mass_enrich[1] * sgn(levelset_phi_[1]) +
-        nodal_mass_enrich[2] * sgn(levelset_phi_[0]) * sgn(levelset_phi_[1]);
-
-    if (nodal_mass < tolerance) continue;
-
     auto nodal_momentum = nodes_[i]->momentum(phase);
     auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
 
-    nodal_momentum.col(0) +=
-        nodal_momentum_enrich.col(0) * sgn(levelset_phi_[0]) +
-        nodal_momentum_enrich.col(1) * sgn(levelset_phi_[1]) +
-        nodal_momentum_enrich.col(2) * sgn(levelset_phi_[0]) *
-            sgn(levelset_phi_[1]);
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+
+      nodal_mass +=
+          nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]);
+      nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                               sgn(levelset_phi_[discontinuity_id[0]]);
+
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      nodal_mass +=
+          nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]) +
+          nodal_mass_enrich[1] * sgn(levelset_phi_[discontinuity_id[1]]) +
+          nodal_mass_enrich[2] * sgn(levelset_phi_[discontinuity_id[0]]) *
+              sgn(levelset_phi_[discontinuity_id[1]]);
+
+      nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                                   sgn(levelset_phi_[discontinuity_id[0]]) +
+                               nodal_momentum_enrich.col(1) *
+                                   sgn(levelset_phi_[discontinuity_id[1]]) +
+                               nodal_momentum_enrich.col(2) *
+                                   sgn(levelset_phi_[discontinuity_id[0]]) *
+                                   sgn(levelset_phi_[discontinuity_id[1]]);
+    }
+    if (nodal_mass < tolerance) continue;
 
     vel = nodal_momentum / nodal_mass;
 
@@ -303,6 +341,8 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleXMPM<3>::compute_strain_rate(
 
   for (unsigned i = 0; i < strain_rate.size(); ++i)
     if (std::fabs(strain_rate[i]) < 1.E-15) strain_rate[i] = 0.;
+
+  // return strain_rate;
   return strain_rate;
 }
 
@@ -314,10 +354,25 @@ void mpm::ParticleXMPM<Tdim>::map_body_force(
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
                                      (pgravity * mass_ * shapefn_(i)));
-    if (nodes_[i]->discontinuity_enrich())
-      nodes_[i]->update_discontinuity_property(
-          true, "external_force_enrich",
-          sgn(levelset_phi_[0]) * pgravity * mass_ * shapefn_(i), 0, Tdim);
+
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    Eigen::Matrix<double, Tdim, 3> external_force;
+    external_force.setZero();
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+      external_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) *
+                              pgravity * mass_ * shapefn_(i);
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      external_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) *
+                              pgravity * mass_ * shapefn_(i);
+      external_force.col(1) = sgn(levelset_phi_[discontinuity_id[1]]) *
+                              pgravity * mass_ * shapefn_(i);
+      external_force.col(2) = sgn(levelset_phi_[discontinuity_id[0]]) *
+                              sgn(levelset_phi_[discontinuity_id[1]]) *
+                              pgravity * mass_ * shapefn_(i);
+    }
+    nodes_[i]->update_external_force_enrich(external_force);
   }
 }
 
@@ -329,10 +384,25 @@ void mpm::ParticleXMPM<Tdim>::map_traction_force() noexcept {
     for (unsigned i = 0; i < nodes_.size(); ++i) {
       nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
                                        (shapefn_[i] * traction_));
-      if (nodes_[i]->discontinuity_enrich())
-        nodes_[i]->update_discontinuity_property(
-            true, "external_force_enrich",
-            sgn(levelset_phi_[0]) * shapefn_[i] * traction_, 0, Tdim);
+
+      if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+      auto discontinuity_id = nodes_[i]->discontinuity_id();
+      Eigen::Matrix<double, Tdim, 3> external_force;
+      external_force.setZero();
+      if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+        external_force.col(0) =
+            sgn(levelset_phi_[discontinuity_id[0]]) * traction_ * shapefn_(i);
+      } else if (nodes_[i]->enrich_type() ==
+                 mpm::NodeEnrichType::double_enriched) {
+        external_force.col(0) =
+            sgn(levelset_phi_[discontinuity_id[0]]) * traction_ * shapefn_(i);
+        external_force.col(1) =
+            sgn(levelset_phi_[discontinuity_id[1]]) * traction_ * shapefn_(i);
+        external_force.col(2) = sgn(levelset_phi_[discontinuity_id[0]]) *
+                                sgn(levelset_phi_[discontinuity_id[1]]) *
+                                traction_ * shapefn_(i);
+      }
+      nodes_[i]->update_external_force_enrich(external_force);
     }
   }
 }
@@ -347,9 +417,21 @@ inline void mpm::ParticleXMPM<1>::map_internal_force() noexcept {
     force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-    if (nodes_[i]->discontinuity_enrich())
-      nodes_[i]->update_discontinuity_property(
-          true, "internal_force_enrich", sgn(levelset_phi_[0]) * force, 0, 1);
+
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    Eigen::Matrix<double, 1, 3> internal_force;
+    internal_force.setZero();
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
+      internal_force.col(1) = sgn(levelset_phi_[discontinuity_id[1]]) * force;
+      internal_force.col(2) = sgn(levelset_phi_[discontinuity_id[0]]) *
+                              sgn(levelset_phi_[discontinuity_id[1]]) * force;
+    }
+    nodes_[i]->update_internal_force_enrich(internal_force);
   }
 }
 
@@ -366,9 +448,21 @@ inline void mpm::ParticleXMPM<2>::map_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-    if (nodes_[i]->discontinuity_enrich())
-      nodes_[i]->update_discontinuity_property(
-          true, "internal_force_enrich", sgn(levelset_phi_[0]) * force, 0, 2);
+
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    Eigen::Matrix<double, 2, 3> internal_force;
+    internal_force.setZero();
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
+      internal_force.col(1) = sgn(levelset_phi_[discontinuity_id[1]]) * force;
+      internal_force.col(2) = sgn(levelset_phi_[discontinuity_id[0]]) *
+                              sgn(levelset_phi_[discontinuity_id[1]]) * force;
+    }
+    nodes_[i]->update_internal_force_enrich(internal_force);
   }
 }
 
@@ -391,18 +485,22 @@ inline void mpm::ParticleXMPM<3>::map_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-    if (nodes_[i]->discontinuity_enrich())
-      nodes_[i]->update_discontinuity_property(
-          true, "internal_force_enrich", sgn(levelset_phi_[0]) * force, 0, 3);
 
-    // branch
-    Eigen::Matrix<double, 3, 3> force_enrich;
-    force_enrich.col(0) = force.col(0) * sgn(levelset_phi_[0]);
-    force_enrich.col(1) = force.col(0) * sgn(levelset_phi_[1]);
-    force_enrich.col(2) =
-        force.col(0) * sgn(levelset_phi_[0]) * sgn(levelset_phi_[1]);
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    Eigen::Matrix<double, 3, 3> internal_force;
+    internal_force.setZero();
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
+      internal_force.col(1) = sgn(levelset_phi_[discontinuity_id[1]]) * force;
+      internal_force.col(2) = sgn(levelset_phi_[discontinuity_id[0]]) *
+                              sgn(levelset_phi_[discontinuity_id[1]]) * force;
+    }
 
-    nodes_[i]->update_momentum_enrich(force_enrich);
+    nodes_[i]->update_internal_force_enrich(internal_force);
   }
 }
 
@@ -421,23 +519,41 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // branch
     double nodal_mass = nodes_[i]->mass(phase);
-    auto nodal_mass_enrich = nodes_[i]->mass_enrich();
-
-    nodal_mass +=
-        nodal_mass_enrich[0] * sgn(levelset_phi_[0]) +
-        nodal_mass_enrich[1] * sgn(levelset_phi_[1]) +
-        nodal_mass_enrich[2] * sgn(levelset_phi_[0]) * sgn(levelset_phi_[1]);
-
-    if (nodal_mass < tolerance) continue;
 
     auto nodal_momentum = nodes_[i]->momentum(phase);
+
+    // if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+
+    auto nodal_mass_enrich = nodes_[i]->mass_enrich();
+
     auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
 
-    nodal_momentum.col(0) +=
-        nodal_momentum_enrich.col(0) * sgn(levelset_phi_[0]) +
-        nodal_momentum_enrich.col(1) * sgn(levelset_phi_[1]) +
-        nodal_momentum_enrich.col(2) * sgn(levelset_phi_[0]) *
-            sgn(levelset_phi_[1]);
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+
+      nodal_mass +=
+          nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]);
+      nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                               sgn(levelset_phi_[discontinuity_id[0]]);
+
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      nodal_mass +=
+          nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]) +
+          nodal_mass_enrich[1] * sgn(levelset_phi_[discontinuity_id[1]]) +
+          nodal_mass_enrich[2] * sgn(levelset_phi_[discontinuity_id[0]]) *
+              sgn(levelset_phi_[discontinuity_id[1]]);
+
+      nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                                   sgn(levelset_phi_[discontinuity_id[0]]) +
+                               nodal_momentum_enrich.col(1) *
+                                   sgn(levelset_phi_[discontinuity_id[1]]) +
+                               nodal_momentum_enrich.col(2) *
+                                   sgn(levelset_phi_[discontinuity_id[0]]) *
+                                   sgn(levelset_phi_[discontinuity_id[1]]);
+    }
+    if (nodal_mass < tolerance) continue;
 
     nodal_velocity += shapefn_[i] * nodal_momentum / nodal_mass;
   }
@@ -451,21 +567,8 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
     for (unsigned i = 0; i < nodes_.size(); ++i) {
-      if (nodes_[i]->discontinuity_enrich()) {
-        double nodal_mass =
-            nodes_[i]->mass(phase) +
-            sgn(levelset_phi_[0]) *
-                nodes_[i]->discontinuity_property("mass_enrich", 1)(0, 0);
-        if (nodal_mass < tolerance) continue;
 
-        nodal_velocity_enrich +=
-            shapefn_[i] *
-            (nodes_[i]->momentum(phase) +
-             sgn(levelset_phi_[0]) *
-                 nodes_[i]->discontinuity_property("momenta_enrich", 3)) /
-            nodal_mass;
-        shapefn_enrich += shapefn_[i];
-      } else {
+      if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) {
         double nodal_mass = nodes_[i]->mass(phase);
         if (nodal_mass < tolerance) continue;
 
@@ -473,6 +576,52 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
             nodes_[i]->internal_force(phase) + nodes_[i]->external_force(phase);
 
         nodal_acceleration += shapefn_[i] * force / nodal_mass;
+
+      } else if (nodes_[i]->enrich_type() ==
+                 mpm::NodeEnrichType::single_enriched) {
+
+        auto discontinuity_id = nodes_[i]->discontinuity_id();
+
+        double nodal_mass = nodes_[i]->mass(phase);
+        auto nodal_momentum = nodes_[i]->momentum(phase);
+        auto nodal_mass_enrich = nodes_[i]->mass_enrich();
+        auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+
+        nodal_mass +=
+            nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]);
+
+        if (nodal_mass < tolerance) continue;
+        nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                                 sgn(levelset_phi_[discontinuity_id[0]]);
+
+        nodal_velocity_enrich += shapefn_[i] * nodal_momentum / nodal_mass;
+        shapefn_enrich += shapefn_[i];
+      } else if (nodes_[i]->enrich_type() ==
+                 mpm::NodeEnrichType::double_enriched) {
+
+        double nodal_mass = nodes_[i]->mass(phase);
+        auto nodal_momentum = nodes_[i]->momentum(phase);
+        auto nodal_mass_enrich = nodes_[i]->mass_enrich();
+        auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+
+        auto discontinuity_id = nodes_[i]->discontinuity_id();
+        nodal_mass +=
+            nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]) +
+            nodal_mass_enrich[1] * sgn(levelset_phi_[discontinuity_id[1]]) +
+            nodal_mass_enrich[2] * sgn(levelset_phi_[discontinuity_id[0]]) *
+                sgn(levelset_phi_[discontinuity_id[1]]);
+
+        if (nodal_mass < tolerance) continue;
+
+        nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                                     sgn(levelset_phi_[discontinuity_id[0]]) +
+                                 nodal_momentum_enrich.col(1) *
+                                     sgn(levelset_phi_[discontinuity_id[1]]) +
+                                 nodal_momentum_enrich.col(2) *
+                                     sgn(levelset_phi_[discontinuity_id[0]]) *
+                                     sgn(levelset_phi_[discontinuity_id[1]]);
+        nodal_velocity_enrich += shapefn_[i] * nodal_momentum / nodal_mass;
+        shapefn_enrich += shapefn_[i];
       }
     }
 
@@ -493,20 +642,20 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
 
 //! Map levelset from nodes to particles
 template <unsigned Tdim>
-void mpm::ParticleXMPM<Tdim>::map_levelset_to_particle() {
-
-  levelset_phi_[0] = 0;
+void mpm::ParticleXMPM<Tdim>::map_levelset_to_particle(unsigned dis_id) {
+  double levelset_phi = 0;
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    levelset_phi_[0] += shapefn_[i] * nodes_[i]->discontinuity_property(
-                                          "levelset_phi", 1)(0, 0);
+    levelset_phi += shapefn_[i] * nodes_[i]->levelset_phi(dis_id);
   }
+  levelset_phi_[dis_id] = levelset_phi;
 }
 
 //! compute the mininum eigenvalue of the acoustic tensor
 //! Map levelset from nodes to particles
 template <unsigned Tdim>
 bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
-                                                      bool initiation) {
+                                                      bool initiation,
+                                                      unsigned dis_id) {
 
   minimum_acoustic_eigenvalue_ = std::numeric_limits<double>::max();
   // compute the acoustic tensor
@@ -527,12 +676,11 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   if (!initiation) {
 
     for (int i = 0; i < nodes_.size(); i++) {
-      double levelset =
-          nodes_[i]->discontinuity_property("levelset_phi", 1)(0, 0);
+      double levelset = nodes_[i]->levelset_phi(dis_id);
       for (int j = 0; j < 3; j++)
         normal_cellcenter[j] += dn_dx_centroid_(i, j) * levelset;
     }
-    normal_cellcenter = cell_->normal_discontinuity();
+    normal_cellcenter = cell_->normal_discontinuity(dis_id);
   }
 
   if (initiation) {
@@ -742,23 +890,45 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
   vel.setZero();
   // Compute corresponding nodal velocity
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    if (nodes_[i]->discontinuity_enrich()) {
-      double nodal_mass =
-          nodes_[i]->mass(phase) +
-          sgn(levelset_phi_[0]) *
-              nodes_[i]->discontinuity_property("mass_enrich", 1)(0, 0);
-      if (nodal_mass < tolerance) continue;
+// branch
+    double nodal_mass = nodes_[i]->mass(phase);
 
-      vel =
-          (nodes_[i]->momentum(phase) +
-           sgn(levelset_phi_[0]) *
-               nodes_[i]->discontinuity_property("momenta_enrich", 3).col(0)) /
-          nodal_mass;
-    } else {
-      double nodal_mass = nodes_[i]->mass(phase);
-      if (nodal_mass < tolerance) continue;
-      vel = nodes_[i]->momentum(phase) / nodal_mass;
+    auto nodal_momentum = nodes_[i]->momentum(phase);
+
+    // if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
+
+    auto nodal_mass_enrich = nodes_[i]->mass_enrich();
+
+    auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+
+    auto discontinuity_id = nodes_[i]->discontinuity_id();
+
+    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+
+      nodal_mass +=
+          nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]);
+      nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                               sgn(levelset_phi_[discontinuity_id[0]]);
+
+    } else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
+      nodal_mass +=
+          nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]) +
+          nodal_mass_enrich[1] * sgn(levelset_phi_[discontinuity_id[1]]) +
+          nodal_mass_enrich[2] * sgn(levelset_phi_[discontinuity_id[0]]) *
+              sgn(levelset_phi_[discontinuity_id[1]]);
+
+      nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
+                                   sgn(levelset_phi_[discontinuity_id[0]]) +
+                               nodal_momentum_enrich.col(1) *
+                                   sgn(levelset_phi_[discontinuity_id[1]]) +
+                               nodal_momentum_enrich.col(2) *
+                                   sgn(levelset_phi_[discontinuity_id[0]]) *
+                                   sgn(levelset_phi_[discontinuity_id[1]]);
     }
+    if (nodal_mass < tolerance) continue;
+
+    vel += shapefn_[i] * nodal_momentum / nodal_mass;
     for(unsigned j = 0; j < 3; j++) 
         for(unsigned k = 0; k < 3; k++) 
             dudx_rate(j,k) +=  vel[j] * dn_dx_(i, k) ;
@@ -771,20 +941,19 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
 
 //to do
 //! Map particle friction_coef_to_nodes
-// template <unsigned Tdim>
-// void mpm::ParticleXMPM<Tdim>::check_levelset() noexcept {
-//     if(levelset_phi_ != 0)
-//         return;
-//     assert(cell_ != nullptr);
+template <unsigned Tdim>
+void mpm::ParticleXMPM<Tdim>::check_levelset(unsigned dis_id) noexcept {
+    if(levelset_phi_[dis_id] != 0)
+        return;
+    assert(cell_ != nullptr);
    
-//   for (unsigned i = 0; i < nodes_.size(); ++i) {
-//     if (!nodes_[i]->discontinuity_enrich()) 
-//         continue;
-//     cell_->compute_normal_vector_discontinuity();
-//     cell_->compute_plane_discontinuity(false);        
-//     auto normal = cell_->normal_discontinuity();
-//     double d = cell_->d_discontinuity();
-//     levelset_phi_ = coordinates_.dot(normal) + d;
-//     return;
-//     }
-// }
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    if (!nodes_[i]->discontinuity_enrich(dis_id)) 
+        continue;
+      
+    auto normal = cell_->normal_discontinuity(dis_id);
+    double d = cell_->d_discontinuity(dis_id);
+    levelset_phi_[dis_id] = coordinates_.dot(normal) + d;
+    return;
+    }
+}

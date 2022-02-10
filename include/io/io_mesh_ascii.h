@@ -116,6 +116,18 @@ class IOMeshAscii : public IOMesh<Tdim> {
           const std::string& displacement_constraints_file) override;
   /**@}*/
 
+  /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+  //! Read levelset file for nodes or particles
+  //! \ingroup XMPM
+  //! \param[in] levelset_file file name with particle/nodes levelset values
+  std::vector<std::tuple<mpm::Index, double>> read_id_levelset(
+      const std::string& levelset_file) override;
+
+  /**@}*/
+
  private:
   //! Logger
   std::shared_ptr<spdlog::logger> console_;

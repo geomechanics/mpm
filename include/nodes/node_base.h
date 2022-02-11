@@ -646,6 +646,17 @@ class NodeBase {
         "NodeBase:: "
         "illegal operation!");
   };
+
+  //! Assign contact condition by contact distance
+  //! \ingroup XMPM
+  //! \param[in] the contact id
+  //! \param[in] contact or not
+  virtual void assign_contact(unsigned id, bool status) {
+    throw std::runtime_error(
+        "Calling the base class function assign_contact in "
+        "NodeBase:: "
+        "illegal operation!");
+  };
   /**@}*/
 
   /**

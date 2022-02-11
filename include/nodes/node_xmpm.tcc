@@ -20,18 +20,14 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::initialise() noexcept {
   external_force_enrich_.setZero();
 
   for (unsigned i = 0; i < 2; i++) {
-    contact_distance_[i] = -1e16;
     friction_coef_[i] = 0;
     cohesion_[i] = 0;
+    cohesion_area_[i] = 0;
   }
   for (unsigned i = 0; i < levelset_phi_.size(); i++) levelset_phi_[i] = 0;
   for (unsigned i = 0; i < normal_.size(); i++) normal_[i].setZero();
-  for (unsigned i = 0; i < 8; i++) contact_detection_[i] = true;
-  // to do: contact detection
-  // contact_detection_[2] = false;
-  // contact_detection_[3] = false;
-  // contact_detection_[4] = false;
-  // contact_detection_[5] = false;
+  for (unsigned i = 0; i < contact_detection_.size(); i++)
+    contact_detection_[i] = false;
 }
 
 //! Compute momentum for discontinuity
@@ -244,14 +240,9 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
 
   if (enrich_type_ == mpm::NodeEnrichType::single_enriched) {
 
-    // to do
     Eigen::Matrix<double, Tdim, 1> normal_vector =
         normal_[discontinuity_id_[0]];
-    // if (discontinuity_id_[0] == 0)
-    //   normal_vector << 0, 1, 0;
-    // else
-    //   normal_vector << 1, 0, 0;
-    normal_vector << 0, 1, 0;
+
     if (!contact_detection_[0]) return;
 
     // mass for different sides, _p = _positive, _n = _negative
@@ -284,14 +275,10 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
       double force_contact_norm = momentum_contact_norm / dt;
 
       // the cohesion at nodes
-      // to do
       double cohesion = cohesion_[0];
 
-      // the cohesion at nodes
-      double cohesion_area = 0;
-
       double max_friction_force = friction_coef_[0] * abs(force_contact_norm) +
-                                  2 * cohesion * cohesion_area;
+                                  2 * cohesion * cohesion_area_[0];
 
       // the contact momentum, force vector for sticking contact at tangential
       // direction
@@ -321,7 +308,7 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
     double itr_error;
     Eigen::Matrix<int, 4, 2> flag;
 
-    flag << 1, 1, 1, -1, -1, 1, -1, -1;
+    flag << -1, -1, 1, -1, -1, 1, 1, 1;
 
     Eigen::Matrix<double, 4, 1> mass;
     // the mass of 4 different parts
@@ -330,11 +317,6 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
                 flag(i, 1) * mass_enrich_[1] +
                 flag(i, 0) * flag(i, 1) * mass_enrich_[2];
     }
-
-    // mark the maximum modified momentum
-    // int max_i = 0;
-    // int max_j = 0;
-    // double max_momentum = 0;
 
     for (int itr = 0; itr < itr_max; ++itr) {
 
@@ -346,8 +328,6 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
       normal_vector.col(0) = normal_[discontinuity_id_[0]];
       normal_vector.col(1) = normal_[discontinuity_id_[1]];
 
-      normal_vector.col(0) << 0, 1, 0;
-      normal_vector.col(1) << 1, 0, 0;
       // momentum of 4 different parts
       Eigen::Matrix<double, Tdim, 4> momentum;
       for (int i = 0; i < 4; i++) {
@@ -365,12 +345,11 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
       double coef_couple = 0;
       for (int i = 0; i < 3; i++)
         for (int j = i + 1; j < 4; j++) {
-
+          k++;
+          if (!contact_detection_[k]) continue;
           // loop for 2 normal directions
           for (int n = 0; n < 2; n++) {
             if (flag(i, n) * flag(j, n) > 0) continue;
-            k++;
-            if (!contact_detection_[k]) continue;
 
             if (mass[i] < tolerance || mass[j] < tolerance) continue;
             Eigen::Matrix<double, Tdim, 2> velocity;
@@ -401,10 +380,7 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
 
             Eigen::Matrix<double, 4, 4> bt_a = b.transpose() * a;
             Eigen::Matrix<double, 4, 4> at_b = a.transpose() * b;
-            // for (int r = 0; r < 4; r++)
-            //   for (int s = 0; s < 4; s++) bt_a(r, s) = b(r) * a(s);
-            // for (int r = 0; r < 4; r++)
-            //   for (int s = 0; s < 4; s++) at_b(r, s) = a(r) * b(s);
+
             Eigen::Matrix<double, 1, 4> coef =
                 m.transpose() * (bt_a - at_b).transpose();
             Eigen::Matrix<double, Tdim, 1> deltap;
@@ -450,12 +426,8 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
             momentum_contact.col(phase).dot(normal_vector.col(update_normal));
         double force_contact_norm = momentum_contact_norm / dt;
 
-        // // the cohesion at nodes
-        // // to do
+        // the cohesion at nodes
         // double cohesion = cohesion_[0];
-
-        // // the cohesion at nodes
-        // double cohesion_area = 0;
 
         double max_friction_force =
             friction_coef_[update_normal] * abs(force_contact_norm);

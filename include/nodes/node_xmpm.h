@@ -242,6 +242,14 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
     normal_.resize(size, VectorDim::Zero());
   }
 
+  //! Assign contact condition by contact distance
+  //! \ingroup XMPM
+  //! \param[in] the contact id
+  //! \param[in] contact or not
+  void assign_contact(unsigned id, bool status) {
+    contact_detection_[id] = status;
+  }
+
   //! Return  connected cells
   //! \retval cells_ connected cells
   std::vector<Index> cells() { return cells_; }
@@ -277,8 +285,8 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   double mass_h_{0};
   //! cohesion
   Eigen::Matrix<double, 2, 1> cohesion_;
-  //! contact distance
-  Eigen::Matrix<double, 2, 1> contact_distance_;
+  //! cohesion area
+  Eigen::Matrix<double, 2, 1> cohesion_area_;
   //! frictional coefficient
   Eigen::Matrix<double, 2, 1> friction_coef_;
   //! Discontinuity enrich
@@ -306,18 +314,10 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   mpm::NodeEnrichType enrich_type_;
 
   //! Contact dedection by distance
-  Eigen::Matrix<bool, 8, 1> contact_detection_;
+  Eigen::Matrix<bool, 6, 1> contact_detection_;
 };  // Node XMPM class
 }  // namespace mpm
 
 #include "node_xmpm.tcc"
 
 #endif  // MPM_NODE_XMPM_H_
-
-// nodal_properties_->create_property("normal_unit_vectors_discontinuity",
-// nrows,
-//                                    1);
-// nodal_properties_->create_property("friction_coef", nodes_.size(), 1);
-// nodal_properties_->create_property("cohesion", nodes_.size(), 1);
-// nodal_properties_->create_property("cohesion_area", nodes_.size(), 1);
-// nodal_properties_->create_property("contact_distance", nodes_.size(), 1);

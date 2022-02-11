@@ -906,34 +906,76 @@ void mpm::Mesh<Tdim>::modify_nodal_levelset_mls(unsigned dis_id) {
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::selfcontact_detection() {
 
-  double contact_distance = 0;
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); nitr++) {
+    if ((*nitr)->enrich_type() == mpm::NodeEnrichType::regular) continue;
+    if ((*nitr)->enrich_type() == mpm::NodeEnrichType::single_enriched) {
+      auto cor = (*nitr)->coordinates();
+      auto dis_id = (*nitr)->discontinuity_id();
+      auto normal = (*nitr)->normal(dis_id[0]);
+      double contact_distance = discontinuity_[dis_id[0]]->contact_distance();
+      double dis_negative = -10 * contact_distance;
+      double dis_positive = 10 * contact_distance;
+      for (auto cell : (*nitr)->cells()) {
 
-  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
-    // if (!(*nitr)->discontinuity_enrich()) continue;
+        for (auto particle : map_cells_[cell]->particles()) {
+          auto corp = map_particles_[particle]->coordinates();
+          double phi = map_particles_[particle]->levelset_phi();
 
-    auto cor = (*nitr)->coordinates();
-    auto normal = (*nitr)->discontinuity_property(
-        "normal_unit_vectors_discontinuity", Tdim);
+          double dis = 0;
+          dis = (corp - cor).dot(normal);
 
-    double dis_negative = -10 * contact_distance;
-    double dis_positive = 10 * contact_distance;
-    for (auto cell : (*nitr)->cells()) {
-
-      for (auto particle : map_cells_[cell]->particles()) {
-        auto corp = map_particles_[particle]->coordinates();
-        double phi = map_particles_[particle]->levelset_phi();
-
-        double dis = 0;
-        for (unsigned int i = 0; i < Tdim; i++)
-          dis += (corp[i] - cor[i]) * normal(i);
-
-        if (phi > 0) dis_positive = dis < dis_positive ? dis : dis_positive;
-        if (phi < 0) dis_negative = dis > dis_negative ? dis : dis_negative;
+          if (phi > 0) dis_positive = dis < dis_positive ? dis : dis_positive;
+          if (phi < 0) dis_negative = dis > dis_negative ? dis : dis_negative;
+        }
       }
+      bool status = true;
+      if (dis_positive - dis_negative > contact_distance) status = false;
+      (*nitr)->assign_contact(0, status);
+
+    } else if ((*nitr)->enrich_type() == mpm::NodeEnrichType::double_enriched) {
+
+      Eigen::Matrix<int, 4, 2> flag;
+
+      flag << -1, -1, 1, -1, -1, 1, 1, 1;
+
+      int k = -1;
+      auto cor = (*nitr)->coordinates();
+      auto dis_id = (*nitr)->discontinuity_id();
+      for (int i = 0; i < 3; i++)
+        for (int j = i + 1; j < 4; j++) {
+          auto dis_id = (*nitr)->discontinuity_id();
+          // loop for 2 normal directions
+          bool status = true;
+          k++;
+          for (int n = 0; n < 2; n++) {
+            if (flag(i, n) * flag(j, n) > 0) continue;
+
+            auto normal = (*nitr)->normal(dis_id[n]);
+            double contact_distance =
+                discontinuity_[dis_id[n]]->contact_distance();
+            double dis_negative = -10 * contact_distance;
+            double dis_positive = 10 * contact_distance;
+            for (auto cell : (*nitr)->cells()) {
+
+              for (auto particle : map_cells_[cell]->particles()) {
+                auto corp = map_particles_[particle]->coordinates();
+                double phi = map_particles_[particle]->levelset_phi(dis_id[n]);
+
+                double dis = 0;
+                dis = (corp - cor).dot(normal);
+
+                if (phi > 0)
+                  dis_positive = dis < dis_positive ? dis : dis_positive;
+                if (phi < 0)
+                  dis_negative = dis > dis_negative ? dis : dis_negative;
+              }
+            }
+
+            if (dis_positive - dis_negative > contact_distance) status = false;
+          }
+          (*nitr)->assign_contact(k, status);
+        }
     }
-    Eigen::Matrix<double, 1, 1> dis;
-    dis(0, 0) = dis_positive - dis_negative - contact_distance;
-    (*nitr)->assign_discontinuity_property(true, "contact_distance", dis, 0, 1);
   }
 }
 

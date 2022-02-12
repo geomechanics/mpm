@@ -1390,6 +1390,9 @@ void mpm::Mesh<Tdim>::assign_nodes_levelset(
     double phi = std::get<1>(node_levelset);
     map_nodes_[nid]->assign_levelset_phi(phi, dis_id);
   }
+  // Iterate over each particle to compute shapefn
+  iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::compute_shapefn,
+                                   std::placeholders::_1));
   // initialise the particle level set values
   iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_particle,
@@ -1422,26 +1425,23 @@ void mpm::Mesh<Tdim>::insert_discontinuity(
 }
 
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::determine_enriched_node_by_mass_h() {
+void mpm::Mesh<Tdim>::determine_enriched_node_by_mass_h(unsigned dis_id) {
 
   // Assign mass to nodes
   iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::map_mass_to_nodes,
                                    std::placeholders::_1));
 
-  for (int i = 0; i < discontinuity_.size(); i++) {
+  // Initialise mass*h at nodes
+  iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::initialise_mass_h,
+                               std::placeholders::_1));
 
-    // Initialise mass*h at nodes
-    iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::initialise_mass_h,
-                                 std::placeholders::_1));
-
-    // Assign mass*h to nodes at discontinuity i
-    iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::map_mass_h_to_nodes,
-                  std::placeholders::_1, i));
-    // determine node type by mass*h at discontinuity i
-    iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::determine_node_type,
-                                 std::placeholders::_1, i));
-  }
+  // Assign mass*h to nodes at discontinuity i
+  iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::map_mass_h_to_nodes,
+                std::placeholders::_1, dis_id));
+  // determine node type by mass*h at discontinuity i
+  iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::determine_node_type,
+                               std::placeholders::_1, dis_id));
 
   // Initialise mass at nodes
   unsigned phase = 0;
@@ -1495,7 +1495,7 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
     } else {
       // Determine the node enriched type by mass*h
       if (type == "particle_levelset" || type == "node_levelset") {
-        determine_enriched_node_by_mass_h();
+        determine_enriched_node_by_mass_h(dis_id);
       }
       // determine the celltype by the nodal level set
       iterate_over_cells(std::bind(&mpm::Cell<Tdim>::determine_crossed,

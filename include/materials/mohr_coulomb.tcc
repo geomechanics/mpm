@@ -532,7 +532,8 @@ Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_elastic_tensor(
   de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;
   de(3,3)=G;     de(4,4)=G;     de(5,5)=G;
   // clang-format on
-
+  // to do
+  de_ = de;
   return de;
 }
 

@@ -452,7 +452,7 @@ class ParticleBase {
   //! Map particle mass_h to nodes
   //! \ingroup XMPM
   //! \param[in] the discontinuity id
-  virtual void map_mass_h_to_nodes(int discontinuity_id) {
+  virtual void map_mass_h_to_nodes(unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function (map_mass_h_to_nodes) in "
         "ParticleBase:: "

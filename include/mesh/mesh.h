@@ -651,7 +651,8 @@ class Mesh {
 
   //! Determine enriched nodes by computing mass*h
   //! \ingroup XMPM
-  void determine_enriched_node_by_mass_h();
+  //! \param[in] discontinuity id
+  void determine_enriched_node_by_mass_h(unsigned dis_id);
 
   /**@}*/
 

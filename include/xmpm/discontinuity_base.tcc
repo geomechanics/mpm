@@ -60,6 +60,7 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
   std::string logger = "discontinuity";
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
   description_type_ == "mark_points";
+  propagation_ = true;
 
   cohesion_ = std::get<0>(initiation_property);
   friction_coef_ = std::get<1>(initiation_property);

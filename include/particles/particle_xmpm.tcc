@@ -662,11 +662,11 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   bool yield_status = true;
   Eigen::Matrix<double, 6, 6> dp =
       (this->material())
-          ->dp(stress_, &state_variables_[mpm::ParticlePhase::Solid],
-               yield_status);
+          ->compute_elasto_plastic_tensor(
+              stress_, dstrain_, this,
+              &state_variables_[mpm::ParticlePhase::Solid], false);
+
   if (!yield_status) return false;
-  // testa <<"dp"<<std::endl<<dp;
-  Eigen::Matrix<double, 6, 6> de = (this->material())->de();
 
   Eigen::Matrix<int, 3, 3> index;
   index << 0, 3, 5, 3, 1, 4, 5, 4, 2;
@@ -806,13 +806,16 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
 
   double max_dudxmn = 0;
 
-  bool yield_status = true;
   Eigen::Matrix<double, 6, 6> dp =
       (this->material())
-          ->dp(stress_, &state_variables_[mpm::ParticlePhase::Solid],
-               yield_status);
+          ->compute_elasto_plastic_tensor(
+              stress_, dstrain_, this,
+              &state_variables_[mpm::ParticlePhase::Solid], false);
 
-  Eigen::Matrix<double, 6, 6> de = (this->material())->de();
+  Eigen::Matrix<double, 6, 6> de =
+      (this->material())
+          ->compute_elastic_tensor(
+              &state_variables_[mpm::ParticlePhase::Solid]);
   // clang-format off
   Eigen::Matrix<int, 3, 3> index;
   index << 0, 3, 5,

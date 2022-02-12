@@ -469,52 +469,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
 
   return updated_stress;
 }
-//！ Compute the elastic plastic tensor
-template <unsigned Tdim>
-bool mpm::MohrCoulomb<Tdim>::compute_elastic_plastic_tensor(
-    const Vector6d& stress, mpm::dense_map* state_vars) {
-
-  // Compute yield function based on the stress
-  Eigen::Matrix<double, 2, 1> yield_function;
-  auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
-  // Return the updated stress in elastic state
-  if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {
-    return false;
-  }
-
-  // Compute df_dsigma dp_dsigma
-  double softening = 0.;
-  double dp_dq = 0.;
-  Vector6d df_dsigma = Vector6d::Zero();
-  Vector6d dp_dsigma = Vector6d::Zero();
-  this->compute_df_dp(yield_type, state_vars, stress, &df_dsigma, &dp_dsigma,
-                      &dp_dq, &softening);
-
-  // Compute the acoustic tensor
-  Eigen::Matrix<double, 6, 1> de_dpdsigma = Eigen::Matrix<double, 6, 1>::Zero();
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 3; j++) de_dpdsigma(i) += de_(i, j) * dp_dsigma(j);
-    for (int j = 3; j < 6; j++) de_dpdsigma(i) += 2 * de_(i, j) * dp_dsigma(j);
-  }
-  double dfdsigma_de_dpdsigma = 0;
-  for (int j = 0; j < 3; j++)
-    dfdsigma_de_dpdsigma += df_dsigma(j) * de_dpdsigma(j);
-  for (int j = 3; j < 6; j++)
-    dfdsigma_de_dpdsigma += 2 * df_dsigma(j) * de_dpdsigma(j);
-
-  Eigen::Matrix<double, 6, 1> de_dfdsigma = Eigen::Matrix<double, 6, 1>::Zero();
-  for (int i = 0; i < 6; i++) {
-    for (int j = 0; j < 3; j++) de_dfdsigma(i) += de_(i, j) * df_dsigma(j);
-    for (int j = 3; j < 6; j++) de_dfdsigma(i) += 2 * de_(i, j) * df_dsigma(j);
-  }
-
-  for (int i = 0; i < 6; i++)
-    for (int j = 0; j < 6; j++)
-      dp_(i, j) =
-          de_(i, j) - de_dpdsigma(i) * de_dfdsigma(j) / dfdsigma_de_dpdsigma;
-
-  return true;
-}
 
 //! Compute elastic tensor
 template <unsigned Tdim>
@@ -532,8 +486,6 @@ Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_elastic_tensor(
   de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;
   de(3,3)=G;     de(4,4)=G;     de(5,5)=G;
   // clang-format on
-  // to do
-  de_ = de;
   return de;
 }
 

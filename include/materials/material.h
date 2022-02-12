@@ -84,22 +84,36 @@ class Material {
                                   const ParticleBase<Tdim>* ptr,
                                   mpm::dense_map* state_vars) = 0;
 
-  //！ Return Elastic-Plastic stiffness matrix
-  //! \param[in] stress Stress
+  //! Compute elastic tensor
   //! \param[in] state_vars History-dependent state variables
-  //! \param[in] the yield status
-  //! \retval dp_ Elastic-Plastic stiffness matrix
-  virtual Matrix6x6 dp(const Vector6d& stress, mpm::dense_map* state_vars,
-                       bool& status) {
-    return Matrix6x6::Zero();
-  }
-  //！ Return Elastic stiffness matrix
-  //! \retval de_ Elastic stiffness matrix
-  virtual Matrix6x6 de() { return Matrix6x6::Zero(); }
+  virtual Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars) {
+    auto error = Matrix6x6::Zero();
+    throw std::runtime_error(
+        "Calling the base class function (compute_elastic_tensor) "
+        "in Material:: illegal operation!");
+    return error;
+  };
 
-  //! Compute constitutive relations matrix
-  //! \ingroup Implicit
+  //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] hardening Boolean to consider hardening, default=true. If
+  //! perfect-plastic tensor is needed pass false
+  //! \retval dmatrix Constitutive relations mattrix
+  virtual Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
+                                                  const Vector6d& dstrain,
+                                                  const ParticleBase<Tdim>* ptr,
+                                                  mpm::dense_map* state_vars,
+                                                  bool hardening = true) {
+    auto error = Matrix6x6::Zero();
+    throw std::runtime_error(
+        "Calling the base class function (compute_elasto_plastic_tensor) "
+        "in Material:: illegal operation!");
+    return error;
+  };
+
   //! Compute consistent tangent matrix
   //! \param[in] stress Updated stress
   //! \param[in] prev_stress Stress at the current step

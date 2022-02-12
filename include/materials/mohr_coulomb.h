@@ -92,27 +92,6 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
                      double* softening);
 
-  //！ Return elastic plastic stiffness matrix
-  //! \param[in] stress Stress
-  //! \param[in] state_vars History-dependent state variables
-  //! \param[in] the yield status
-  //! \retval dp_ Elastic-Plastic stiffness matrix
-  virtual Matrix6x6 dp(const Vector6d& stress, mpm::dense_map* state_vars,
-                       bool& status) {
-    status = compute_elastic_plastic_tensor(stress, state_vars);
-    return dp_;
-  }
-
-  //! Compute elastic plastic tensor
-  //! \param[in] stress Stress
-  //! \param[in] state_vars History-dependent state variables
-  bool compute_elastic_plastic_tensor(const Vector6d& stress,
-                                      mpm::dense_map* state_vars);
-
-  //！ return Elastic stiffness matrix
-  //! \retval de_ Elastic stiffness matrix
-  Matrix6x6 de() { return de_; }
-
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -121,7 +100,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! Logger
   using Material<Tdim>::console_;
 
- private:
+ public:
   //! Compute elastic tensor
   //! \param[in] state_vars History-dependent state variables
   Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);

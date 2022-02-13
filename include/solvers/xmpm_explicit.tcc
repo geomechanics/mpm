@@ -200,8 +200,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     if ((step_ + 1) % output_steps_ == 0) {
       // HDF5 outputs
       this->write_hdf5(this->step_ + 1, this->nsteps_);
-      // to do
-      // mesh_->output_discontinuity(this->step_ + 1);
 #ifdef USE_VTK
       // VTK outputs
       this->write_vtk(this->step_, this->nsteps_);

@@ -174,7 +174,7 @@ void mpm::Cell<Tdim>::determine_crossed(unsigned dis_id) {
     if (phi > max_phi) max_phi = phi;
     if (phi < min_phi) min_phi = phi;
   }
-  // to do
+
   if (max_phi * min_phi >= 0) return;
 
   this->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);

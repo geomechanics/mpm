@@ -93,7 +93,8 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! store the properties fot each newly generated discontinuity: cohesion,
   //! friction_coef, contact_distance, width, move_direction,
   //! friction_coef_average
-  std::tuple<double, double, double, double,double, int, bool> initiation_property_;
+  std::tuple<double, double, double, double, double, int, bool>
+      initiation_property_;
   //! Compute the nodal level set values by: "shepard" of "mls"
   std::string nodal_levelset_{"shepard"};
   // maximum number of the discontinuity

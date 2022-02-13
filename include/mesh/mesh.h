@@ -621,8 +621,7 @@ class Mesh {
   void output_discontinuity(int step) {
     this->discontinuity_[0]->output_markpoints(step);
   };
-  void output_celltype(int step);
-  void define_levelset();
+
   //! code for debugging added by yliang end---------------------------------
 
   //! Assign the level set values to the particles which just enter the crossed

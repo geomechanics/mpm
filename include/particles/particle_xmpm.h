@@ -224,12 +224,6 @@ class ParticleXMPM : public Particle<Tdim> {
  private:
   //! level set value： phi for discontinuity
   std::vector<double> levelset_phi_;
-
-  //! the minimum eigenvalue of the acoustic tensor
-  double minimum_acoustic_eigenvalue_{1e16};
-
-  //! angle
-  double discontinuity_angle_{0.};
 };  // ParticleXMPM class
 }  // namespace mpm
 

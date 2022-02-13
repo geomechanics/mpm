@@ -7,27 +7,6 @@ mpm::ParticleXMPM<Tdim>::ParticleXMPM(Index id, const VectorDim& coord)
   std::string logger =
       "particlexmpm" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
-
-  // to do:
-  // if (coordinates_[1] < 0.5) {
-  //   velocity_[1] = 1;
-  // } else {
-  //   velocity_[1] = -1;
-  // }
-
-  // if (coordinates_[0] > 0.5) {
-  //   velocity_[0] = -1;
-  // } else
-  //   velocity_[0] = 1;
-
-  // if (coordinates_[0] < 0.5)
-  //   levelset_phi_[0] = -0.25;
-  // else
-  //   levelset_phi_[0] = 0.25;
-  // if (coordinates_[1] < 0.5)
-  //   levelset_phi_[1] = -0.25;
-  // else
-  //   levelset_phi_[1] = 0.25;
 }
 
 //! Initialise particle data from pod
@@ -158,14 +137,6 @@ void mpm::ParticleXMPM<Tdim>::initialise() {
   this->scalar_properties_["levelsets"] = [&]() {
     if (levelset_phi_.size() < 2) return 0.;
     return levelset_phi_[1];
-  };
-
-  // this->scalar_properties_["levelsett"] = [&]() { return levelset_phi_[2]; };
-  this->scalar_properties_["minimum_acoustic_eigenvalue"] = [&]() {
-    return minimum_acoustic_eigenvalue_;
-  };
-  this->scalar_properties_["discontinuity_angle"] = [&]() {
-    return discontinuity_angle_;
   };
 }
 
@@ -561,7 +532,6 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
       Eigen::Matrix<double, Tdim, 1>::Zero();
   // Acceleration update
   if (!velocity_update) {
-    // to do
     double shapefn_enrich = 0;
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
@@ -657,7 +627,6 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
                                                       bool initiation,
                                                       unsigned dis_id) {
 
-  minimum_acoustic_eigenvalue_ = std::numeric_limits<double>::max();
   // compute the acoustic tensor
   bool yield_status = true;
   Eigen::Matrix<double, 6, 6> dp =
@@ -761,27 +730,6 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   }
   if (normal_cellcenter.dot(nk) < 0) nk = -nk;
   normal_cell = nk;
-  // to do
-  // A.setZero();
-  // for (int m = 0; m < 3; m++)
-  // for (int n = 0; n < 3; n++) {
-  //     for (int r = 0; r < 3; r++)
-  //     for (int s = 0; s < 3; s++)
-  //         A(m, n) +=
-  //             nk(r) * nk(s) * dp(index(m, r), index(n, s));
-  // }
-  // double det_A = A.determinant();
-  // Eigen::EigenSolver<Eigen::Matrix3d> eigen_A(A);
-  //   auto eigenvalues = eigen_A.pseudoEigenvalueMatrix();
-  //   auto eigenvectors = eigen_A.pseudoEigenvectors();
-
-  // console_->info("\n A eigen:{},{},{},{}\n",
-  // det_A,eigenvalues(0,0),eigenvalues(1,1),eigenvalues(2,2));
-
-  //   console_->info("\n normal:{},{},{},\nA eigen:{},{},{},{}\n", nk[0],
-  //   nk[1],
-  //                  nk[2], det_A, eigenvalues(0, 0), eigenvalues(1, 1),
-  //                  eigenvalues(2, 2));
   return true;
 }
 
@@ -941,8 +889,6 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
         for(unsigned k = 0; k < 3; k++) 
             du_dx_(j,k) += dudx_rate(j,k)*dt;
 }
-
-//to do
 //! Map particle friction_coef_to_nodes
 template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::check_levelset(unsigned dis_id) noexcept {

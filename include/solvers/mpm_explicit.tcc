@@ -148,24 +148,24 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(phase);
-    mesh_->output_celltype(step_);
+
     // Map material properties to nodes
     contact_->compute_contact_forces();
-    mesh_->output_celltype(step_);
+
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
-    mesh_->output_celltype(step_);
+
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
-    mesh_->output_celltype(step_);
+
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
                                              damping_factor_);
-    mesh_->output_celltype(step_);
+
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->postcompute_nodal_kinematics(phase);
-    mesh_->output_celltype(step_);
+
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
 

@@ -323,7 +323,7 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
       double max_update_normal_p = 0;
       int update_normal = 0;
       Eigen::Matrix<double, Tdim, 1> update_p;
-      // to do: normal vector of 2 discontinuity
+      // normal vector of two discontinuities
       Eigen::Matrix<double, Tdim, 2> normal_vector;
       normal_vector.col(0) = normal_[discontinuity_id_[0]];
       normal_vector.col(1) = normal_[discontinuity_id_[1]];

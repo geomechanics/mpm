@@ -160,8 +160,6 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
     normal_cell.setZero();
 
     for (auto node : (*citr)->nodes()) {
-      // normal_cell += node->discontinuity_property(
-      //     "normal_unit_vectors_discontinuity", Tdim);
       normal_cell += node->normal(dis_id);
     }
     normal_cell = normal_cell / (*citr)->nodes().size();
@@ -219,8 +217,7 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
       VectorDim normal_cell;
       normal_cell.setZero();
       int nexttip_cell = 0;
-      Eigen::Matrix<double, 1, 1> phi;
-      phi.setZero();
+      double phi = 0;
       for (auto cell : node->cells()) {
         if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
             mpm::EnrichType::NextTip)
@@ -228,14 +225,14 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
         double d = map_cells_[cell]->d_discontinuity(dis_id);
         normal_cell = map_cells_[cell]->normal_discontinuity(dis_id);
         for (unsigned int i = 0; i < Tdim; i++)
-          phi(0, 0) += node->coordinates()[i] * normal_cell[i];
-        phi(0, 0) += d;
+          phi += node->coordinates()[i] * normal_cell[i];
+        phi += d;
         nexttip_cell += 1;
       }
 
       if (nexttip_cell == 0) continue;
 
-      node->assign_levelset_phi(phi(0, 0) / nexttip_cell, dis_id);
+      node->assign_levelset_phi(phi / nexttip_cell, dis_id);
     }
   }
 
@@ -337,8 +334,7 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
       VectorDim normal_cell_sum;
       normal_cell_sum.setZero();
       int cell_num = 0;
-      Eigen::Matrix<double, 1, 1> phi;
-      phi.setZero();
+      double phi = 0;
       for (auto cell : node->cells()) {
 
         if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
@@ -350,19 +346,16 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
         normal_cell = map_cells_[cell]->normal_discontinuity(dis_id);
         normal_cell_sum += normal_cell;
         for (unsigned int i = 0; i < Tdim; i++)
-          phi(0, 0) += node->coordinates()[i] * normal_cell[i];
-        phi(0, 0) += d;
+          phi += node->coordinates()[i] * normal_cell[i];
+        phi += d;
         cell_num++;
       }
 
       if (cell_num == 0) continue;
       normal_cell_sum = normal_cell_sum / cell_num;
       normal_cell_sum.normalize();
-      // node->assign_discontinuity_property(
-      //     true, "normal_unit_vectors_discontinuity", normal_cell_sum, 0,
-      //     Tdim);
-
-      node->assign_levelset_phi(phi(0, 0) / cell_num, dis_id);
+      node->assign_normal(normal_cell_sum, dis_id);
+      node->assign_levelset_phi(phi / cell_num, dis_id);
     }
   }
   // modify normal vector of NeighbourNextTip_2 cell
@@ -487,9 +480,6 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
 
       normal_cell_sum = normal_cell_sum / cell_num;
       normal_cell_sum.normalize();
-      // node->assign_discontinuity_property(
-      //     true, "normal_unit_vectors_discontinuity", , 0,
-      //     Tdim);
       node->assign_normal(normal_cell_sum, dis_id);
       node->assign_levelset_phi(phi / cell_num, dis_id);
     }
@@ -659,7 +649,6 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
     double particle_max_pdstrain = 0;
     for (int i = 0; i < nparticles(); ++i) {
       // search the region outside of the other discontinuity
-      // to do
       bool near_dis = false;
       for (int j = 0; j < discontinuity_num(); ++j) {
         if (map_particles_[i]->levelset_phi(j) != 0 &&
@@ -979,100 +968,6 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
   }
 }
 
-//! Assign the level set values to the particles which just enter the crossed
-//! cell
-// template <unsigned Tdim>
-// void mpm::Mesh<Tdim>::check_particle_levelset(bool particle_levelset,
-//                                               unsigned dis_id) {
-
-//   for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-//     if ((*pitr)->levelset_phi(dis_id) != 0) continue;
-
-//     auto cell_id = (*pitr)->cell_id();
-
-//     for (auto node : cells_[cell_id]->nodes()) {
-//       // if (!node->discontinuity_enrich()) continue;
-
-//       Eigen::Matrix<double, 4, 4> au;
-//       Eigen::Matrix<double, 4, 1> bu;
-//       au.setZero();
-//       bu.setZero();
-//       auto cell_list = cells_[cell_id]->neighbours();
-//       cell_list.insert(cell_id);
-
-//       for (auto cell : cell_list) {
-//         for (auto particle : cells_[cell]->particles()) {
-//           auto corp = map_particles_[particle]->coordinates();
-//           double phi = map_particles_[particle]->levelset_phi();
-//           if (phi == 0) continue;
-//           // compute weight
-//           double length = 2.0 * discontinuity_[dis_id]->width();
-//           double w[3];
-//           for (int i = 0; i < 3; i++) {
-//             w[i] = 1 - std::abs(corp[i] - (*pitr)->coordinates()[i]) /
-//             length; if (w[i] < 0) w[i] = 0;
-//           }
-//           double weight = w[0] * w[1] * w[2];
-
-//           au(0, 0) += weight;
-//           au(0, 1) += weight * corp[0];
-//           au(0, 2) += weight * corp[1];
-//           au(0, 3) += weight * corp[2];
-//           au(1, 0) += weight * corp[0];
-//           au(1, 1) += weight * corp[0] * corp[0];
-//           au(1, 2) += weight * corp[0] * corp[1];
-//           au(1, 3) += weight * corp[0] * corp[2];
-//           au(2, 0) += weight * corp[1];
-//           au(2, 1) += weight * corp[1] * corp[0];
-//           au(2, 2) += weight * corp[1] * corp[1];
-//           au(2, 3) += weight * corp[1] * corp[2];
-//           au(3, 0) += weight * corp[2];
-//           au(3, 1) += weight * corp[2] * corp[0];
-//           au(3, 2) += weight * corp[2] * corp[1];
-//           au(3, 3) += weight * corp[2] * corp[2];
-
-//           bu(0, 0) += weight * phi;
-//           bu(1, 0) += weight * phi * corp[0];
-//           bu(2, 0) += weight * phi * corp[1];
-//           bu(3, 0) += weight * phi * corp[2];
-//         }
-//       }
-
-//       const double tolerance = std::numeric_limits<double>::epsilon();
-
-//       if (std::abs(au.determinant()) < tolerance) {
-//         (*pitr)->map_levelset_to_particle(dis_id);
-//         continue;
-//       }
-
-//       Eigen::Vector4d coef;
-//       coef.setZero();
-//       for (int i = 0; i < 4; i++)
-//         for (int j = 0; j < 4; j++) coef[i] += au.inverse()(i, j) * bu(j, 0);
-
-//       Eigen::Vector4d cor;
-//       cor << 1, (*pitr)->coordinates()[0], (*pitr)->coordinates()[1],
-//           (*pitr)->coordinates()[2];
-//       double phi = cor.dot(coef);
-
-//       (*pitr)->assign_levelsetphi(phi, dis_id);
-
-//       break;
-//     }
-//   }
-//   if (particle_levelset) return;
-//   for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-//     if ((*pitr)->levelset_phi() == 0) continue;
-//     auto cell_id = (*pitr)->cell_id();
-
-//     if (cells_[cell_id]->element_type_discontinuity(0) ==
-//             mpm::EnrichType::Regular ||
-//         cells_[cell_id]->element_type_discontinuity(0) ==
-//             mpm::EnrichType::NeighbourTip_3)
-//       (*pitr)->assign_levelsetphi(0);
-//   }
-// }
-
 //! Read HDF5 particles for xmpm particle
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_particles_hdf5_xmpm(
@@ -1169,198 +1064,6 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_xmpm(const std::string& filename) {
   return true;
 }
 
-//! code for debugging added by yliang start-------------------------------
-// FIXME: Remove this before merging to master
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::output_celltype(int step) {
-  std::ofstream test("cell_type.txt", std::ios::app);
-  int dis_id = step;
-
-  test << step << ":" << std::endl;
-  for (int i = 0; i < cells_.size(); i++) {
-    auto type = cells_[i]->element_type_discontinuity(dis_id);
-    if (type == 0)
-      test << "0  ";
-    else if (type == 1)
-      test << "1  ";
-    else if (type == 2)
-      test << "2  ";
-    else if (type == 3)
-      test << "3  ";
-    else if (type == 4)
-      test << "4  ";
-    else if (type == 5)
-      test << "5  ";
-    else if (type == 6)
-      test << "6  ";
-    else if (type == 7)
-      test << "7  ";
-    else if (type == 8)
-      test << "8  ";
-    else
-      test << type << " ";
-    if (((i + 1) % 26) == 0) test << std::endl;
-  }
-  test << std::endl;
-
-  return;
-
-  // test << step << ":" << std::endl;
-  // for (int i = 0; i < nodes_.size() * 0.5; i++) {
-  //   auto type = nodes_[i]->enrich_type();
-  //   if (type == 0)
-  //     test << "0  ";
-  //   else if (type == 1)
-  //     test << "1  ";
-  //   else if (type == 2)
-  //     test << "2  ";
-  //   else
-  //     test << type << " ";
-  //   if (((i + 1) % 27) == 0) test << std::endl;
-  // }
-  // test << std::endl;
-  std::ofstream testm("mass.txt", std::ios::app);
-  std::ofstream testme("masse.txt", std::ios::app);
-  std::ofstream testp("momentum.txt", std::ios::app);
-  std::ofstream testpe("momentume.txt", std::ios::app);
-  unsigned phase = 0;
-  testm << step << ":" << std::endl;
-  testme << step << ":" << std::endl;
-  testp << step << ":" << std::endl;
-  testpe << step << ":" << std::endl;
-  for (int i = 0; i < nodes_.size() * 0.5; i++) {
-    // double nodal_mass = nodes_[i]->mass(phase);
-    // auto nodal_mass_enrich = nodes_[i]->mass_enrich();
-
-    // auto nodal_momentum = nodes_[i]->momentum(phase);
-    // auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
-
-    auto internal_force = nodes_[i]->internal_force(phase);
-    // testm << std::setw(20) << nodal_mass;
-    // testme << std::setw(20) << nodal_mass_enrich[0];
-    testp << std::setw(20) << internal_force[0];
-    // testp << std::setw(20) << nodal_momentum[0];
-    // testpe << std::setw(20) << nodal_momentum_enrich(0, 0);
-
-    if (((i + 1) % 27) == 0) testm << std::endl;
-    if (((i + 1) % 27) == 0) testme << std::endl;
-    if (((i + 1) % 27) == 0) testp << std::endl;
-    if (((i + 1) % 27) == 0) testpe << std::endl;
-  }
-  testm << std::endl;
-  testme << std::endl;
-  testp << std::endl;
-  testpe << std::endl;
-  // std::ofstream testnormal("node_normal.txt", std::ios::app);
-  // testnormal << step << ":" << std::endl;
-  // for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
-  //   if (!(*nitr)->discontinuity_enrich()) continue;
-
-  //   if ((*nitr)->coordinates()[0] < 35) continue;
-
-  //   Eigen::Matrix<double, Tdim, 1> normal = (*nitr)->discontinuity_property(
-  //       "normal_unit_vectors_discontinuity", Tdim);
-  //   testnormal << (*nitr)->coordinates()[0] << "\t" <<
-  //   (*nitr)->coordinates()[1]
-  //              << "\t" << normal[0] << "\t" << normal[1] << "\t" << normal[2]
-  //              << std::endl;
-  // }
-}
-
-// FIXME: Remove this before merging to master
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::define_levelset() {
-  // for oso
-  std::ifstream in("stage1.txt");
-  double stage[63126];
-  for (int i = 0; i < 63126; ++i) {
-    in >> stage[i];
-    if (stage[i] == 0) stage[i] = std::numeric_limits<double>::min();
-  }
-  int i = 0;
-  Eigen::Matrix<double, 1, 1> phi_mls;
-  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
-    phi_mls(0, 0) = stage[i];
-    i += 1;
-
-    (*nitr)->assign_discontinuity_property(true, "levelset_phi", phi_mls, 0, 1);
-  }
-  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-
-    (*pitr)->map_levelset_to_particle();
-  }
-
-  return;
-  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-
-    auto cor = (*pitr)->coordinates();
-    double phi;
-    // phi = 1 / std::sqrt(3) * cor[0] + 1 / std::sqrt(3) * cor[1] +
-    // 1 / std::sqrt(3) * cor[2] - 0.5 * std::sqrt(3);
-
-    //   phi = std::sqrt(std::pow(cor[0] - 35, 2) + std::pow(cor[1] - 30, 2) +
-    //                   std::pow(cor[2] - 0, 2)) -
-    //         25;
-    // slide body
-    phi = (0.5 * cor[0] + cor[2] - 0.5) / std::sqrt(0.25 + 1);
-    phi = cor[1] - 1.5;
-    (*pitr)->assign_levelsetphi(phi);
-    // case 4-2d
-    // if (cor[0] > 35 && cor[1] > 4 && cor[1] < 5) {
-    //   phi = 5 - cor[1];
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // if (cor[0] > 34 && cor[0] < 35 && cor[1] > 4) {
-    //   if ((*pitr)->levelset_phi() < 0) continue;
-    //   Eigen::Matrix<double, 2, 1> e1, e2, p2n;
-    //   e1 << 1 / std::sqrt(5), 2 / std::sqrt(5);
-    //   e2 << 2 / std::sqrt(5), -1 / std::sqrt(5);
-
-    //   p2n << cor[0] - 35, cor[1] - 5;
-    //   if (e2.dot(p2n) >= 0)
-    //     phi = p2n.norm();
-    //   else if (e2.dot(p2n) < 0) {
-    //     double dis1 = 5.25 - cor[1];  // 5.27118
-    //     double dis2 = std::abs(e1.dot(p2n));
-    //     if (dis1 < dis2)
-    //       dis1 = (*pitr)->levelset_phi();
-    //     else
-    //       dis1 = dis2;
-    //     phi = dis1;
-    //   }
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // case 5
-    // if (cor[0] > 35 && cor[1] > 4 && cor[1] < 5) {
-    //   phi = 5 - cor[1];
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // if (cor[0] > 34 && cor[0] < 35 && cor[1] > 4) {
-    //   if ((*pitr)->levelset_phi() != 0) continue;
-    //   Eigen::Matrix<double, 2, 1> e1, e2, p2n;
-    //   e1 << 1 / std::sqrt(5), 2 / std::sqrt(5);
-    //   e2 << 2 / std::sqrt(5), -1 / std::sqrt(5);
-
-    //   p2n << cor[0] - 35, cor[1] - 5;
-    //   if (e2.dot(p2n) >= 0)
-    //     phi = p2n.norm();
-    //   else if (e2.dot(p2n) < 0) {
-    //     double dis1 = 5.25 - cor[1];  // 5.27118
-    //     double dis2 = std::abs(e1.dot(p2n));
-    //     phi = dis2;
-    //   }
-    //   (*pitr)->assign_levelsetphi(phi);
-    // }
-    // if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 4)
-    //   (*pitr)->assign_levelsetphi(1.0);
-    // else if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 5)
-    //   (*pitr)->assign_levelsetphi(-1);
-    // else if ((*pitr)->material_id(mpm::ParticlePhase::Solid) == 6)
-    //   (*pitr)->assign_levelsetphi(-1);
-  }
-}
-//! code for debugging added by yliang start-------------------------------
-
 //! Assign particle levelset
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::assign_particles_levelset(
@@ -1398,17 +1101,6 @@ void mpm::Mesh<Tdim>::assign_nodes_levelset(
       std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_particle,
                 std::placeholders::_1, dis_id));
 }
-
-//! Initialise discontinuity
-// template <unsigned Tdim>
-// void mpm::Mesh<Tdim>::initialise_discontinuity(
-//     const std::vector<std::shared_ptr<mpm::DiscontinuityBase<Tdim>>>&
-//         discontinuity) {
-//   this->discontinuity_ = discontinuity;
-//   iterate_over_particles(
-//       std::bind(&mpm::ParticleBase<Tdim>::reset_discontinuity_size,
-//                 std::placeholders::_1, discontinuity.size()));
-// }
 
 //! Insert a new discontinuity
 template <unsigned Tdim>

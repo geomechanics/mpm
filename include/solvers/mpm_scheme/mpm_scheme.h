@@ -79,10 +79,6 @@ class MPMScheme {
   //! \retval scheme Stress update scheme
   virtual inline std::string scheme() const = 0;
 
-  //! Assign time increment
-  //! \param[in] the time increment
-  void assign_dt(double dt) { dt_ = dt; };
-
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

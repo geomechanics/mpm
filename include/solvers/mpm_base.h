@@ -100,8 +100,6 @@ class MPMBase : public MPM {
   void pressure_smoothing(unsigned phase);
 
   //! Particle velocity constraints
-  //! \param[in] mesh_prop Mesh properties
-  //! \param[in] particle_io Particle IO handle
   void particle_velocity_constraints();
 
  protected:

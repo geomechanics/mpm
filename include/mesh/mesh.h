@@ -616,14 +616,6 @@ class Mesh {
   //! \ingroup XMPM
   void selfcontact_detection();
 
-  //! code for debugging added by yliang start-------------------------------
-  //! \ingroup XMPM
-  void output_discontinuity(int step) {
-    this->discontinuity_[0]->output_markpoints(step);
-  };
-
-  //! code for debugging added by yliang end---------------------------------
-
   //! Assign the level set values to the particles which just enter the crossed
   //! \ingroup XMPM
   //! \param[in] the way to initialise the discontinuity

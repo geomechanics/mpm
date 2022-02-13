@@ -124,10 +124,6 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
     return (val > 1.0e-15 ? val : 1.0e-15);
   }
 
-  //! Elastic stiffness matrix
-  Matrix6x6 de_;
-  //! Plastic stiffness matrix
-  Matrix6x6 dp_;
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Youngs modulus

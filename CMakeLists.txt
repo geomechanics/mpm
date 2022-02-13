@@ -279,9 +279,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usl_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usl_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_test.cc
-#    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_test.cc
-#    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_unitcell_test.cc    
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
     ${mpm_SOURCE_DIR}/tests/node_xmpm_test.cc
     ${mpm_SOURCE_DIR}/tests/particle_xmpm_test.cc

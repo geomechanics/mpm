@@ -499,7 +499,7 @@ void mpm::TriangleElement<Tdim, Tnfunctions>::
 template <unsigned Tdim, unsigned Tnfunctions>
 void mpm::TriangleElement<Tdim, Tnfunctions>::
     initialise_lme_connectivity_properties(
-        double beta, double radius, const Eigen::MatrixXd& nodal_coordinates) {
+        double beta, double radius, const unsigned anisotropy, const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
       "Function to initialise nonlocal connectivity is not implemented for "
       "Triangle<Tdim, Tnfunctions> ");

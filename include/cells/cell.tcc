@@ -900,11 +900,11 @@ bool mpm::Cell<Tdim>::initialiase_nonlocal(
 
       this->element_->initialise_bspline_connectivity_properties(
           this->nodal_coordinates_, nodal_properties);
-    } else if ((element_->shapefn_type() == mpm::ShapefnType::LME) ||
-               (element_->shapefn_type() == mpm::ShapefnType::ALME)) {
+    } else if (element_->shapefn_type() == mpm::ShapefnType::LME) {
       this->element_->initialise_lme_connectivity_properties(
           nonlocal_properties.at("beta"),
-          nonlocal_properties.at("support_radius"), this->nodal_coordinates_);
+          nonlocal_properties.at("support_radius"),
+          nonlocal_properties.at("anisotropy"), this->nodal_coordinates_);
     } else
       throw std::runtime_error(
           "Initialise nonlocal cell failed! Element type is not compatible.");

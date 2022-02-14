@@ -17,14 +17,7 @@ namespace mpm {
 enum ElementDegree { Linear = 1, Quadratic = 2, Infinity = 99 };
 
 // Element Shapefn
-enum ShapefnType {
-  NORMAL_MPM = 1,
-  GIMP = 2,
-  CPDI = 3,
-  BSPLINE = 4,
-  LME = 5,
-  ALME = 6
-};
+enum ShapefnType { NORMAL_MPM = 1, GIMP = 2, CPDI = 3, BSPLINE = 4, LME = 5 };
 
 //! Base class of shape functions
 //! \brief Base class that stores the information about shape functions
@@ -193,9 +186,11 @@ class Element {
   //! Assign nodal connectivity property for LME elements
   //! \param[in] beta Coldness function of the system in the range of [0,inf)
   //! \param[in] radius Support radius of the kernel
+  //! \param[in] anisotropy Shape function anisotropy (F^{-T}F^{-1})
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   virtual void initialise_lme_connectivity_properties(
-      double beta, double radius, const Eigen::MatrixXd& nodal_coordinates) = 0;
+      double beta, double radius, const unsigned anisotropy,
+      const Eigen::MatrixXd& nodal_coordinates) = 0;
 };
 
 }  // namespace mpm

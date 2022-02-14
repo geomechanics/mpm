@@ -278,9 +278,10 @@ class HexahedronElement : public Element<Tdim> {
   //! Assign nodal connectivity property for LME elements
   //! \param[in] beta Coldness function of the system in the range of [0,inf)
   //! \param[in] radius Support radius of the kernel
+  //! \param[in] anisotropy Shape function anisotropy (F^{-T}F^{-1})
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   void initialise_lme_connectivity_properties(
-      double beta, double radius,
+      double beta, double radius, const unsigned anisotropy,
       const Eigen::MatrixXd& nodal_coordinates) override;
 
  private:

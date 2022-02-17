@@ -1,7 +1,7 @@
 //! Assign nodal connectivity property for LME elements
 template <unsigned Tdim>
 void mpm::TriangleLMEElement<Tdim>::initialise_lme_connectivity_properties(
-    double beta, double radius, const unsigned anisotropy,
+    double beta, double radius, bool anisotropy,
     const Eigen::MatrixXd& nodal_coordinates) {
   this->nconnectivity_ = nodal_coordinates.rows();
   this->nodal_coordinates_ = nodal_coordinates;

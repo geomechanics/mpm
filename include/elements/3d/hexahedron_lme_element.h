@@ -114,7 +114,7 @@ class HexahedronLMEElement : public HexahedronElement<3, 8> {
   //! \param[in] anisotropy Shape function anisotropy (F^{-T}F^{-1})
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   void initialise_lme_connectivity_properties(
-      double beta, double radius, const unsigned anisotropy,
+      double beta, double radius, bool anisotropy,
       const Eigen::MatrixXd& nodal_coordinates) override;
 
   //! Return the degree of shape function
@@ -131,7 +131,7 @@ class HexahedronLMEElement : public HexahedronElement<3, 8> {
   //! Support radius
   double support_radius_;
   //! Anisotropy parameter
-  unsigned anisotropy_;
+  bool anisotropy_;
   //! Nodal coordinates vector (n_connectivity_ x Tdim)
   Eigen::MatrixXd nodal_coordinates_;
 };

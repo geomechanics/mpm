@@ -703,7 +703,7 @@ void mpm::HexahedronElement<Tdim, Tnfunctions>::
 template <unsigned Tdim, unsigned Tnfunctions>
 void mpm::HexahedronElement<Tdim, Tnfunctions>::
     initialise_lme_connectivity_properties(
-        double beta, double radius, const unsigned anisotropy,
+        double beta, double radius, bool anisotropy,
         const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
       "Function to initialise nonlocal connectivity is not implemented for "

@@ -1597,18 +1597,14 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
           h = mesh_->compute_average_cell_size();
 
         // Anisotropy parameter
+        bool anisotropy = false;
+
         if (mesh_props["nonlocal_mesh_properties"].contains("anisotropy")) {
 
-          const unsigned anisotropy =
-              mesh_props["nonlocal_mesh_properties"]["anisotropy"]
-                  .template get<unsigned>();
+          anisotropy = mesh_props["nonlocal_mesh_properties"]["anisotropy"]
+                           .template get<unsigned>();
           nonlocal_properties.insert(
-              std::pair<std::string, unsigned>("anisotropy", anisotropy));
-        } else {
-          const unsigned anisotropy = 0;
-
-          nonlocal_properties.insert(
-              std::pair<std::string, unsigned>("anisotropy", anisotropy));
+              std::pair<std::string, bool>("anisotropy", anisotropy));
         }
 
         // Calculate beta

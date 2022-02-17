@@ -189,7 +189,7 @@ class Element {
   //! \param[in] anisotropy Shape function anisotropy (F^{-T}F^{-1})
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   virtual void initialise_lme_connectivity_properties(
-      double beta, double radius, const unsigned anisotropy,
+      double beta, double radius, bool anisotropy,
       const Eigen::MatrixXd& nodal_coordinates) = 0;
 };
 

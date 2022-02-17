@@ -68,7 +68,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
         // Calculate support radius automatically
         double tol0 = 1.e-10;
         double r = h * std::sqrt(-std::log(tol0) / gamma);
-        unsigned anisotropy = 0;
+        unsigned anisotropy = false;
 
         REQUIRE_NOTHROW(tri->initialise_lme_connectivity_properties(
             beta, r, anisotropy, nodal_coords));
@@ -158,7 +158,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
         // Calculate support radius automatically
         double tol0 = 1.e-10;
         double r = h * std::sqrt(-std::log(tol0) / gamma);
-        unsigned anisotropy = 1;
+        unsigned anisotropy = true;
 
         REQUIRE_NOTHROW(tri->initialise_lme_connectivity_properties(
             beta, r, anisotropy, nodal_coords));

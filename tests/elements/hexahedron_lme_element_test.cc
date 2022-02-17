@@ -206,7 +206,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
         // Calculate support radius automatically
         double tol0 = 1.e-10;
         double r = h * std::sqrt(-std::log(tol0) / gamma);
-        unsigned anisotropy = 0;
+        unsigned anisotropy = false;
 
         REQUIRE_NOTHROW(hex->initialise_lme_connectivity_properties(
             beta, r, anisotropy, nodal_coords));

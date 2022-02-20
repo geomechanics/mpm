@@ -1161,17 +1161,18 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
   iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::map_volume_to_nodes, std::placeholders::_1));
 
-  iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_nodes,
-                std::placeholders::_1, dis_id));
-
-  // to do
-  // modify_nodal_levelset_mls();
-
   for (unsigned dis_id = 0; dis_id < discontinuity_num(); dis_id++) {
 
     bool propagation = discontinuity_[dis_id]->propagation();
     auto type = discontinuity_[dis_id]->description_type();
+
+    // map particle level set to nodes
+    iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_nodes,
+                  std::placeholders::_1, dis_id));
+
+    // to do
+    // modify_nodal_levelset_mls();
     if (propagation) {
 
       iterate_over_cells(std::bind(&mpm::Cell<Tdim>::potential_tip_element,

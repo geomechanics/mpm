@@ -30,24 +30,11 @@ void mpm::Mesh<Tdim>::create_nodal_properties_discontinuity() {
                                                       nodal_properties_);
 }
 
-//! Locate points in a cell
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::locate_discontinuity() {
-  for (int i = 0; i < discontinuity_.size(); i++)
-    discontinuity_[i]->locate_discontinuity_mesh(cells_, map_cells_);
-}
 //! Updated_position of discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_updated_position_discontinuity(double dt) {
   for (int i = 0; i < discontinuity_.size(); i++)
     discontinuity_[i]->compute_updated_position(dt);
-}
-
-//! Compute shape function
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::compute_shapefn_discontinuity() {
-  for (int i = 0; i < discontinuity_.size(); i++)
-    discontinuity_[i]->compute_shapefn();
 }
 
 //! Compute the normal vector of cells
@@ -1152,11 +1139,6 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
   iterate_over_cells(
       std::bind(&mpm::Cell<Tdim>::initialise_element_properties_discontinuity,
                 std::placeholders::_1));
-  // locate points of discontinuity
-  locate_discontinuity();
-
-  // Iterate over each points to compute shapefn
-  compute_shapefn_discontinuity();
 
   iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::map_volume_to_nodes, std::placeholders::_1));
@@ -1166,13 +1148,19 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
     bool propagation = discontinuity_[dis_id]->propagation();
     auto type = discontinuity_[dis_id]->description_type();
 
+    // locate points of discontinuity
+    locate_discontinuity(dis_id);
+
+    // Iterate over each points to compute shapefn
+    compute_shapefn_discontinuity(dis_id);
+
     // map particle level set to nodes
     iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_nodes,
                   std::placeholders::_1, dis_id));
-
     // to do
     // modify_nodal_levelset_mls();
+
     if (propagation) {
 
       iterate_over_cells(std::bind(&mpm::Cell<Tdim>::potential_tip_element,

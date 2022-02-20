@@ -525,7 +525,10 @@ class Mesh {
 
   //! Locate points of discontinuity in a cell
   //! \ingroup XMPM
-  void locate_discontinuity();
+  //! \param[in] discontinuity id
+  void locate_discontinuity(unsigned dis_id) {
+    discontinuity_[dis_id]->locate_discontinuity_mesh(cells_, map_cells_);
+  };
 
   //! Update the discontinuity position
   //! \ingroup XMPM
@@ -534,7 +537,10 @@ class Mesh {
 
   //! Update the discontinuity position
   //! \ingroup XMPM
-  void compute_shapefn_discontinuity();
+  //! \param[in] discontinuity id
+  void compute_shapefn_discontinuity(unsigned dis_id) {
+    discontinuity_[dis_id]->compute_shapefn();
+  };
 
   //! compute the normal vector of cells
   //! \ingroup XMPM

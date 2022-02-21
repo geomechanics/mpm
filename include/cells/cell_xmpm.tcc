@@ -312,11 +312,10 @@ void mpm::Cell<Tdim>::assign_cohesion_area(unsigned dis_id) {
   if (!this->is_point_in_cell(centers, &xi)) return;
 
   auto shapefn = element_->shapefn(xi, zeros, zeros);
-  Eigen::Matrix<double, 1, 1> node_area;
+  double node_area = 0;
   for (int i = 0; i < nodes_.size(); i++) {
 
-    node_area(0, 0) = shapefn[i] * area;
-    nodes_[i]->update_discontinuity_property(true, "cohesion_area", node_area,
-                                             0, 1);
+    node_area = shapefn[i] * area;
+    nodes_[i]->update_cohesion_area(node_area, dis_id);
   }
 }

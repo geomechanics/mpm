@@ -609,14 +609,6 @@ class NodeBase {
     return 0;
   }
 
-  //! Apply velocity filter
-  virtual void apply_velocity_filter() {
-    throw std::runtime_error(
-        "Calling the base class function apply_velocity_filter in "
-        "NodeBase:: "
-        "illegal operation!");
-  }
-
   //! Return normal at a given node
   //! \ingroup XMPM
   //! \param[in] the discontinuity id
@@ -657,6 +649,40 @@ class NodeBase {
         "NodeBase:: "
         "illegal operation!");
   };
+
+  //! Assign friction coefficient
+  //! \ingroup XMPM
+  //! \param[in] the friction coefficient
+  //! \param[in] the discontinuity id
+  virtual void assign_friction_coef(double friction_coef, unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function assign_friction_coef in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign cohesion
+  //! \ingroup XMPM
+  //! \param[in] the cohesion
+  //! \param[in] the discontinuity id
+  virtual void assign_cohesion(double cohesion, unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function assign_cohesion in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! update cohesion area
+  //! \ingroup XMPM
+  //! \param[in] the cohesion area
+  //! \param[in] the discontinuity id
+  virtual void update_cohesion_area(double cohesion, unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function update_cohesion_area in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
   /**@}*/
 
   /**

@@ -75,6 +75,7 @@ bool mpm::NodeXMPM<Tdim, Tdof, Tnphases>::
 
   } else {
 
+    // yliang to do list 1
     // // obtain the enriched values of enriched nodes
     // double mass_enrich = property_handle_->property(
     //     "mass_enrich", discontinuity_prop_id_, 0, 1)(0, 0);
@@ -158,24 +159,6 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::apply_velocity_constraints() {
       internal_force_enrich_.col(i)[direction] = 0;
       external_force_enrich_.col(i)[direction] = 0;
     }
-  }
-}
-
-//! Apply velocity filter
-template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::apply_velocity_filter() {
-
-  const double tolerance = 1.E-16;
-
-  for (unsigned i = 0; i < 3; i++) {
-    if (std::abs(mass_enrich_[i]) > tolerance) continue;
-    mass_enrich_[i] = 0;
-    // momentum_enrich_.col(i) = Eigen::Matrix<double, Tdim, 1>::Zero();
-  }
-  for (unsigned phase = 0; phase < Tnphases; ++phase) {
-    if (mass_(phase) > tolerance) continue;
-    mass_(phase) = 0;
-    momentum_.col(phase) = Eigen::Matrix<double, Tdim, 1>::Zero();
   }
 }
 
@@ -404,7 +387,6 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
               max_update_normal_p = std::abs(updatep);
               update_normal = n;
               update_p = deltap;
-              // to do
               itr_error = std::abs(updatep);
               coef_couple = 0.5 * (flag(i, 1 - n) + flag(j, 1 - n));
             }
@@ -427,11 +409,11 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
         double force_contact_norm = momentum_contact_norm / dt;
 
         // the cohesion at nodes
-        // double cohesion = cohesion_[0];
-
+        double cohesion = cohesion_[update_normal];
+        double cohesion_area = cohesion_area_[update_normal];
         double max_friction_force =
-            friction_coef_[update_normal] * abs(force_contact_norm);
-        //  + 2 * cohesion * cohesion_area;
+            friction_coef_[update_normal] * abs(force_contact_norm) +
+            2 * cohesion * cohesion_area;
 
         // // the contact momentum, force vector for sticking contact at
         // tangential
@@ -462,14 +444,6 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
             coef_couple * force_contact_norm *
                 normal_vector.col(update_normal) +
             force_friction * force_tangential.col(phase).normalized();
-
-        // // adjust the momentum and force
-        // momentum_enrich_.col(0) +=
-        //     momentum_contact_norm * normal_vector +
-        //     force_friction * force_tangential.col(phase).normalized() * dt;
-        // external_force_enrich_.col(0) +=
-        //     force_contact_norm * normal_vector +
-        //     force_friction * force_tangential.col(phase).normalized();
       }
     }
   }

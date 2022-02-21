@@ -506,10 +506,6 @@ class Mesh {
    */
   /**@{*/
 
-  //! Create the nodal properties' map for discontinuity
-  //! \ingroup XMPM
-  void create_nodal_properties_discontinuity();
-
   //! Initialise discontinuity
   //! \ingroup XMPM
   //! \param[in] discontinuity List of discontinuity
@@ -554,7 +550,8 @@ class Mesh {
 
   //! Initialize the level set function values
   //! \ingroup XMPM
-  void initialise_levelset_discontinuity();
+  //! \param[in] discontinuity id
+  void initialise_levelset_discontinuity(unsigned dis_id);
 
   //! The evolution of the discontinuity
   //! \ingroup XMPM
@@ -591,9 +588,13 @@ class Mesh {
 
   //! Assign node type as enrich
   //! \ingroup XMPM
-  //! \param[in] whether use the average value of the surrounding particle
   //! \param[in] discontinuity id
-  void assign_node_enrich(bool friction_coef_average, unsigned dis_id);
+  void assign_node_enrich(unsigned dis_id);
+
+  //! Assign self contact properties
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void assign_self_contact_property(unsigned dis_id);
 
   //! Find all the nodes need to enriched
   //! \ingroup XMPM
@@ -612,11 +613,6 @@ class Mesh {
   //! The propagation of discontinuity
   //! \ingroup XMPM
   void propagation_discontinuity();
-
-  //! Adjust the nodal levelset_phi by mls
-  //! \ingroup XMPM
-  //! \param[in] discontinuity id
-  void modify_nodal_levelset_mls(unsigned dis_id);
 
   //! Compute the distance between two sides of discontinuity
   //! \ingroup XMPM

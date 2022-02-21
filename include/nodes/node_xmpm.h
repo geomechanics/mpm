@@ -220,8 +220,6 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
 
   //! Apply velocity constraints
   void apply_velocity_constraints() override;
-  //! Apply velocity filter
-  void apply_velocity_filter() override;
 
   //! Return normal at a given node for a given phase
   //! \param[in] the discontinuity id
@@ -248,6 +246,51 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] contact or not
   void assign_contact(unsigned id, bool status) {
     contact_detection_[id] = status;
+  }
+
+  //! Assign friction coefficient
+  //! \ingroup XMPM
+  //! \param[in] the friction coefficient
+  //! \param[in] the discontinuity id
+  void assign_friction_coef(double friction_coef, unsigned dis_id) {
+    if (enrich_type_ == mpm::NodeEnrichType::regular) return;
+    if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
+        discontinuity_id_[0] == dis_id) {
+      friction_coef_[0] = friction_coef;
+    } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
+      if (discontinuity_id_[0] == dis_id) friction_coef_[0] = friction_coef;
+      if (discontinuity_id_[1] == dis_id) friction_coef_[1] = friction_coef;
+    }
+  }
+
+  //! Assign cohesion
+  //! \ingroup XMPM
+  //! \param[in] the cohesion
+  //! \param[in] the discontinuity id
+  void assign_cohesion(double cohesion, unsigned dis_id) {
+    if (enrich_type_ == mpm::NodeEnrichType::regular) return;
+    if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
+        discontinuity_id_[0] == dis_id) {
+      cohesion_[0] = cohesion;
+    } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
+      if (discontinuity_id_[0] == dis_id) cohesion_[0] = cohesion;
+      if (discontinuity_id_[1] == dis_id) cohesion_[1] = cohesion;
+    }
+  }
+
+  //! Update cohesion area
+  //! \ingroup XMPM
+  //! \param[in] the cohesion area
+  //! \param[in] the discontinuity id
+  void update_cohesion_area(double cohesion_area, unsigned dis_id) {
+    if (enrich_type_ == mpm::NodeEnrichType::regular) return;
+    if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
+        discontinuity_id_[0] == dis_id) {
+      cohesion_area_[0] += cohesion_area;
+    } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
+      if (discontinuity_id_[0] == dis_id) cohesion_area_[0] += cohesion_area;
+      if (discontinuity_id_[1] == dis_id) cohesion_area_[1] += cohesion_area;
+    }
   }
 
   //! Return  connected cells

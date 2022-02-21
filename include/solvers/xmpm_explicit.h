@@ -95,7 +95,7 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! friction_coef_average
   std::tuple<double, double, double, double, double, int, bool>
       initiation_property_;
-  //! Compute the nodal level set values by: "shepard" of "mls"
+  //! Compute the nodal level set values by: "shepard" or "mls"
   std::string nodal_levelset_{"shepard"};
   // maximum number of the discontinuity
   int maximum_num_{1};

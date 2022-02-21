@@ -122,9 +122,6 @@ template <unsigned Tdim>
 void mpm::DiscontinuityBase<Tdim>::insert_particles(
     VectorDim& coordinates, const Vector<Cell<Tdim>>& cells,
     const Map<Cell<Tdim>>& map_cells) {
-  for (auto& point : this->points_) {
-    point.assign_tip(false);
-  }
   // add points
   mpm::discontinuity_point<Tdim> point(coordinates);
   point.locate_discontinuity_mesh(cells, map_cells, id_);

@@ -1,35 +1,3 @@
-//! Create the nodal properties' map for
-//! discontinuity
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::create_nodal_properties_discontinuity() {
-  // Initialise the shared pointer to nodal properties
-  if (nodal_properties_ == nullptr)
-    nodal_properties_ = std::make_shared<mpm::NodalProperties>();
-
-  // Check if nodes_ is empty and throw runtime error if they are
-  assert(nodes_.size());
-  // Compute number of rows in nodal properties for vector entities
-  const unsigned nrows = nodes_.size() * Tdim;
-  // Create pool data for each property in the nodal properties struct
-  // object. Properties must be named in the plural form
-  // nodal_properties_->create_property("mass_enrich", nodes_.size(), 1);
-  // nodal_properties_->create_property("levelset_phi", nodes_.size(), 1);
-  // nodal_properties_->create_property("momenta_enrich", nrows, 1);
-  // nodal_properties_->create_property("internal_force_enrich", nrows, 1);
-  // nodal_properties_->create_property("external_force_enrich", nrows, 1);
-  nodal_properties_->create_property("normal_unit_vectors_discontinuity", nrows,
-                                     1);
-  // nodal_properties_->create_property("friction_coef", nodes_.size(), 1);
-  // nodal_properties_->create_property("cohesion", nodes_.size(), 1);
-  // nodal_properties_->create_property("cohesion_area", nodes_.size(), 1);
-  // nodal_properties_->create_property("contact_distance", nodes_.size(), 1);
-  // Iterate over all nodes to initialise the property handle in each node
-  // and assign its node id as the prop id in the nodal property data pool
-  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
-    (*nitr)->initialise_discontinuity_property_handle((*nitr)->id(),
-                                                      nodal_properties_);
-}
-
 //! Updated_position of discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_updated_position_discontinuity(double dt) {
@@ -46,6 +14,7 @@ void mpm::Mesh<Tdim>::compute_cell_normal_vector_discontinuity(
     if ((*citr)->element_type_discontinuity(dis_id) == mpm::EnrichType::Regular)
       continue;
     (*citr)->compute_normal_vector_discontinuity(dis_id);
+    // compute the constant of the plane equation
     (*citr)->compute_plane_discontinuity(false, dis_id);
   }
 }
@@ -58,6 +27,7 @@ void mpm::Mesh<Tdim>::compute_nodal_normal_vector_discontinuity(
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
     normal_cell.setZero();
     int crossed_cell = 0;
+    // loop connected cells
     for (auto cell : (*nitr)->cells()) {
       if (map_cells_[cell]->element_type_discontinuity(dis_id) ==
           mpm::EnrichType::Regular)
@@ -66,25 +36,25 @@ void mpm::Mesh<Tdim>::compute_nodal_normal_vector_discontinuity(
       crossed_cell += 1;
     }
     if (crossed_cell == 0) continue;
+    // average the normal direction
     normal_cell = normal_cell / crossed_cell;
     normal_cell.normalize();
+    // assign the normal direction to node
     (*nitr)->assign_normal(normal_cell, dis_id);
   }
 }
 
 //! Initialise level set values at particles
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::initialise_levelset_discontinuity() {
-  for (int i = 0; i < discontinuity_.size(); i++) {
-    auto discontinuity = discontinuity_[i];
-    if (discontinuity->description_type() != "mark_points") continue;
-    double phi_particle;
+void mpm::Mesh<Tdim>::initialise_levelset_discontinuity(unsigned dis_id) {
 
-    for (mpm::Index j = 0; j < nparticles(); ++j) {
-      discontinuity->compute_levelset(particles_[j]->coordinates(),
-                                      phi_particle);
-      particles_[j]->assign_levelsetphi(phi_particle);
-    }
+  auto discontinuity = discontinuity_[dis_id];
+  if (discontinuity->description_type() != "mark_points") return;
+  double phi_particle;
+
+  for (mpm::Index j = 0; j < nparticles(); ++j) {
+    discontinuity->compute_levelset(particles_[j]->coordinates(), phi_particle);
+    particles_[j]->assign_levelsetphi(phi_particle, dis_id);
   }
 }
 
@@ -502,12 +472,14 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::next_tip_element_discontinuity(unsigned dis_id) {
   std::string shear;
-#pragma omp parallel for schedule(runtime)
+
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+    // detect all the potentialtip cell
     if ((*citr)->element_type_discontinuity(dis_id) !=
         mpm::EnrichType::PotentialTip)
       continue;
     mpm::Index pid;
+    // find the particle with the maximum pdstrain
     double max_pdstrain = 0;
     for (auto particle_id : (*citr)->particles()) {
       double pdstrain = map_particles_[particle_id]->state_variable("pdstrain");
@@ -516,13 +488,14 @@ void mpm::Mesh<Tdim>::next_tip_element_discontinuity(unsigned dis_id) {
         pid = particle_id;
       }
     }
-
+    // compare with the criterion for initiation
     if (max_pdstrain <= discontinuity_[dis_id]->maximum_pdstrain()) continue;
     VectorDim normal;
     bool propagation =
         map_particles_[pid]->minimum_acoustic_tensor(normal, false, dis_id);
     if (propagation) {
       (*citr)->assign_type_discontinuity(mpm::EnrichType::NextTip, dis_id);
+      // assign the normal direction if propagation happens
       (*citr)->assign_normal_discontinuity(normal, dis_id);
     }
   }
@@ -554,7 +527,7 @@ void mpm::Mesh<Tdim>::spurious_potential_tip_element(unsigned dis_id) {
     (*citr)->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);
 
     continue;
-    // to do
+
     if (!boundary) continue;
 
     // avoid the node located near the discontinuity
@@ -571,30 +544,17 @@ void mpm::Mesh<Tdim>::spurious_potential_tip_element(unsigned dis_id) {
 
 //! Assign node type as enrich
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::assign_node_enrich(bool friction_coef_average,
-                                         unsigned dis_id) {
+void mpm::Mesh<Tdim>::assign_node_enrich(unsigned dis_id) {
 
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
 
     if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::Crossed)
       continue;
-    double friction_coef;
-    friction_coef = discontinuity_[dis_id]->friction_coef();
 
-    double cohesion;
-    cohesion = discontinuity_[dis_id]->cohesion();
     for (auto node : (*citr)->nodes()) {
       if (node->discontinuity_enrich(dis_id)) continue;
       node->assign_discontinuity_enrich(true, dis_id);
-
-      // if (!friction_coef_average)
-      //   node->assign_discontinuity_property(true, "friction_coef",
-      //                                       friction_coef, 0, 1);
-      // node->assign_discontinuity_property(true, "cohesion", cohesion, 0,
-      // 1);
     }
-
-    // (*citr)->assign_cohesion_area();
   }
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
     if ((*citr)->element_type_discontinuity(dis_id) !=
@@ -604,6 +564,31 @@ void mpm::Mesh<Tdim>::assign_node_enrich(bool friction_coef_average,
       if (!node->discontinuity_enrich(dis_id)) continue;
       node->assign_discontinuity_enrich(false, dis_id);
     }
+  }
+}
+
+//! Assign self contact properties
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::assign_self_contact_property(unsigned dis_id) {
+
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+
+    if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::Crossed)
+      continue;
+    // assign area for the enriched nodes
+    (*citr)->assign_cohesion_area(dis_id);
+  }
+
+  double friction_coef = discontinuity_[dis_id]->friction_coef();
+
+  double cohesion = discontinuity_[dis_id]->cohesion();
+
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+
+    if (!(*nitr)->discontinuity_enrich(dis_id)) continue;
+    // assign friction_coef and cohesion for the enriched nodes
+    (*nitr)->assign_cohesion(cohesion, dis_id);
+    (*nitr)->assign_friction_coef(friction_coef, dis_id);
   }
 }
 
@@ -650,12 +635,12 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
         pid = i;
       }
     }
-
+    // compare with the critical pdstrain
     if (particle_max_pdstrain <= maximum_pdstrain) return;
     VectorDim normal;
     bool initiation =
         map_particles_[pid]->minimum_acoustic_tensor(normal, true);
-
+    // generate new discontinuity
     if (initiation) {
 
       // Create a new discontinuity surface from JSON object
@@ -672,17 +657,19 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
       auto cell_id = map_particles_[pid]->cell_id();
       map_cells_[cell_id]->assign_type_discontinuity(
           mpm::EnrichType::InitialTip, dis_id);
+      // assign normal direction to tip cell
       map_cells_[cell_id]->assign_normal_discontinuity(normal, dis_id);
       auto center = map_cells_[cell_id]->centroid();
 
       double d = 0;
-
+      // compute constant parameter
       for (unsigned int i = 0; i < Tdim; i++) d -= center[i] * normal[i];
 
       map_cells_[cell_id]->assign_normal_discontinuity(normal, d, dis_id);
 
       map_cells_[cell_id]->compute_nodal_levelset_equation(dis_id);
 
+      // compute mark point position
       std::vector<VectorDim> coordinates_dis;
       map_cells_[cell_id]->compute_discontinuity_point(coordinates_dis, dis_id);
 
@@ -690,18 +677,18 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
         discontinuity_[dis_id]->insert_particles(coordinates_dis[i], cells_,
                                                  map_cells_);
       // initialise neighbour cells
-
       auto neighbours = map_cells_[cell_id]->neighbours();
       for (auto neighbour : neighbours) {
         if (map_cells_[neighbour]->nparticles() == 0) continue;
         map_cells_[neighbour]->assign_type_discontinuity(
             mpm::EnrichType::NeighbourTip_1, dis_id);
+        // the same plane equation with the tip cell
         map_cells_[neighbour]->assign_normal_discontinuity(normal, d, dis_id);
         map_cells_[neighbour]->compute_nodal_levelset_equation(dis_id);
         if (map_cells_[neighbour]->product_levelset(dis_id) >= 0) continue;
         map_cells_[neighbour]->assign_type_discontinuity(
             mpm::EnrichType::InitialTip, dis_id);
-
+        // compute mark point position
         std::vector<VectorDim> coordinates_dis_neigh;
         map_cells_[neighbour]->compute_discontinuity_point(
             coordinates_dis_neigh, dis_id);
@@ -711,8 +698,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
                                                    cells_, map_cells_);
         }
       }
-      // initialise level set values
-
+      // initialise particle level set values
       for (int i = 0; i < nparticles(); ++i) {
         bool neighbour = true;
         for (int j = 0; j < Tdim; j++) {
@@ -726,155 +712,6 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
         particles_[i]->assign_levelsetphi(phi, dis_id);
       }
     }
-  }
-}
-
-//! Adjust the nodal levelset_phi by mls
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::modify_nodal_levelset_mls(unsigned dis_id) {
-  Eigen::Matrix<double, 4, 4> au;
-  Eigen::Matrix<double, 4, 1> bu;
-  // double error_max = 0;
-  const double tolerance = std::numeric_limits<double>::epsilon();
-
-  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
-    if ((*nitr)->discontinuity_property("levelset_phi", 1)(0, 0) == 0) continue;
-    double phi = 0;
-
-    au.setZero();
-    bu.setZero();
-
-    double particle_volume = 0;
-    double cell_volume = 0;
-    std::vector<Index> cell_list;
-    for (auto cell : (*nitr)->cells()) cell_list.push_back(cell);
-
-    for (auto cell : cell_list) {
-      double length = discontinuity_[dis_id]->width();
-      cell_volume += map_cells_[cell]->volume();
-      for (auto particle : map_cells_[cell]->particles()) {
-        auto corp = map_particles_[particle]->coordinates();
-        phi = map_particles_[particle]->levelset_phi();
-        if (phi == 0) continue;
-        particle_volume += map_particles_[particle]->volume();
-        // compute weight
-        double w[3];
-        for (int i = 0; i < 3; i++) {
-          w[i] = 1 - std::abs(corp[i] - (*nitr)->coordinates()[i]) / length;
-          if (w[i] < 0) w[i] = 0;
-        }
-
-        double weight = w[0] * w[1] * w[2];
-        au(0, 0) += weight;
-        au(0, 1) += weight * corp[0];
-        au(0, 2) += weight * corp[1];
-        au(0, 3) += weight * corp[2];
-        au(1, 0) += weight * corp[0];
-        au(1, 1) += weight * corp[0] * corp[0];
-        au(1, 2) += weight * corp[0] * corp[1];
-        au(1, 3) += weight * corp[0] * corp[2];
-        au(2, 0) += weight * corp[1];
-        au(2, 1) += weight * corp[1] * corp[0];
-        au(2, 2) += weight * corp[1] * corp[1];
-        au(2, 3) += weight * corp[1] * corp[2];
-        au(3, 0) += weight * corp[2];
-        au(3, 1) += weight * corp[2] * corp[0];
-        au(3, 2) += weight * corp[2] * corp[1];
-        au(3, 3) += weight * corp[2] * corp[2];
-
-        bu(0, 0) += weight * phi;
-        bu(1, 0) += weight * phi * corp[0];
-        bu(2, 0) += weight * phi * corp[1];
-        bu(3, 0) += weight * phi * corp[2];
-      }
-    }
-
-    // find particles from neighbour cells
-    if (particle_volume < 0.5 * cell_volume ||
-        std::abs(au.determinant()) < tolerance) {
-      au.setZero();
-      bu.setZero();
-      for (auto cells : (*nitr)->cells()) {
-        for (auto cell : map_cells_[cells]->neighbours()) {
-          std::vector<Index>::iterator ret;
-          ret = std::find(cell_list.begin(), cell_list.end(), cell);
-          if (ret != cell_list.end()) continue;
-          cell_list.push_back(cell);
-        }
-      }
-
-      for (auto cell : cell_list) {
-        for (auto particle : map_cells_[cell]->particles()) {
-          auto corp = map_particles_[particle]->coordinates();
-          phi = map_particles_[particle]->levelset_phi();
-          if (phi == 0) continue;
-          // compute weight
-          double length = 2 * discontinuity_[dis_id]->width();
-          double w[3];
-          for (int i = 0; i < 3; i++) {
-            w[i] = 1 - std::abs(corp[i] - (*nitr)->coordinates()[i]) / length;
-            if (w[i] < 0) w[i] = 0;
-          }
-          double weight = w[0] * w[1] * w[2];
-
-          au(0, 0) += weight;
-          au(0, 1) += weight * corp[0];
-          au(0, 2) += weight * corp[1];
-          au(0, 3) += weight * corp[2];
-          au(1, 0) += weight * corp[0];
-          au(1, 1) += weight * corp[0] * corp[0];
-          au(1, 2) += weight * corp[0] * corp[1];
-          au(1, 3) += weight * corp[0] * corp[2];
-          au(2, 0) += weight * corp[1];
-          au(2, 1) += weight * corp[1] * corp[0];
-          au(2, 2) += weight * corp[1] * corp[1];
-          au(2, 3) += weight * corp[1] * corp[2];
-          au(3, 0) += weight * corp[2];
-          au(3, 1) += weight * corp[2] * corp[0];
-          au(3, 2) += weight * corp[2] * corp[1];
-          au(3, 3) += weight * corp[2] * corp[2];
-
-          bu(0, 0) += weight * phi;
-          bu(1, 0) += weight * phi * corp[0];
-          bu(2, 0) += weight * phi * corp[1];
-          bu(3, 0) += weight * phi * corp[2];
-        }
-      }
-    }
-
-    if (std::abs(au.determinant()) < tolerance) continue;
-
-    Eigen::Vector4d coef;
-    coef.setZero();
-    for (int i = 0; i < 4; i++)
-      for (int j = 0; j < 4; j++) coef[i] += au.inverse()(i, j) * bu(j, 0);
-
-    // compute the error
-    double error = 0;
-    int error_p = 0;
-    for (auto cell : cell_list) {
-      for (auto particle : map_cells_[cell]->particles()) {
-        auto corp = map_particles_[particle]->coordinates();
-        phi = map_particles_[particle]->levelset_phi();
-        if (phi == 0) continue;
-        double phi_mls = 1 * coef[0] + corp[0] * coef[1] + corp[1] * coef[2] +
-                         corp[2] * coef[3];
-        error += std::pow(phi_mls - phi, 2);
-        error_p += 1;
-      }
-    }
-    error = std::sqrt(error / error_p) / discontinuity_[dis_id]->width();
-
-    if (error > 1e-3) continue;
-
-    Eigen::Matrix<double, 1, 4> cor;
-    Eigen::Matrix<double, 1, 1> phi_mls;
-
-    cor << 1, (*nitr)->coordinates()[0], (*nitr)->coordinates()[1],
-        (*nitr)->coordinates()[2];
-    phi_mls(0, 0) = cor.dot(coef);
-
-    (*nitr)->assign_discontinuity_property(true, "levelset_phi", phi_mls, 0, 1);
   }
 }
 
@@ -911,7 +748,7 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
     } else if ((*nitr)->enrich_type() == mpm::NodeEnrichType::double_enriched) {
 
       Eigen::Matrix<int, 4, 2> flag;
-
+      // four parts from different sides
       flag << -1, -1, 1, -1, -1, 1, 1, 1;
 
       int k = -1;
@@ -1158,8 +995,6 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
     iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_nodes,
                   std::placeholders::_1, dis_id));
-    // to do
-    // modify_nodal_levelset_mls();
 
     if (propagation) {
 
@@ -1168,9 +1003,8 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
 
       // remove the spurious potential tip element
       spurious_potential_tip_element(dis_id);
-      // to do
-      bool friction_coef_average_ = false;
-      assign_node_enrich(friction_coef_average_, dis_id);
+      // determine enriched node
+      assign_node_enrich(dis_id);
 
       iterate_over_cells(std::bind(&mpm::Cell<Tdim>::tip_element,
                                    std::placeholders::_1, dis_id));
@@ -1189,20 +1023,21 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
     // obtain the normal direction of enrich nodes
     compute_nodal_normal_vector_discontinuity(dis_id);
 
+    // Compute contact area in the crossed cell
+    iterate_over_cells(std::bind(&mpm::Cell<Tdim>::compute_area_discontinuity,
+                                 std::placeholders::_1, dis_id));
+    //! Assign self contact properties
+    assign_self_contact_property(dis_id);
+
     if (propagation) next_tip_element_discontinuity(dis_id);
 
     // discontinuity growth
     if (propagation) update_discontinuity(dis_id);
 
-    iterate_over_cells(std::bind(&mpm::Cell<Tdim>::compute_area_discontinuity,
-                                 std::placeholders::_1, dis_id));
-
-    // to do: option 1
+    // if a particle in the discontinuity region has level set values
     iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::check_levelset,
                                      std::placeholders::_1, dis_id));
-    // to do: option 2
-    // check_particle_levelset(false, dis_id);
   }
-
+  // self contact detection at enriched nodes
   selfcontact_detection();
 }

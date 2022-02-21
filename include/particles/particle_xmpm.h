@@ -80,11 +80,6 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \param[in] discontinuity_id
   void map_levelset_to_nodes(unsigned dis_id) noexcept override;
 
-  //! Map particle frictional_coef to nodes
-  //! \param[in] friction_coef of the discontinuity
-  void map_friction_coef_to_nodes(
-      double discontinuity_friction_coef) noexcept override;
-
   //! Compute displacement gradient
   //! \param[in] dt Analysis time step
   void inline compute_displacement_gradient(double dt) override;

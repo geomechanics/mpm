@@ -14,7 +14,7 @@ template <unsigned Tdim>
 bool mpm::ParticleXMPM<Tdim>::initialise_particle(PODParticle& particle) {
   bool status = mpm::Particle<Tdim>::initialise_particle(particle);
   // auto xmpm_particle = reinterpret_cast<PODParticleXMPM*>(&particle);
-  // to do: levelset_phi
+  // yliang to do list 2
   // this->levelset_phi_[0] = xmpm_particle->levelset_phi;
 
   return status;
@@ -119,7 +119,7 @@ std::shared_ptr<void> mpm::ParticleXMPM<Tdim>::pod() const {
     }
   }
 
-  // XMPM
+  // yliang to do list 2
   // particle_data->levelset_phi = levelset_phi_[0];
   return particle_data;
 }
@@ -147,12 +147,15 @@ void mpm::ParticleXMPM<Tdim>::map_mass_momentum_to_nodes() noexcept {
   assert(mass_ != std::numeric_limits<double>::max());
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Map mass and momentum to nodes
+    // Regular node
     nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
                            mass_ * shapefn_[i]);
     nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
                                mass_ * shapefn_[i] * velocity_);
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
     auto discontinuity_id = nodes_[i]->discontinuity_id();
+    // Single enriched node
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
 
       Eigen::Matrix<double, 3, 1> mass_enrich;
@@ -168,7 +171,7 @@ void mpm::ParticleXMPM<Tdim>::map_mass_momentum_to_nodes() noexcept {
       nodes_[i]->update_momentum_enrich(momentum_enrich);
     } else if (nodes_[i]->enrich_type() ==
                mpm::NodeEnrichType::double_enriched) {
-
+      // Double enriched node
       Eigen::Matrix<double, 3, 1> mass_enrich;
       mass_enrich.setZero();
       mass_enrich[0] =
@@ -228,32 +231,6 @@ void mpm::ParticleXMPM<Tdim>::map_levelset_to_nodes(unsigned dis_id) noexcept {
   }
 }
 
-//! Map particle friction_coef_to_nodes
-template <unsigned Tdim>
-void mpm::ParticleXMPM<Tdim>::map_friction_coef_to_nodes(
-    double discontinuity_friction_coef) noexcept {
-  double volume_node;
-
-  double friction_coef_scalar = 0;
-  Eigen::Matrix<double, 1, 1> friction_coef;
-
-  double friction_angle = this->state_variable("phi");
-
-  if (std::isnan(friction_angle))
-    friction_angle = std::atan(discontinuity_friction_coef);
-  friction_coef_scalar = std::tan(friction_angle);
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    volume_node = nodes_[i]->volume(mpm::ParticlePhase::Solid);
-
-    // Unit 1x1 Eigen matrix to be used with scalar quantities
-    friction_coef(0, 0) =
-        friction_coef_scalar * volume_ * shapefn_[i] / volume_node;
-
-    nodes_[i]->update_discontinuity_property(true, "friction_coef",
-                                             friction_coef, 0, 1);
-  }
-}
-
 // Compute strain rate of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::ParticleXMPM<3>::compute_strain_rate(
@@ -267,7 +244,6 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleXMPM<3>::compute_strain_rate(
   // Compute corresponding nodal velocity
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
 
-    // branch
     double nodal_mass = nodes_[i]->mass(phase);
     auto nodal_mass_enrich = nodes_[i]->mass_enrich();
 
@@ -627,7 +603,7 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
                                                       bool initiation,
                                                       unsigned dis_id) {
 
-  // compute the acoustic tensor
+  // compute the elasto plastic tensor
   bool yield_status = true;
   Eigen::Matrix<double, 6, 6> dp =
       (this->material())
@@ -638,7 +614,11 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   if (!yield_status) return false;
 
   Eigen::Matrix<int, 3, 3> index;
-  index << 0, 3, 5, 3, 1, 4, 5, 4, 2;
+  // clang-format off
+  index << 0, 3, 5,
+           3, 1, 4,
+           5, 4, 2;
+  // clang-format on
   Eigen::Matrix<double, 3, 1> normal_cellcenter;
   normal_cellcenter.setZero();
   // compute the initial direction
@@ -663,21 +643,22 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   Eigen::Matrix<double, 3, 1> nk = normal_cellcenter;
   Eigen::Matrix<double, 3, 1> nk1;
 
+  // Iteration parameter
   double uk = 0;
   double uk1;
-
+  // Maximum number, tolerance and error of iterations
   int itr_max = 1000;
   double itr_tol = 1e-9;
   double itr_error = 1;
-  double eigenvalue_j[3]{0};
 
   Eigen::Matrix<double, 3, 3> A;
   Eigen::Matrix<double, 3, 3> J;
+  double eigenvalue_j[3]{0};
+
   for (int itr = 0; itr < itr_max; ++itr) {
     if (itr_error < itr_tol) break;
-
+    // Compute matrix A
     A.setZero();
-    J.setZero();
     for (int m = 0; m < 3; m++)
       for (int n = 0; n < 3; n++) {
 
@@ -685,9 +666,11 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
           for (int s = 0; s < 3; s++)
             A(m, n) += nk(r) * nk(s) * dp(index(m, r), index(n, s));
       }
+    // Determinant of matrix A
     double det_A = A.determinant();
     Eigen::Matrix<double, 3, 3> inv_A = A.inverse();
-
+    // Compute matrix J
+    J.setZero();
     for (int m = 0; m < 3; m++)
       for (int n = 0; n < 3; n++) {
 
@@ -714,20 +697,17 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
       nk1 = eigen;
       uk1 = eigenvalues(i, i);
     }
-
+    // Compute error
     itr_error = (nk1 - nk).norm() + std::abs(uk1 / uk - 1);
-    console_->info("\n itr:{},{}\nJ eigen:{},{},{}", itr, itr_error,
-                   eigenvalues(0, 0), eigenvalues(1, 1), eigenvalues(2, 2));
     nk = nk1;
     uk = uk1;
+    // Lower requirement for the iteration
     if (itr >= 999) {
-      console_->error(
-          "wrong iteration of acoustic tensor, {},{},{},{},{},{},{},{},{},{}",
-          itr, itr_error, nk[0], nk[1], nk[2], nk1[0], nk1[1], nk1[2], uk1, uk);
       if (itr_error < 1e-6) continue;
       nk = normal_cellcenter;
     }
   }
+  // The direction keep consistant
   if (normal_cellcenter.dot(nk) < 0) nk = -nk;
   normal_cell = nk;
   return true;
@@ -739,6 +719,9 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
 
   double dtheta = 1;
   const double PI = M_PI / 180;
+
+  // Loop all the direction
+  // Variables used in the loop
   VectorDim normal_m;
   VectorDim normal_m1;
   VectorDim normal_m2;
@@ -751,7 +734,6 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
 
   double det_de_n;
   double det_dp_n;
-
   double max_dudxmn = 0;
 
   Eigen::Matrix<double, 6, 6> dp =
@@ -769,7 +751,7 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
   index << 0, 3, 5,
            3, 1, 4,
            5, 4, 2;
-
+  // clang-format on
   for (int i = 0; i < std::floor(360 / dtheta); i++) {
     for (int j = 0; j < 180; j++) {
       double theta = i * dtheta * PI;
@@ -800,32 +782,28 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
 
       det_de_n = de_n.determinant();
       double ratio = det_dp_n / det_de_n;
-      if(ratio > 0.01)
-        continue;
+      if (ratio > 0.01) continue;
 
-     dudx_n.setZero();
-      for(unsigned m = 0; m < 3; m++)
-        for(unsigned n = 0; n < 3; n++)
-            dudx_n[m] += du_dx_(m,n)*normal[n];
+      dudx_n.setZero();
+      for (unsigned m = 0; m < 3; m++)
+        for (unsigned n = 0; n < 3; n++) dudx_n[m] += du_dx_(m, n) * normal[n];
 
-      normal_m1 << std::sin(theta),-std::cos(theta),0;
+      normal_m1 << std::sin(theta), -std::cos(theta), 0;
       normal_m2 = normal.cross(normal_m1);
-     
-     a1 = dudx_n.dot(normal_m1);
-     a2 = dudx_n.dot(normal_m2);
-    
-    double angle = 0;
 
-    angle = std::atan(a2/a1);
-    if(a1 == 0)
-        angle = M_PI_2;
+      a1 = dudx_n.dot(normal_m1);
+      a2 = dudx_n.dot(normal_m2);
 
-    double dudx_mn = std::abs(a1*std::cos(angle) + a2*std::sin(angle));
-    if(dudx_mn > max_dudxmn)
-    {
+      double angle = 0;
+
+      angle = std::atan(a2 / a1);
+      if (a1 == 0) angle = M_PI_2;
+
+      double dudx_mn = std::abs(a1 * std::cos(angle) + a2 * std::sin(angle));
+      if (dudx_mn > max_dudxmn) {
         max_dudxmn = dudx_mn;
         normal_initiation = normal;
-    }
+      }
     }
   }
 }
@@ -837,16 +815,16 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
   Eigen::Matrix<double, 3, 3> dudx_rate = Eigen::Matrix<double, 3, 3>::Zero();
   const double tolerance = 1.E-16;
   unsigned phase = mpm::ParticlePhase::Solid;
+
   Eigen::Vector3d vel;
   vel.setZero();
+
   // Compute corresponding nodal velocity
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-// branch
+    // nodal regular and enriched information
     double nodal_mass = nodes_[i]->mass(phase);
 
     auto nodal_momentum = nodes_[i]->momentum(phase);
-
-    // if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
 
     auto nodal_mass_enrich = nodes_[i]->mass_enrich();
 
@@ -854,6 +832,7 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
 
     auto discontinuity_id = nodes_[i]->discontinuity_id();
 
+    // update the mass and momentum for enriched nodes
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
 
       nodal_mass +=
@@ -879,30 +858,30 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
     }
     if (nodal_mass < tolerance) continue;
 
-    vel += shapefn_[i] * nodal_momentum / nodal_mass;
-    for(unsigned j = 0; j < 3; j++) 
-        for(unsigned k = 0; k < 3; k++) 
-            dudx_rate(j,k) +=  vel[j] * dn_dx_(i, k) ;
+    // compute nodal velocity
+    vel = shapefn_[i] * nodal_momentum / nodal_mass;
+
+    // update the displacement gradient rate
+    for (unsigned j = 0; j < 3; j++)
+      for (unsigned k = 0; k < 3; k++) dudx_rate(j, k) += vel[j] * dn_dx_(i, k);
   }
 
-    for(unsigned j = 0; j < 3; j++) 
-        for(unsigned k = 0; k < 3; k++) 
-            du_dx_(j,k) += dudx_rate(j,k)*dt;
+  // update the displacement gradient
+  du_dx_ += dudx_rate * dt;
 }
-//! Map particle friction_coef_to_nodes
+
+//! Detect the corresponding particle has levelset_values
 template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::check_levelset(unsigned dis_id) noexcept {
-    if(levelset_phi_[dis_id] != 0)
-        return;
-    assert(cell_ != nullptr);
-   
+  if (levelset_phi_[dis_id] != 0) return;
+  assert(cell_ != nullptr);
+
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    if (!nodes_[i]->discontinuity_enrich(dis_id)) 
-        continue;
-      
+    if (!nodes_[i]->discontinuity_enrich(dis_id)) continue;
+
     auto normal = cell_->normal_discontinuity(dis_id);
     double d = cell_->d_discontinuity(dis_id);
     levelset_phi_[dis_id] = coordinates_.dot(normal) + d;
     return;
-    }
+  }
 }

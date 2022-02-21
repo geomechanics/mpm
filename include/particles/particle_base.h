@@ -378,16 +378,6 @@ class ParticleBase {
         "illegal operation!");
   };
 
-  //! Map particle frictional_coef to nodes
-  //! \ingroup XMPM
-  //! \param[in] the default friction coefficient
-  virtual void map_friction_coef_to_nodes(double discontinuity_friction_coef) {
-    throw std::runtime_error(
-        "Calling the base class function (map_friction_coef_to_nodes) in "
-        "ParticleBase:: "
-        "illegal operation!");
-  };
-
   //! Map levelset from nodes to particles
   //! \ingroup XMPM
   //! \param[in] discontintuity id

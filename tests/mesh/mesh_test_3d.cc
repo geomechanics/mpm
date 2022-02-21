@@ -1571,9 +1571,6 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
     REQUIRE(mesh->add_node(node6) == true);
     REQUIRE(mesh->add_node(node7) == true);
 
-    // Check nodal properties creation for discontinuity
-    REQUIRE_NOTHROW(mesh->create_nodal_properties_discontinuity());
-
     // Check nodal properties initialisation
     REQUIRE_NOTHROW(mesh->initialise_nodal_properties());
 
@@ -1616,6 +1613,5 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
     REQUIRE_NOTHROW(mesh->compute_updated_position_discontinuity(dt));
 
     REQUIRE_NOTHROW(mesh->compute_shapefn_discontinuity());
-    REQUIRE_NOTHROW(mesh->initialise_levelset_discontinuity());
   }
 }

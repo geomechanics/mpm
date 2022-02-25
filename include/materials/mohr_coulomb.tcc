@@ -351,7 +351,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   //-------------------------------------------------------------------------
   // Elastic-predictor stage: compute the trial stress
   (*state_vars).at("yield_state") = 0;
-  Matrix6x6 de = this->compute_elastic_tensor(state_vars);
+  Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
   Vector6d trial_stress = stress + (de * dstrain);
   // Compute stress invariants based on trial stress
   this->compute_stress_invariants(trial_stress, state_vars);
@@ -385,7 +385,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     (*state_vars).at("yield_state") = 1;
     yield_trial = yield_function_trial(1);
   }
-  de = this->compute_elastic_tensor(state_vars);
+  de = this->compute_elastic_tensor(trial_stress, state_vars);
   double lambda_trial =
       yield_trial /
       ((df_dsigma_trial.transpose() * de).dot(dp_dsigma_trial.transpose()) +
@@ -473,7 +473,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
 //! Compute elastic tensor
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_elastic_tensor(
-    mpm::dense_map* state_vars) {
+    const Vector6d& stress, mpm::dense_map* state_vars) {
   // Shear modulus
   const double G = shear_modulus_;
   const double a1 = bulk_modulus_ + (4.0 / 3.0) * G;
@@ -500,7 +500,7 @@ Eigen::Matrix<double, 6, 6>
   mpm::mohrcoulomb::FailureState yield_type =
       yield_type_.at(int((*state_vars).at("yield_state")));
   // Return the updated stress in elastic state
-  const Matrix6x6 de = this->compute_elastic_tensor(state_vars);
+  const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
   if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {
     return de;
   }

@@ -92,18 +92,11 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
                      double* softening);
 
- protected:
-  //! material id
-  using Material<Tdim>::id_;
-  //! Material properties
-  using Material<Tdim>::properties_;
-  //! Logger
-  using Material<Tdim>::console_;
-
- public:
   //! Compute elastic tensor
+  //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
-  Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
+  Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
+      const Vector6d& stress, mpm::dense_map* state_vars) override;
 
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
@@ -118,6 +111,14 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
                                           const ParticleBase<Tdim>* ptr,
                                           mpm::dense_map* state_vars,
                                           bool hardening = true) override;
+
+ protected:
+  //! material id
+  using Material<Tdim>::id_;
+  //! Material properties
+  using Material<Tdim>::properties_;
+  //! Logger
+  using Material<Tdim>::console_;
 
   //! Inline ternary function to check negative or zero numbers
   inline double check_low(double val) {

@@ -745,7 +745,7 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
   Eigen::Matrix<double, 6, 6> de =
       (this->material())
           ->compute_elastic_tensor(
-              &state_variables_[mpm::ParticlePhase::Solid]);
+              stress_, &state_variables_[mpm::ParticlePhase::Solid]);
   // clang-format off
   Eigen::Matrix<int, 3, 3> index;
   index << 0, 3, 5,

@@ -78,7 +78,6 @@ class LinearElastic : public Material<Tdim> {
   //! Compute elastic tensor
   bool compute_elastic_tensor();
 
- private:
   //! Elastic stiffness matrix
   Matrix6x6 de_;
   //! Density

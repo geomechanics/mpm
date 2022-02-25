@@ -85,8 +85,10 @@ class Material {
                                   mpm::dense_map* state_vars) = 0;
 
   //! Compute elastic tensor
+  //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
-  virtual Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars) {
+  virtual Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
+      const Vector6d& stress, mpm::dense_map* state_vars) {
     auto error = Matrix6x6::Zero();
     throw std::runtime_error(
         "Calling the base class function (compute_elastic_tensor) "

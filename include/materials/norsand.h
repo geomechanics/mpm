@@ -63,20 +63,11 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
                           const ParticleBase<Tdim>* ptr,
                           mpm::dense_map* state_vars) override;
 
- protected:
-  //! material id
-  using Material<Tdim>::id_;
-  //! Material properties
-  using Material<Tdim>::properties_;
-  //! Logger
-  using Material<Tdim>::console_;
-
- private:
   //! Compute elastic tensor
   //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
   Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
-      const Vector6d& stress, mpm::dense_map* state_vars);
+      const Vector6d& stress, mpm::dense_map* state_vars) override;
 
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
@@ -92,6 +83,15 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
                                           mpm::dense_map* state_vars,
                                           bool hardening = true) override;
 
+ protected:
+  //! material id
+  using Material<Tdim>::id_;
+  //! Material properties
+  using Material<Tdim>::properties_;
+  //! Logger
+  using Material<Tdim>::console_;
+
+ private:
   //! Compute stress invariants (p, q, lode_angle and M_theta)
   //! \param[in] stress Stress
   //! \param[in|out] p Mean stress

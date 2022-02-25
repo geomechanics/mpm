@@ -23,7 +23,6 @@ CTestTestfile.cmake
 Testing/
 cmake_install.cmake*
 build/*
-build*
 Makefile
 .DS_Store*
 *.o*

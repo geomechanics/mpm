@@ -221,12 +221,7 @@ class NodeBase {
   virtual bool assign_velocity_constraint(unsigned dir, double velocity) = 0;
 
   //! Apply velocity constraints
-  virtual void apply_velocity_constraints() {
-    throw std::runtime_error(
-        "Calling the base class function apply_velocity_constraints in "
-        "NodeBase:: "
-        "illegal operation!");
-  };
+  virtual void apply_velocity_constraints() = 0;
 
   //! Assign friction constraint
   //! Directions can take values between 0 and Dim * Nphases

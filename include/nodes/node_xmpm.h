@@ -319,7 +319,6 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   bool discontinuity_enrich_{false};
   //! nodal discontinuity property id
   unsigned discontinuity_prop_id_{std::numeric_limits<unsigned>::max()};
-
   //! mass*h
   double mass_h_{0};
   //! cohesion
@@ -330,28 +329,20 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   Eigen::Matrix<double, 2, 1> friction_coef_;
   //! Discontinuity enrich
   Eigen::Matrix<int, 2, 1> discontinuity_id_;
-
   //! Nodal levelset values
   std::vector<double> levelset_phi_;
-
   //! Nodal levelset values
   std::vector<VectorDim> normal_;
-
   //! Enriched mass
   Eigen::Matrix<double, 3, 1> mass_enrich_;
-
   //! Enriched momentum
   Eigen::Matrix<double, Tdim, 3> momentum_enrich_;
-
   //! Enriched internal force
   Eigen::Matrix<double, Tdim, 3> internal_force_enrich_;
-
   //! Enriched external force
   Eigen::Matrix<double, Tdim, 3> external_force_enrich_;
-
   //! Enrich type of the node
   mpm::NodeEnrichType enrich_type_;
-
   //! Contact dedection by distance
   Eigen::Matrix<bool, 6, 1> contact_detection_;
 };  // Node XMPM class

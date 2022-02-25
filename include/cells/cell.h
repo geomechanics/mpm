@@ -633,16 +633,17 @@ class Cell {
   std::vector<Eigen::MatrixXd> correction_matrix_twophase_;
   /**@}*/
 
-  //! Logger
-  std::unique_ptr<spdlog::logger> console_;
   /**
-   * \defgroup XMPM Varibales for XMPM
+   * \defgroup XMPM Variables for XMPM
    */
   /**@{*/
   //! discontinuity element list
   std::vector<std::shared_ptr<DiscontinuityElement<Tdim>>>
       discontinuity_element_{nullptr};
   /**@}*/
+
+  //! Logger
+  std::unique_ptr<spdlog::logger> console_;
 };  // Cell class
 }  // namespace mpm
 

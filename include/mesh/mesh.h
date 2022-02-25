@@ -506,13 +506,6 @@ class Mesh {
    */
   /**@{*/
 
-  //! Initialise discontinuity
-  //! \ingroup XMPM
-  //! \param[in] discontinuity List of discontinuity
-  //   void initialise_discontinuity(
-  //       const std::vector<std::shared_ptr<mpm::DiscontinuityBase<Tdim>>>&
-  //           discontinuity);
-
   //! Insert a new discontinuity
   //! \ingroup XMPM
   //! \param[in] discontinuity  of discontinuity

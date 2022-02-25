@@ -42,8 +42,6 @@ struct Logger {
   // Create a logger for MPM Explicit USL
   static const std::shared_ptr<spdlog::logger> mpm_explicit_usl_logger;
 
-  // Create a logger for XMPM Explicit
-  static const std::shared_ptr<spdlog::logger> xmpm_explicit_logger;
   // Create a logger for MPM Explicit MUSL
   static const std::shared_ptr<spdlog::logger> mpm_explicit_musl_logger;
 
@@ -63,6 +61,9 @@ struct Logger {
   // Create a logger for MPM Semi-implicit Two Phase
   static const std::shared_ptr<spdlog::logger>
       mpm_semi_implicit_two_phase_logger;
+
+  // Create a logger for XMPM Explicit
+  static const std::shared_ptr<spdlog::logger> xmpm_explicit_logger;
 };
 
 }  // namespace mpm

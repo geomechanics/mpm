@@ -27,10 +27,6 @@ static Register<mpm::MPM, mpm::MPMImplicit<2>, const std::shared_ptr<mpm::IO>&>
 static Register<mpm::MPM, mpm::MPMImplicit<3>, const std::shared_ptr<mpm::IO>&>
     mpm_implicit_3d("MPMImplicit3D");
 
-// 3D Explicit XMPM
-static Register<mpm::MPM, mpm::XMPMExplicit<3>, const std::shared_ptr<mpm::IO>&>
-    xmpm_explicit_3d("XMPMExplicit3D");
-
 // 2D SemiImplicit Navier Stokes MPM
 static Register<mpm::MPM, mpm::MPMSemiImplicitNavierStokes<2>,
                 const std::shared_ptr<mpm::IO>&>
@@ -60,5 +56,9 @@ static Register<mpm::MPM, mpm::MPMSemiImplicitTwoPhase<2>,
 static Register<mpm::MPM, mpm::MPMSemiImplicitTwoPhase<3>,
                 const std::shared_ptr<mpm::IO>&>
     mpm_semi_implicit_twophase_3d("MPMSemiImplicitTwoPhase3D");
+
+// 3D Explicit XMPM
+static Register<mpm::MPM, mpm::XMPMExplicit<3>, const std::shared_ptr<mpm::IO>&>
+    xmpm_explicit_3d("XMPMExplicit3D");
 
 }  // namespace mpm

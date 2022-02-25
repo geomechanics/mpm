@@ -615,8 +615,6 @@ class Node : public NodeBase<Tdim> {
   Index active_id_{std::numeric_limits<Index>::max()};
   //! Global index for active node (globally)
   Index global_active_id_{std::numeric_limits<Index>::max()};
-  //! cells ids including the node
-  std::vector<Index> cells_;
 
   /**
    * \defgroup ImplicitVariables Variables dealing with implicit MPM

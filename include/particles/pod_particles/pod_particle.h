@@ -44,8 +44,6 @@ typedef struct PODParticle {
   unsigned material_id;
   // Number of state variables
   unsigned nstate_vars;
-  //! Level set values
-  double levelset_phi;
   // State variables (init to zero)
   double svars[20] = {0};
   // Destructor

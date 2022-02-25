@@ -279,8 +279,7 @@ void mpm::Mesh<Tdim>::find_cell_neighbours(bool assign_to_nodes) {
 #pragma for schedule(runtime)
     for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
       auto node_id = (*nitr)->id();
-      for (auto neighbour_id : node_cell_map[node_id])
-        (*nitr)->add_cell_id(neighbour_id);
+      for (auto cell_id : node_cell_map[node_id]) (*nitr)->add_cell_id(cell_id);
     }
   }
 

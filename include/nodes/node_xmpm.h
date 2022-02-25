@@ -308,19 +308,15 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   using Node<Tdim, Tdof, Tnphases>::momentum_;
   //! Logger
   using Node<Tdim, Tdof, Tnphases>::console_;
-
   //! Nodal property pool
   using Node<Tdim, Tdof, Tnphases>::property_handle_;
-
   //! Mutex
   using Node<Tdim, Tdof, Tnphases>::node_mutex_;
 
-  //! cells ids
-  using Node<Tdim, Tdof, Tnphases>::cells_;
-
+  //! cells ids including the node
+  std::vector<Index> cells_;
   // need to be done
   bool discontinuity_enrich_{false};
-
   //! nodal discontinuity property id
   unsigned discontinuity_prop_id_{std::numeric_limits<unsigned>::max()};
 

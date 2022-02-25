@@ -527,6 +527,7 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
     auto particles_file =
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
 
+    // Load particle information from file
     if (attribute == "particles" || attribute == "fluid_particles")
       mesh_->write_particles_hdf5(particles_file);
     else if (attribute == "twophase_particles")

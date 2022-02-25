@@ -614,6 +614,11 @@ class Mesh {
   //! \ingroup XMPM
   void propagation_discontinuity();
 
+  //! Adjust the nodal levelset_phi by mls
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void modify_nodal_levelset_mls(unsigned dis_id);
+
   //! Compute the distance between two sides of discontinuity
   //! \ingroup XMPM
   void selfcontact_detection();

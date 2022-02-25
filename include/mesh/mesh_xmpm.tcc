@@ -106,6 +106,7 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
 
       normal_cell = normal_cell / crossed_cell;
       normal_cell.normalize();
+      node->assign_normal(normal_cell, dis_id);
     }
   }
 
@@ -704,7 +705,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
         for (int j = 0; j < Tdim; j++) {
 
           if (std::abs(center[j] - particles_[i]->coordinates()[j]) >
-              shield_width)
+              3.5 * discontinuity_[dis_id]->width())
             neighbour = false;
         }
         if (!neighbour) continue;
@@ -996,6 +997,8 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
         std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_nodes,
                   std::placeholders::_1, dis_id));
 
+    modify_nodal_levelset_mls(dis_id);
+
     if (propagation) {
 
       iterate_over_cells(std::bind(&mpm::Cell<Tdim>::potential_tip_element,
@@ -1040,4 +1043,153 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
   }
   // self contact detection at enriched nodes
   selfcontact_detection();
+}
+
+//! Adjust the nodal levelset_phi by mls
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::modify_nodal_levelset_mls(unsigned dis_id) {
+  Eigen::Matrix<double, 4, 4> au;
+  Eigen::Matrix<double, 4, 1> bu;
+  // double error_max = 0;
+  const double tolerance = std::numeric_limits<double>::epsilon();
+
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+    if ((*nitr)->levelset_phi(dis_id) == 0) continue;
+    double phi = 0;
+
+    au.setZero();
+    bu.setZero();
+
+    double particle_volume = 0;
+    double cell_volume = 0;
+    std::vector<Index> cell_list;
+    for (auto cell : (*nitr)->cells()) cell_list.push_back(cell);
+
+    for (auto cell : cell_list) {
+      double length = discontinuity_[dis_id]->width();
+      cell_volume += map_cells_[cell]->volume();
+      for (auto particle : map_cells_[cell]->particles()) {
+        auto corp = map_particles_[particle]->coordinates();
+        phi = map_particles_[particle]->levelset_phi(dis_id);
+        if (phi == 0) continue;
+        particle_volume += map_particles_[particle]->volume();
+        // compute weight
+        double w[3];
+        for (int i = 0; i < 3; i++) {
+          w[i] = 1 - std::abs(corp[i] - (*nitr)->coordinates()[i]) / length;
+          if (w[i] < 0) w[i] = 0;
+        }
+
+        double weight = w[0] * w[1] * w[2];
+        au(0, 0) += weight;
+        au(0, 1) += weight * corp[0];
+        au(0, 2) += weight * corp[1];
+        au(0, 3) += weight * corp[2];
+        au(1, 0) += weight * corp[0];
+        au(1, 1) += weight * corp[0] * corp[0];
+        au(1, 2) += weight * corp[0] * corp[1];
+        au(1, 3) += weight * corp[0] * corp[2];
+        au(2, 0) += weight * corp[1];
+        au(2, 1) += weight * corp[1] * corp[0];
+        au(2, 2) += weight * corp[1] * corp[1];
+        au(2, 3) += weight * corp[1] * corp[2];
+        au(3, 0) += weight * corp[2];
+        au(3, 1) += weight * corp[2] * corp[0];
+        au(3, 2) += weight * corp[2] * corp[1];
+        au(3, 3) += weight * corp[2] * corp[2];
+
+        bu(0, 0) += weight * phi;
+        bu(1, 0) += weight * phi * corp[0];
+        bu(2, 0) += weight * phi * corp[1];
+        bu(3, 0) += weight * phi * corp[2];
+      }
+    }
+
+    // find particles from neighbour cells
+    if (particle_volume < 0.5 * cell_volume ||
+        std::abs(au.determinant()) < tolerance) {
+      au.setZero();
+      bu.setZero();
+      for (auto cells : (*nitr)->cells()) {
+        for (auto cell : map_cells_[cells]->neighbours()) {
+          std::vector<Index>::iterator ret;
+          ret = std::find(cell_list.begin(), cell_list.end(), cell);
+          if (ret != cell_list.end()) continue;
+          cell_list.push_back(cell);
+        }
+      }
+
+      for (auto cell : cell_list) {
+        for (auto particle : map_cells_[cell]->particles()) {
+          auto corp = map_particles_[particle]->coordinates();
+          phi = map_particles_[particle]->levelset_phi(dis_id);
+          if (phi == 0) continue;
+          // compute weight
+          double length = 2 * discontinuity_[dis_id]->width();
+          double w[3];
+          for (int i = 0; i < 3; i++) {
+            w[i] = 1 - std::abs(corp[i] - (*nitr)->coordinates()[i]) / length;
+            if (w[i] < 0) w[i] = 0;
+          }
+          double weight = w[0] * w[1] * w[2];
+
+          au(0, 0) += weight;
+          au(0, 1) += weight * corp[0];
+          au(0, 2) += weight * corp[1];
+          au(0, 3) += weight * corp[2];
+          au(1, 0) += weight * corp[0];
+          au(1, 1) += weight * corp[0] * corp[0];
+          au(1, 2) += weight * corp[0] * corp[1];
+          au(1, 3) += weight * corp[0] * corp[2];
+          au(2, 0) += weight * corp[1];
+          au(2, 1) += weight * corp[1] * corp[0];
+          au(2, 2) += weight * corp[1] * corp[1];
+          au(2, 3) += weight * corp[1] * corp[2];
+          au(3, 0) += weight * corp[2];
+          au(3, 1) += weight * corp[2] * corp[0];
+          au(3, 2) += weight * corp[2] * corp[1];
+          au(3, 3) += weight * corp[2] * corp[2];
+
+          bu(0, 0) += weight * phi;
+          bu(1, 0) += weight * phi * corp[0];
+          bu(2, 0) += weight * phi * corp[1];
+          bu(3, 0) += weight * phi * corp[2];
+        }
+      }
+    }
+
+    if (std::abs(au.determinant()) < tolerance) continue;
+
+    Eigen::Vector4d coef;
+    coef.setZero();
+    for (int i = 0; i < 4; i++)
+      for (int j = 0; j < 4; j++) coef[i] += au.inverse()(i, j) * bu(j, 0);
+
+    // compute the error
+    double error = 0;
+    int error_p = 0;
+    for (auto cell : cell_list) {
+      for (auto particle : map_cells_[cell]->particles()) {
+        auto corp = map_particles_[particle]->coordinates();
+        phi = map_particles_[particle]->levelset_phi(dis_id);
+        if (phi == 0) continue;
+        double phi_mls = 1 * coef[0] + corp[0] * coef[1] + corp[1] * coef[2] +
+                         corp[2] * coef[3];
+        error += std::pow(phi_mls - phi, 2);
+        error_p += 1;
+      }
+    }
+    error = std::sqrt(error / error_p) / discontinuity_[dis_id]->width();
+
+    if (error > 1e-3) continue;
+
+    Eigen::Matrix<double, 1, 4> cor;
+    double phi_mls;
+
+    cor << 1, (*nitr)->coordinates()[0], (*nitr)->coordinates()[1],
+        (*nitr)->coordinates()[2];
+    phi_mls = cor.dot(coef);
+
+    (*nitr)->assign_levelset_phi(phi_mls, dis_id);
+  }
 }

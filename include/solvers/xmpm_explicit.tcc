@@ -141,6 +141,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
+
     // Initiation detection of discontinuity
     if (initiation_) {
       mesh_->initiation_discontinuity(maximum_pdstrain_, shield_width_,
@@ -243,54 +244,57 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
       // activate the initiation of the discontinuity
       if (discontinuity_props.contains("initiation"))
         initiation_ = discontinuity_props.at("initiation").template get<bool>();
-      // maximum number of the discontinuity
-      if (discontinuity_props.contains("maximum_num"))
-        maximum_num_ =
-            discontinuity_props.at("maximum_num").template get<int>();
-      // shield width for searching the initiation
-      if (discontinuity_props.contains("shield_width"))
-        shield_width_ =
-            discontinuity_props.at("shield_width").template get<double>();
-      // maximum_pdstrain for searching the initiation
-      if (discontinuity_props.contains("maximum_pdstrain"))
-        maximum_pdstrain_ =
-            discontinuity_props.at("maximum_pdstrain").template get<double>();
 
-      //! store the properties fot each newly generated discontinuity: cohesion,
-      //! friction_coef, contact_distance, width, move_direction,
-      //! friction_coef_average
-      double cohesion = 0;
-      double friction_coef = 0;
-      double contact_distance = 0;
-      double width = std::numeric_limits<double>::max();
-      int move_direction = 1;
-      bool friction_coef_average = false;
-      if (discontinuity_props.contains("friction_coefficient_average"))
-        friction_coef_average =
-            discontinuity_props.at("friction_coefficient_average")
-                .template get<bool>();
-      if (discontinuity_props.contains("friction_coefficient"))
-        friction_coef = discontinuity_props.at("friction_coefficient")
-                            .template get<double>();
-      // store cohesion if it's given in input file
-      if (discontinuity_props.contains("cohesion"))
-        cohesion = discontinuity_props.at("cohesion").template get<double>();
-      // store contact_distance if it's given in input file
-      if (discontinuity_props.contains("contact_distance"))
-        contact_distance =
-            discontinuity_props.at("contact_distance").template get<double>();
+      if (initiation_) {
+        // maximum number of the discontinuity
+        if (discontinuity_props.contains("maximum_num"))
+          maximum_num_ =
+              discontinuity_props.at("maximum_num").template get<int>();
+        // shield width to determine the discontinuity search region
+        if (discontinuity_props.contains("shield_width"))
+          shield_width_ =
+              discontinuity_props.at("shield_width").template get<double>();
+        // maximum_pdstrain for searching the initiation
+        if (discontinuity_props.contains("maximum_pdstrain"))
+          maximum_pdstrain_ =
+              discontinuity_props.at("maximum_pdstrain").template get<double>();
 
-      // store move direction if it's given in input file
-      if (discontinuity_props.contains("move_direction"))
-        move_direction =
-            discontinuity_props.at("move_direction").template get<int>();
-      // store width if it's given in input file
-      if (discontinuity_props.contains("width"))
-        width = discontinuity_props.at("width").template get<double>();
+        //! store the properties fot each newly generated discontinuity:
+        //! cohesion, friction_coef, contact_distance, width, move_direction,
+        //! friction_coef_average
+        double cohesion = 0;
+        double friction_coef = 0;
+        double contact_distance = 0;
+        double width = std::numeric_limits<double>::max();
+        int move_direction = 1;
+        bool friction_coef_average = false;
+        if (discontinuity_props.contains("friction_coefficient_average"))
+          friction_coef_average =
+              discontinuity_props.at("friction_coefficient_average")
+                  .template get<bool>();
+        if (discontinuity_props.contains("friction_coefficient"))
+          friction_coef = discontinuity_props.at("friction_coefficient")
+                              .template get<double>();
+        // store cohesion if it's given in input file
+        if (discontinuity_props.contains("cohesion"))
+          cohesion = discontinuity_props.at("cohesion").template get<double>();
+        // store contact_distance if it's given in input file
+        if (discontinuity_props.contains("contact_distance"))
+          contact_distance =
+              discontinuity_props.at("contact_distance").template get<double>();
 
-      initiation_property_ = std::make_tuple(
-          cohesion, friction_coef, contact_distance, width, maximum_pdstrain_,
-          move_direction, friction_coef_average);
+        // store move direction if it's given in input file
+        if (discontinuity_props.contains("move_direction"))
+          move_direction =
+              discontinuity_props.at("move_direction").template get<int>();
+        // store width if it's given in input file
+        if (discontinuity_props.contains("width"))
+          width = discontinuity_props.at("width").template get<double>();
+
+        initiation_property_ = std::make_tuple(
+            cohesion, friction_coef, contact_distance, width, maximum_pdstrain_,
+            move_direction, friction_coef_average);
+      }
 
       // generate predefined discontinuity
       auto json_generators = discontinuity_props["generator"];
@@ -299,6 +303,7 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
 
         // dis_id following the order: 0, 1, 2 ...
         int dis_id = json_generator["id"].template get<int>();
+
         // Get discontinuity type
         const std::string type =
             json_generator["type"].template get<std::string>();
@@ -308,46 +313,40 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
                                      unsigned>::instance()
                                  ->create(type, json_generator, dis_id);
 
-        // Get discontinuity  input type
+        // Get discontinuity input type
         auto io_type = json_generator["io_type"].template get<std::string>();
+        // Create a mesh reader
+        auto discontinuity_io =
+            Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
 
         // discontinuity file
         std::string discontinuity_file =
             io_->file_name(json_generator["file"].template get<std::string>());
 
         if (discontinuity->description_type() == "mark_points") {
-
-          // Create a mesh reader
-          auto discontunity_io =
-              Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
-
           // Create points and cells from file
           discontinuity->initialise(
-              discontunity_io->read_mesh_nodes(discontinuity_file),
-              discontunity_io->read_mesh_cells(discontinuity_file));
+              discontinuity_io->read_mesh_nodes(discontinuity_file),
+              discontinuity_io->read_mesh_cells(discontinuity_file));
+
           mesh_->insert_discontinuity(discontinuity);
           // initialise particle level set values by the discontinuity mesh
           mesh_->initialise_levelset_discontinuity(dis_id);
 
         } else if (discontinuity->description_type() == "particle_levelset") {
           mesh_->insert_discontinuity(discontinuity);
-          // Create a mesh reader
-          auto discontunity_io =
-              Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
           if (!discontinuity_file.empty()) {
             mesh_->assign_particles_levelset(
-                discontunity_io->read_id_levelset(discontinuity_file), dis_id);
+                discontinuity_io->read_id_levelset(discontinuity_file), dis_id);
           }
 
-        } else if (discontinuity->description_type() == "node_levelset") {
+        }
+        // TODO: Check node levelset for predetermined discontinuities
+        else if (discontinuity->description_type() == "node_levelset") {
           mesh_->insert_discontinuity(discontinuity);
-          // Create a mesh reader
-          auto discontunity_io =
-              Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
-
           if (!discontinuity_file.empty()) {
             mesh_->assign_nodes_levelset(
-                discontunity_io->read_id_levelset(discontinuity_file), dis_id);
+                discontinuity_io->read_id_levelset(discontinuity_file), dis_id);
           }
         }
       }

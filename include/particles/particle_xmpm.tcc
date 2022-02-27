@@ -604,14 +604,17 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
                                                       unsigned dis_id) {
 
   // compute the elasto plastic tensor
-  bool yield_status = true;
   Eigen::Matrix<double, 6, 6> dp =
       (this->material())
           ->compute_elasto_plastic_tensor(
               stress_, dstrain_, this,
               &state_variables_[mpm::ParticlePhase::Solid], false);
 
-  if (!yield_status) return false;
+  // Check if yield status is shear (i.e. 1.0)
+  // NOTE: currently only supporting shear discontinuity
+  const double yield_status = this->state_variable("yield_state");
+  if (!(std::abs(yield_status - 1.0) < std::numeric_limits<double>::epsilon()))
+    return false;
 
   Eigen::Matrix<int, 3, 3> index;
   // clang-format off
@@ -619,22 +622,15 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
            3, 1, 4,
            5, 4, 2;
   // clang-format on
-  Eigen::Matrix<double, 3, 1> normal_cellcenter;
-  normal_cellcenter.setZero();
-  // compute the initial direction
+
+  // compute the initial guess of normal direction
+  Eigen::Matrix<double, 3, 1> normal_cellcenter =
+      Eigen::Matrix<double, 3, 1>::Zero();
   if (!initiation) {
-
-    for (int i = 0; i < nodes_.size(); i++) {
-      double levelset = nodes_[i]->levelset_phi(dis_id);
-      for (int j = 0; j < 3; j++)
-        normal_cellcenter[j] += dn_dx_centroid_(i, j) * levelset;
-    }
     normal_cellcenter = cell_->normal_discontinuity(dis_id);
-  }
-
-  if (initiation) {
+  } else {
     //! compute the gradient of displacement dot direction
-    compute_initiation_normal(normal_cellcenter);
+    compute_initiation_normal(normal_cellcenter, dp);
     initiation = false;
   }
 
@@ -647,80 +643,86 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
   double uk = 0;
   double uk1;
   // Maximum number, tolerance and error of iterations
-  int itr_max = 1000;
-  double itr_tol = 1e-9;
+  const int itr_max = 1000;
+  const double itr_tol = 1e-9;
   double itr_error = 1;
 
   Eigen::Matrix<double, 3, 3> A;
   Eigen::Matrix<double, 3, 3> J;
   double eigenvalue_j[3]{0};
 
+  // Newton-Raphson's loop to minimize determinant of acoustic tensor
   for (int itr = 0; itr < itr_max; ++itr) {
+    // Check convergence
     if (itr_error < itr_tol) break;
+
     // Compute matrix A
     A.setZero();
     for (int m = 0; m < 3; m++)
-      for (int n = 0; n < 3; n++) {
-
+      for (int n = 0; n < 3; n++)
         for (int r = 0; r < 3; r++)
           for (int s = 0; s < 3; s++)
             A(m, n) += nk(r) * nk(s) * dp(index(m, r), index(n, s));
-      }
-    // Determinant of matrix A
-    double det_A = A.determinant();
+
+    // Determinant and inverse of matrix A
+    const double det_A = A.determinant();
     Eigen::Matrix<double, 3, 3> inv_A = A.inverse();
+
     // Compute matrix J
     J.setZero();
     for (int m = 0; m < 3; m++)
-      for (int n = 0; n < 3; n++) {
-
+      for (int n = 0; n < 3; n++)
         for (int r = 0; r < 3; r++)
           for (int s = 0; s < 3; s++)
             J(m, n) += inv_A(r, s) * (dp(index(m, s), index(r, n)) +
                                       dp(index(n, s), index(r, m)));
-      }
-    J = J * 0.5 * det_A;
+
+    J *= 0.5 * det_A;
 
     Eigen::EigenSolver<Eigen::Matrix3d> eigen_J(J);
     auto eigenvalues = eigen_J.pseudoEigenvalueMatrix();
     auto eigenvectors = eigen_J.pseudoEigenvectors();
 
-    double project = -1e6;
+    double max_prod = -1e6;
     for (int i = 0; i < 3; ++i) {
       Eigen::Matrix<double, 3, 1> eigen = eigenvectors.col(i);
       eigenvalue_j[i] = eigenvalues(i, i);
 
       if (eigen.dot(nk) < 0) eigen = -eigen;
-      if (std::abs(eigen.dot(nk)) < project) continue;
+      if (std::abs(eigen.dot(nk)) < max_prod) continue;
 
-      project = std::abs(eigen.dot(nk));
+      max_prod = std::abs(eigen.dot(nk));
       nk1 = eigen;
       uk1 = eigenvalues(i, i);
     }
+
     // Compute error
     itr_error = (nk1 - nk).norm() + std::abs(uk1 / uk - 1);
     nk = nk1;
     uk = uk1;
+
     // Lower requirement for the iteration
-    if (itr >= 999) {
+    if (itr == itr_max - 1) {
       if (itr_error < 1e-6) continue;
       nk = normal_cellcenter;
     }
   }
+
   // The direction keep consistant
   if (normal_cellcenter.dot(nk) < 0) nk = -nk;
   normal_cell = nk;
+
   return true;
 }
 
+//! Compute the initiation normal direction of discontinuity
 template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
-    VectorDim& normal_initiation) {
+    VectorDim& normal_initiation, const Eigen::Matrix<double, 6, 6>& dp) {
 
   double dtheta = 1;
   const double PI = M_PI / 180;
 
-  // Loop all the direction
   // Variables used in the loop
   VectorDim normal_m;
   VectorDim normal_m1;
@@ -732,61 +734,49 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
   Eigen::Matrix<double, 3, 3> dp_n;
   Eigen::Matrix<double, 3, 3> de_n;
 
-  double det_de_n;
-  double det_dp_n;
   double max_dudxmn = 0;
-
-  Eigen::Matrix<double, 6, 6> dp =
-      (this->material())
-          ->compute_elasto_plastic_tensor(
-              stress_, dstrain_, this,
-              &state_variables_[mpm::ParticlePhase::Solid], false);
 
   Eigen::Matrix<double, 6, 6> de =
       (this->material())
           ->compute_elastic_tensor(
               stress_, &state_variables_[mpm::ParticlePhase::Solid]);
+
   // clang-format off
   Eigen::Matrix<int, 3, 3> index;
   index << 0, 3, 5,
            3, 1, 4,
            5, 4, 2;
   // clang-format on
+
+  // Search loop in all direction assuming 1 degree increment
   for (int i = 0; i < std::floor(360 / dtheta); i++) {
     for (int j = 0; j < 180; j++) {
-      double theta = i * dtheta * PI;
-      double phi = j * dtheta * PI;
+      const double theta = i * dtheta * PI;
+      const double phi = j * dtheta * PI;
       normal << std::cos(phi) * std::cos(theta),
           std::cos(phi) * std::sin(theta), std::sin(phi);
 
       dp_n.setZero();
       de_n.setZero();
-      for (int m = 0; m < 3; m++)
+      for (int m = 0; m < 3; m++) {
         for (int n = 0; n < 3; n++) {
-
           for (int r = 0; r < 3; r++)
-            for (int s = 0; s < 3; s++)
+            for (int s = 0; s < 3; s++) {
               dp_n(m, n) +=
                   normal(r) * normal(s) * dp(index(m, r), index(n, s));
-        }
-
-      det_dp_n = dp_n.determinant();
-      for (int m = 0; m < 3; m++)
-        for (int n = 0; n < 3; n++) {
-
-          for (int r = 0; r < 3; r++)
-            for (int s = 0; s < 3; s++)
               de_n(m, n) +=
                   normal(r) * normal(s) * de(index(m, r), index(n, s));
+            }
         }
+      }
 
-      det_de_n = de_n.determinant();
-      double ratio = det_dp_n / det_de_n;
+      const double det_dp_n = dp_n.determinant();
+      const double det_de_n = de_n.determinant();
+
+      const double ratio = det_dp_n / det_de_n;
       if (ratio > 0.01) continue;
 
-      dudx_n.setZero();
-      for (unsigned m = 0; m < 3; m++)
-        for (unsigned n = 0; n < 3; n++) dudx_n[m] += du_dx_(m, n) * normal[n];
+      dudx_n = du_dx_ * normal;
 
       normal_m1 << std::sin(theta), -std::cos(theta), 0;
       normal_m2 = normal.cross(normal_m1);
@@ -794,12 +784,11 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
       a1 = dudx_n.dot(normal_m1);
       a2 = dudx_n.dot(normal_m2);
 
-      double angle = 0;
+      double angle = std::atan(a2 / a1);
+      if (std::abs(a1) < std::numeric_limits<double>::epsilon()) angle = M_PI_2;
 
-      angle = std::atan(a2 / a1);
-      if (a1 == 0) angle = M_PI_2;
-
-      double dudx_mn = std::abs(a1 * std::cos(angle) + a2 * std::sin(angle));
+      const double dudx_mn =
+          std::abs(a1 * std::cos(angle) + a2 * std::sin(angle));
       if (dudx_mn > max_dudxmn) {
         max_dudxmn = dudx_mn;
         normal_initiation = normal;

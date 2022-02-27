@@ -67,8 +67,9 @@ void mpm::Cell<Tdim>::compute_discontinuity_point(
   Eigen::Matrix<double, Tdim, 1> center =
       this->discontinuity_element_[dis_id]->cohesion_cor();
 
-  int index_line[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {0, 4}, {1, 5},
-                           {2, 6}, {3, 7}, {4, 5}, {5, 6}, {6, 7}, {7, 4}};
+  const int index_line[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0},
+                                 {0, 4}, {1, 5}, {2, 6}, {3, 7},
+                                 {4, 5}, {5, 6}, {6, 7}, {7, 4}};
   for (int i = 0; i < 12; i++) {
 
     double phi[2];
@@ -88,10 +89,9 @@ void mpm::Cell<Tdim>::compute_discontinuity_point(
 
   if (intersections_list.size() < 3) return;
 
-  Eigen::Matrix<double, Tdim, 1> cor;
-  cor.setZero();
+  Eigen::Matrix<double, Tdim, 1> cor = Eigen::Matrix<double, Tdim, 1>::Zero();
   for (int i = 0; i < intersections_list.size(); i++)
-    cor += 1.0 / intersections_list.size() * intersections_list[i];
+    cor.noalias() += 1.0 / intersections_list.size() * intersections_list[i];
   coordinates.push_back(cor);
 }
 
@@ -155,7 +155,6 @@ double mpm::Cell<Tdim>::product_levelset(unsigned dis_id) {
   double levelset_max = -std::numeric_limits<double>::max();
   double levelset_min = std::numeric_limits<double>::max();
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-
     double levelset = nodes_[i]->levelset_phi(dis_id);
     levelset_max = levelset > levelset_max ? levelset : levelset_max;
     levelset_min = levelset < levelset_min ? levelset : levelset_min;
@@ -184,7 +183,7 @@ void mpm::Cell<Tdim>::determine_crossed(unsigned dis_id) {
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_nodal_levelset_equation(unsigned dis_id) {
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    auto coor = nodes_[i]->coordinates();
+    const auto& coor = nodes_[i]->coordinates();
     double phi = 0;
     for (unsigned int j = 0; j < Tdim; j++)
       phi += coor[j] *

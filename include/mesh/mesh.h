@@ -581,7 +581,7 @@ class Mesh {
 
   //! Assign node type as enrich
   //! \ingroup XMPM
-  //! \param[in] discontinuity id
+  //! \param[in] dis_id discontinuity id
   void assign_node_enrich(unsigned dis_id);
 
   //! Assign self contact properties
@@ -595,21 +595,22 @@ class Mesh {
 
   //! The initiation of discontinuity
   //! \ingroup XMPM
-  //! \param[in] The critical value of the initiation
-  //! \param[in] only search the region outside the region
-  //! \param[in] the maximum number of the discontinuity
-  //! \param[in] initiation property of the discontinuity
+  //! \param[in] maximum_pdstrain The critical value of the initiation
+  //! \param[in] shield_width only search the region outside the region
+  //! \param[in] maximum_num the maximum number of the discontinuity
+  //! \param[in] initiation_property initiation property of the discontinuity
   void initiation_discontinuity(
       double maximum_pdstrain, double shield_width, int maximum_num,
       std::tuple<double, double, double, double, double, int, bool>&
           initiation_property);
+
   //! The propagation of discontinuity
   //! \ingroup XMPM
   void propagation_discontinuity();
 
   //! Adjust the nodal levelset_phi by mls
   //! \ingroup XMPM
-  //! \param[in] discontinuity id
+  //! \param[in] dis_id discontinuity id
   void modify_nodal_levelset_mls(unsigned dis_id);
 
   //! Compute the distance between two sides of discontinuity
@@ -618,8 +619,8 @@ class Mesh {
 
   //! Assign the level set values to the particles which just enter the crossed
   //! \ingroup XMPM
-  //! \param[in] the way to initialise the discontinuity
-  //! \param[in] discontinuity id
+  //! \param[in] particle_levelset the way to initialise the discontinuity
+  //! \param[in] dis_id discontinuity id
   void check_particle_levelset(bool particle_levelset, unsigned dis_id);
 
   //! Read HDF5 particles for xmpm particle

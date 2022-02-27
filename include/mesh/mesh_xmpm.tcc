@@ -624,23 +624,31 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
       // search the region outside of the other discontinuity
       bool near_dis = false;
       for (int j = 0; j < discontinuity_num(); ++j) {
-        if (map_particles_[i]->levelset_phi(j) != 0 &&
+        if (std::abs(map_particles_[i]->levelset_phi(j)) <
+                std::numeric_limits<double>::epsilon() &&
             std::abs(map_particles_[i]->levelset_phi(j)) < shield_width)
           near_dis = true;
       }
-      if (near_dis) continue;
-      double pdstrain = map_particles_[i]->state_variable("pdstrain");
 
+      // If it is near discontinuity, then don't check for initiation
+      if (near_dis) continue;
+
+      // Assign maximum pdstrain
+      double pdstrain = map_particles_[i]->state_variable("pdstrain");
       if (pdstrain > particle_max_pdstrain) {
         particle_max_pdstrain = pdstrain;
         pid = i;
       }
     }
+
     // compare with the critical pdstrain
     if (particle_max_pdstrain <= maximum_pdstrain) return;
+
+    // Compute normal direction that minimize determinant of Accoustic tensor
     VectorDim normal;
     bool initiation =
         map_particles_[pid]->minimum_acoustic_tensor(normal, true);
+
     // generate new discontinuity
     if (initiation) {
 
@@ -655,19 +663,18 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
                                ->create(type, dis_id, initiation_property);
 
       insert_discontinuity(discontinuity);
+
+      // Assign cell tip type
       auto cell_id = map_particles_[pid]->cell_id();
       map_cells_[cell_id]->assign_type_discontinuity(
           mpm::EnrichType::InitialTip, dis_id);
-      // assign normal direction to tip cell
-      map_cells_[cell_id]->assign_normal_discontinuity(normal, dis_id);
+
+      // compute constant parameter of plane equation
       auto center = map_cells_[cell_id]->centroid();
+      const double d = -center.dot(normal);
 
-      double d = 0;
-      // compute constant parameter
-      for (unsigned int i = 0; i < Tdim; i++) d -= center[i] * normal[i];
-
+      // assign normal direction to tip cell
       map_cells_[cell_id]->assign_normal_discontinuity(normal, d, dis_id);
-
       map_cells_[cell_id]->compute_nodal_levelset_equation(dis_id);
 
       // compute mark point position
@@ -677,18 +684,25 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
       for (int i = 0; i < coordinates_dis.size(); i++)
         discontinuity_[dis_id]->insert_particles(coordinates_dis[i], cells_,
                                                  map_cells_);
+
       // initialise neighbour cells
       auto neighbours = map_cells_[cell_id]->neighbours();
       for (auto neighbour : neighbours) {
+        // Skip if neighbour cell is empty
         if (map_cells_[neighbour]->nparticles() == 0) continue;
+
+        // Assign type to neighbour cells
         map_cells_[neighbour]->assign_type_discontinuity(
             mpm::EnrichType::NeighbourTip_1, dis_id);
-        // the same plane equation with the tip cell
+
+        // The same plane equation is used as the tip cell
         map_cells_[neighbour]->assign_normal_discontinuity(normal, d, dis_id);
         map_cells_[neighbour]->compute_nodal_levelset_equation(dis_id);
         if (map_cells_[neighbour]->product_levelset(dis_id) >= 0) continue;
+
         map_cells_[neighbour]->assign_type_discontinuity(
             mpm::EnrichType::InitialTip, dis_id);
+
         // compute mark point position
         std::vector<VectorDim> coordinates_dis_neigh;
         map_cells_[neighbour]->compute_discontinuity_point(
@@ -699,16 +713,19 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
                                                    cells_, map_cells_);
         }
       }
-      // initialise particle level set values
+
+      // initialise particle level set values nearby the discontinuity
       for (int i = 0; i < nparticles(); ++i) {
+        // Check for each direction whether the distance is too far
         bool neighbour = true;
         for (int j = 0; j < Tdim; j++) {
-
           if (std::abs(center[j] - particles_[i]->coordinates()[j]) >
               3.5 * discontinuity_[dis_id]->width())
             neighbour = false;
         }
         if (!neighbour) continue;
+
+        // Compute phi from the equation of plane
         double phi = particles_[i]->coordinates().dot(normal) + d;
         particles_[i]->assign_levelsetphi(phi, dis_id);
       }

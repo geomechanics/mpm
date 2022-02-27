@@ -119,9 +119,11 @@ class ParticleXMPM : public Particle<Tdim> {
   bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation,
                                unsigned dis_id = 0);
 
-  //! compute the initiation normal direction
-  //! \param[in] initiation normal direction
-  void compute_initiation_normal(VectorDim& normal);
+  //! Compute the initiation normal direction of discontinuity
+  //! \param[in] normal initiation normal direction
+  //! \param[in] dp elasto-perfect plastic constitutive tensor
+  void compute_initiation_normal(VectorDim& normal,
+                                 const Eigen::Matrix<double, 6, 6>& dp);
 
   //! Reset the size of the discontinuity
   //! \ingroup XMPM

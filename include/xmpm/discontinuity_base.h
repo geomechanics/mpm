@@ -125,7 +125,7 @@ class DiscontinuityBase {
   void insert_particles(VectorDim& point, const Vector<Cell<Tdim>>& cells,
                         const Map<Cell<Tdim>>& map_cells);
 
-  //! to do:output mark points
+  //! TODO: to do:output mark points
   void output_markpoints(int step);
 
   //! Return propagation

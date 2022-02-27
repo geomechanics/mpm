@@ -990,6 +990,7 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::propagation_discontinuity() {
 
   if (discontinuity_num() == 0) return;
+
   // Initialise element properties
   iterate_over_cells(
       std::bind(&mpm::Cell<Tdim>::initialise_element_properties_discontinuity,

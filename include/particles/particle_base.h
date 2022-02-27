@@ -388,7 +388,7 @@ class ParticleBase {
         "illegal operation!");
   };
 
-  //! Compute displacement
+  //! Compute displacement gradient of particle
   //! \ingroup XMPM
   //! \param[in] dt Analysis time step
   virtual inline void compute_displacement_gradient(double dt) {

@@ -343,7 +343,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   Eigen::Matrix<double, Tdim, 3> external_force_enrich_;
   //! Enrich type of the node
   mpm::NodeEnrichType enrich_type_;
-  //! Contact dedection by distance
+  //! Contact detection by distance
   Eigen::Matrix<bool, 6, 1> contact_detection_;
 };  // Node XMPM class
 }  // namespace mpm

@@ -116,31 +116,27 @@ void mpm::discontinuity_point<Tdim>::compute_updated_position(
     const double dt, int move_direction) noexcept {
   // Check if point has a valid cell ptr
   if (cell_ == nullptr) return;
+
   // Get interpolated nodal velocity
   Eigen::Matrix<double, Tdim, 1> nodal_velocity =
       Eigen::Matrix<double, Tdim, 1>::Zero();
   const double tolerance = 1.E-16;
   unsigned int phase = 0;
-  // need to do, points move with which side
+
+  // TODO: need to do, points move with which side
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // branch
+    // nodal mass and momentum
     double nodal_mass = nodes_[i]->mass(phase);
-
     auto nodal_momentum = nodes_[i]->momentum(phase);
+    const auto& nodal_mass_enrich = nodes_[i]->mass_enrich();
+    const auto& nodal_momentum_enrich = nodes_[i]->momentum_enrich();
 
-    // if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
-
-    auto nodal_mass_enrich = nodes_[i]->mass_enrich();
-
-    auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
-
-    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    // TODO: to be checked
+    const auto discontinuity_id = nodes_[i]->discontinuity_id();
 
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
-
       nodal_mass += nodal_mass_enrich[0] * move_direction;
       nodal_momentum.col(0) += nodal_momentum_enrich.col(0) * move_direction;
-
     } else if (nodes_[i]->enrich_type() ==
                mpm::NodeEnrichType::double_enriched) {
       nodal_mass += nodal_mass_enrich[0] * move_direction +
@@ -156,7 +152,8 @@ void mpm::discontinuity_point<Tdim>::compute_updated_position(
 
     nodal_velocity += shapefn_[i] * nodal_momentum / nodal_mass;
   }
-  // New position  current position + velocity * dt
+
+  // New position current position += velocity * dt
   this->coordinates_ += nodal_velocity * dt;
 }
 

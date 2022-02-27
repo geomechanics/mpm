@@ -14,7 +14,7 @@ template <unsigned Tdim>
 bool mpm::ParticleXMPM<Tdim>::initialise_particle(PODParticle& particle) {
   bool status = mpm::Particle<Tdim>::initialise_particle(particle);
   // auto xmpm_particle = reinterpret_cast<PODParticleXMPM*>(&particle);
-  // yliang to do list 2
+  // TODO: yliang to do list 2
   // this->levelset_phi_[0] = xmpm_particle->levelset_phi;
 
   return status;
@@ -119,7 +119,7 @@ std::shared_ptr<void> mpm::ParticleXMPM<Tdim>::pod() const {
     }
   }
 
-  // yliang to do list 2
+  // TODO: yliang to do list 2
   // particle_data->levelset_phi = levelset_phi_[0];
   return particle_data;
 }
@@ -458,27 +458,23 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
 
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
-  // Get interpolated nodal velocity
+
+  // Compute total nodal velocity
   Eigen::Matrix<double, Tdim, 1> nodal_velocity =
       Eigen::Matrix<double, Tdim, 1>::Zero();
   const double tolerance = 1.E-16;
   unsigned int phase = mpm::ParticlePhase::Solid;
+
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // branch
+    // Nodal mass and momentum
     double nodal_mass = nodes_[i]->mass(phase);
-
     auto nodal_momentum = nodes_[i]->momentum(phase);
-
-    // if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
-
-    auto nodal_mass_enrich = nodes_[i]->mass_enrich();
-
-    auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+    const auto& nodal_mass_enrich = nodes_[i]->mass_enrich();
+    const auto& nodal_momentum_enrich = nodes_[i]->momentum_enrich();
 
     auto discontinuity_id = nodes_[i]->discontinuity_id();
 
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
-
       nodal_mass +=
           nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]);
       nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
@@ -502,8 +498,10 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
     }
     if (nodal_mass < tolerance) continue;
 
+    // Total nodal velocity
     nodal_velocity += shapefn_[i] * nodal_momentum / nodal_mass;
   }
+
   Eigen::Matrix<double, Tdim, 1> nodal_velocity_enrich =
       Eigen::Matrix<double, Tdim, 1>::Zero();
   // Acceleration update
@@ -513,44 +511,50 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
     for (unsigned i = 0; i < nodes_.size(); ++i) {
-
+      // For regular nodes
       if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) {
-        double nodal_mass = nodes_[i]->mass(phase);
+        const double nodal_mass = nodes_[i]->mass(phase);
         if (nodal_mass < tolerance) continue;
 
-        auto force =
+        const auto force =
             nodes_[i]->internal_force(phase) + nodes_[i]->external_force(phase);
 
         nodal_acceleration += shapefn_[i] * force / nodal_mass;
 
-      } else if (nodes_[i]->enrich_type() ==
-                 mpm::NodeEnrichType::single_enriched) {
+      }
+      // For nodes with enrichment of one discontinuity
+      else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::single_enriched) {
 
         auto discontinuity_id = nodes_[i]->discontinuity_id();
 
         double nodal_mass = nodes_[i]->mass(phase);
         auto nodal_momentum = nodes_[i]->momentum(phase);
-        auto nodal_mass_enrich = nodes_[i]->mass_enrich();
-        auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+        const auto& nodal_mass_enrich = nodes_[i]->mass_enrich();
+        const auto& nodal_momentum_enrich = nodes_[i]->momentum_enrich();
 
         nodal_mass +=
             nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]);
 
+        // Check mass
         if (nodal_mass < tolerance) continue;
+
         nodal_momentum.col(0) += nodal_momentum_enrich.col(0) *
                                  sgn(levelset_phi_[discontinuity_id[0]]);
 
         nodal_velocity_enrich += shapefn_[i] * nodal_momentum / nodal_mass;
         shapefn_enrich += shapefn_[i];
-      } else if (nodes_[i]->enrich_type() ==
-                 mpm::NodeEnrichType::double_enriched) {
+      }
+      // For enriched nodes in two discontinuities case
+      else if (nodes_[i]->enrich_type() ==
+               mpm::NodeEnrichType::double_enriched) {
 
         double nodal_mass = nodes_[i]->mass(phase);
         auto nodal_momentum = nodes_[i]->momentum(phase);
-        auto nodal_mass_enrich = nodes_[i]->mass_enrich();
-        auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+        const auto& nodal_mass_enrich = nodes_[i]->mass_enrich();
+        const auto& nodal_momentum_enrich = nodes_[i]->momentum_enrich();
 
-        auto discontinuity_id = nodes_[i]->discontinuity_id();
+        const auto discontinuity_id = nodes_[i]->discontinuity_id();
         nodal_mass +=
             nodal_mass_enrich[0] * sgn(levelset_phi_[discontinuity_id[0]]) +
             nodal_mass_enrich[1] * sgn(levelset_phi_[discontinuity_id[1]]) +
@@ -566,22 +570,24 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
                                  nodal_momentum_enrich.col(2) *
                                      sgn(levelset_phi_[discontinuity_id[0]]) *
                                      sgn(levelset_phi_[discontinuity_id[1]]);
+
         nodal_velocity_enrich += shapefn_[i] * nodal_momentum / nodal_mass;
         shapefn_enrich += shapefn_[i];
       }
     }
 
-    // Update particle velocity from interpolated nodal acceleration
+    // Update particle velocity from interpolated nodal acceleration with
+    // regularization
     this->velocity_ = nodal_velocity_enrich +
                       (1 - shapefn_enrich) * this->velocity_ +
                       nodal_acceleration * dt;
-  }
-  // Update particle velocity using interpolated nodal velocity
-  else
+  } else
+    // Update particle velocity using interpolated nodal velocity
     this->velocity_ = nodal_velocity;
 
   // New position  current position + velocity * dt
   this->coordinates_ += nodal_velocity * dt;
+
   // Update displacement (displacement is initialized from zero)
   this->displacement_ += nodal_velocity * dt;
 }
@@ -797,7 +803,7 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
   }
 }
 
-// Compute du_dx_ of the particle
+// Compute displacement gradient of the particle
 template <>
 void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
   // Define strain rate
@@ -812,14 +818,10 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     // nodal regular and enriched information
     double nodal_mass = nodes_[i]->mass(phase);
-
     auto nodal_momentum = nodes_[i]->momentum(phase);
-
-    auto nodal_mass_enrich = nodes_[i]->mass_enrich();
-
-    auto nodal_momentum_enrich = nodes_[i]->momentum_enrich();
-
-    auto discontinuity_id = nodes_[i]->discontinuity_id();
+    const auto& nodal_mass_enrich = nodes_[i]->mass_enrich();
+    const auto& nodal_momentum_enrich = nodes_[i]->momentum_enrich();
+    const auto& discontinuity_id = nodes_[i]->discontinuity_id();
 
     // update the mass and momentum for enriched nodes
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {

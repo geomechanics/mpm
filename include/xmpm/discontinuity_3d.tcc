@@ -119,7 +119,6 @@ Eigen::Matrix<double, Tdim, 1> mpm::Discontinuity3D<Tdim>::three_cross_product(
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
                                                   double& phi_particle) {
-  // find the nearest distance from particle to cell: need to do by global
   // searching and local searching
   double min_distance = std::numeric_limits<double>::max();
   double vertical_distance = std::numeric_limits<double>::max();
@@ -142,8 +141,6 @@ void mpm::Discontinuity3D<Tdim>::compute_levelset(const VectorDim& coordinates,
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::compute_normal(const VectorDim& coordinates,
                                                 VectorDim& normal_vector) {
-  // find the nearest distance from particle to cell: need to do better by
-  // global searching and local searching
   double min_distance = std::numeric_limits<double>::max();
   for (const auto& surf : surfaces_) {
     double distance = surf.ptocenter_distance(coordinates);

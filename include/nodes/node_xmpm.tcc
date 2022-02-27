@@ -38,6 +38,7 @@ bool mpm::NodeXMPM<Tdim, Tdof, Tnphases>::compute_momentum_discontinuity(
       momentum_.col(phase) + (this->internal_force(phase).col(phase) +
                               this->external_force(phase).col(phase)) *
                                  dt;
+
   if (enrich_type_ != mpm::NodeEnrichType::regular) {
     for (unsigned int i = 0; i < 3; i++)
       momentum_enrich_.col(i) +=
@@ -48,8 +49,11 @@ bool mpm::NodeXMPM<Tdim, Tdof, Tnphases>::compute_momentum_discontinuity(
   // when velocity is set.
   this->apply_velocity_constraints();
 
+  // Apply contact treatment
   this->self_contact_discontinuity(dt);
 
+  // Re-apply velocity constraints after contact is considered to properly
+  // enforced boundary conditions
   this->apply_velocity_constraints();
 
   return true;
@@ -63,19 +67,15 @@ bool mpm::NodeXMPM<Tdim, Tdof, Tnphases>::
   const double tolerance = 1.0E-15;
 
   if (enrich_type_ == mpm::NodeEnrichType::regular) {
-
     if (mass_.col(phase)(0, 0) > tolerance) {
-
-      auto unbalanced_force =
+      const auto unbalanced_force =
           this->external_force_.col(phase) + this->internal_force_.col(phase);
       this->external_force_.col(phase) -=
           damping_factor * unbalanced_force.norm() *
           this->momentum_.col(phase).normalized();
     }
-
   } else {
-
-    // yliang to do list 1
+    // TODO: yliang to do list 1
     // // obtain the enriched values of enriched nodes
     // double mass_enrich = property_handle_->property(
     //     "mass_enrich", discontinuity_prop_id_, 0, 1)(0, 0);
@@ -152,8 +152,10 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::apply_velocity_constraints() {
     this->internal_force_(direction, phase) = 0;
     this->external_force_(direction, phase) = 0;
 
+    // Continue if it is regular nodes
     if (enrich_type_ == mpm::NodeEnrichType::regular) continue;
 
+    // Specific for enrich nodes
     for (int i = 0; i < 3; i++) {
       momentum_enrich_.col(i)[direction] = mass_enrich_[i] * constraint.second;
       internal_force_enrich_.col(i)[direction] = 0;
@@ -215,103 +217,115 @@ template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
     double dt) {
 
+  // Regular nodes
   if (enrich_type_ == mpm::NodeEnrichType::regular) return;
 
-  //  single phase for solid
-  unsigned phase = 0;
+  // Single phase
+  const unsigned phase = mpm::NodePhase::NSinglePhase;
   const double tolerance = 1.0E-16;
 
+  // Contact treatment of single discontinuity
   if (enrich_type_ == mpm::NodeEnrichType::single_enriched) {
-
-    Eigen::Matrix<double, Tdim, 1> normal_vector =
-        normal_[discontinuity_id_[0]];
-
+    // Exit if not in contact
     if (!contact_detection_[0]) return;
 
-    // mass for different sides, _p = _positive, _n = _negative
-    double mass_p = mass_(phase) + mass_enrich_[0];
-    double mass_n = mass_(phase) - mass_enrich_[0];
+    // Get normal vector
+    const Eigen::Matrix<double, Tdim, 1>& normal_vector =
+        normal_[discontinuity_id_[0]];
 
+    // Mass for different sides, _p = _positive, _n = _negative
+    const double mass_p = mass_(phase) + mass_enrich_[0];
+    const double mass_n = mass_(phase) - mass_enrich_[0];
+
+    // Exit if nodal masses are zero
     if (mass_p < tolerance || mass_n < tolerance) return;
 
-    // velocity for different sides
-    auto velocity_p = (momentum_.col(phase) + momentum_enrich_.col(0)) / mass_p;
-    auto velocity_n = (momentum_.col(phase) - momentum_enrich_.col(0)) / mass_n;
+    // Velocity for different sides
+    const auto velocity_p =
+        (momentum_.col(phase) + momentum_enrich_.col(0)) / mass_p;
+    const auto velocity_n =
+        (momentum_.col(phase) - momentum_enrich_.col(0)) / mass_n;
 
-    // relative normal velocity
+    // Relative normal velocity
     if ((velocity_p - velocity_n).col(phase).dot(normal_vector) >= 0) return;
 
-    // the contact momentum, force vector for sticking contact
-    auto momentum_contact = (mass_enrich_[0] * momentum_.col(phase) -
-                             mass_(phase) * momentum_enrich_.col(0)) /
-                            mass_(phase);
-    auto force_contact = momentum_contact / dt;
+    // Contact momentum, force vector for sticking contact
+    const auto momentum_contact = (mass_enrich_[0] * momentum_.col(phase) -
+                                   mass_(phase) * momentum_enrich_.col(0)) /
+                                  mass_(phase);
+    const auto force_contact = momentum_contact / dt;
 
+    // For sticking contact
     if (friction_coef_[0] < 0) {
-      momentum_enrich_.col(0) += momentum_contact.col(phase);
-      external_force_enrich_.col(0) += force_contact.col(phase);
-    } else {
-      // the contact momentum, force value for sticking contact at normal
-      // direction
-      double momentum_contact_norm =
-          momentum_contact.col(phase).dot(normal_vector);
-      double force_contact_norm = momentum_contact_norm / dt;
-
-      // the cohesion at nodes
-      double cohesion = cohesion_[0];
-
-      double max_friction_force = friction_coef_[0] * abs(force_contact_norm) +
-                                  2 * cohesion * cohesion_area_[0];
-
-      // the contact momentum, force vector for sticking contact at tangential
-      // direction
-      auto momentum_tangential =
-          momentum_contact.col(phase) - momentum_contact_norm * normal_vector;
-      auto force_tangential = momentum_tangential / dt;
-
-      // the friction force magnitude
-      double force_tangential_value = force_tangential.norm();
-
-      double force_friction = force_tangential_value < max_friction_force
-                                  ? force_tangential_value
-                                  : max_friction_force;
-
-      // adjust the momentum and force
-      momentum_enrich_.col(0) +=
-          momentum_contact_norm * normal_vector +
-          force_friction * force_tangential.col(phase).normalized() * dt;
-      external_force_enrich_.col(0) +=
-          force_contact_norm * normal_vector +
-          force_friction * force_tangential.col(phase).normalized();
+      momentum_enrich_.col(0).noalias() += momentum_contact.col(phase);
+      external_force_enrich_.col(0).noalias() += force_contact.col(phase);
     }
-  } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
+    // For frictional contact
+    else {
+      // Contact momentum, force values for sticking contact at normal
+      // direction
+      const double momentum_contact_norm =
+          momentum_contact.col(phase).dot(normal_vector);
+      const double force_contact_norm = momentum_contact_norm / dt;
 
-    int itr_max = 100;
-    double itr_tol = 1e-6;
+      // Cohesion at nodes
+      const double cohesion = cohesion_[0];
+
+      // Maximum friction force (assuming Coulomb's law)
+      const double max_friction_force =
+          friction_coef_[0] * abs(force_contact_norm) +
+          2 * cohesion * cohesion_area_[0];
+
+      // Contact momentum, force vector for sticking contact at tangential
+      // direction
+      const auto momentum_tangential =
+          momentum_contact.col(phase) - momentum_contact_norm * normal_vector;
+      const auto force_tangential = momentum_tangential / dt;
+      const double force_tangential_value = force_tangential.norm();
+
+      // Compare tangential contact with maximum threshold
+      const double force_friction =
+          std::min(force_tangential_value, max_friction_force);
+
+      // Compute contact force and momentum
+      momentum_enrich_.col(0).noalias() +=
+          momentum_contact_norm * normal_vector +
+          force_friction * force_tangential.normalized() * dt;
+      external_force_enrich_.col(0).noalias() +=
+          force_contact_norm * normal_vector +
+          force_friction * force_tangential.normalized();
+    }
+  }
+  // Contact treatment of two discontinuity
+  else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
+    const int itr_max = 100;
+    const double itr_tol = 1e-6;
     double itr_error;
-    Eigen::Matrix<int, 4, 2> flag;
 
+    // Flag to denote the sign of four partitioned regions
+    Eigen::Matrix<int, 4, 2> flag;
     flag << -1, -1, 1, -1, -1, 1, 1, 1;
 
+    // Mass of 4 different regions
     Eigen::Matrix<double, 4, 1> mass;
-    // the mass of 4 different parts
     for (int i = 0; i < 4; i++) {
       mass[i] = mass_(phase) + flag(i, 0) * mass_enrich_[0] +
                 flag(i, 1) * mass_enrich_[1] +
                 flag(i, 0) * flag(i, 1) * mass_enrich_[2];
     }
 
+    // Perform iteration to minimize contact moment
     for (int itr = 0; itr < itr_max; ++itr) {
-
       double max_update_normal_p = 0;
       int update_normal = 0;
       Eigen::Matrix<double, Tdim, 1> update_p;
-      // normal vector of two discontinuities
+
+      // Normal vectors of two discontinuities
       Eigen::Matrix<double, Tdim, 2> normal_vector;
       normal_vector.col(0) = normal_[discontinuity_id_[0]];
       normal_vector.col(1) = normal_[discontinuity_id_[1]];
 
-      // momentum of 4 different parts
+      // Momenta of 4 different parts
       Eigen::Matrix<double, Tdim, 4> momentum;
       for (int i = 0; i < 4; i++) {
         momentum.col(i) = momentum_.col(phase) +
@@ -319,52 +333,66 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
                           flag(i, 1) * momentum_enrich_.col(1) +
                           flag(i, 0) * flag(i, 1) * momentum_enrich_.col(2);
       }
+
+      // Velocity at different parts
       Eigen::Matrix<double, Tdim, 4> velocitynew;
       for (int i = 0; i < 4; i++) {
         velocitynew.col(i) = momentum.col(i) / mass(i);
       }
+
+      // Permutation index k
       int k = -1;
       itr_error = 0;
       double coef_couple = 0;
-      for (int i = 0; i < 3; i++)
+
+      // Loop over different parts: i (current), j(neighbour)
+      for (int i = 0; i < 3; i++) {
         for (int j = i + 1; j < 4; j++) {
           k++;
+
+          // Exit if it is not contacting
           if (!contact_detection_[k]) continue;
-          // loop for 2 normal directions
+
+          // Loop for 2 normal directions
           for (int n = 0; n < 2; n++) {
+            // Check if regions are in the same side of discontinuity n
             if (flag(i, n) * flag(j, n) > 0) continue;
 
+            // Exit if nodal masses of different parts are zero
             if (mass[i] < tolerance || mass[j] < tolerance) continue;
-            Eigen::Matrix<double, Tdim, 2> velocity;
 
-            // velocity for different sides
+            // Velocity for different sides
+            Eigen::Matrix<double, Tdim, 2> velocity;
             velocity.col(0) = momentum.col(i) / mass[i];
             velocity.col(1) = momentum.col(j) / mass[j];
-            // relative normal velocity
-            if ((velocity.col(0) - velocity.col(1))
-                        .col(phase)
-                        .dot(normal_vector.col(n)) *
+
+            // Check relative normal velocity
+            if ((velocity.col(0) - velocity.col(1)).dot(normal_vector.col(n)) *
                     flag(i, n) >=
                 0)
               continue;
 
+            // Variables associated with flags
             Eigen::Matrix<double, 1, 4> a;
             a << 1, flag(i, 0), flag(i, 1), flag(i, 0) * flag(i, 1);
             Eigen::Matrix<double, 1, 4> b;
             b << 1, flag(j, 0), flag(j, 1), flag(j, 0) * flag(j, 1);
 
+            // Mass as a vector
             Eigen::Matrix<double, 4, 1> m;
             m << mass_(phase), mass_enrich_[0], mass_enrich_[1],
                 mass_enrich_[2];
 
+            // Momentum as a vector
             Eigen::Matrix<double, Tdim, 4> p;
             p << momentum_.col(phase), momentum_enrich_.col(0),
                 momentum_enrich_.col(1), momentum_enrich_.col(2);
 
-            Eigen::Matrix<double, 4, 4> bt_a = b.transpose() * a;
-            Eigen::Matrix<double, 4, 4> at_b = a.transpose() * b;
+            // Matrix of flags combination
+            const Eigen::Matrix<double, 4, 4> bt_a = b.transpose() * a;
+            const Eigen::Matrix<double, 4, 4> at_b = a.transpose() * b;
 
-            Eigen::Matrix<double, 1, 4> coef =
+            const Eigen::Matrix<double, 1, 4> coef =
                 m.transpose() * (bt_a - at_b).transpose();
             Eigen::Matrix<double, Tdim, 1> deltap;
             Eigen::Matrix<double, Tdim, 1> fvalue;
@@ -382,7 +410,9 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
               deltap =
                   fvalue /
                   (coef[2] + coef[3] * 0.5 * (flag(i, 1 - n) + flag(j, 1 - n)));
-            double updatep = deltap.transpose() * normal_vector.col(n);
+
+            // Check maximum momentum
+            const double updatep = deltap.transpose() * normal_vector.col(n);
             if (std::abs(updatep) > max_update_normal_p) {
               max_update_normal_p = std::abs(updatep);
               update_normal = n;
@@ -392,58 +422,62 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
             }
           }
         }
+      }
 
+      // Exit loop if the error is small enough
       if (itr_error < itr_tol) break;
 
+      // Update momentum and force by the largest momentum increment
+      // For sticking contact
       if (friction_coef_[update_normal] < 0) {
         momentum_enrich_.col(update_normal) += update_p;
         momentum_enrich_.col(2) += coef_couple * update_p;
         external_force_enrich_.col(update_normal) += update_p / dt;
         external_force_enrich_.col(2) += coef_couple * update_p / dt;
-      } else {
-        // the contact momentum, force value for sticking contact at normal
+      }
+      // For cohesive-frictional contact
+      else {
+        // Contact momentum, force value for sticking contact at normal
         // direction
-        Eigen::Matrix<double, Tdim, 1> momentum_contact = update_p;
-        double momentum_contact_norm =
-            momentum_contact.col(phase).dot(normal_vector.col(update_normal));
-        double force_contact_norm = momentum_contact_norm / dt;
+        const Eigen::Matrix<double, Tdim, 1> momentum_contact = update_p;
+        const double momentum_contact_norm =
+            momentum_contact.dot(normal_vector.col(update_normal));
+        const double force_contact_norm = momentum_contact_norm / dt;
 
-        // the cohesion at nodes
-        double cohesion = cohesion_[update_normal];
-        double cohesion_area = cohesion_area_[update_normal];
-        double max_friction_force =
+        // Cohesion and max friction force
+        const double cohesion = cohesion_[update_normal];
+        const double cohesion_area = cohesion_area_[update_normal];
+        const double max_friction_force =
             friction_coef_[update_normal] * abs(force_contact_norm) +
             2 * cohesion * cohesion_area;
 
-        // // the contact momentum, force vector for sticking contact at
-        // tangential
-        // // direction
-        auto momentum_tangential =
-            momentum_contact.col(phase) -
+        // Tangential contact momentum and force
+        const auto momentum_tangential =
+            momentum_contact -
             momentum_contact_norm * normal_vector.col(update_normal);
-        auto force_tangential = momentum_tangential / dt;
+        const auto force_tangential = momentum_tangential / dt;
+        const double force_tangential_value = force_tangential.norm();
 
-        // // the friction force magnitude
-        double force_tangential_value = force_tangential.norm();
+        // Frictional force
+        const double force_friction =
+            force_tangential_value < max_friction_force ? force_tangential_value
+                                                        : max_friction_force;
 
-        double force_friction = force_tangential_value < max_friction_force
-                                    ? force_tangential_value
-                                    : max_friction_force;
-
+        // Update total momentum and force
         momentum_enrich_.col(update_normal) +=
             momentum_contact_norm * normal_vector.col(update_normal) +
-            force_friction * force_tangential.col(phase).normalized() * dt;
+            force_friction * force_tangential.normalized() * dt;
         momentum_enrich_.col(2) +=
             coef_couple * momentum_contact_norm *
                 normal_vector.col(update_normal) +
-            force_friction * force_tangential.col(phase).normalized() * dt;
+            force_friction * force_tangential.normalized() * dt;
         external_force_enrich_.col(update_normal) +=
             force_contact_norm * normal_vector.col(update_normal) +
-            force_friction * force_tangential.col(phase).normalized();
+            force_friction * force_tangential.normalized();
         external_force_enrich_.col(2) +=
             coef_couple * force_contact_norm *
                 normal_vector.col(update_normal) +
-            force_friction * force_tangential.col(phase).normalized();
+            force_friction * force_tangential.normalized();
       }
     }
   }

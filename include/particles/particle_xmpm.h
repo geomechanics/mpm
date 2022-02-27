@@ -80,7 +80,7 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \param[in] discontinuity_id
   void map_levelset_to_nodes(unsigned dis_id) noexcept override;
 
-  //! Compute displacement gradient
+  //! Compute displacement gradient of particle
   //! \param[in] dt Analysis time step
   void inline compute_displacement_gradient(double dt) override;
 

@@ -593,7 +593,7 @@ class Mesh {
   //! \ingroup XMPM
   void update_node_enrich();
 
-  //! The initiation of discontinuity
+  //! The function to initiate discontinuity
   //! \ingroup XMPM
   //! \param[in] maximum_pdstrain The critical value of the initiation
   //! \param[in] shield_width only search the region outside the region
@@ -604,7 +604,7 @@ class Mesh {
       std::tuple<double, double, double, double, double, int, bool>&
           initiation_property);
 
-  //! The propagation of discontinuity
+  //! The function to propagate of discontinuity
   //! \ingroup XMPM
   void propagation_discontinuity();
 

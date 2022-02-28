@@ -599,7 +599,8 @@ class Mesh {
   //! \param[in] shield_width only search the region outside the region
   //! \param[in] maximum_num the maximum number of the discontinuity
   //! \param[in] initiation_property initiation property of the discontinuity
-  void initiation_discontinuity(
+  //! \retval status Status of initiation
+  bool initiation_discontinuity(
       double maximum_pdstrain, double shield_width, int maximum_num,
       std::tuple<double, double, double, double, double, int, bool, bool>&
           initiation_property);

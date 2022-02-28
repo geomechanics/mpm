@@ -602,11 +602,12 @@ void mpm::Mesh<Tdim>::update_node_enrich() {
 
 //! The initiation of discontinuity
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::initiation_discontinuity(
+bool mpm::Mesh<Tdim>::initiation_discontinuity(
     double maximum_pdstrain, double shield_width, int maximum_num,
     std::tuple<double, double, double, double, double, int, bool, bool>&
         initiation_property) {
-
+  // initiation happens or not
+  bool status = false;
   while (discontinuity_.size() < maximum_num) {
     mpm::Index pid;
     double particle_max_pdstrain = 0;
@@ -632,7 +633,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
     }
 
     // compare with the critical pdstrain
-    if (particle_max_pdstrain <= maximum_pdstrain) return;
+    if (particle_max_pdstrain <= maximum_pdstrain) return status;
 
     // Compute normal direction that minimize determinant of Accoustic tensor
     VectorDim normal;
@@ -641,7 +642,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
 
     // generate new discontinuity
     if (initiation) {
-
+      status = true;
       // Create a new discontinuity surface from JSON object
       const Json json_generator;
       std::string type = "3d_initiation";
@@ -722,6 +723,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
       }
     }
   }
+  return status;
 }
 
 //! Compute the distance between two sides of discontinuity

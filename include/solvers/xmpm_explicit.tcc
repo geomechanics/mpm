@@ -144,8 +144,11 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
 
     // Initiation detection of discontinuity
     if (initiation_) {
-      mesh_->initiation_discontinuity(maximum_pdstrain_, shield_width_,
-                                      maximum_num_, initiation_property_);
+      if (mesh_->initiation_discontinuity(maximum_pdstrain_, shield_width_,
+                                          maximum_num_, initiation_property_))
+        // Initialise nodes, cells and shape functions
+        mpm_scheme_->initialise();
+
       if (mesh_->discontinuity_num() >= maximum_num_) initiation_ = false;
     }
 

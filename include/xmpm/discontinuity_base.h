@@ -122,8 +122,8 @@ class DiscontinuityBase {
   virtual void assign_point_friction_coef() noexcept = 0;
 
   //! Insert new point
-  void insert_particles(VectorDim& point, const Vector<Cell<Tdim>>& cells,
-                        const Map<Cell<Tdim>>& map_cells);
+  void insert_points(VectorDim& point, const Vector<Cell<Tdim>>& cells,
+                     const Map<Cell<Tdim>>& map_cells);
 
   //! TODO: to do:output mark points
   void output_markpoints(int step);

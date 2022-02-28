@@ -1,6 +1,6 @@
 //! Assign discontinuity element type
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::assign_type_discontinuity(mpm::EnrichType type,
+void mpm::Cell<Tdim>::assign_discontinuity_type(mpm::EnrichType type,
                                                 unsigned dis_id) {
   if (nparticles() == 0 && type != mpm::EnrichType::NeighbourTip_2)
     type = mpm::EnrichType::Regular;
@@ -21,7 +21,7 @@ void mpm::Cell<Tdim>::initialise_element_properties_discontinuity() {
 
 // Return discontinuity element type
 template <unsigned Tdim>
-unsigned mpm::Cell<Tdim>::element_type_discontinuity(unsigned dis_id) {
+unsigned mpm::Cell<Tdim>::element_discontinuity_type(unsigned dis_id) {
   if (discontinuity_element_[dis_id] == nullptr)
     return mpm::EnrichType::Regular;
   return discontinuity_element_[dis_id]->element_type();
@@ -171,7 +171,7 @@ double mpm::Cell<Tdim>::product_levelset(unsigned dis_id) {
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::determine_crossed_cell(unsigned dis_id) {
   if (this->product_levelset(dis_id) >= 0) return;
-  this->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);
+  this->assign_discontinuity_type(mpm::EnrichType::Crossed, dis_id);
 }
 
 //! Compute the nodal level set values by plane equations
@@ -305,8 +305,8 @@ void mpm::Cell<Tdim>::compute_area_discontinuity(unsigned dis_id) {
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::assign_cohesion_area(unsigned dis_id) {
 
-  auto centers = this->discontinuity_element_[dis_id]->cohesion_cor();
-  auto area = this->discontinuity_element_[dis_id]->area();
+  const auto& centers = this->discontinuity_element_[dis_id]->cohesion_cor();
+  const auto area = this->discontinuity_element_[dis_id]->area();
 
   const Eigen::Matrix<double, Tdim, 1> zeros =
       Eigen::Matrix<double, Tdim, 1>::Zero();
@@ -314,11 +314,9 @@ void mpm::Cell<Tdim>::assign_cohesion_area(unsigned dis_id) {
 
   if (!this->is_point_in_cell(centers, &xi)) return;
 
-  auto shapefn = element_->shapefn(xi, zeros, zeros);
-  double node_area = 0;
+  const auto& shapefn = element_->shapefn(xi, zeros, zeros);
   for (int i = 0; i < nodes_.size(); i++) {
-
-    node_area = shapefn[i] * area;
+    const double node_area = shapefn[i] * area;
     nodes_[i]->update_cohesion_area(node_area, dis_id);
   }
 }

@@ -119,7 +119,7 @@ void mpm::DiscontinuityBase<Tdim>::compute_shapefn() noexcept {
 
 //! Insert new point
 template <unsigned Tdim>
-void mpm::DiscontinuityBase<Tdim>::insert_particles(
+void mpm::DiscontinuityBase<Tdim>::insert_points(
     VectorDim& coordinates, const Vector<Cell<Tdim>>& cells,
     const Map<Cell<Tdim>>& map_cells) {
   // add points

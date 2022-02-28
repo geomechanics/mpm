@@ -228,7 +228,7 @@ class Cell {
   //! \ingroup XMPM
   //! \param[in] the enriched type
   //! \param[in] the discontinuity id
-  void assign_type_discontinuity(mpm::EnrichType type, unsigned dis_id);
+  void assign_discontinuity_type(mpm::EnrichType type, unsigned dis_id);
 
   //! Initialize discontinuity element properties
   //! \ingroup XMPM
@@ -267,7 +267,7 @@ class Cell {
   //! Return discontinuity element type
   //! \ingroup XMPM
   //! \param[in] discontinuity id
-  unsigned element_type_discontinuity(unsigned dis_id);
+  unsigned element_discontinuity_type(unsigned dis_id);
 
   //! Find the potential tip element
   //! \ingroup XMPM

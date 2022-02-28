@@ -554,7 +554,7 @@ class Mesh {
   //! Find next tip element
   //! \ingroup XMPM
   //! \param[in] the discontinuity id
-  void next_tip_element_discontinuity(unsigned dis_id);
+  void find_next_tip_cells(unsigned dis_id);
 
   // Initialize the cells in node
   //! \ingroup XMPM

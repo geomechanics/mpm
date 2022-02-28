@@ -864,14 +864,15 @@ void inline mpm::ParticleXMPM<3>::compute_displacement_gradient(double dt) {
 //! Detect the corresponding particle has levelset_values
 template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::check_levelset(unsigned dis_id) noexcept {
-  if (levelset_phi_[dis_id] != 0) return;
+  if (std::abs(levelset_phi_[dis_id]) < std::numeric_limits<double>::epsilon())
+    return;
   assert(cell_ != nullptr);
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     if (!nodes_[i]->discontinuity_enrich(dis_id)) continue;
 
-    auto normal = cell_->normal_discontinuity(dis_id);
-    double d = cell_->d_discontinuity(dis_id);
+    const auto& normal = cell_->normal_discontinuity(dis_id);
+    const double d = cell_->d_discontinuity(dis_id);
     levelset_phi_[dis_id] = coordinates_.dot(normal) + d;
     return;
   }

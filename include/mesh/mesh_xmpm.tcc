@@ -11,7 +11,7 @@ void mpm::Mesh<Tdim>::compute_cell_normal_vector_discontinuity(
     unsigned dis_id) {
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
     // Exit if regular cell
-    if ((*citr)->element_type_discontinuity(dis_id) == mpm::EnrichType::Regular)
+    if ((*citr)->element_discontinuity_type(dis_id) == mpm::EnrichType::Regular)
       continue;
 
     // Compute normal vector in cell center
@@ -33,7 +33,7 @@ void mpm::Mesh<Tdim>::compute_nodal_normal_vector_discontinuity(
 
     // Loop over connected cells
     for (auto cell : (*nitr)->cells()) {
-      if (map_cells_[cell]->element_type_discontinuity(dis_id) ==
+      if (map_cells_[cell]->element_discontinuity_type(dis_id) ==
           mpm::EnrichType::Regular)
         continue;
 
@@ -67,49 +67,51 @@ void mpm::Mesh<Tdim>::initialise_levelset_discontinuity(unsigned dis_id) {
 }
 
 //! The evolution of the discontinuity
+//! NOTE: Check Algorithm 2 in Liang, Chandra, Soga (2022)
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) ==
+    if ((*citr)->element_discontinuity_type(dis_id) ==
         mpm::EnrichType::PotentialTip)
-      (*citr)->assign_type_discontinuity(mpm::EnrichType::NeighbourTip_1,
+      (*citr)->assign_discontinuity_type(mpm::EnrichType::NeighbourTip_1,
                                          dis_id);
   }
 
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::NextTip)
+    if ((*citr)->element_discontinuity_type(dis_id) != mpm::EnrichType::NextTip)
       continue;
-    // compute nodal normal direction and find neighbour cells
-    for (auto& node : (*citr)->nodes()) {
 
+    // Compute nodal normal direction and find neighbour cells
+    for (auto& node : (*citr)->nodes()) {
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed)
           continue;
+
         virtual_enrich = true;
         break;
       }
+
       if (virtual_enrich) continue;
 
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
             mpm::EnrichType::NextTip)
-          map_cells_[cell]->assign_type_discontinuity(
+          map_cells_[cell]->assign_discontinuity_type(
               mpm::EnrichType::NeighbourNextTip_1, dis_id);
       }
 
-      VectorDim normal_cell;
-      normal_cell.setZero();
+      VectorDim normal_cell = VectorDim::Zero();
       int crossed_cell = 0;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
             mpm::EnrichType::NextTip)
           continue;
         normal_cell += map_cells_[cell]->normal_discontinuity(dis_id);
-        crossed_cell += 1;
+        crossed_cell++;
       }
 
       normal_cell = normal_cell / crossed_cell;
@@ -118,13 +120,12 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
     }
   }
 
-  // modify normal vector of NextTip cell
+  // Smooth normal vector of NextTip cell and get equation of plane constant
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::NextTip)
+    if ((*citr)->element_discontinuity_type(dis_id) != mpm::EnrichType::NextTip)
       continue;
-    VectorDim normal_cell;
-    normal_cell.setZero();
 
+    VectorDim normal_cell = VectorDim::Zero();
     for (const auto& node : (*citr)->nodes()) {
       normal_cell += node->normal(dis_id);
     }
@@ -132,68 +133,63 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
     normal_cell.normalize();
     (*citr)->assign_normal_discontinuity(normal_cell, dis_id);
 
+    // Determine the discontinuity plane by the virtual enriched nodes
     int enriched_node = 0;
     double dis = 0;
-    // determine the discontinuity plane by the virtual enriched nodes
-
     for (const auto& node : (*citr)->nodes()) {
-
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed)
           continue;
         virtual_enrich = true;
         break;
       }
+
       if (!virtual_enrich) continue;
+
       enriched_node++;
-      auto node_coordinate = node->coordinates();
-      for (unsigned int j = 0; j < Tdim; j++)
-        dis -= node_coordinate[j] * normal_cell[j];
-      dis = node->levelset_phi(dis_id) + dis;
+      const auto& node_coordinate = node->coordinates();
+      dis += node->levelset_phi(dis_id) - node_coordinate.dot(normal_cell);
     }
 
-    // update the level set values of the unenriched nodes
+    // Update the level set values of the unenriched nodes
     dis = dis / enriched_node;
     (*citr)->assign_d_discontinuity(dis, dis_id);
   }
 
-  // compute nodal level set values
+  // Compute nodal level set values and assign to nodes
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::NextTip)
+    if ((*citr)->element_discontinuity_type(dis_id) != mpm::EnrichType::NextTip)
       continue;
-    // compute nodal normal direction and find neighbour cells
-    for (auto& node : (*citr)->nodes()) {
 
+    for (auto& node : (*citr)->nodes()) {
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed)
           continue;
         virtual_enrich = true;
         break;
       }
+
       if (virtual_enrich) continue;
 
-      VectorDim normal_cell;
-      normal_cell.setZero();
+      VectorDim normal_cell = VectorDim::Zero();
       int nexttip_cell = 0;
       double phi = 0;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
             mpm::EnrichType::NextTip)
           continue;
-        double d = map_cells_[cell]->d_discontinuity(dis_id);
+        const double d = map_cells_[cell]->d_discontinuity(dis_id);
         normal_cell = map_cells_[cell]->normal_discontinuity(dis_id);
-        for (unsigned int i = 0; i < Tdim; i++)
-          phi += node->coordinates()[i] * normal_cell[i];
-        phi += d;
-        nexttip_cell += 1;
+        phi += node->coordinates().dot(normal_cell) + d;
+        nexttip_cell++;
       }
 
       if (nexttip_cell == 0) continue;
@@ -202,23 +198,23 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
     }
   }
 
-  // modify normal vector of NeighbourNextTip_1 cell
+  // Compute normal vector of NeighbourNextTip_1 cell and get equation of plane
+  // constant
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) !=
+    if ((*citr)->element_discontinuity_type(dis_id) !=
         mpm::EnrichType::NeighbourNextTip_1)
       continue;
-    VectorDim normal_cell;
-    normal_cell.setZero();
+
+    VectorDim normal_cell = VectorDim::Zero();
     int enriched_node = 0;
     for (const auto& node : (*citr)->nodes()) {
-
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NextTip)
           continue;
         virtual_enrich = true;
@@ -227,58 +223,56 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
       if (!virtual_enrich) continue;
 
       normal_cell += node->normal(dis_id);
-      enriched_node += 1;
+      enriched_node++;
     }
+
     normal_cell = normal_cell / enriched_node;
     normal_cell.normalize();
     (*citr)->assign_normal_discontinuity(normal_cell, dis_id);
 
+    // Determine the discontinuity plane by the virtual enriched nodes
     enriched_node = 0;
     double dis = 0;
-    // determine the discontinuity plane by the virtual enriched nodes
-
     for (const auto& node : (*citr)->nodes()) {
-
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NextTip)
           continue;
         virtual_enrich = true;
         break;
       }
       if (!virtual_enrich) continue;
+
       enriched_node++;
-      auto node_coordinate = node->coordinates();
-      for (unsigned int j = 0; j < Tdim; j++)
-        dis -= node_coordinate[j] * normal_cell[j];
-      dis = node->levelset_phi(dis_id) + dis;
+      const auto& node_coordinate = node->coordinates();
+      dis += node->levelset_phi(dis_id) - node_coordinate.dot(normal_cell);
     }
 
-    // update the level set values of the unenriched nodes
+    // Update the level set values of the unenriched nodes
     dis = dis / enriched_node;
     (*citr)->assign_d_discontinuity(dis, dis_id);
   }
 
-  // update nodal level set values of the NeighbourNextTip_1 cell
+  // Update nodal level set values of the NeighbourNextTip_1 cell
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) !=
+    if ((*citr)->element_discontinuity_type(dis_id) !=
         mpm::EnrichType::NeighbourNextTip_1)
       continue;
-    // compute nodal normal direction and find neighbour cells
-    for (auto& node : (*citr)->nodes()) {
 
+    // Compute nodal normal direction and find neighbour cells
+    for (auto& node : (*citr)->nodes()) {
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NextTip)
           continue;
         virtual_enrich = true;
@@ -286,66 +280,65 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
       }
       if (virtual_enrich) continue;
 
+      // Assign cell type
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourTip_1 &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourNextTip_1)
-          map_cells_[cell]->assign_type_discontinuity(
+          map_cells_[cell]->assign_discontinuity_type(
               mpm::EnrichType::NeighbourNextTip_2, dis_id);
       }
 
-      VectorDim normal_cell;
-      normal_cell.setZero();
-      VectorDim normal_cell_sum;
-      normal_cell_sum.setZero();
+      // Assign normal and level set to nodes
+      VectorDim normal_cell_sum = VectorDim::Zero();
       int cell_num = 0;
       double phi = 0;
       for (auto cell : node->cells()) {
-
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourNextTip_1 &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourTip_1)
           continue;
-        double d = map_cells_[cell]->d_discontinuity(dis_id);
-        normal_cell = map_cells_[cell]->normal_discontinuity(dis_id);
+
+        const double d = map_cells_[cell]->d_discontinuity(dis_id);
+        const auto& normal_cell =
+            map_cells_[cell]->normal_discontinuity(dis_id);
         normal_cell_sum += normal_cell;
-        for (unsigned int i = 0; i < Tdim; i++)
-          phi += node->coordinates()[i] * normal_cell[i];
-        phi += d;
+        phi += d + node->coordinates().dot(normal_cell);
         cell_num++;
       }
 
       if (cell_num == 0) continue;
+
       normal_cell_sum = normal_cell_sum / cell_num;
       normal_cell_sum.normalize();
+
       node->assign_normal(normal_cell_sum, dis_id);
       node->assign_levelset_phi(phi / cell_num, dis_id);
     }
   }
-  // modify normal vector of NeighbourNextTip_2 cell
+
+  // Modify normal vector of NeighbourNextTip_2 cell
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) !=
+    if ((*citr)->element_discontinuity_type(dis_id) !=
         mpm::EnrichType::NeighbourNextTip_2)
       continue;
 
-    VectorDim normal_cell;
-    normal_cell.setZero();
+    VectorDim normal_cell = VectorDim::Zero();
     int enriched_node = 0;
     for (const auto& node : (*citr)->nodes()) {
-
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NextTip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourTip_1 &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourNextTip_1)
           continue;
         virtual_enrich = true;
@@ -354,67 +347,63 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
       if (!virtual_enrich) continue;
 
       normal_cell += node->normal(dis_id);
-      enriched_node += 1;
+      enriched_node++;
     }
     normal_cell = normal_cell / enriched_node;
     normal_cell.normalize();
     (*citr)->assign_normal_discontinuity(normal_cell, dis_id);
 
+    // Determine the discontinuity plane by the virtual enriched nodes
     enriched_node = 0;
     double dis = 0;
-    // determine the discontinuity plane by the virtual enriched nodes
-
     for (const auto& node : (*citr)->nodes()) {
-
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NextTip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourTip_1 &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourNextTip_1)
           continue;
         virtual_enrich = true;
         break;
       }
       if (!virtual_enrich) continue;
+
       enriched_node++;
-      auto node_coordinate = node->coordinates();
-      for (unsigned int j = 0; j < Tdim; j++)
-        dis -= node_coordinate[j] * normal_cell[j];
-      dis = node->levelset_phi(dis_id) + dis;
+      const auto& node_coordinate = node->coordinates();
+      dis += node->levelset_phi(dis_id) - node_coordinate.dot(normal_cell);
     }
 
-    // update the level set values of the unenriched nodes
-
+    // Update the plane equation coefficient in cell
     dis = dis / enriched_node;
     (*citr)->assign_d_discontinuity(dis, dis_id);
   }
 
-  // update nodal level set values of the NeighbourNextTip_2 cell
+  // Update nodal level set values of the NeighbourNextTip_2 cell
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) !=
+    if ((*citr)->element_discontinuity_type(dis_id) !=
         mpm::EnrichType::NeighbourNextTip_2)
       continue;
-    // compute nodal normal direction and find neighbour cells
-    for (auto& node : (*citr)->nodes()) {
 
+    // Compute nodal normal direction and level set from neighbour cells
+    for (auto& node : (*citr)->nodes()) {
       bool virtual_enrich = false;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Tip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::Crossed &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NextTip &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourTip_1 &&
-            map_cells_[cell]->element_type_discontinuity(dis_id) !=
+            map_cells_[cell]->element_discontinuity_type(dis_id) !=
                 mpm::EnrichType::NeighbourNextTip_1)
           continue;
         virtual_enrich = true;
@@ -423,22 +412,19 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
 
       if (virtual_enrich) continue;
 
-      VectorDim normal_cell;
-      normal_cell.setZero();
-      VectorDim normal_cell_sum;
-      normal_cell_sum.setZero();
+      VectorDim normal_cell_sum = VectorDim::Zero();
       int cell_num = 0;
       double phi = 0;
       for (auto cell : node->cells()) {
-        if (map_cells_[cell]->element_type_discontinuity(dis_id) !=
+        if (map_cells_[cell]->element_discontinuity_type(dis_id) !=
             mpm::EnrichType::NeighbourNextTip_2)
           continue;
-        double d = map_cells_[cell]->d_discontinuity(dis_id);
-        normal_cell = map_cells_[cell]->normal_discontinuity(dis_id);
+
+        const double d = map_cells_[cell]->d_discontinuity(dis_id);
+        const auto& normal_cell =
+            map_cells_[cell]->normal_discontinuity(dis_id);
         normal_cell_sum += normal_cell;
-        for (unsigned int i = 0; i < Tdim; i++)
-          phi += node->coordinates()[i] * normal_cell[i];
-        phi += d;
+        phi += d + node->coordinates().dot(normal_cell);
         cell_num++;
       }
 
@@ -446,17 +432,19 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
 
       normal_cell_sum = normal_cell_sum / cell_num;
       normal_cell_sum.normalize();
+
       node->assign_normal(normal_cell_sum, dis_id);
       node->assign_levelset_phi(phi / cell_num, dis_id);
     }
   }
-  // update particle level set values
+
+  // Update particle level set values
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) ==
+    if ((*citr)->element_discontinuity_type(dis_id) ==
             mpm::EnrichType::NextTip ||
-        (*citr)->element_type_discontinuity(dis_id) ==
+        (*citr)->element_discontinuity_type(dis_id) ==
             mpm::EnrichType::NeighbourNextTip_1 ||
-        (*citr)->element_type_discontinuity(dis_id) ==
+        (*citr)->element_discontinuity_type(dis_id) ==
             mpm::EnrichType::NeighbourNextTip_2) {
       for (auto particle_id : (*citr)->particles()) {
         map_particles_[particle_id]->map_levelset_to_particle(dis_id);
@@ -464,47 +452,55 @@ void mpm::Mesh<Tdim>::update_discontinuity(unsigned dis_id) {
     }
   }
 
-  // update discontinuity points
+  // Update discontinuity points
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::NextTip)
+    if ((*citr)->element_discontinuity_type(dis_id) != mpm::EnrichType::NextTip)
       continue;
+
+    // Get mark point positions
     std::vector<VectorDim> coordinates;
     (*citr)->compute_discontinuity_point(coordinates, dis_id);
+
     for (int i = 0; i < coordinates.size(); i++) {
-      discontinuity_[dis_id]->insert_particles(coordinates[i], cells_,
-                                               map_cells_);
+      discontinuity_[dis_id]->insert_points(coordinates[i], cells_, map_cells_);
     }
   }
 }
 
 //! Find next tip element
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::next_tip_element_discontinuity(unsigned dis_id) {
+void mpm::Mesh<Tdim>::find_next_tip_cells(unsigned dis_id) {
   std::string shear;
 
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    // detect all the potentialtip cell
-    if ((*citr)->element_type_discontinuity(dis_id) !=
+    // Detect all the potentialtip cells
+    if ((*citr)->element_discontinuity_type(dis_id) !=
         mpm::EnrichType::PotentialTip)
       continue;
+
     mpm::Index pid;
-    // find the particle with the maximum pdstrain
+    // Find the particle with the maximum pdstrain
     double max_pdstrain = 0;
     for (auto particle_id : (*citr)->particles()) {
-      double pdstrain = map_particles_[particle_id]->state_variable("pdstrain");
+      const double pdstrain =
+          map_particles_[particle_id]->state_variable("pdstrain");
       if (pdstrain > max_pdstrain) {
         max_pdstrain = pdstrain;
         pid = particle_id;
       }
     }
-    // compare with the criterion for initiation
+
+    // Compare with the criterion for initiation
     if (max_pdstrain <= discontinuity_[dis_id]->maximum_pdstrain()) continue;
+
+    // Check if propagates
     VectorDim normal;
     bool propagation =
         map_particles_[pid]->minimum_acoustic_tensor(normal, false, dis_id);
+
+    // Assign type and normal direction if propagation happens
     if (propagation) {
-      (*citr)->assign_type_discontinuity(mpm::EnrichType::NextTip, dis_id);
-      // assign the normal direction if propagation happens
+      (*citr)->assign_discontinuity_type(mpm::EnrichType::NextTip, dis_id);
       (*citr)->assign_normal_discontinuity(normal, dis_id);
     }
   }
@@ -517,13 +513,13 @@ void mpm::Mesh<Tdim>::remove_spurious_potential_tip_cells(unsigned dis_id) {
   // Loop over cells
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
     // Check if the element is potential tip cell
-    if ((*citr)->element_type_discontinuity(0) != mpm::EnrichType::PotentialTip)
+    if ((*citr)->element_discontinuity_type(0) != mpm::EnrichType::PotentialTip)
       continue;
 
     // Algorithm to check if the assigned potential tip cell is stable
     bool potential_tip = false;
     for (auto neighbour : (*citr)->neighbours()) {
-      if (cells_[neighbour]->element_type_discontinuity(0) !=
+      if (cells_[neighbour]->element_discontinuity_type(0) !=
           mpm::EnrichType::NeighbourTip_2)
         continue;
 
@@ -534,7 +530,7 @@ void mpm::Mesh<Tdim>::remove_spurious_potential_tip_cells(unsigned dis_id) {
     if (potential_tip) continue;
 
     // Reject potential tip cell
-    (*citr)->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);
+    (*citr)->assign_discontinuity_type(mpm::EnrichType::Crossed, dis_id);
   }
 }
 
@@ -543,7 +539,7 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::assign_enrich_nodes(unsigned dis_id) {
   // First assign cross cell nodes to be true
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::Crossed)
+    if ((*citr)->element_discontinuity_type(dis_id) != mpm::EnrichType::Crossed)
       continue;
 
     for (auto& node : (*citr)->nodes()) {
@@ -553,7 +549,7 @@ void mpm::Mesh<Tdim>::assign_enrich_nodes(unsigned dis_id) {
   }
   // Second assign the potential tip cell nodes to be false
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-    if ((*citr)->element_type_discontinuity(dis_id) !=
+    if ((*citr)->element_discontinuity_type(dis_id) !=
         mpm::EnrichType::PotentialTip)
       continue;
     for (auto& node : (*citr)->nodes()) {
@@ -568,21 +564,20 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::assign_self_contact_property(unsigned dis_id) {
 
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-
-    if ((*citr)->element_type_discontinuity(dis_id) != mpm::EnrichType::Crossed)
+    if ((*citr)->element_discontinuity_type(dis_id) != mpm::EnrichType::Crossed)
       continue;
-    // assign area for the enriched nodes
+
+    // Assign cohesion area for the enriched nodes
     (*citr)->assign_cohesion_area(dis_id);
   }
 
-  double friction_coef = discontinuity_[dis_id]->friction_coef();
-
-  double cohesion = discontinuity_[dis_id]->cohesion();
+  const double friction_coef = discontinuity_[dis_id]->friction_coef();
+  const double cohesion = discontinuity_[dis_id]->cohesion();
 
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
-
     if (!(*nitr)->discontinuity_enrich(dis_id)) continue;
-    // assign friction_coef and cohesion for the enriched nodes
+
+    // Assign friction_coef and cohesion for the enriched nodes
     (*nitr)->assign_cohesion(cohesion, dis_id);
     (*nitr)->assign_friction_coef(friction_coef, dis_id);
   }
@@ -661,7 +656,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
 
       // Assign cell tip type
       auto cell_id = map_particles_[pid]->cell_id();
-      map_cells_[cell_id]->assign_type_discontinuity(
+      map_cells_[cell_id]->assign_discontinuity_type(
           mpm::EnrichType::InitialTip, dis_id);
 
       // compute constant parameter of plane equation
@@ -677,8 +672,8 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
       map_cells_[cell_id]->compute_discontinuity_point(coordinates_dis, dis_id);
 
       for (int i = 0; i < coordinates_dis.size(); i++)
-        discontinuity_[dis_id]->insert_particles(coordinates_dis[i], cells_,
-                                                 map_cells_);
+        discontinuity_[dis_id]->insert_points(coordinates_dis[i], cells_,
+                                              map_cells_);
 
       // initialise neighbour cells
       auto neighbours = map_cells_[cell_id]->neighbours();
@@ -687,7 +682,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
         if (map_cells_[neighbour]->nparticles() == 0) continue;
 
         // Assign type to neighbour cells
-        map_cells_[neighbour]->assign_type_discontinuity(
+        map_cells_[neighbour]->assign_discontinuity_type(
             mpm::EnrichType::NeighbourTip_1, dis_id);
 
         // The same plane equation is used as the tip cell
@@ -695,7 +690,7 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
         map_cells_[neighbour]->compute_nodal_levelset_equation(dis_id);
         if (map_cells_[neighbour]->product_levelset(dis_id) >= 0) continue;
 
-        map_cells_[neighbour]->assign_type_discontinuity(
+        map_cells_[neighbour]->assign_discontinuity_type(
             mpm::EnrichType::InitialTip, dis_id);
 
         // compute mark point position
@@ -704,8 +699,8 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
             coordinates_dis_neigh, dis_id);
 
         for (int i = 0; i < coordinates_dis_neigh.size(); i++) {
-          discontinuity_[dis_id]->insert_particles(coordinates_dis_neigh[i],
-                                                   cells_, map_cells_);
+          discontinuity_[dis_id]->insert_points(coordinates_dis_neigh[i],
+                                                cells_, map_cells_);
         }
       }
 
@@ -734,61 +729,61 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
 
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); nitr++) {
     if ((*nitr)->enrich_type() == mpm::NodeEnrichType::regular) continue;
+
+    // For single discontinuity
     if ((*nitr)->enrich_type() == mpm::NodeEnrichType::single_enriched) {
-      auto cor = (*nitr)->coordinates();
-      auto dis_id = (*nitr)->discontinuity_id();
-      auto normal = (*nitr)->normal(dis_id[0]);
+      const auto& cor = (*nitr)->coordinates();
+      const auto& dis_id = (*nitr)->discontinuity_id();
+      const auto& normal = (*nitr)->normal(dis_id[0]);
       double contact_distance = discontinuity_[dis_id[0]]->contact_distance();
-      double dis_negative = -10 * contact_distance;
-      double dis_positive = 10 * contact_distance;
+      double dis_negative = -10.0 * contact_distance;
+      double dis_positive = 10.0 * contact_distance;
       for (auto cell : (*nitr)->cells()) {
-
         for (auto particle : map_cells_[cell]->particles()) {
-          auto corp = map_particles_[particle]->coordinates();
-          double phi = map_particles_[particle]->levelset_phi();
-
-          double dis = 0;
-          dis = (corp - cor).dot(normal);
+          const auto& corp = map_particles_[particle]->coordinates();
+          const double phi = map_particles_[particle]->levelset_phi();
+          const double dis = (corp - cor).dot(normal);
 
           if (phi > 0) dis_positive = dis < dis_positive ? dis : dis_positive;
           if (phi < 0) dis_negative = dis > dis_negative ? dis : dis_negative;
         }
       }
+
+      // Check contact distance is larger/less than threshold
       bool status = true;
       if (dis_positive - dis_negative > contact_distance) status = false;
       (*nitr)->assign_contact(0, status);
-
-    } else if ((*nitr)->enrich_type() == mpm::NodeEnrichType::double_enriched) {
-
-      Eigen::Matrix<int, 4, 2> flag;
+    }
+    // For two discontinuity
+    else if ((*nitr)->enrich_type() == mpm::NodeEnrichType::double_enriched) {
       // four parts from different sides
+      Eigen::Matrix<int, 4, 2> flag;
       flag << -1, -1, 1, -1, -1, 1, 1, 1;
 
       int k = -1;
-      auto cor = (*nitr)->coordinates();
-      auto dis_id = (*nitr)->discontinuity_id();
+      const auto cor = (*nitr)->coordinates();
+      const auto dis_id = (*nitr)->discontinuity_id();
       for (int i = 0; i < 3; i++)
         for (int j = i + 1; j < 4; j++) {
-          auto dis_id = (*nitr)->discontinuity_id();
+          const auto& dis_id = (*nitr)->discontinuity_id();
           // loop for 2 normal directions
           bool status = true;
           k++;
           for (int n = 0; n < 2; n++) {
             if (flag(i, n) * flag(j, n) > 0) continue;
 
-            auto normal = (*nitr)->normal(dis_id[n]);
-            double contact_distance =
+            const auto& normal = (*nitr)->normal(dis_id[n]);
+            const double contact_distance =
                 discontinuity_[dis_id[n]]->contact_distance();
             double dis_negative = -10 * contact_distance;
             double dis_positive = 10 * contact_distance;
+
             for (auto cell : (*nitr)->cells()) {
-
               for (auto particle : map_cells_[cell]->particles()) {
-                auto corp = map_particles_[particle]->coordinates();
-                double phi = map_particles_[particle]->levelset_phi(dis_id[n]);
-
-                double dis = 0;
-                dis = (corp - cor).dot(normal);
+                const auto& corp = map_particles_[particle]->coordinates();
+                const double phi =
+                    map_particles_[particle]->levelset_phi(dis_id[n]);
+                const double dis = (corp - cor).dot(normal);
 
                 if (phi > 0)
                   dis_positive = dis < dis_positive ? dis : dis_positive;
@@ -1051,23 +1046,26 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
     // Compute the normal direction of enrich nodes
     compute_nodal_normal_vector_discontinuity(dis_id);
 
-    // Compute contact area in the crossed cell
+    // Compute contact area in the crossed cell: needed to apply cohesion
     iterate_over_cells(std::bind(&mpm::Cell<Tdim>::compute_area_discontinuity,
                                  std::placeholders::_1, dis_id));
 
-    //! Assign self contact properties
+    // Assign self-contact properties
     assign_self_contact_property(dis_id);
 
-    if (propagation) next_tip_element_discontinuity(dis_id);
+    // Check propagation condition and determine next tip cell, then update
+    // discontinuity
+    if (propagation) {
+      find_next_tip_cells(dis_id);
+      update_discontinuity(dis_id);
+    }
 
-    // discontinuity growth
-    if (propagation) update_discontinuity(dis_id);
-
-    // if a particle in the discontinuity region has level set values
+    // If a particle in the discontinuity region has level set values
     iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::check_levelset,
                                      std::placeholders::_1, dis_id));
   }
-  // self contact detection at enriched nodes
+
+  // Self contact detection at enriched nodes
   selfcontact_detection();
 }
 

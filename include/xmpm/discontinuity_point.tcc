@@ -180,28 +180,28 @@ template <unsigned Tdim>
 void mpm::discontinuity_point<Tdim>::assign_cell_enrich(
     const Map<Cell<Tdim>>& map_cells, unsigned dis_id) {
   if (cell_->nparticles() == 0) return;
-  cell_->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);
+  cell_->assign_discontinuity_type(mpm::EnrichType::Crossed, dis_id);
   const auto neighbours_1 = cell_->neighbours();
   for (auto neighbour_1 : neighbours_1) {
-    if (map_cells[neighbour_1]->element_type_discontinuity(dis_id) ==
+    if (map_cells[neighbour_1]->element_discontinuity_type(dis_id) ==
         mpm::EnrichType::Crossed)
       continue;
-    map_cells[neighbour_1]->assign_type_discontinuity(
+    map_cells[neighbour_1]->assign_discontinuity_type(
         mpm::EnrichType::NeighbourTip_1, dis_id);
     const auto neighbours_2 = map_cells[neighbour_1]->neighbours();
     for (auto neighbour_2 : neighbours_2) {
-      if (map_cells[neighbour_2]->element_type_discontinuity(dis_id) ==
+      if (map_cells[neighbour_2]->element_discontinuity_type(dis_id) ==
               mpm::EnrichType::Regular ||
-          map_cells[neighbour_2]->element_type_discontinuity(dis_id) ==
+          map_cells[neighbour_2]->element_discontinuity_type(dis_id) ==
               mpm::EnrichType::NeighbourTip_3)
-        map_cells[neighbour_2]->assign_type_discontinuity(
+        map_cells[neighbour_2]->assign_discontinuity_type(
             mpm::EnrichType::NeighbourTip_2, dis_id);
 
       const auto neighbours_3 = map_cells[neighbour_2]->neighbours();
       for (auto neighbour_3 : neighbours_3) {
-        if (map_cells[neighbour_3]->element_type_discontinuity(dis_id) ==
+        if (map_cells[neighbour_3]->element_discontinuity_type(dis_id) ==
             mpm::EnrichType::Regular)
-          map_cells[neighbour_3]->assign_type_discontinuity(
+          map_cells[neighbour_3]->assign_discontinuity_type(
               mpm::EnrichType::NeighbourTip_3, dis_id);
       }
     }

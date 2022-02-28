@@ -514,7 +514,7 @@ class Mesh {
 
   //! Locate points of discontinuity in a cell
   //! \ingroup XMPM
-  //! \param[in] discontinuity id
+  //! \param[in] dis_id discontinuity id
   void locate_discontinuity(unsigned dis_id) {
     discontinuity_[dis_id]->locate_discontinuity_mesh(cells_, map_cells_);
   };
@@ -563,7 +563,7 @@ class Mesh {
   //! Remove spurious potential tip element
   //! \ingroup XMPM
   //! \param[in] discontinuity id
-  void spurious_potential_tip_element(unsigned dis_id);
+  void remove_spurious_potential_tip_cells(unsigned dis_id);
 
   //! Assign particles levelset values
   //! \param[in] particles_levelset Particles and levelset values
@@ -582,7 +582,7 @@ class Mesh {
   //! Assign node type as enrich
   //! \ingroup XMPM
   //! \param[in] dis_id discontinuity id
-  void assign_node_enrich(unsigned dis_id);
+  void assign_enrich_nodes(unsigned dis_id);
 
   //! Assign self contact properties
   //! \ingroup XMPM

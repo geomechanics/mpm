@@ -272,12 +272,12 @@ class Cell {
   //! Find the potential tip element
   //! \ingroup XMPM
   //! \param[in] discontinuity id
-  void potential_tip_element(unsigned dis_id);
+  void find_potential_tip_cell(unsigned dis_id);
 
   //! Determine tip element
   //! \ingroup XMPM
   //! \param[in] discontinuity id
-  void tip_element(unsigned dis_id);
+  void find_tip_cell(unsigned dis_id);
 
   //! Compute normal vector of discontinuity by the nodal level set values
   //! \ingroup XMPM
@@ -313,7 +313,7 @@ class Cell {
   //! Determine the celltype by the nodal level set
   //! \ingroup XMPM
   //! \param[in] discontinuity id
-  void determine_crossed(unsigned dis_id);
+  void determine_crossed_cell(unsigned dis_id);
 
   //! Compute the nodal level set values by plane equations
   //! \ingroup XMPM

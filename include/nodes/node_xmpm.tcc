@@ -119,13 +119,13 @@ bool mpm::NodeXMPM<Tdim, Tdof, Tnphases>::
   return true;
 }
 
-//! Determine node type
+//! Determine node type from mass and enriched mass
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::determine_node_type(int dis_id) {
-  const double tolerance = 1.0E-15;
+  const double tolerance = std::numeric_limits<double>::epsilon();
   unsigned phase = 0;
 
-  // unenriched
+  // For unenriched nodes
   if (mass_(phase) + mass_h_ < tolerance || mass_(phase) - mass_h_ < tolerance)
     return;
 

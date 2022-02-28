@@ -572,7 +572,7 @@ class NodeBase {
         "illegal operation!");
   }
 
-  //! Determine node type
+  //! Determine node type from mass and enriched mass
   //! \param[in] the discontinuity_id
   //! \ingroup XMPM
   virtual void determine_node_type(int discontinuity_id) {

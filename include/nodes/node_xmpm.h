@@ -103,13 +103,16 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! Initialise the nodal mass_h_
   //! \ingroup XMPM
   void initialise_mass_h() { mass_h_ = 0; }
+
   //! Initialise the nodal mass_
   //! \param[in] phase Index corresponding to the phase
   //! \ingroup XMPM
   void initialise_mass(unsigned phase) { mass_(phase) = 0; }
+
   //! Return mass_enrich_ at a given node for a given phase
   //! \ingroup XMPM
   Eigen::Matrix<double, 3, 1> mass_enrich() { return mass_enrich_; }
+
   //! Return momentum_enrich_ at a given node for a given phase
   //! \ingroup XMPM
   virtual Eigen::Matrix<double, Tdim, 3> momentum_enrich() {
@@ -140,7 +143,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   bool compute_momentum_discontinuity_cundall(unsigned phase, double dt,
                                               double damping_factor) override;
 
-  //! Determine node type
+  //! Determine node type from mass and enriched mass
   //! \param[in] the discontinuity_id
   //! \ingroup XMPM
   void determine_node_type(int discontinuity_id) override;

@@ -97,6 +97,7 @@ class DiscontinuityElement {
   double d_;
   //! The section area of the crossed cell
   double area_{0};
+  // TODO: Check if it needs a default value
   //! The center of the discontinuity
   VectorDim cohesion_cor_ =
       VectorDim::Ones() * std::numeric_limits<double>::max();

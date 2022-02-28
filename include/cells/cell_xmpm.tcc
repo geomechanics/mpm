@@ -29,7 +29,8 @@ unsigned mpm::Cell<Tdim>::element_type_discontinuity(unsigned dis_id) {
 
 //! Find the potential tip element
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::potential_tip_element(unsigned dis_id) {
+void mpm::Cell<Tdim>::find_potential_tip_cell(unsigned dis_id) {
+  // Perform necessary checks
   if (this->discontinuity_element_[dis_id] == nullptr) return;
   if (this->discontinuity_element_[dis_id]->element_type() !=
       mpm::EnrichType::NeighbourTip_1)
@@ -41,9 +42,9 @@ void mpm::Cell<Tdim>::potential_tip_element(unsigned dis_id) {
         mpm::EnrichType::PotentialTip);
 }
 
-//! Determine tip element
+//! Determine the tip cells
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::tip_element(unsigned dis_id) {
+void mpm::Cell<Tdim>::find_tip_cell(unsigned dis_id) {
   if (this->discontinuity_element_[dis_id] == nullptr) return;
   if (this->discontinuity_element_[dis_id]->element_type() !=
       mpm::EnrichType::Crossed)
@@ -113,16 +114,17 @@ void mpm::Cell<Tdim>::assign_normal_discontinuity(VectorDim normal, double d,
 //! Compute normal vector of discontinuity by the nodal level set values
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_normal_vector_discontinuity(unsigned dis_id) {
-  VectorDim normal;
-  normal.setZero();
-  // determine the discontinuity plane by the enriched nodes
 
+  VectorDim normal = VectorDim::Zero();
+
+  // Determine the discontinuity plane by the enriched nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    double phi = nodes_[i]->levelset_phi(dis_id);
+    const double phi = nodes_[i]->levelset_phi(dis_id);
     for (unsigned int j = 0; j < Tdim; j++) {
       normal[j] += phi * dn_dx_centroid_(i, j);
     }
   }
+
   normal.normalize();
   this->discontinuity_element_[dis_id]->assign_normal_discontinuity(normal);
 }
@@ -132,19 +134,22 @@ template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_plane_discontinuity(bool enrich,
                                                   unsigned dis_id) {
   int enriched_node = 0;
-  auto normal = discontinuity_element_[dis_id]->normal_discontinuity();
+  const auto& normal = discontinuity_element_[dis_id]->normal_discontinuity();
   double dis = 0;
-  // determine the discontinuity plane by the enriched nodes
+
+  // Determine the discontinuity plane by the enriched nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Option to only use enriched nodes
     if (enrich)
       if (!nodes_[i]->discontinuity_enrich(dis_id)) continue;
+
     enriched_node++;
-    auto node_coordinate = nodes_[i]->coordinates();
-    for (unsigned int j = 0; j < Tdim; j++)
-      dis -= node_coordinate[j] * normal[j];
-    dis = nodes_[i]->levelset_phi(0) + dis;
+    const auto& node_coordinate = nodes_[i]->coordinates();
+    const double r = node_coordinate.dot(normal);
+    dis += nodes_[i]->levelset_phi(dis_id) - r;
   }
-  // update the level set values of the unenriched nodes
+
+  // Update the plane equation constant
   dis = dis / enriched_node;
   this->discontinuity_element_[dis_id]->assign_d(dis);
 }
@@ -164,18 +169,8 @@ double mpm::Cell<Tdim>::product_levelset(unsigned dis_id) {
 
 //! Determine the celltype by the nodal level set
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::determine_crossed(unsigned dis_id) {
-
-  double max_phi = -1e15, min_phi = 1e15;
-
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    double phi = nodes_[i]->levelset_phi(dis_id);
-    if (phi > max_phi) max_phi = phi;
-    if (phi < min_phi) min_phi = phi;
-  }
-
-  if (max_phi * min_phi >= 0) return;
-
+void mpm::Cell<Tdim>::determine_crossed_cell(unsigned dis_id) {
+  if (this->product_levelset(dis_id) >= 0) return;
   this->assign_type_discontinuity(mpm::EnrichType::Crossed, dis_id);
 }
 
@@ -201,57 +196,65 @@ void mpm::Cell<Tdim>::compute_area_discontinuity(unsigned dis_id) {
   if (this->discontinuity_element_[dis_id]->element_type() !=
       mpm::EnrichType::Crossed)
     return;
-  // compute the level set values
+
+  // Compute the level set values in all nodes
   Eigen::VectorXd phi_list(nnodes());
   phi_list.setZero();
 
-  auto normal = this->discontinuity_element_[dis_id]->normal_discontinuity();
-  auto d = this->discontinuity_element_[dis_id]->d_discontinuity();
+  const auto& normal =
+      this->discontinuity_element_[dis_id]->normal_discontinuity();
+  const auto d = this->discontinuity_element_[dis_id]->d_discontinuity();
   for (int i = 0; i < nodes_.size(); ++i) {
     phi_list[i] = normal.dot(nodes_[i]->coordinates()) + d;
   }
-  // determine the intersections
+
+  // Determine the intersections
   std::vector<Eigen::Matrix<double, Tdim, 1>> intersections;
 
-  // node id of the 12 edges of one cell
-  int index_line[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {0, 4}, {1, 5},
-                           {2, 6}, {3, 7}, {4, 5}, {5, 6}, {6, 7}, {7, 4}};
+  // Node id of the 12 edges of one cell
+  const int index_line[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0},
+                                 {0, 4}, {1, 5}, {2, 6}, {3, 7},
+                                 {4, 5}, {5, 6}, {6, 7}, {7, 4}};
   for (int i = 0; i < 12; ++i) {
     if (phi_list[index_line[i][0]] * phi_list[index_line[i][1]] >= 0) continue;
 
-    Eigen::Matrix<double, Tdim, 1> intersection;
-    Eigen::Matrix<double, Tdim, 1> cor0 =
-        nodes_[index_line[i][0]]->coordinates();
-    Eigen::Matrix<double, Tdim, 1> cor1 =
-        nodes_[index_line[i][1]]->coordinates();
-    intersection = cor0 * std::abs(phi_list[index_line[i][1]] /
-                                   ((phi_list[index_line[i][1]] -
-                                     phi_list[index_line[i][0]]))) +
-                   cor1 * std::abs(phi_list[index_line[i][0]] /
-                                   ((phi_list[index_line[i][1]] -
-                                     phi_list[index_line[i][0]])));
+    const auto& cor0 = nodes_[index_line[i][0]]->coordinates();
+    const auto& cor1 = nodes_[index_line[i][1]]->coordinates();
+    const Eigen::Matrix<double, Tdim, 1> intersection =
+        cor0 * std::abs(phi_list[index_line[i][1]] /
+                        ((phi_list[index_line[i][1]] -
+                          phi_list[index_line[i][0]]))) +
+        cor1 * std::abs(
+                   phi_list[index_line[i][0]] /
+                   ((phi_list[index_line[i][1]] - phi_list[index_line[i][0]])));
 
     intersections.push_back(intersection);
   }
+
+  // Exit if intersection size is less than 3
   if (intersections.size() < 3) return;
-  Eigen::Matrix<double, Tdim, 1> average_cor;
-  average_cor.setZero();
+
+  // Compute average coordinates
+  Eigen::Matrix<double, Tdim, 1> average_cor =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
   for (int i = 0; i < intersections.size(); ++i)
     average_cor += intersections[i];
 
   average_cor /= intersections.size();
 
-  // compute angle
-  // obtain e1 e2 of the local coordinate system
-  Eigen::Matrix<double, Tdim, 1> e1 =
+  // Compute angle
+  // Obtain bases vectors e1 e2 of the local coordinate system
+  const Eigen::Matrix<double, Tdim, 1> e1 =
       (intersections[0] - average_cor).normalized();
-  Eigen::Matrix<double, Tdim, 1> e2 = normal.cross(e1).normalized();
-  // the angle and the order of the intersections
+  const Eigen::Matrix<double, Tdim, 1> e2 = normal.cross(e1).normalized();
+
+  // The angle and the order of the intersections
   Eigen::VectorXd angles(intersections.size());
   angles.setZero();
   Eigen::VectorXd orders(intersections.size());
   orders.setZero();
 
+  // Loop over the intersections
   for (int i = 1; i < intersections.size(); ++i) {
     double costh = (intersections[i] - average_cor).normalized().dot(e1);
     double sinth = (intersections[i] - average_cor).normalized().dot(e2);
@@ -260,41 +263,42 @@ void mpm::Cell<Tdim>::compute_area_discontinuity(unsigned dis_id) {
     costh = costh < -1 ? -1 : costh;
 
     double theta = std::acos(costh);
-
     if (sinth < 0) theta = 2 * M_PI - theta;
 
     angles[i] = theta;
   }
-  // compute orders
+
+  // Compute orders
   for (int i = 1; i < intersections.size(); ++i) {
     for (int j = 0; j < intersections.size(); j++) {
       if (angles[i] > angles[j]) orders[i] += 1;
     }
   }
 
-  // exchange intersections
+  // Exchange intersections
   auto intersections_copy = intersections;
   for (int i = 1; i < intersections.size(); ++i)
     intersections[orders[i]] = intersections_copy[i];
 
-  // compute area
+  // Compute area and weighted center
   double area = 0.0;
-  Eigen::Matrix<double, Tdim, 1> subcenters;
-  subcenters.setZero();
+  Eigen::Matrix<double, Tdim, 1> weighted_center =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
   for (int i = 0; i < intersections.size() - 2; ++i) {
     // the coordinates of the triangle
-    Eigen::Matrix<double, Tdim, 1> cor0 = intersections[0];
-    Eigen::Matrix<double, Tdim, 1> cor1 = intersections[i + 1];
-    Eigen::Matrix<double, Tdim, 1> cor2 = intersections[i + 2];
-    double subarea =
+    const Eigen::Matrix<double, Tdim, 1> cor0 = intersections[0];
+    const Eigen::Matrix<double, Tdim, 1> cor1 = intersections[i + 1];
+    const Eigen::Matrix<double, Tdim, 1> cor2 = intersections[i + 2];
+    const double subarea =
         std::abs(0.5 * (cor1 - cor0).cross(cor2 - cor0).dot(normal));
     area += subarea;
-    subcenters += subarea * 1 / 3 * (cor0 + cor1 + cor2);
+    weighted_center += subarea * 1 / 3 * (cor0 + cor1 + cor2);
   }
-  subcenters = subcenters / area;
+  weighted_center = weighted_center / area;
 
+  // Assign area and weighted center to discontinuity plane
   this->discontinuity_element_[dis_id]->assign_area(area);
-  this->discontinuity_element_[dis_id]->assign_cohesion_cor(subcenters);
+  this->discontinuity_element_[dis_id]->assign_cohesion_cor(weighted_center);
 }
 
 //! Assign the area of the discontinuity to nodes

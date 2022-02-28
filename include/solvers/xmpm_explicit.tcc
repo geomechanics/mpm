@@ -268,6 +268,7 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
         double width = std::numeric_limits<double>::max();
         int move_direction = 1;
         bool friction_coef_average = false;
+        bool mls = false;
         if (discontinuity_props.contains("friction_coefficient_average"))
           friction_coef_average =
               discontinuity_props.at("friction_coefficient_average")
@@ -290,10 +291,13 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
         // store width if it's given in input file
         if (discontinuity_props.contains("width"))
           width = discontinuity_props.at("width").template get<double>();
+        // store mls if it's given in input file
+        if (discontinuity_props.contains("mls"))
+          mls = discontinuity_props.at("mls").template get<bool>();
 
         initiation_property_ = std::make_tuple(
             cohesion, friction_coef, contact_distance, width, maximum_pdstrain_,
-            move_direction, friction_coef_average);
+            move_direction, friction_coef_average, mls);
       }
 
       // generate predefined discontinuity

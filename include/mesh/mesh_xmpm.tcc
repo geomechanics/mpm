@@ -604,7 +604,7 @@ void mpm::Mesh<Tdim>::update_node_enrich() {
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::initiation_discontinuity(
     double maximum_pdstrain, double shield_width, int maximum_num,
-    std::tuple<double, double, double, double, double, int, bool>&
+    std::tuple<double, double, double, double, double, int, bool, bool>&
         initiation_property) {
 
   while (discontinuity_.size() < maximum_num) {
@@ -647,10 +647,11 @@ void mpm::Mesh<Tdim>::initiation_discontinuity(
       std::string type = "3d_initiation";
       int dis_id = discontinuity_num();
 
-      auto discontinuity = Factory<mpm::DiscontinuityBase<Tdim>, unsigned,
-                                   std::tuple<double, double, double, double,
-                                              double, int, bool>&>::instance()
-                               ->create(type, dis_id, initiation_property);
+      auto discontinuity =
+          Factory<mpm::DiscontinuityBase<Tdim>, unsigned,
+                  std::tuple<double, double, double, double, double, int, bool,
+                             bool>&>::instance()
+              ->create(type, dis_id, initiation_property);
 
       insert_discontinuity(discontinuity);
 
@@ -1009,9 +1010,8 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
         std::bind(&mpm::ParticleBase<Tdim>::map_levelset_to_nodes,
                   std::placeholders::_1, dis_id));
 
-    // TODO: Make it optional as input file
     // Adjust nodal level set value by MLS if needed
-    modify_nodal_levelset_mls(dis_id);
+    if (discontinuity_[dis_id]->mls()) modify_nodal_levelset_mls(dis_id);
 
     // If discontinuity propagates
     if (propagation) {

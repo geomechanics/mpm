@@ -43,6 +43,9 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(const Json& json_generator,
     if (json_generator.contains("maximum_pdstrain"))
       maximum_pdstrain_ =
           json_generator.at("maximum_pdstrain").template get<double>();
+    // assign mls if it's given in input file
+    if (json_generator.contains("mls"))
+      mls_ = json_generator.at("mls").template get<bool>();
 
   } catch (Json::exception& except) {
     console_->error("discontinuity parameter not set: {} {}\n", except.what(),
@@ -53,8 +56,9 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(const Json& json_generator,
 //! Constructor for the initiation
 template <unsigned Tdim>
 mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
-    unsigned id, std::tuple<double, double, double, double, double, int, bool>&
-                     initiation_property) {
+    unsigned id,
+    std::tuple<double, double, double, double, double, int, bool, bool>&
+        initiation_property) {
 
   id_ = id;
   std::string logger = "discontinuity";
@@ -69,6 +73,7 @@ mpm::DiscontinuityBase<Tdim>::DiscontinuityBase(
   maximum_pdstrain_ = std::get<4>(initiation_property);
   move_direction_ = std::get<5>(initiation_property);
   friction_coef_average_ = std::get<6>(initiation_property);
+  mls_ = std::get<7>(initiation_property);
 }
 
 //! Create points from file

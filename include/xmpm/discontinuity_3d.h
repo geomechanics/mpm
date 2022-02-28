@@ -22,8 +22,8 @@ class Discontinuity3D : public DiscontinuityBase<Tdim> {
   //! \param[in] discontinuity id
   //! \param[in] initiation properties
   Discontinuity3D(unsigned id,
-                  std::tuple<double, double, double, double, double, int, bool>&
-                      initiation_property);
+                  std::tuple<double, double, double, double, double, int, bool,
+                             bool>& initiation_property);
 
   //! Initialization
   //! \param[in] the coordinates of all points

@@ -33,10 +33,10 @@ class DiscontinuityBase {
   //! \param[in] discontinuity id
   //! \param[in] initiation properties: store the properties fot each newly
   //! generated discontinuity: cohesion, friction_coef, contact_distance, width,
-  //! maximum_pdstrain move_direction, friction_coef_average
+  //! maximum_pdstrain move_direction, friction_coef_average, mls
   DiscontinuityBase(unsigned id,
                     std::tuple<double, double, double, double, double, int,
-                               bool>& initiation_property);
+                               bool, bool>& initiation_property);
 
   //! Destructor
   virtual ~DiscontinuityBase(){};
@@ -134,6 +134,9 @@ class DiscontinuityBase {
   //! Return description type
   std::string description_type() { return description_type_; }
 
+  //! Return mls_
+  bool mls() { return mls_; }
+
  protected:
   //! Id
   int id_;
@@ -161,6 +164,8 @@ class DiscontinuityBase {
   bool friction_coef_average_{false};
   //! Proparate or not
   bool propagation_{false};
+  //! Use mls to compute the nodal levelset values or not
+  bool mls_{false};
 };  // DiscontinuityBase class
 
 //! Struct of discontinuity point

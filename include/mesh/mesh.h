@@ -601,7 +601,7 @@ class Mesh {
   //! \param[in] initiation_property initiation property of the discontinuity
   void initiation_discontinuity(
       double maximum_pdstrain, double shield_width, int maximum_num,
-      std::tuple<double, double, double, double, double, int, bool>&
+      std::tuple<double, double, double, double, double, int, bool, bool>&
           initiation_property);
 
   //! The function to propagate of discontinuity

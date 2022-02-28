@@ -5,8 +5,9 @@ mpm::Discontinuity3D<Tdim>::Discontinuity3D(const Json& json_generator,
 
 template <unsigned Tdim>
 mpm::Discontinuity3D<Tdim>::Discontinuity3D(
-    unsigned id, std::tuple<double, double, double, double, double, int, bool>&
-                     initiation_property)
+    unsigned id,
+    std::tuple<double, double, double, double, double, int, bool, bool>&
+        initiation_property)
     : DiscontinuityBase<Tdim>(id, initiation_property) {}
 
 // initialization

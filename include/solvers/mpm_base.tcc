@@ -497,8 +497,6 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     if (!unlocatable_particles.empty())
       throw std::runtime_error("Particle outside the mesh domain");
 
-    // Increament step
-    ++this->step_;
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
 

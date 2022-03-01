@@ -145,7 +145,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   this->initialise_loads();
 
   // Write initial outputs
-  this->write_outputs(this->step_);
+  if (!resume) this->write_outputs(this->step_);
 
   // Initialise matrix
   bool matrix_status = this->initialise_matrix();

@@ -124,7 +124,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   this->initialise_loads();
 
   // Write initial outputs
-  this->write_outputs(this->step_);
+  if (!resume) this->write_outputs(this->step_);
 
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop

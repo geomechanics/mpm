@@ -450,8 +450,9 @@ class NodeBase {
 
   //! Update the nodal enriched mass
   //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] the value of the enriched mass
-  virtual void update_mass_enrich(Eigen::Matrix<double, 3, 1>) {
+  virtual void update_mass_enrich(bool update, Eigen::Matrix<double, 3, 1>) {
     throw std::runtime_error(
         "Calling the base class function update_mass_enriched in "
         "NodeBase:: "
@@ -460,8 +461,10 @@ class NodeBase {
 
   //! Update the nodal enriched momentum
   //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] the value of the enriched momentum
-  virtual void update_momentum_enrich(Eigen::Matrix<double, Tdim, 3> momenta) {
+  virtual void update_momentum_enrich(bool update,
+                                      Eigen::Matrix<double, Tdim, 3> momenta) {
     throw std::runtime_error(
         "Calling the base class function update_momenta_enrich in "
         "NodeBase:: "

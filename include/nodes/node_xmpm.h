@@ -67,16 +67,23 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
 
   //! Update the nodal enriched mass
   //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] the value of the enriched mass
-  void update_mass_enrich(Eigen::Matrix<double, 3, 1> mass) {
-    mass_enrich_ += mass;
+  void update_mass_enrich(bool update, Eigen::Matrix<double, 3, 1> mass) {
+    // Decide to update or assign
+    const double factor = (update == true) ? 1. : 0.;
+    mass_enrich_ = mass_enrich_ * factor + mass;
   };
 
   //! Update the nodal enriched momentum
   //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] the value of the enriched momentum
-  void update_momentum_enrich(Eigen::Matrix<double, Tdim, 3> momentum) {
-    momentum_enrich_ += momentum;
+  void update_momentum_enrich(bool update,
+                              Eigen::Matrix<double, Tdim, 3> momentum) {
+    // Decide to update or assign
+    const double factor = (update == true) ? 1. : 0.;
+    momentum_enrich_ = momentum_enrich_ * factor + momentum;
   };
 
   //! Update the nodal enriched internal_force

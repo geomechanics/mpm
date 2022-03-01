@@ -183,16 +183,35 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
-  if (damping_type == "Cundall")
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
-                  std::placeholders::_1, phase, dt_, damping_factor),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-  else
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
-                  std::placeholders::_1, phase, dt_),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  if (xmpm_) {
+    // Iterate over each particle to calculate dudx
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
+                  std::placeholders::_1, dt_));
+    // Integrate momentum by iterating over nodes
+    if (damping_type == "Cundall")
+      mesh_->iterate_over_nodes_predicate(
+          std::bind(
+              &mpm::NodeBase<Tdim>::compute_momentum_discontinuity_cundall,
+              std::placeholders::_1, phase, dt_, damping_factor),
+          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    else
+      mesh_->iterate_over_nodes_predicate(
+          std::bind(&mpm::NodeBase<Tdim>::compute_momentum_discontinuity,
+                    std::placeholders::_1, phase, this->dt_),
+          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  } else {
+    if (damping_type == "Cundall")
+      mesh_->iterate_over_nodes_predicate(
+          std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
+                    std::placeholders::_1, phase, dt_, damping_factor),
+          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    else
+      mesh_->iterate_over_nodes_predicate(
+          std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
+                    std::placeholders::_1, phase, dt_),
+          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  }
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
@@ -201,12 +220,6 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Apply particle velocity constraints
   mesh_->apply_particle_velocity_constraints();
-
-  if (xmpm_)
-    // Iterate over each particle to calculate dudx
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
-                  std::placeholders::_1, dt_));
 }
 
 // Locate particles

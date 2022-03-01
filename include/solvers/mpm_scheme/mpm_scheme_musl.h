@@ -52,6 +52,8 @@ class MPMSchemeMUSL : public MPMScheme<Tdim> {
   using mpm::MPMScheme<Tdim>::mpi_rank_;
   //! Time increment
   using mpm::MPMScheme<Tdim>::dt_;
+  //! XMPM slover
+  using mpm::MPMScheme<Tdim>::xmpm_;
 
 };  // MPMSchemeMUSL class
 }  // namespace mpm

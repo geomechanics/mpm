@@ -106,6 +106,16 @@ class MPMScheme {
   }
   /**@}*/
 
+  /**
+   * \defgroup XMPM Functions dealing with XMPM solver
+   */
+  /**@{*/
+  //! Assign xmpm
+  //! \ingroup XMPM
+  //! \param[in] xmpm using XMPM solver
+  inline void assign_xmpm(bool xmpm) { xmpm_ = xmpm; }
+  /**@}*/
+
  protected:
   //! Mesh object
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;
@@ -115,6 +125,8 @@ class MPMScheme {
   int mpi_size_ = 1;
   //! MPI rank
   int mpi_rank_ = 0;
+  //! XMPM slover
+  bool xmpm_ = false;
 };  // MPMScheme class
 }  // namespace mpm
 

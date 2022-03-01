@@ -30,6 +30,19 @@ inline void mpm::MPMSchemeMUSL<Tdim>::postcompute_nodal_kinematics(
       std::bind(&mpm::NodeBase<Tdim>::update_momentum, std::placeholders::_1,
                 false, phase, VectorDim::Zero()),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  // Assign mass and momentum to nodes zero
+  if (xmpm_) {
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::update_mass_enrich,
+                  std::placeholders::_1, Eigen::Matrix<double, 3, 1>::Zero()),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::update_momentum_enrich,
+                  std::placeholders::_1,
+                  Eigen::Matrix<double, Tdim, 3>::Zero()),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  }
 
   this->compute_nodal_kinematics(phase);
 }

@@ -8,8 +8,12 @@ mpm::XMPMExplicit<Tdim>::XMPMExplicit(const std::shared_ptr<IO>& io)
   //! Stress update
   if (this->stress_update_ == "usl")
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSL<Tdim>>(mesh_, dt_);
+  else if (this->stress_update_ == "musl")
+    mpm_scheme_ = std::make_shared<mpm::MPMSchemeMUSL<Tdim>>(mesh_, dt_);
   else
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSF<Tdim>>(mesh_, dt_);
+
+  this->mpm_scheme_->assign_xmpm(true);
 }
 
 //! MPM Explicit compute stress strain
@@ -155,51 +159,25 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     // the process for the discontinuity propagation
     mesh_->propagation_discontinuity();
 
-    // Assign mass and momentum to nodes
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
-                  std::placeholders::_1));
-
-    // Apply velocity constraints
-    mesh_->iterate_over_nodes(
-        std::bind(&mpm::NodeBase<Tdim>::apply_velocity_constraints,
-                  std::placeholders::_1));
+    // Mass momentum and compute velocity at nodes
+    mpm_scheme_->compute_nodal_kinematics(phase);
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
-
-    // Iterate over each particle to calculate dudx
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
-                  std::placeholders::_1, dt_));
 
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
 
-    // Integrate momentum by iterating over nodes
-    if (damping_type_ == mpm::Damping::Cundall)
-      mesh_->iterate_over_nodes_predicate(
-          std::bind(
-              &mpm::NodeBase<Tdim>::compute_momentum_discontinuity_cundall,
-              std::placeholders::_1, phase, dt_, damping_factor_),
-          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-    else
-      mesh_->iterate_over_nodes_predicate(
-          std::bind(&mpm::NodeBase<Tdim>::compute_momentum_discontinuity,
-                    std::placeholders::_1, phase, this->dt_),
-          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    // Particle kinematics
+    mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
+                                             damping_factor_);
 
     // Update the discontinuity position
     mesh_->compute_updated_position_discontinuity(this->dt_);
 
-    // Iterate over each particle to compute updated position
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
-                  std::placeholders::_1, dt_, velocity_update_));
-
-    // Apply particle velocity constraints
-    mesh_->apply_particle_velocity_constraints();
+    // Mass momentum and compute velocity at nodes
+    mpm_scheme_->postcompute_nodal_kinematics(phase);
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);

@@ -64,9 +64,16 @@ inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(unsigned phase) {
 #endif
 
   // Compute nodal velocity
-  mesh_->iterate_over_nodes_predicate(
-      std::bind(&mpm::NodeBase<Tdim>::compute_velocity, std::placeholders::_1),
-      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  if (!xmpm_)
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::compute_velocity,
+                  std::placeholders::_1),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  else
+    // Apply velocity constraints
+    mesh_->iterate_over_nodes(
+        std::bind(&mpm::NodeBase<Tdim>::apply_velocity_constraints,
+                  std::placeholders::_1));
 }
 
 //! Compute stress and strain
@@ -194,6 +201,12 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Apply particle velocity constraints
   mesh_->apply_particle_velocity_constraints();
+
+  if (xmpm_)
+    // Iterate over each particle to calculate dudx
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::compute_displacement_gradient,
+                  std::placeholders::_1, dt_));
 }
 
 // Locate particles

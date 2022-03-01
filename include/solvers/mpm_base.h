@@ -74,22 +74,13 @@ class MPMBase : public MPM {
   //! Checkpoint resume
   bool checkpoint_resume() override;
 
-#ifdef USE_VTK
-  //! Write VTK files
-  void write_vtk(mpm::Index step, mpm::Index max_steps) override;
-#endif
-
-#ifdef USE_PARTIO
-  //! Write PARTIO files
-  void write_partio(mpm::Index step, mpm::Index max_steps) override;
-#endif
-
-  //! Write HDF5 files
-  void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
-
   //! Domain decomposition
   //! \param[in] initial_step Start of simulation or later steps
   void mpi_domain_decompose(bool initial_step = false) override;
+
+  //! Output results
+  //! \param[in] step Time step
+  void write_outputs(mpm::Index step) override;
 
   //! Pressure smoothing
   //! \param[in] phase Phase to smooth pressure
@@ -112,6 +103,19 @@ class MPMBase : public MPM {
           std::string,
           std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>&
           linear_solver);
+
+  //! Write HDF5 files
+  void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
+
+#ifdef USE_VTK
+  //! Write VTK files
+  void write_vtk(mpm::Index step, mpm::Index max_steps) override;
+#endif
+
+#ifdef USE_PARTIO
+  //! Write PARTIO files
+  void write_partio(mpm::Index step, mpm::Index max_steps) override;
+#endif
 
  private:
   //! Return if a mesh will be isoparametric or not

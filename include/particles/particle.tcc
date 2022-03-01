@@ -821,6 +821,10 @@ void mpm::Particle<Tdim>::compute_updated_position(
     double dt, bool velocity_update) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
+
+  // Clone previous step nodal velocity
+  const auto prev_velocity = this->velocity_;
+
   // Get interpolated nodal velocity
   Eigen::Matrix<double, Tdim, 1> nodal_velocity =
       Eigen::Matrix<double, Tdim, 1>::Zero();
@@ -845,10 +849,10 @@ void mpm::Particle<Tdim>::compute_updated_position(
   else
     this->velocity_ = nodal_velocity;
 
-  // New position  current position + velocity * dt
-  this->coordinates_.noalias() += nodal_velocity * dt;
+  // New position  current position + velocity(n+1/2) * dt
+  this->coordinates_.noalias() += 0.5 * (prev_velocity + nodal_velocity) * dt;
   // Update displacement (displacement is initialized from zero)
-  this->displacement_.noalias() += nodal_velocity * dt;
+  this->displacement_.noalias() += 0.5 * (prev_velocity + nodal_velocity) * dt;
 }
 
 //! Map particle pressure to nodes

@@ -170,8 +170,11 @@ double mpm::Cell<Tdim>::product_levelset(unsigned dis_id) {
 //! Determine the celltype by the nodal level set
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::determine_crossed_cell(unsigned dis_id) {
-  if (this->product_levelset(dis_id) >= 0) return;
-  this->assign_discontinuity_type(mpm::EnrichType::Crossed, dis_id);
+  if (this->product_levelset(dis_id) < 0)
+    this->assign_discontinuity_type(mpm::EnrichType::Crossed, dis_id);
+  else if (this->product_levelset(dis_id) >
+           std::numeric_limits<double>::epsilon())
+    this->assign_discontinuity_type(mpm::EnrichType::Irregular, dis_id);
 }
 
 //! Compute the nodal level set values by plane equations

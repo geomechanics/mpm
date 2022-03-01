@@ -23,7 +23,8 @@ enum EnrichType {
   NeighbourNextTip_1 = 9,
   NeighbourNextTip_2 = 10,
   NeighbourNextTip_3 = 11,
-  InitialTip = 12
+  InitialTip = 12,
+  Irregular = 13
 };
 
 // Discontinuity element class

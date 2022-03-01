@@ -682,6 +682,23 @@ void mpm::MPMBase<Tdim>::write_partio(mpm::Index step, mpm::Index max_steps) {
 }
 #endif  // USE_PARTIO
 
+//! Output results
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_outputs(mpm::Index step) {
+  if (step % this->output_steps_ == 0) {
+    // HDF5 outputs
+    this->write_hdf5(step, this->nsteps_);
+#ifdef USE_VTK
+    // VTK outputs
+    this->write_vtk(step, this->nsteps_);
+#endif
+#ifdef USE_PARTIO
+    // Partio outputs
+    this->write_partio(step, this->nsteps_);
+#endif
+  }
+}
+
 //! Return if a mesh is isoparametric
 template <unsigned Tdim>
 bool mpm::MPMBase<Tdim>::is_isoparametric() {

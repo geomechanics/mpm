@@ -144,6 +144,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   // Initialise loading conditions
   this->initialise_loads();
 
+  // Write initial outputs
+  this->write_outputs(this->step_);
+
   // Initialise matrix
   bool matrix_status = this->initialise_matrix();
   if (!matrix_status) {
@@ -233,18 +236,8 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 #endif
 #endif
 
-    if (step_ % output_steps_ == 0) {
-      // HDF5 outputs
-      this->write_hdf5(this->step_, this->nsteps_);
-#ifdef USE_VTK
-      // VTK outputs
-      this->write_vtk(this->step_, this->nsteps_);
-#endif
-#ifdef USE_PARTIO
-      // Partio outputs
-      this->write_partio(this->step_, this->nsteps_);
-#endif
-    }
+    // Write outputs
+    this->write_outputs(this->step_ + 1);
   }
   auto solver_end = std::chrono::steady_clock::now();
   console_->info("Rank {}, Implicit {} solver duration: {} ms", mpi_rank,

@@ -1217,13 +1217,13 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
 
     // Check particle displacement
     Eigen::Vector2d displacement;
-    displacement << 0., 0.0894;
+    displacement << 0., 0.0947;
     for (unsigned i = 0; i < displacement.size(); ++i)
       REQUIRE(particle->displacement()(i) ==
               Approx(displacement(i)).epsilon(Tolerance));
 
     // Updated particle coordinate
-    coords << 0.75, .8394;
+    coords << 0.75, 0.8447;
     // Check particle coordinates
     coordinates = particle->coordinates();
     for (unsigned i = 0; i < coordinates.size(); ++i)
@@ -1238,13 +1238,13 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
               Approx(velocity(i)).epsilon(Tolerance));
 
     // Check particle displacement
-    displacement << 0., 0.1788;
+    displacement << 0., 0.14035;
     for (unsigned i = 0; i < displacement.size(); ++i)
       REQUIRE(particle->displacement()(i) ==
               Approx(displacement(i)).epsilon(Tolerance));
 
     // Updated particle coordinate
-    coords << 0.75, .9288;
+    coords << 0.75, 0.89035;
     // Check particle coordinates
     coordinates = particle->coordinates();
     for (unsigned i = 0; i < coordinates.size(); ++i)
@@ -2815,13 +2815,13 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
 
     // Check particle displacement
     Eigen::Vector3d displacement;
-    displacement << 0.0, 0.5875, 1.0348571429;
+    displacement << 0.0, 0.34375, 0.6174285714;
     for (unsigned i = 0; i < displacement.size(); ++i)
       REQUIRE(particle->displacement()(i) ==
               Approx(displacement(i)).epsilon(Tolerance));
 
     // Updated particle coordinate
-    coords << 1.5, 2.0875, 2.5348571429;
+    coords << 1.5, 1.84375, 2.1174285714;
     // Check particle coordinates
     coordinates = particle->coordinates();
     for (unsigned i = 0; i < coordinates.size(); ++i)
@@ -2836,13 +2836,13 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
               Approx(velocity(i)).epsilon(Tolerance));
 
     // Check particle displacement
-    displacement << 0.0, 1.175, 2.0697142857;
+    displacement << 0.0, 0.6875, 1.1647857143;
     for (unsigned i = 0; i < displacement.size(); ++i)
       REQUIRE(particle->displacement()(i) ==
               Approx(displacement(i)).epsilon(Tolerance));
 
     // Updated particle coordinate
-    coords << 1.5, 2.675, 3.5697142857;
+    coords << 1.5, 2.1875, 2.6647857143;
     // Check particle coordinates
     coordinates = particle->coordinates();
     for (unsigned i = 0; i < coordinates.size(); ++i)

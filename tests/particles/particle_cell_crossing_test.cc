@@ -208,6 +208,29 @@ TEST_CASE("Particle cell crossing is checked for 2D case",
   // Locate particles in a mesh
   particles = mesh->locate_particles_mesh();
 
+  // Iterate over each particle to compute shapefn
+  mesh->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Dim>::compute_shapefn, std::placeholders::_1));
+
+  // Assign mass and momentum to nodes
+  mesh->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Dim>::map_mass_momentum_to_nodes,
+                std::placeholders::_1));
+
+  // Iterate over active nodes to compute acceleratation and velocity
+  mesh->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Dim>::compute_acceleration_velocity,
+                std::placeholders::_1, Phase, dt),
+      std::bind(&mpm::NodeBase<Dim>::status, std::placeholders::_1));
+
+  // Iterate over each particle to compute updated position
+  mesh->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Dim>::compute_updated_position,
+                std::placeholders::_1, dt, false));
+
+  // Locate particles in a mesh
+  particles = mesh->locate_particles_mesh();
+
   // Should find all particles in mesh
   REQUIRE(particles.size() == 0);
 
@@ -444,6 +467,32 @@ TEST_CASE("Particle cell crossing is checked for 3D case",
   REQUIRE(node5->assign_velocity_constraint(0, 1000) == true);
   REQUIRE(node6->assign_velocity_constraint(0, 1000) == true);
   REQUIRE(node7->assign_velocity_constraint(0, 0) == true);
+
+  // Iterate over each particle to compute shapefn
+  mesh->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Dim>::compute_shapefn, std::placeholders::_1));
+
+  // Assign mass and momentum to nodes
+  mesh->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Dim>::map_mass_momentum_to_nodes,
+                std::placeholders::_1));
+
+  // Iterate over active nodes to compute acceleratation and velocity
+  mesh->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Dim>::compute_acceleration_velocity,
+                std::placeholders::_1, Phase, dt),
+      std::bind(&mpm::NodeBase<Dim>::status, std::placeholders::_1));
+
+  // Iterate over each particle to compute updated position
+  mesh->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Dim>::compute_updated_position,
+                std::placeholders::_1, dt, false));
+
+  // Locate particles in a mesh
+  particles = mesh->locate_particles_mesh();
+
+  // Should find all particles in mesh
+  REQUIRE(particles.size() == 0);
 
   // Iterate over each particle to compute shapefn
   mesh->iterate_over_particles(std::bind(

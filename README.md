@@ -1,5 +1,5 @@
 # High-Performance Material Point Method
-> Geomechanics MPM is the codebase utilized by the [Soga Research Group](http://geomechanics.berkeley.edu/) at the University of California, Berkeley.
+> Geomechanics MPM is the codebase utilized by the [Soga Research Group](http://geomechanics.berkeley.edu/) at the University of California, Berkeley. TThis code represents a fork of [CB-Geo](https://github.com/cb-geo/mpm). 
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/geomechanics/mpm/develop/license.md)
 [![User docs](https://img.shields.io/badge/user-docs-blue.svg)](https://github.com/geomechanics/mpm/wiki)

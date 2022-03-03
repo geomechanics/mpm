@@ -465,6 +465,7 @@ template <unsigned Tdim>
 inline void mpm::TwoPhaseParticle<Tdim>::map_internal_force() noexcept {
   mpm::TwoPhaseParticle<Tdim>::map_mixture_internal_force();
   mpm::TwoPhaseParticle<Tdim>::map_liquid_internal_force();
+  mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force();
 }
 
 //! Map liquid phase internal force
@@ -605,6 +606,27 @@ inline void mpm::TwoPhaseParticle<3>::map_mixture_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Mixture, force);
+  }
+}
+
+//! Map liquid phase advection force
+template <unsigned Tdim>
+inline void mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force() noexcept {
+  // Compute nodal advection forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    Eigen::Matrix<double, Tdim, 1> force;
+
+    // Nodal liquid velocity
+    const auto& nodal_liquid_vel =
+        nodes_[i]->velocity(mpm::ParticlePhase::Liquid);
+
+    force = this->liquid_mass_density_ * shapefn_[i] *
+            ((liquid_velocity_ - velocity_) * dn_dx_.row(i)) * nodal_liquid_vel;
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Mixture, force);
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Liquid, force);
   }
 }
 

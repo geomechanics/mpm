@@ -221,6 +221,9 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map two phase mixture internal force
   virtual void map_mixture_internal_force() noexcept;
 
+  //! Map liquid advection force
+  virtual void map_liquid_advection_force() noexcept;
+
   //! Compute updated velocity of the particle based on nodal velocity
   //! \param[in] dt Analysis time step
   //! \retval status Compute status

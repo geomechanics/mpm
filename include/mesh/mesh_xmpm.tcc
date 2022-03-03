@@ -615,7 +615,7 @@ bool mpm::Mesh<Tdim>::initiation_discontinuity(
       // search the region outside of the other discontinuity
       bool near_dis = false;
       for (int j = 0; j < discontinuity_num(); ++j) {
-        if (std::abs(map_particles_[i]->levelset_phi(j)) <
+        if (std::abs(map_particles_[i]->levelset_phi(j)) >
                 std::numeric_limits<double>::epsilon() &&
             std::abs(map_particles_[i]->levelset_phi(j)) < shield_width)
           near_dis = true;

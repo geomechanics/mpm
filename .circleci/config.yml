@@ -107,7 +107,7 @@ jobs:
           name: Clone benchmarks
           command: |
             cd /home/cbgeo/project/build
-            git clone https://github.com/cb-geo/mpm-benchmarks.git benchmarks
+            git clone https://github.com/geomechanics/mpm-examples.git benchmarks
       # Benchmarks
       - run:
           name: 2D sliding block
@@ -115,24 +115,24 @@ jobs:
             cd /home/cbgeo/project/build
             pip3 install tables --user
             export OMP_NUM_THREADS=1
-            mpirun -n 4 ./mpm -f ./benchmarks/2d/sliding_block_inclined_boundary/
-            python3 ./benchmarks/2d/sliding_block_inclined_boundary/test_benchmark.py
+            mpirun -n 4 ./mpm -f ./benchmarks/explicit_single_phase/validation/sliding_block_inclined_boundary/
+            python3 ./benchmarks/explicit_single_phase/validation/sliding_block_inclined_boundary/test_benchmark.py
       # Stress
       - run:
           name: Uniaxial stress
           command: |
             cd /home/cbgeo/project/build
-            ./mpm -f ./benchmarks/2d/uniaxial_stress/
-            python3 ./benchmarks/2d/uniaxial_stress/test_benchmark.py
+            ./mpm -f ./benchmarks/explicit_single_phase/validation/uniaxial_stress/
+            python3 ./benchmarks/explicit_single_phase/validation/uniaxial_stress/test_benchmark.py
       # Traction
       - run:
           name: Uniaxial traction
           command: |
             cd /home/cbgeo/project/build
             export OMP_NUM_THREADS=2
-            ./mpm -f ./benchmarks/2d/uniaxial_traction/ -i mpm-nodal-forces.json
-            ./mpm -f ./benchmarks/2d/uniaxial_traction/ -i mpm-particle-traction.json
-            python3 ./benchmarks/2d/uniaxial_stress/test_benchmark.py
+            ./mpm -f ./benchmarks/explicit_single_phase/validation/uniaxial_traction/ -i mpm-nodal-forces.json
+            ./mpm -f ./benchmarks/explicit_single_phase/validation/uniaxial_traction/ -i mpm-particle-traction.json
+            python3 ./benchmarks/explicit_single_phase/validation/uniaxial_traction/test_benchmark.py
 
 workflows:
     version: 2

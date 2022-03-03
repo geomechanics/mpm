@@ -775,21 +775,31 @@ bool mpm::TwoPhaseParticle<Tdim>::map_drag_force_coefficient() {
     // Porosity parameter
     const double k_p =
         std::pow(this->porosity_, 3) / std::pow((1. - this->porosity_), 2);
-    // Initialise drag force coefficient
-    VectorDim drag_force_coefficient;
-    drag_force_coefficient.setZero();
 
-    // Check if permeability coefficient is valid
-    const double liquid_unit_weight =
-        9.81 * this->material(mpm::ParticlePhase::Liquid)
-                   ->template property<double>(std::string("density"));
-    for (unsigned i = 0; i < Tdim; ++i) {
-      if (k_p > 0.)
-        drag_force_coefficient(i) = porosity_ * porosity_ * liquid_unit_weight /
-                                    (k_p * permeability_(i));
-      else
-        throw std::runtime_error("Porosity coefficient is invalid");
-    }
+    // Initialise drag force coefficient
+    VectorDim drag_force_coefficient = VectorDim::Zero();
+
+    // Check which type of permeability coefficient
+    // Set true if unit is L^2 and false if unit is L/T
+    bool use_intrinsic =
+        this->material(mpm::ParticlePhase::Solid)
+            ->template property<bool>(std::string("intrinsic_permeability"));
+
+    // Multiplier depends on the permeability type
+    double multiplier;
+    if (use_intrinsic)
+      multiplier =
+          this->material(mpm::ParticlePhase::Liquid)
+              ->template property<double>(std::string("dynamic_viscosity"));
+    else
+      multiplier =
+          9.81 * this->material(mpm::ParticlePhase::Liquid)
+                     ->template property<double>(std::string("density"));
+
+    // Compute drag force coefficient
+    for (unsigned i = 0; i < Tdim; ++i)
+      drag_force_coefficient(i) =
+          porosity_ * porosity_ * multiplier / (k_p * permeability_(i));
 
     // Map drag forces from particle to nodes
     for (unsigned j = 0; j < nodes_.size(); ++j)
@@ -1273,20 +1283,38 @@ template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::map_drag_matrix_to_cell() {
   bool status = true;
   try {
-    // Initialise drag force multiplier
-    VectorDim multiplier;
-    multiplier.setZero();
     // Porosity parameter
     const double k_p =
         std::pow(this->porosity_, 3) / std::pow((1. - this->porosity_), 2);
-    // Compute drag force multiplier
+
+    // Initialise drag force coefficient
+    VectorDim drag_force_coefficient = VectorDim::Zero();
+
+    // Check which type of permeability coefficient
+    // Set true if unit is L^2 and false if unit is L/T
+    bool use_intrinsic =
+        this->material(mpm::ParticlePhase::Solid)
+            ->template property<bool>(std::string("intrinsic_permeability"));
+
+    // Multiplier depends on the permeability type
+    double multiplier;
+    if (use_intrinsic)
+      multiplier =
+          this->material(mpm::ParticlePhase::Liquid)
+              ->template property<double>(std::string("dynamic_viscosity"));
+    else
+      multiplier =
+          9.81 * this->material(mpm::ParticlePhase::Liquid)
+                     ->template property<double>(std::string("density"));
+
+    // Compute drag force coefficient
     for (unsigned i = 0; i < Tdim; ++i)
-      multiplier(i) = this->porosity_ * this->porosity_ * 9.81 *
-                      this->material(mpm::ParticlePhase::Liquid)
-                          ->template property<double>(std::string("density")) /
-                      (this->permeability_(i) * k_p);
+      drag_force_coefficient(i) =
+          porosity_ * porosity_ * multiplier / (k_p * permeability_(i));
+
     // Compute local drag matrix
-    cell_->compute_local_drag_matrix(shapefn_, volume_, multiplier);
+    cell_->compute_local_drag_matrix(shapefn_, volume_, drag_force_coefficient);
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

@@ -105,7 +105,7 @@ void mpm::DiscontinuityBase<Tdim>::locate_discontinuity_mesh(
     const Vector<Cell<Tdim>>& cells,
     const Map<Cell<Tdim>>& map_cells) noexcept {
   for (auto& point : this->points_)
-    point.locate_discontinuity_mesh(cells, map_cells, id_);
+    point.locate_discontinuity_mesh(cells, map_cells, id_, true);
 }
 
 // Compute updated position of the particle
@@ -129,7 +129,7 @@ void mpm::DiscontinuityBase<Tdim>::insert_points(
     const Map<Cell<Tdim>>& map_cells) {
   // add points
   mpm::discontinuity_point<Tdim> point(coordinates);
-  point.locate_discontinuity_mesh(cells, map_cells, id_);
+  point.locate_discontinuity_mesh(cells, map_cells, id_, false);
   point.compute_shapefn();
   points_.emplace_back(point);
 }

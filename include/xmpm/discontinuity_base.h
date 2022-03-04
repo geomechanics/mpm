@@ -218,9 +218,10 @@ struct discontinuity_point {
   //! \param[in] cells vector of cells
   //! \param[in] map_cells map of cells
   //! \param[in] the discontinuity id
+  //! \param[in] update update cell type or not
   void locate_discontinuity_mesh(const Vector<Cell<Tdim>>& cells,
                                  const Map<Cell<Tdim>>& map_cells,
-                                 unsigned dis_id) noexcept;
+                                 unsigned dis_id, bool update) noexcept;
 
   //! Compute updated position
   void compute_updated_position(double dt, int move_direction) noexcept;

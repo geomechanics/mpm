@@ -75,14 +75,14 @@ bool mpm::discontinuity_point<Tdim>::compute_reference_location() noexcept {
 template <unsigned Tdim>
 void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
     const Vector<Cell<Tdim>>& cells, const Map<Cell<Tdim>>& map_cells,
-    unsigned dis_id) noexcept {
+    unsigned dis_id, bool update) noexcept {
   // Check the current cell if it is not invalid
   if (cell_id() != std::numeric_limits<mpm::Index>::max()) {
     // If a cell id is present, but not a cell locate the cell from map
     if (!cell_ptr()) assign_cell(map_cells[cell_id()]);
 
     if (compute_reference_location()) {
-      assign_cell_enrich(map_cells, dis_id);
+      if (update) assign_cell_enrich(map_cells, dis_id);
       return;
     }
 
@@ -92,7 +92,7 @@ void mpm::discontinuity_point<Tdim>::locate_discontinuity_mesh(
     for (auto neighbour : neighbours) {
       if (map_cells[neighbour]->is_point_in_cell(coordinates_, &xi)) {
         assign_cell_xi(map_cells[neighbour], xi);
-        assign_cell_enrich(map_cells, dis_id);
+        if (update) assign_cell_enrich(map_cells, dis_id);
         return;
       }
     }

@@ -513,13 +513,14 @@ void mpm::Mesh<Tdim>::remove_spurious_potential_tip_cells(unsigned dis_id) {
   // Loop over cells
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
     // Check if the element is potential tip cell
-    if ((*citr)->element_discontinuity_type(0) != mpm::EnrichType::PotentialTip)
+    if ((*citr)->element_discontinuity_type(dis_id) !=
+        mpm::EnrichType::PotentialTip)
       continue;
 
     // Algorithm to check if the assigned potential tip cell is stable
     bool potential_tip = false;
     for (auto neighbour : (*citr)->neighbours()) {
-      if (cells_[neighbour]->element_discontinuity_type(0) !=
+      if (cells_[neighbour]->element_discontinuity_type(dis_id) !=
           mpm::EnrichType::NeighbourTip_2)
         continue;
 

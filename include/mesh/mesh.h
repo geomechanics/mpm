@@ -605,9 +605,13 @@ class Mesh {
       std::tuple<double, double, double, double, double, int, bool, bool>&
           initiation_property);
 
-  //! The function to propagate of discontinuity
+  //! The pre-process of discontinuity
   //! \ingroup XMPM
-  void propagation_discontinuity();
+  void preprocess_discontinuity();
+
+  //! The post-process of discontinuity
+  //! \ingroup XMPM
+  void postprocess_discontinuity();
 
   //! Adjust the nodal levelset_phi by mls
   //! \ingroup XMPM

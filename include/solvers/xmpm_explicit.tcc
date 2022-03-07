@@ -147,8 +147,8 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
       if (mesh_->discontinuity_num() >= maximum_num_) initiation_ = false;
     }
 
-    // the process for the discontinuity propagation
-    mesh_->propagation_discontinuity();
+    // the pre-process for the discontinuity propagation
+    mesh_->preprocess_discontinuity();
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(phase);
@@ -160,14 +160,14 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
 
+    // the post-process for the discontinuity propagation
+    mesh_->postprocess_discontinuity();
+
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
                                              damping_factor_);
 
-    // Update the discontinuity position
-    mesh_->compute_updated_position_discontinuity(this->dt_);
-
-    // Mass momentum and compute velocity at nodes
+    // Mass momentum and compute velocity at nodes for musl
     mpm_scheme_->postcompute_nodal_kinematics(phase);
 
     // Update Stress Last

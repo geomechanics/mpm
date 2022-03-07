@@ -141,7 +141,9 @@ class ParticleXMPM : public Particle<Tdim> {
   //! Return 1 if x > 0, -1 if x < 0 and 0 if x = 0
   //! \param[in] x double value
   inline double sgn(double x) noexcept {
-    return (x > 0) ? 1. : ((x < 0) ? -1. : 0);
+    return (x > std::numeric_limits<double>::epsilon())
+               ? 1.
+               : ((x < -std::numeric_limits<double>::epsilon()) ? -1. : 0);
   }
 
  private:

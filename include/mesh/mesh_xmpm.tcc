@@ -980,9 +980,9 @@ void mpm::Mesh<Tdim>::determine_enriched_node_by_mass_h(unsigned dis_id) {
                                std::placeholders::_1));
 }
 
-//! The function to propagate of discontinuity
+//! The pre-process of discontinuity
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::propagation_discontinuity() {
+void mpm::Mesh<Tdim>::preprocess_discontinuity() {
 
   // Exit if there is no discontinuity
   if (discontinuity_num() == 0) return;
@@ -1055,21 +1055,32 @@ void mpm::Mesh<Tdim>::propagation_discontinuity() {
 
     // Assign self-contact properties
     assign_self_contact_property(dis_id);
-
-    // Check propagation condition and determine next tip cell, then update
-    // discontinuity
-    if (propagation) {
-      find_next_tip_cells(dis_id);
-      update_discontinuity(dis_id);
-    }
-
-    // If a particle in the discontinuity region has level set values
-    iterate_over_particles(std::bind(&mpm::ParticleBase<Tdim>::check_levelset,
-                                     std::placeholders::_1, dis_id));
   }
 
   // Self contact detection at enriched nodes
   selfcontact_detection();
+}
+
+//! The post-process of discontinuity
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::postprocess_discontinuity() {
+
+  // Exit if there is no discontinuity
+  if (discontinuity_num() == 0) return;
+
+  // Loop over discontinuity
+  for (unsigned dis_id = 0; dis_id < discontinuity_num(); dis_id++) {
+    // Check if discontinuity is allowed to propagate
+    const bool propagation = discontinuity_[dis_id]->propagation();
+    const auto& type = discontinuity_[dis_id]->description_type();
+
+    if (!propagation) continue;
+    // Localization propagation search
+    find_next_tip_cells(dis_id);
+
+    // Update the discontinuity information
+    update_discontinuity(dis_id);
+  }
 }
 
 //! Adjust the nodal levelset_phi by mls

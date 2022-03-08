@@ -659,6 +659,49 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
     }
   }
 }
+
+//! Write VTK files for points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_point_vtk(mpm::Index step, mpm::Index max_steps,
+                                         std::vector<PointBase<Tdim>>& points) {
+
+  // VTK PolyData writer
+  auto vtk_writer = std::make_unique<VtkWriter>(particle_coordinates(points));
+
+  // Write input geometry to vtk file
+  const std::string extension = ".vtp";
+  const std::string attribute = "geometry_point";
+  auto meshfile =
+      io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+  vtk_writer->write_geometry(meshfile);
+
+  //! VTK scalar variables
+  for (const auto& attribute : vtk_point_vars_.at(mpm::VariableType::Scalar)) {
+    // Write scalar
+    auto file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+    vtk_writer->write_scalar_point_data(file, points_scalar_data(attribute),
+                                        attribute);
+  }
+
+  //! VTK vector variables
+  for (const auto& attribute : vtk_point_vars_.at(mpm::VariableType::Vector)) {
+    // Write vector
+    auto file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+    vtk_writer->write_vector_point_data(file, points_vector_data(attribute),
+                                        attribute);
+  }
+
+  //! VTK tensor variables
+  for (const auto& attribute : vtk_point_vars_.at(mpm::VariableType::Tensor)) {
+    // Write vector
+    auto file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+    vtk_writer->write_tensor_point_data(
+        file, this->template points_tensor_data<6>(attribute), attribute);
+  }
+}
 #endif
 
 #ifdef USE_PARTIO
@@ -1597,4 +1640,73 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
     console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,
                    __LINE__, exception.what());
   }
+}
+
+//! Return point coordinates
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::MPMBase<Tdim>::points_coordinates(
+    std::vector<PointBase<Tdim>>& points) {
+  std::vector<Eigen::Matrix<double, 3, 1>> point_coordinates;
+  for (const auto& point : points) {
+    Eigen::Vector3d coordinates;
+    coordinates.setZero();
+    auto pcoords = point->coordinates();
+    // Fill coordinates to the size of dimensions
+    for (unsigned i = 0; i < Tdim; ++i) coordinates(i) = pcoords(i);
+    point_coordinates.emplace_back(coordinates);
+  }
+  return point_coordinates;
+}
+
+//! Return point scalar data
+template <unsigned Tdim>
+std::vector<double> mpm::MPMBase<Tdim>::points_scalar_data(
+    const std::string& attribute, std::vector<PointBase<Tdim>>& points) const {
+  std::vector<double> scalar_data;
+  scalar_data.reserve(points.size());
+  // Iterate over points and add scalar value to data
+  for (const auto& point : points)
+    scalar_data.emplace_back(point->scalar_data(attribute));
+  return scalar_data;
+}
+
+//! Return point vector data
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::MPMBase<Tdim>::points_vector_data(
+    const std::string& attribute, std::vector<PointBase<Tdim>>& points) const {
+  std::vector<Eigen::Matrix<double, 3, 1>> vector_data;
+  // Iterate over points
+  for (const auto& point : points) {
+    Eigen::Matrix<double, 3, 1> data;
+    data.setZero();
+    auto pdata = point->vector_data(attribute);
+    // Fill vector_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    vector_data.emplace_back(data);
+  }
+  return vector_data;
+}
+
+//! Return point tensor data
+template <unsigned Tdim>
+template <unsigned Tsize>
+std::vector<Eigen::Matrix<double, Tsize, 1>>
+    mpm::MPMBase<Tdim>::points_tensor_data(
+        const std::string& attribute,
+        std::vector<PointBase<Tdim>>& points) const {
+  std::vector<Eigen::Matrix<double, Tsize, 1>> tensor_data;
+  // Iterate over points
+  for (const auto& point : points) {
+    Eigen::Matrix<double, Tsize, 1> data;
+    data.setZero();
+    auto pdata = point->tensor_data(attribute);
+    // Fill tensor_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    tensor_data.emplace_back(data);
+  }
+  return tensor_data;
 }

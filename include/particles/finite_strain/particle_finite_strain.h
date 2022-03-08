@@ -74,6 +74,10 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \retval deformaton gradient increment at particle inside a cell
   inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
+  //! Compute Hencky strain using deformation gradient
+  inline Eigen::Matrix<double, 6, 1> compute_hencky_strain(
+      const Eigen::Matrix<double, 3, 3>& deformation_gradient);
   /**@}*/
 
  protected:

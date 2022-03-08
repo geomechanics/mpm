@@ -146,6 +146,56 @@ inline Eigen::Matrix<double, 3, 3>
   return deformation_gradient_increment;
 }
 
+// Compute Hencky strain
+template <unsigned Tdim>
+inline Eigen::Matrix<double, 6, 1>
+    mpm::ParticleFiniteStrain<Tdim>::compute_hencky_strain(
+        const Eigen::Matrix<double, 3, 3>& deformation_gradient) {
+
+  // Left Cauchy-Green strain
+  Eigen::Matrix<double, 3, 3> left_cauchy_green =
+      deformation_gradient * deformation_gradient.transpose();
+
+  // Left Cauchy-Green strain (Voigt vector)
+  // Check necessity of 2.0
+  Eigen::Matrix<double, 6, 1> left_cauchy_green_vector =
+      Eigen::Matrix<double, 6, 1>::Zero();
+  left_cauchy_green_vector(0) = left_cauchy_green(0, 0);
+  left_cauchy_green_vector(1) = left_cauchy_green(1, 1);
+  left_cauchy_green_vector(2) = left_cauchy_green(2, 2);
+  left_cauchy_green_vector(3) = 2. * left_cauchy_green(0, 1);
+  left_cauchy_green_vector(4) = 2. * left_cauchy_green(1, 2);
+  left_cauchy_green_vector(5) = 2. * left_cauchy_green(2, 0);
+
+  // Principal value of left Cauchy-Green strain
+  Eigen::Matrix<double, 3, 1> principal_left_cauchy_green =
+      Eigen::Matrix<double, 3, 1>::Zero();
+  Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
+  principal_left_cauchy_green =
+      mpm::materials::principal_tensor(left_cauchy_green_vector, directors);
+
+  // Principal value of Hencky (logarithmic) strain
+  Eigen::Matrix<double, 3, 3> principal_hencky_strain =
+      Eigen::Matrix<double, 3, 3>::Zero();
+  principal_hencky_strain(0, 0) = 0.5 * log(principal_left_cauchy_green(0));
+  principal_hencky_strain(1, 1) = 0.5 * log(principal_left_cauchy_green(1));
+  principal_hencky_strain(2, 2) = 0.5 * log(principal_left_cauchy_green(2));
+
+  // Hencky strain tensor
+  Eigen::Matrix<double, 3, 3> hencky_strain =
+      directors * principal_hencky_strain * directors.transpose();
+  Eigen::Matrix<double, 6, 1> hencky_strain_vector =
+      Eigen::Matrix<double, 6, 1>::Zero();
+  hencky_strain_vector(0) = hencky_strain(0, 0);
+  hencky_strain_vector(1) = hencky_strain(1, 1);
+  hencky_strain_vector(2) = hencky_strain(2, 2);
+  hencky_strain_vector(3) = 2. * hencky_strain(0, 1);
+  hencky_strain_vector(4) = 2. * hencky_strain(1, 2);
+  hencky_strain_vector(5) = 2. * hencky_strain(2, 0);
+
+  return hencky_strain_vector;
+}
+
 // Update volume based on the deformation gradient increment
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::update_volume() noexcept {

@@ -54,6 +54,11 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
+  //! Function to reinitialise consitutive law to be run at the beginning of
+  //! each time step
+  //! \ingroup Implicit
+  void initialise_constitutive_law() noexcept override;
+
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
   void compute_strain_newmark() noexcept override;

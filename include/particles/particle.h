@@ -424,7 +424,7 @@ class Particle : public ParticleBase<Tdim> {
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
-  void initialise_constitutive_law() noexcept override;
+  virtual void initialise_constitutive_law() noexcept override;
   /**@}*/
 
  protected:

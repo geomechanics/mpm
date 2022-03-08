@@ -21,6 +21,25 @@ mpm::ParticleFiniteStrain<Tdim>::ParticleFiniteStrain(Index id,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
+//! Function to reinitialise material to be run at the beginning of each time
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::initialise_constitutive_law() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+
+  // Reset material to be Elastic
+  material_[mpm::ParticlePhase::Solid]->initialise(
+      &state_variables_[mpm::ParticlePhase::Solid]);
+
+  // Compute initial consititutive matrix
+  this->constitutive_matrix_ =
+      material_[mpm::ParticlePhase::Solid]
+          ->compute_consistent_tangent_matrix_finite_strain(
+              stress_, previous_stress_, deformation_gradient_,
+              deformation_gradient_increment_, this,
+              &state_variables_[mpm::ParticlePhase::Solid]);
+}
+
 // Compute stress using implicit updating scheme
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {

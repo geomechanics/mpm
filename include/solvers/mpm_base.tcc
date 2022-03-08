@@ -136,6 +136,47 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
         __FILE__, __LINE__);
   }
 
+  // Variable list for points
+  tsl::robin_map<std::string, VariableType> variables_point = {
+      // Scalar variables
+      {"dis_id", VariableType::Scalar},
+      // Vector variables
+      {"displacements", VariableType::Vector}
+      // Tensor variables
+  };
+
+  // VTK points variables
+  // Initialise container with empty vector
+  vtk_point_vars_.insert(
+      std::make_pair(mpm::VariableType::Scalar, std::vector<std::string>()));
+  vtk_point_vars_.insert(
+      std::make_pair(mpm::VariableType::Vector, std::vector<std::string>()));
+  vtk_point_vars_.insert(
+      std::make_pair(mpm::VariableType::Tensor, std::vector<std::string>()));
+
+  if ((post_process_.find("vtk_point") != post_process_.end()) &&
+      post_process_.at("vtk_point").is_array() &&
+      post_process_.at("vtk_point").size() > 0) {
+    // Iterate over vtk
+    for (unsigned i = 0; i < post_process_.at("vtk_point").size(); ++i) {
+      std::string attribute =
+          post_process_["vtk_point"][i].template get<std::string>();
+      if (variables_point.find(attribute) != variables_point.end())
+        vtk_point_vars_[variables_point.at(attribute)].emplace_back(attribute);
+      else {
+        console_->warn(
+            "{} #{}: VTK point variable '{}' was specified, but is not "
+            "available "
+            "in variable_point list",
+            __FILE__, __LINE__, attribute);
+      }
+    }
+  } else {
+    console_->warn(
+        "{} #{}: No VTK point variables were specified, none will be generated",
+        __FILE__, __LINE__);
+  }
+
   // VTK state variables
   bool vtk_statevar = false;
   if ((post_process_.find("vtk_statevars") != post_process_.end()) &&

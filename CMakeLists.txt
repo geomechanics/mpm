@@ -170,6 +170,7 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/utilities/
   ${mpm_SOURCE_DIR}/external/
   ${mpm_SOURCE_DIR}/tests/include/
+  ${mpm_SOURCE_DIR}/include/points/
 )
 
 # mpm executable
@@ -195,6 +196,7 @@ SET(mpm_src
   ${mpm_SOURCE_DIR}/src/node.cc
   ${mpm_SOURCE_DIR}/src/particle.cc
   ${mpm_SOURCE_DIR}/src/quadrature.cc
+  ${mpm_SOURCE_DIR}/src/point.cc
 )
 add_executable(mpm ${mpm_SOURCE_DIR}/src/main.cc ${mpm_src} ${mpm_vtk})
 

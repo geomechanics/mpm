@@ -44,9 +44,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Delete assignment operator
   ParticleFiniteStrain& operator=(const ParticleFiniteStrain<Tdim>&) = delete;
 
-  //! Map internal force
-  inline void map_internal_force() noexcept override;
-
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
@@ -57,20 +54,16 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
-  //! Compute B matrix of a particle, based on local coordinates
+  //! Compute strain using nodal displacement
   //! \ingroup Implicit
-  inline Eigen::MatrixXd compute_bmatrix() noexcept override;
+  void compute_strain_newmark() noexcept override;
+
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  void compute_stress_newmark() noexcept override;
   /**@}*/
 
  protected:
-  //! Compute strain rate
-  //! \ingroup Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval strain rate at particle inside a cell
-  inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
-
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -87,6 +80,10 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
  protected:
   //! Nodes
   using ParticleBase<Tdim>::nodes_;
+  //! State variables
+  using ParticleBase<Tdim>::state_variables_;
+  //! Material
+  using ParticleBase<Tdim>::material_;
   //! Volume
   using Particle<Tdim>::volume_;
   //! Stresses
@@ -112,6 +109,14 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+
+  /**
+   * \defgroup ImplicitVariables Variables dealing with implicit MPM
+   */
+  /**@{*/
+  //! Stresses at the last time step
+  Eigen::Matrix<double, 6, 1> previous_stress_;
+  /**@}*/
 
   /**
    * \defgroup FiniteStrainVariables Variables for finite strain formulation

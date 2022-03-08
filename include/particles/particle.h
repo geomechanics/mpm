@@ -399,11 +399,11 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
-  void compute_strain_newmark() noexcept override;
+  virtual void compute_strain_newmark() noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  void compute_stress_newmark() noexcept override;
+  virtual void compute_stress_newmark() noexcept override;
 
   //! Return stress at the previous time step of the particle
   //! \ingroup Implicit

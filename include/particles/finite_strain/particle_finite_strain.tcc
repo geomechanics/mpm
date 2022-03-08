@@ -21,210 +21,34 @@ mpm::ParticleFiniteStrain<Tdim>::ParticleFiniteStrain(Index id,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
-// Compute strain rate of the particle
-template <>
-inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticleFiniteStrain<1>::compute_strain_rate(
-        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rate
-  Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 1, 1> vel = nodes_[i]->velocity(phase);
-    strain_rate[0] += dn_dx(i, 0) * vel[0];
-  }
-
-  if (std::fabs(strain_rate(0)) < 1.E-15) strain_rate[0] = 0.;
-  return strain_rate;
+// Compute strain of the particle using nodal displacement
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::compute_strain_newmark() noexcept {
+  // Compute strain increment from previous time step
+  this->dstrain_ =
+      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
 }
 
-// Compute strain rate of the particle
-template <>
-inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticleFiniteStrain<2>::compute_strain_rate(
-        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rate
-  Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
+// Compute stress using implicit updating scheme
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+  // Clone state variables
+  auto temp_state_variables = state_variables_[mpm::ParticlePhase::Solid];
+  // Calculate stress
+  this->stress_ =
+      (this->material())
+          ->compute_stress_finite_strain(
+              previous_stress_, deformation_gradient_,
+              deformation_gradient_increment_, this, &temp_state_variables);
 
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
-    // clang-format off
-    strain_rate[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2.) * vel[0] +
-                      (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2. * vel[1];
-    strain_rate[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2. * vel[0] +
-                      (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2.) * vel[1];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
-    // clang-format on
-  }
-
-  if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
-  if (std::fabs(strain_rate[1]) < 1.E-15) strain_rate[1] = 0.;
-  if (std::fabs(strain_rate[3]) < 1.E-15) strain_rate[3] = 0.;
-  return strain_rate;
-}
-
-// Compute strain rate of the particle
-template <>
-inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticleFiniteStrain<3>::compute_strain_rate(
-        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rate
-  Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
-    // clang-format off
-    strain_rate[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3.) * vel[0] +
-                      (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * vel[1] +
-                      (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3. * vel[2];
-    strain_rate[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * vel[0] +
-                      (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) * vel[1] +
-                      (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3. * vel[2];
-    strain_rate[2] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * vel[0] +
-                      (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * vel[1] +
-                      (dn_dx(i, 2) + (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3.) * vel[2];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
-    strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
-    strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
-    // clang-format on
-  }
-
-  for (unsigned i = 0; i < strain_rate.size(); ++i)
-    if (std::fabs(strain_rate[i]) < 1.E-15) strain_rate[i] = 0.;
-  return strain_rate;
-}
-
-//! Map internal force
-template <>
-inline void mpm::ParticleFiniteStrain<1>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 1, 1> force;
-    force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
-
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-  }
-}
-
-//! Map internal force
-template <>
-inline void mpm::ParticleFiniteStrain<2>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 2, 1> force;
-    // clang-format off
-    force[0] = (dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2.) * stress_[0] +
-               (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2. * stress_[1] +
-               dn_dx_(i, 1) * stress_[3];
-    force[1] = (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2. * stress_[0] +
-               (dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2.) * stress_[1] +
-               dn_dx_(i, 0) * stress_[3];
-    // clang-format on
-
-    force *= -1. * this->volume_;
-
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-  }
-}
-
-//! Map internal force
-template <>
-inline void mpm::ParticleFiniteStrain<3>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 3, 1> force;
-    // clang-format off
-    force[0] = (dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.) * stress_[0] +
-               (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[1] +
-               (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3. * stress_[2] +
-               dn_dx_(i, 1) * stress_[3] + dn_dx_(i, 2) * stress_[5];
-
-    force[1] = (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[0] +
-               (dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.) * stress_[1] +
-               (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3. * stress_[2] +
-               dn_dx_(i, 0) * stress_[3] + dn_dx_(i, 2) * stress_[4];
-
-    force[2] = (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * stress_[0] +
-               (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3. * stress_[1] +
-               (dn_dx_(i, 2) + (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3.) * stress_[2] +
-               dn_dx_(i, 1) * stress_[4] + dn_dx_(i, 0) * stress_[5];
-    // clang-format on
-
-    force *= -1. * this->volume_;
-
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-  }
-}
-
-// Compute B matrix
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<1>::compute_bmatrix() noexcept {
-  Eigen::MatrixXd bmatrix;
-  bmatrix.resize(1, this->nodes_.size());
-  bmatrix.setZero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    bmatrix(0, i) = dn_dx_(i, 0);
-  }
-  return bmatrix;
-}
-
-// Compute B matrix
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<2>::compute_bmatrix() noexcept {
-  Eigen::MatrixXd bmatrix;
-  bmatrix.resize(3, 2 * this->nodes_.size());
-  bmatrix.setZero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    // clang-format off
-    bmatrix(0, 2 * i) = dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2.;
-    bmatrix(1, 2 * i) =                (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2.;
-    bmatrix(2, 2 * i) = dn_dx_(i, 1);
-
-    bmatrix(0, 2 * i + 1) =                (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2.;
-    bmatrix(1, 2 * i + 1) = dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2.;
-    bmatrix(2, 2 * i + 1) = dn_dx_(i, 0);
-    // clang-format on
-  }
-  return bmatrix;
-}
-
-// Compute B matrix
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<3>::compute_bmatrix() noexcept {
-  Eigen::MatrixXd bmatrix;
-  bmatrix.resize(6, 3 * this->nodes_.size());
-  bmatrix.setZero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    // clang-format off
-    bmatrix(0, 3 * i) = dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.;
-    bmatrix(1, 3 * i) =                (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.;
-    bmatrix(2, 3 * i) =                (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 3.;
-    bmatrix(3, 3 * i) = dn_dx_(i, 1);
-    bmatrix(5, 3 * i) = dn_dx_(i, 2);
-
-    bmatrix(0, 3 * i + 1) =                (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.;
-    bmatrix(1, 3 * i + 1) = dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.;
-    bmatrix(2, 3 * i + 1) =                (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 3.;
-    bmatrix(3, 3 * i + 1) = dn_dx_(i, 0);
-    bmatrix(4, 3 * i + 1) = dn_dx_(i, 2);
-
-    bmatrix(0, 3 * i + 2) =                (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3.;
-    bmatrix(1, 3 * i + 2) =                (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3.;
-    bmatrix(2, 3 * i + 2) = dn_dx_(i, 2) + (dn_dx_centroid_(i, 2) - dn_dx_(i, 2)) / 3.;
-    bmatrix(4, 3 * i + 2) = dn_dx_(i, 1);
-    bmatrix(5, 3 * i + 2) = dn_dx_(i, 0);
-    // clang-format on
-  }
-  return bmatrix;
+  // Compute current consititutive matrix
+  this->constitutive_matrix_ =
+      material_[mpm::ParticlePhase::Solid]
+          ->compute_consistent_tangent_matrix_finite_strain(
+              stress_, previous_stress_, deformation_gradient_,
+              deformation_gradient_increment_, this, &temp_state_variables);
 }
 
 // Compute strain increment of the particle

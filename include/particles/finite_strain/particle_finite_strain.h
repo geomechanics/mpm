@@ -50,6 +50,9 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
+  //! Update volume based on centre volumetric strain rate
+  virtual void update_volume() noexcept override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

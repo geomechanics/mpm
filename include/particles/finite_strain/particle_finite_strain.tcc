@@ -302,3 +302,15 @@ inline Eigen::Matrix<double, 6, 1>
     if (std::fabs(strain_increment[i]) < 1.E-15) strain_increment[i] = 0.;
   return strain_increment;
 }
+
+// Update volume based on the deformation gradient increment
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::update_volume() noexcept {
+  // Check if particle has a valid cell ptr and a valid volume
+  assert(cell_ != nullptr && volume_ != std::numeric_limits<double>::max());
+  // Compute at centroid
+  // Strain rate for reduced integration
+  this->volume_ *= this->deformation_gradient_increment_.determinant();
+  this->mass_density_ =
+      this->mass_density_ / this->deformation_gradient_increment_.determinant();
+}

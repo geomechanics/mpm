@@ -65,7 +65,7 @@ class Particle : public ParticleBase<Tdim> {
   std::shared_ptr<void> pod() const override;
 
   //! Initialise properties
-  void initialise() override;
+  virtual void initialise() override;
 
   //! Compute reference coordinates in a cell
   bool compute_reference_location() noexcept override;
@@ -122,7 +122,7 @@ class Particle : public ParticleBase<Tdim> {
   void compute_volume() noexcept override;
 
   //! Update volume based on centre volumetric strain rate
-  void update_volume() noexcept override;
+  virtual void update_volume() noexcept override;
 
   //! Return mass density
   double mass_density() const override { return mass_density_; }
@@ -547,6 +547,16 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> previous_stress_;
   //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
   Eigen::MatrixXd constitutive_matrix_;
+  /**@}*/
+
+  /**
+   * \defgroup FiniteStrainVariables Variables for finite strain formulation
+   */
+  /**@{*/
+  //! Deformation gradient
+  Eigen::Matrix<double, 3, 3> deformation_gradient_;
+  //! Deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_;
   /**@}*/
 
 };  // Particle class

@@ -22,13 +22,17 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
   //! Construct a particle using finite strain formulation with id and
-  //! coordinates \param[in] id Particle id \param[in] coord Coordinates of the
+  //! coordinates
+  //! \param[in] id Particle id
+  //! \param[in] coord Coordinates of the
   //! particles
   ParticleFiniteStrain(Index id, const VectorDim& coord);
 
   //! Construct a particle using finite strain formulation with id, coordinates
-  //! and status \param[in] id Particle id \param[in] coord coordinates of the
-  //! particle \param[in] status Particle status (active / inactive)
+  //! and status
+  //! \param[in] id Particle id
+  //! \param[in] coord coordinates of the particle
+  //! \param[in] status Particle status (active / inactive)
   ParticleFiniteStrain(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
@@ -105,6 +109,16 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+
+  /**
+   * \defgroup FiniteStrainVariables Variables for finite strain formulation
+   */
+  /**@{*/
+  //! Deformation gradient
+  using Particle<Tdim>::deformation_gradient_;
+  //! Deformation gradient increment
+  using Particle<Tdim>::deformation_gradient_increment_;
+  /**@}*/
 
 };  // ParticleFiniteStrain class
 }  // namespace mpm

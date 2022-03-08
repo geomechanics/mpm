@@ -700,10 +700,10 @@ void mpm::MPMBase<Tdim>::write_point_vtk(mpm::Index step, mpm::Index max_steps,
                                          std::vector<PointBase<Tdim>>& points) {
 
   // VTK PolyData writer
-  auto vtk_writer = std::make_unique<VtkWriter>(particle_coordinates(points));
+  auto vtk_writer = std::make_unique<VtkWriter>(points_coordinates(points));
 
   // Write input geometry to vtk file
-  const std::string extension = ".vtp";
+  const std::string extension = "_point.vtp";
   const std::string attribute = "geometry_point";
   auto meshfile =
       io_->output_file(attribute, extension, uuid_, step, max_steps).string();

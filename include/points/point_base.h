@@ -123,6 +123,8 @@ class PointBase {
   Index id_{std::numeric_limits<Index>::max()};
   //! coordinates
   VectorDim coordinates_;
+  //! Velocity
+  Eigen::Matrix<double, Tdim, 1> velocity_;
   //! displacement
   VectorDim displacement_;
   //! Cell id
@@ -139,6 +141,13 @@ class PointBase {
   Eigen::VectorXd shapefn_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  //! Map of scalar properties
+  tsl::robin_map<std::string, std::function<double()>> scalar_properties_;
+  //! Map of vector properties
+  tsl::robin_map<std::string, std::function<VectorDim()>> vector_properties_;
+  //! Map of tensor properties
+  tsl::robin_map<std::string, std::function<Eigen::VectorXd()>>
+      tensor_properties_;
 };  // PointBase class
 }  // namespace mpm
 

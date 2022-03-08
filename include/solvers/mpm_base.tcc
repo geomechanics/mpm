@@ -721,8 +721,8 @@ void mpm::MPMBase<Tdim>::write_point_vtk(mpm::Index step, mpm::Index max_steps,
     // Write scalar
     auto file =
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
-    vtk_writer->write_scalar_point_data(file, points_scalar_data(attribute),
-                                        attribute);
+    vtk_writer->write_scalar_point_data(
+        file, points_scalar_data(attribute, points), attribute);
   }
 
   //! VTK vector variables
@@ -730,8 +730,8 @@ void mpm::MPMBase<Tdim>::write_point_vtk(mpm::Index step, mpm::Index max_steps,
     // Write vector
     auto file =
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
-    vtk_writer->write_vector_point_data(file, points_vector_data(attribute),
-                                        attribute);
+    vtk_writer->write_vector_point_data(
+        file, points_vector_data(attribute, points), attribute);
   }
 
   //! VTK tensor variables
@@ -740,7 +740,8 @@ void mpm::MPMBase<Tdim>::write_point_vtk(mpm::Index step, mpm::Index max_steps,
     auto file =
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
     vtk_writer->write_tensor_point_data(
-        file, this->template points_tensor_data<6>(attribute), attribute);
+        file, this->template points_tensor_data<6>(attribute, points),
+        attribute);
   }
 }
 #endif

@@ -97,22 +97,12 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   using Particle<Tdim>::stress_;
   //! Strains
   using Particle<Tdim>::strain_;
-  //! dvolumetric strain
-  using Particle<Tdim>::dvolumetric_strain_;
-  //! Volumetric strain at centroid
-  using Particle<Tdim>::volumetric_strain_centroid_;
-  //! Strain rate
-  using Particle<Tdim>::strain_rate_;
-  //! dstrains
-  using Particle<Tdim>::dstrain_;
   //! Velocity
   using Particle<Tdim>::velocity_;
   //! Displacement
   using Particle<Tdim>::displacement_;
   //! dN/dX
   using Particle<Tdim>::dn_dx_;
-  //! dN/dX at cell centroid
-  using Particle<Tdim>::dn_dx_centroid_;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

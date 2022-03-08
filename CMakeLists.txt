@@ -165,6 +165,7 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/nodes/
   ${mpm_SOURCE_DIR}/include/particles/
   ${mpm_SOURCE_DIR}/include/particles/anti_locking
+  ${mpm_SOURCE_DIR}/include/particles/finite_strain
   ${mpm_SOURCE_DIR}/include/particles/pod_particles
   ${mpm_SOURCE_DIR}/include/solvers/
   ${mpm_SOURCE_DIR}/include/solvers/mpm_scheme/

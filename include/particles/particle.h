@@ -419,7 +419,7 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
+  virtual void update_stress_strain() noexcept override;
 
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step

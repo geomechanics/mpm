@@ -207,3 +207,30 @@ void mpm::ParticleFiniteStrain<Tdim>::update_volume() noexcept {
   this->mass_density_ =
       this->mass_density_ / this->deformation_gradient_increment_.determinant();
 }
+
+// Update stress and strain after convergence of Newton-Raphson iteration
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain() noexcept {
+  // Update converged stress
+  this->stress_ = (this->material())
+                      ->compute_stress_finite_strain(
+                          this->previous_stress_, this->deformation_gradient_,
+                          this->deformation_gradient_increment_, this,
+                          &state_variables_[mpm::ParticlePhase::Solid]);
+
+  // Update initial stress of the time step
+  this->previous_stress_ = this->stress_;
+
+  // Update deformation gradient
+  this->deformation_gradient_ =
+      this->deformation_gradient_increment_ * this->deformation_gradient_;
+
+  // Update total Hencky strain
+  this->strain_ = this->compute_hencky_strain(this->deformation_gradient_);
+
+  // Reset deformation gradient increment
+  this->deformation_gradient_increment_.setZero();
+  this->deformation_gradient_increment_(0, 0) = 1.;
+  this->deformation_gradient_increment_(1, 1) = 1.;
+  this->deformation_gradient_increment_(2, 2) = 1.;
+}

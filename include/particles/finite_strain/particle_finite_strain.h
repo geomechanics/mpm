@@ -78,6 +78,10 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Compute Hencky strain using deformation gradient
   inline Eigen::Matrix<double, 6, 1> compute_hencky_strain(
       const Eigen::Matrix<double, 3, 3>& deformation_gradient);
+
+  //! Update stress and strain after convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  void update_stress_strain() noexcept override;
   /**@}*/
 
  protected:

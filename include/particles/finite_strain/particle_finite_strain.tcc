@@ -21,14 +21,6 @@ mpm::ParticleFiniteStrain<Tdim>::ParticleFiniteStrain(Index id,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
-// Compute strain of the particle using nodal displacement
-template <unsigned Tdim>
-void mpm::ParticleFiniteStrain<Tdim>::compute_strain_newmark() noexcept {
-  // Compute strain increment from previous time step
-  this->dstrain_ =
-      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
-}
-
 // Compute stress using implicit updating scheme
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {
@@ -51,80 +43,107 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {
               deformation_gradient_increment_, this, &temp_state_variables);
 }
 
-// Compute strain increment of the particle
-template <>
-inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticleFiniteStrain<1>::compute_strain_increment(
-        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain rincrement
-  Eigen::Matrix<double, 6, 1> strain_increment =
-      Eigen::Matrix<double, 6, 1>::Zero();
+// Compute deformation gradient increment of the particle
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::compute_strain_newmark() noexcept {
+  // Compute deformation gradient increment from previous time step
+  this->deformation_gradient_increment_ =
+      this->compute_deformation_gradient_increment(this->dn_dx_,
+                                                   mpm::ParticlePhase::Solid);
+}
 
+// Compute deformation gradient increment of the particle
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::ParticleFiniteStrain<1>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
+      Eigen::Matrix<double, 3, 3>::Zero();
+  deformation_gradient_increment(0, 0) = 1.;
+  deformation_gradient_increment(1, 1) = 1.;
+  deformation_gradient_increment(2, 2) = 1.;
+
+  // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 1, 1> displacement = nodes_[i]->displacement(phase);
-    strain_increment[0] += dn_dx(i, 0) * displacement[0];
+    deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
   }
 
-  if (std::fabs(strain_increment(0)) < 1.E-15) strain_increment[0] = 0.;
-  return strain_increment;
+  if (std::fabs(deformation_gradient_increment(0, 0) - 1.) < 1.E-15)
+    deformation_gradient_increment(0, 0) = 1.;
+  return deformation_gradient_increment;
 }
 
-// Compute strain increment of the particle
+// Compute deformation gradient increment of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticleFiniteStrain<2>::compute_strain_increment(
+inline Eigen::Matrix<double, 3, 3>
+    mpm::ParticleFiniteStrain<2>::compute_deformation_gradient_increment(
         const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain increment
-  Eigen::Matrix<double, 6, 1> strain_increment =
-      Eigen::Matrix<double, 6, 1>::Zero();
+  // Define deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
+      Eigen::Matrix<double, 3, 3>::Zero();
+  deformation_gradient_increment(0, 0) = 1.;
+  deformation_gradient_increment(1, 1) = 1.;
+  deformation_gradient_increment(2, 2) = 1.;
 
+  // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
-    // clang-format off
-    strain_increment[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2.) * displacement[0] +
-                           (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2. * displacement[1];
-    strain_increment[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2. * displacement[0] +
-                           (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2.) * displacement[1];
-    strain_increment[3] += dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
-    // clang-format on
+    deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
+    deformation_gradient_increment(0, 1) += dn_dx(i, 1) * displacement[0];
+    deformation_gradient_increment(1, 0) += dn_dx(i, 0) * displacement[1];
+    deformation_gradient_increment(1, 1) += dn_dx(i, 1) * displacement[1];
   }
 
-  if (std::fabs(strain_increment[0]) < 1.E-15) strain_increment[0] = 0.;
-  if (std::fabs(strain_increment[1]) < 1.E-15) strain_increment[1] = 0.;
-  if (std::fabs(strain_increment[3]) < 1.E-15) strain_increment[3] = 0.;
-  return strain_increment;
+  for (unsigned i = 0; i < 2; ++i) {
+    for (unsigned j = 0; i < 2; ++i) {
+      if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
+        deformation_gradient_increment(i, j) = 0.;
+      if (i == j &&
+          std::fabs(deformation_gradient_increment(i, j) - 1.) < 1.E-15)
+        deformation_gradient_increment(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_increment;
 }
 
-// Compute strain increment of the particle
+// Compute deformation gradient increment of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticleFiniteStrain<3>::compute_strain_increment(
+inline Eigen::Matrix<double, 3, 3>
+    mpm::ParticleFiniteStrain<3>::compute_deformation_gradient_increment(
         const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
-  // Define strain increment
-  Eigen::Matrix<double, 6, 1> strain_increment =
-      Eigen::Matrix<double, 6, 1>::Zero();
+  // Define deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
+      Eigen::Matrix<double, 3, 3>::Zero();
+  deformation_gradient_increment(0, 0) = 1.;
+  deformation_gradient_increment(1, 1) = 1.;
+  deformation_gradient_increment(2, 2) = 1.;
 
+  // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     Eigen::Matrix<double, 3, 1> displacement = nodes_[i]->displacement(phase);
-    // clang-format off
-    strain_increment[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3.) * displacement[0] +
-                           (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * displacement[1] +
-                           (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3. * displacement[2];
-    strain_increment[1] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * displacement[0] +
-                           (dn_dx(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3.) * displacement[1] +
-                           (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3. * displacement[2];
-    strain_increment[2] += (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3. * displacement[0] +
-                           (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * displacement[1] +
-                           (dn_dx(i, 2) + (dn_dx_centroid_(i, 2) - dn_dx(i, 2)) / 3.) * displacement[2];
-    strain_increment[3] += dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
-    strain_increment[4] += dn_dx(i, 2) * displacement[1] + dn_dx(i, 1) * displacement[2];
-    strain_increment[5] += dn_dx(i, 2) * displacement[0] + dn_dx(i, 0) * displacement[2];
-    // clang-format on
+    deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
+    deformation_gradient_increment(0, 1) += dn_dx(i, 1) * displacement[0];
+    deformation_gradient_increment(0, 2) += dn_dx(i, 2) * displacement[0];
+    deformation_gradient_increment(1, 0) += dn_dx(i, 0) * displacement[1];
+    deformation_gradient_increment(1, 1) += dn_dx(i, 1) * displacement[1];
+    deformation_gradient_increment(1, 2) += dn_dx(i, 2) * displacement[1];
+    deformation_gradient_increment(2, 0) += dn_dx(i, 0) * displacement[2];
+    deformation_gradient_increment(2, 1) += dn_dx(i, 1) * displacement[2];
+    deformation_gradient_increment(2, 2) += dn_dx(i, 2) * displacement[2];
   }
 
-  for (unsigned i = 0; i < strain_increment.size(); ++i)
-    if (std::fabs(strain_increment[i]) < 1.E-15) strain_increment[i] = 0.;
-  return strain_increment;
+  for (unsigned i = 0; i < 3; ++i) {
+    for (unsigned j = 0; i < 3; ++i) {
+      if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
+        deformation_gradient_increment(i, j) = 0.;
+      if (i == j &&
+          std::fabs(deformation_gradient_increment(i, j) - 1.) < 1.E-15)
+        deformation_gradient_increment(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_increment;
 }
 
 // Update volume based on the deformation gradient increment

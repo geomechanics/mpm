@@ -68,13 +68,12 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
-  //! Compute strain increment
-  //! \ingroup Implicit
+  //! Compute deformation gradient increment
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
-  //! \retval strain increment at particle inside a cell
-  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
+  //! \retval deformaton gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
   /**@}*/
 
  protected:

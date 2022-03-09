@@ -112,7 +112,7 @@ class MPMBase : public MPM {
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
   //! Write VTK files for points
   void write_point_vtk(mpm::Index step, mpm::Index max_steps,
-                       mpm::Vector<PointBase<Tdim>>& points);
+                       const mpm::Vector<PointBase<Tdim>>& points);
 #endif
 
 #ifdef USE_PARTIO
@@ -127,21 +127,23 @@ class MPMBase : public MPM {
   //! Return coordinates of points
   //! \param[in] points the list of points
   std::vector<Eigen::Matrix<double, 3, 1>> points_coordinates(
-      mpm::Vector<PointBase<Tdim>>& points);
+      const mpm::Vector<PointBase<Tdim>>& points);
 
   //! Return point scalar data
   //! \param[in] attribute Name of the scalar data attribute
   //! \param[in] points the list of points
   //! \retval scalar_data Vector containing scalar properties from points
   std::vector<double> points_scalar_data(
-      const std::string& attribute, mpm::Vector<PointBase<Tdim>>& points) const;
+      const std::string& attribute,
+      const mpm::Vector<PointBase<Tdim>>& points) const;
 
   //! Return points vector data
   //! \param[in] attribute Name of the tensor data attribute
   //! \param[in] points the list of points
   //! \retval vector_data Vector containing vector properties from points
   std::vector<Eigen::Matrix<double, 3, 1>> points_vector_data(
-      const std::string& attribute, mpm::Vector<PointBase<Tdim>>& points) const;
+      const std::string& attribute,
+      const mpm::Vector<PointBase<Tdim>>& points) const;
 
   //! Return points tensor data
   //! \param[in] attribute Name of the tensor data attribute
@@ -149,7 +151,8 @@ class MPMBase : public MPM {
   //! \retval tensor_data Vector containing tensor properties from points
   template <unsigned Tsize>
   std::vector<Eigen::Matrix<double, Tsize, 1>> points_tensor_data(
-      const std::string& attribute, mpm::Vector<PointBase<Tdim>>& points) const;
+      const std::string& attribute,
+      const mpm::Vector<PointBase<Tdim>>& points) const;
   /**@}*/
 
  private:

@@ -703,8 +703,9 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
 
 //! Write VTK files for points
 template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::write_point_vtk(mpm::Index step, mpm::Index max_steps,
-                                         mpm::Vector<PointBase<Tdim>>& points) {
+void mpm::MPMBase<Tdim>::write_point_vtk(
+    mpm::Index step, mpm::Index max_steps,
+    const mpm::Vector<PointBase<Tdim>>& points) {
 
   // VTK PolyData writer
   auto vtk_writer = std::make_unique<VtkWriter>(points_coordinates(points));
@@ -1687,7 +1688,7 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
 //! Return point coordinates
 template <unsigned Tdim>
 std::vector<Eigen::Matrix<double, 3, 1>> mpm::MPMBase<Tdim>::points_coordinates(
-    mpm::Vector<PointBase<Tdim>>& points) {
+    const mpm::Vector<PointBase<Tdim>>& points) {
   std::vector<Eigen::Matrix<double, 3, 1>> point_coordinates;
   for (auto pitr = points.cbegin(); pitr != points.cend(); pitr++) {
     Eigen::Vector3d coordinates;
@@ -1703,7 +1704,8 @@ std::vector<Eigen::Matrix<double, 3, 1>> mpm::MPMBase<Tdim>::points_coordinates(
 //! Return point scalar data
 template <unsigned Tdim>
 std::vector<double> mpm::MPMBase<Tdim>::points_scalar_data(
-    const std::string& attribute, mpm::Vector<PointBase<Tdim>>& points) const {
+    const std::string& attribute,
+    const mpm::Vector<PointBase<Tdim>>& points) const {
   std::vector<double> scalar_data;
   scalar_data.reserve(points.size());
   // Iterate over points and add scalar value to data
@@ -1715,7 +1717,8 @@ std::vector<double> mpm::MPMBase<Tdim>::points_scalar_data(
 //! Return point vector data
 template <unsigned Tdim>
 std::vector<Eigen::Matrix<double, 3, 1>> mpm::MPMBase<Tdim>::points_vector_data(
-    const std::string& attribute, mpm::Vector<PointBase<Tdim>>& points) const {
+    const std::string& attribute,
+    const mpm::Vector<PointBase<Tdim>>& points) const {
   std::vector<Eigen::Matrix<double, 3, 1>> vector_data;
   // Iterate over points
   for (auto pitr = points.cbegin(); pitr != points.cend(); pitr++) {
@@ -1737,7 +1740,7 @@ template <unsigned Tsize>
 std::vector<Eigen::Matrix<double, Tsize, 1>>
     mpm::MPMBase<Tdim>::points_tensor_data(
         const std::string& attribute,
-        mpm::Vector<PointBase<Tdim>>& points) const {
+        const mpm::Vector<PointBase<Tdim>>& points) const {
   std::vector<Eigen::Matrix<double, Tsize, 1>> tensor_data;
   // Iterate over points
   for (auto pitr = points.cbegin(); pitr != points.cend(); pitr++) {

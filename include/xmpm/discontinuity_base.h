@@ -131,6 +131,11 @@ class DiscontinuityBase {
   //! Return mls_
   bool mls() { return mls_; }
 
+  //! Return all the mark points
+  const mpm::Vector<mpm::PointBase<Tdim>> discontinuity_points() {
+    return points_;
+  }
+
   //! Add a discontinuity point to the discontinuity
   bool add_point(const std::shared_ptr<mpm::PointBase<Tdim>>& point,
                  bool check_duplicates = false) {

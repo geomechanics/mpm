@@ -1253,5 +1253,11 @@ const mpm::Vector<mpm::PointBase<Tdim>>
 
   mpm::Vector<mpm::PointBase<Tdim>> points;
 
+  for (unsigned dis_id = 0; dis_id < discontinuity_num(); dis_id++) {
+    const auto& dis_points = discontinuity_[dis_id]->discontinuity_points();
+    for (auto pitr = dis_points.cbegin(); pitr != dis_points.cend(); pitr++)
+      points.add(*pitr, false);
+  }
+
   return points;
 }

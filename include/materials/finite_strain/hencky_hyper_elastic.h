@@ -56,7 +56,7 @@ class HenckyHyperElastic : public Material<Tdim> {
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \retval updated_stress Updated value of stress
-  Vector6d compute_stress_finite_strain(
+  Vector6d compute_stress(
       const Vector6d& stress,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
@@ -71,7 +71,7 @@ class HenckyHyperElastic : public Material<Tdim> {
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \retval dmatrix Constitutive relations mattrix
-  Matrix6x6 compute_consistent_tangent_matrix_finite_strain(
+  Matrix6x6 compute_consistent_tangent_matrix(
       const Vector6d& stress, const Vector6d& prev_stress,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,

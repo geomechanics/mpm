@@ -33,11 +33,10 @@ void mpm::ParticleFiniteStrain<Tdim>::initialise_constitutive_law() noexcept {
 
   // Compute initial consititutive matrix
   this->constitutive_matrix_ =
-      material_[mpm::ParticlePhase::Solid]
-          ->compute_consistent_tangent_matrix_finite_strain(
-              stress_, previous_stress_, deformation_gradient_,
-              deformation_gradient_increment_, this,
-              &state_variables_[mpm::ParticlePhase::Solid]);
+      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
+          stress_, previous_stress_, deformation_gradient_,
+          deformation_gradient_increment_, this,
+          &state_variables_[mpm::ParticlePhase::Solid]);
 }
 
 // Compute stress using implicit updating scheme
@@ -48,18 +47,16 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {
   // Clone state variables
   auto temp_state_variables = state_variables_[mpm::ParticlePhase::Solid];
   // Calculate stress
-  this->stress_ =
-      (this->material())
-          ->compute_stress_finite_strain(
-              previous_stress_, deformation_gradient_,
-              deformation_gradient_increment_, this, &temp_state_variables);
+  this->stress_ = (this->material())
+                      ->compute_stress(previous_stress_, deformation_gradient_,
+                                       deformation_gradient_increment_, this,
+                                       &temp_state_variables);
 
   // Compute current consititutive matrix
   this->constitutive_matrix_ =
-      material_[mpm::ParticlePhase::Solid]
-          ->compute_consistent_tangent_matrix_finite_strain(
-              stress_, previous_stress_, deformation_gradient_,
-              deformation_gradient_increment_, this, &temp_state_variables);
+      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
+          stress_, previous_stress_, deformation_gradient_,
+          deformation_gradient_increment_, this, &temp_state_variables);
 }
 
 // Compute deformation gradient increment of the particle
@@ -182,9 +179,9 @@ inline Eigen::Matrix<double, 6, 1>
   left_cauchy_green_vector(0) = left_cauchy_green(0, 0);
   left_cauchy_green_vector(1) = left_cauchy_green(1, 1);
   left_cauchy_green_vector(2) = left_cauchy_green(2, 2);
-  left_cauchy_green_vector(3) = 2. * left_cauchy_green(0, 1);
-  left_cauchy_green_vector(4) = 2. * left_cauchy_green(1, 2);
-  left_cauchy_green_vector(5) = 2. * left_cauchy_green(2, 0);
+  left_cauchy_green_vector(3) = left_cauchy_green(0, 1);
+  left_cauchy_green_vector(4) = left_cauchy_green(1, 2);
+  left_cauchy_green_vector(5) = left_cauchy_green(2, 0);
 
   // Principal value of left Cauchy-Green strain
   Eigen::Matrix<double, 3, 1> principal_left_cauchy_green =
@@ -231,11 +228,11 @@ void mpm::ParticleFiniteStrain<Tdim>::update_volume() noexcept {
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain() noexcept {
   // Update converged stress
-  this->stress_ = (this->material())
-                      ->compute_stress_finite_strain(
-                          this->previous_stress_, this->deformation_gradient_,
-                          this->deformation_gradient_increment_, this,
-                          &state_variables_[mpm::ParticlePhase::Solid]);
+  this->stress_ =
+      (this->material())
+          ->compute_stress(this->previous_stress_, this->deformation_gradient_,
+                           this->deformation_gradient_increment_, this,
+                           &state_variables_[mpm::ParticlePhase::Solid]);
 
   // Update initial stress of the time step
   this->previous_stress_ = this->stress_;
@@ -245,7 +242,7 @@ void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain() noexcept {
       this->deformation_gradient_increment_ * this->deformation_gradient_;
 
   // Update total Hencky strain
-  this->strain_ = this->compute_hencky_strain(this->deformation_gradient_);
+  // this->strain_ = this->compute_hencky_strain(this->deformation_gradient_);
 
   // Reset deformation gradient increment
   this->deformation_gradient_increment_.setZero();

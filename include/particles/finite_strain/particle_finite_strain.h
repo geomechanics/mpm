@@ -101,7 +101,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Stresses
   using Particle<Tdim>::stress_;
   //! Strains
-  using Particle<Tdim>::strain_;
+  // using Particle<Tdim>::strain_;
   //! Velocity
   using Particle<Tdim>::velocity_;
   //! Displacement

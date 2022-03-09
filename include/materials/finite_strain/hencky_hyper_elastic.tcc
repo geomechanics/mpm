@@ -60,37 +60,36 @@ bool mpm::HenckyHyperElastic<Tdim>::compute_elastic_tensor() {
 
 //! Compute stress
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 1>
-    mpm::HenckyHyperElastic<Tdim>::compute_stress_finite_strain(
-        const Vector6d& stress,
-        const Eigen::Matrix<double, 3, 3>& deformation_gradient,
-        const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
-        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
+    const Vector6d& stress,
+    const Eigen::Matrix<double, 3, 3>& deformation_gradient,
+    const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
 
   // Updated deformation gradient
-  Eigen::Matrix<double, 3, 3> updated_deformation_gradient =
+  const Eigen::Matrix<double, 3, 3> updated_deformation_gradient =
       deformation_gradient_increment * deformation_gradient;
   const double updated_jacobian = updated_deformation_gradient.determinant();
 
   // Left Cauchy-Green strain
-  Eigen::Matrix<double, 3, 3> left_cauchy_green_strain =
+  const Eigen::Matrix<double, 3, 3> left_cauchy_green_tensor =
       updated_deformation_gradient * updated_deformation_gradient.transpose();
   // Voigt notation
-  Eigen::Matrix<double, 6, 1> left_cauchy_green_strain_vector =
+  Eigen::Matrix<double, 6, 1> left_cauchy_green_vector =
       Eigen::Matrix<double, 6, 1>::Zero();
-  left_cauchy_green_strain_vector(0) = left_cauchy_green_strain(0, 0);
-  left_cauchy_green_strain_vector(1) = left_cauchy_green_strain(1, 1);
-  left_cauchy_green_strain_vector(2) = left_cauchy_green_strain(2, 2);
-  left_cauchy_green_strain_vector(3) = left_cauchy_green_strain(0, 1);
-  left_cauchy_green_strain_vector(4) = left_cauchy_green_strain(1, 2);
-  left_cauchy_green_strain_vector(5) = left_cauchy_green_strain(2, 0);
+  left_cauchy_green_vector(0) = left_cauchy_green_tensor(0, 0);
+  left_cauchy_green_vector(1) = left_cauchy_green_tensor(1, 1);
+  left_cauchy_green_vector(2) = left_cauchy_green_tensor(2, 2);
+  left_cauchy_green_vector(3) = left_cauchy_green_tensor(0, 1);
+  left_cauchy_green_vector(4) = left_cauchy_green_tensor(1, 2);
+  left_cauchy_green_vector(5) = left_cauchy_green_tensor(2, 0);
 
   // Principal values of left Cauchy-Green strain
   Eigen::Matrix<double, 3, 1> principal_left_cauchy_green_strain =
       Eigen::Matrix<double, 3, 1>::Zero();
   Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-  principal_left_cauchy_green_strain = mpm::materials::principal_tensor(
-      left_cauchy_green_strain_vector, directors);
+  principal_left_cauchy_green_strain =
+      mpm::materials::principal_tensor(left_cauchy_green_vector, directors);
 
   // Principal values of Hencky (logarithmic) strain
   Eigen::Matrix<double, 3, 1> principal_hencky_strain =
@@ -141,8 +140,8 @@ Eigen::Matrix<double, 6, 1>
 
 //! Compute consistent tangent matrix
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 6> mpm::HenckyHyperElastic<Tdim>::
-    compute_consistent_tangent_matrix_finite_strain(
+Eigen::Matrix<double, 6, 6>
+    mpm::HenckyHyperElastic<Tdim>::compute_consistent_tangent_matrix(
         const Vector6d& stress, const Vector6d& prev_stress,
         const Eigen::Matrix<double, 3, 3>& deformation_gradient,
         const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,

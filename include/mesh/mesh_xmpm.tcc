@@ -1245,3 +1245,13 @@ void mpm::Mesh<Tdim>::modify_nodal_levelset_mls(unsigned dis_id) {
     (*nitr)->assign_levelset_phi(phi_mls, dis_id);
   }
 }
+
+// Return all the discontinuity points
+template <unsigned Tdim>
+const mpm::Vector<mpm::PointBase<Tdim>>
+    mpm::Mesh<Tdim>::discontinuity_points() {
+
+  mpm::Vector<mpm::PointBase<Tdim>> points;
+
+  return points;
+}

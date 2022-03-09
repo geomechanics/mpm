@@ -17,13 +17,9 @@
 #include "particle.h"
 #include "pod_particle.h"
 #include "pod_particle_twophase.h"
+#include "vector.h"
 
 namespace mpm {
-
-// Forward declaration of Material
-template <unsigned Tdim>
-class Material;
-
 //! PointBase class
 //! \brief Base class that stores the information about PointBases
 //! \details PointBase class: id_ and coordinates.
@@ -33,6 +29,10 @@ class PointBase {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
+
+  //! Constructor with id and coordinates
+  //! \param[in] coord coordinates of the point
+  PointBase(const VectorDim& coord);
 
   //! Constructor with id and coordinates
   //! \param[in] id Point id
@@ -100,6 +100,8 @@ class PointBase {
   virtual VectorDim displacement() const { return displacement_; }
 
   //! Compute updated position
+  //! \param[in] dt Analysis time step
+  //! \param[in] velocity_update Update particle velocity from nodal vel
   virtual void compute_updated_position(double dt,
                                         bool velocity_update = false) noexcept;
 
@@ -117,6 +119,69 @@ class PointBase {
   //! \param[in] property Property string
   //! \retval data Tensor data of point property
   virtual Eigen::VectorXd tensor_data(const std::string& property) const;
+  /**
+   * \defgroup discontinuity point dealing with XMPM
+   */
+  /**@{*/
+  //! Locate particles in a cell
+  //! \param[in] cells vector of cells
+  //! \param[in] map_cells map of cells
+  //! \param[in] dis_id the discontinuity id
+  //! \param[in] update update cell type or not
+  virtual void locate_discontinuity_mesh(const Vector<Cell<Tdim>>& cells,
+                                         const Map<Cell<Tdim>>& map_cells,
+                                         unsigned dis_id, bool update) {
+    throw std::runtime_error(
+        "Calling the base class function (locate_discontinuity_mesh) in "
+        "PointBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign the discontinuity type to cell
+  //! \param[in] map_cells map of cells
+  //! \param[in] dis_id the discontinuity id
+  virtual void assign_cell_enrich(const Map<Cell<Tdim>>& map_cells,
+                                  unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_cell_enrich) in "
+        "PointBase:: "
+        "illegal operation!");
+  }
+
+  //! Compute updated position
+  //! \param[in] dt Analysis time step
+  //! \param[in] move_direction the discontinuity point move with move_direction
+  //! side
+  virtual void compute_updated_position_discontinuity_point(
+      double dt, int move_direction) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_updated_position_discontinuity_point) in "
+        "PointBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign point friction coefficient
+  //! \param[in] friction_coef
+  virtual void assign_friction_coef(double friction_coef) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(assign_friction_coef) in "
+        "PointBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign cohesion
+  //! \param[in] friction_coef
+  virtual void assign_cohesion(double cohesion) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(assign_cohesion) in "
+        "PointBase:: "
+        "illegal operation!");
+  }
+
+  /**@}*/
 
  protected:
   //! pointBase id

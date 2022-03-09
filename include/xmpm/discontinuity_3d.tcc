@@ -81,16 +81,16 @@ bool mpm::Discontinuity3D<3>::initialise_center_normal() {
       // the center of the surfaces
       for (int i = 0; i < 3; i++)
         center[i] = 1.0 / 3 *
-                    (points_[points[0]].coordinates()[i] +
-                     points_[points[1]].coordinates()[i] +
-                     points_[points[2]].coordinates()[i]);
+                    (points_[points[0]]->coordinates()[i] +
+                     points_[points[1]]->coordinates()[i] +
+                     points_[points[2]]->coordinates()[i]);
 
       surf.assign_center(center);
 
       // the normal of the surfaces
-      normal = three_cross_product(points_[points[0]].coordinates(),
-                                   points_[points[1]].coordinates(),
-                                   points_[points[2]].coordinates());
+      normal = three_cross_product(points_[points[0]]->coordinates(),
+                                   points_[points[1]]->coordinates(),
+                                   points_[points[2]]->coordinates());
 
       if (normal.norm() > std::numeric_limits<double>::epsilon())
         normal.normalize();
@@ -155,14 +155,15 @@ void mpm::Discontinuity3D<Tdim>::compute_normal(const VectorDim& coordinates,
 //! Assign point friction coefficient
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::assign_point_friction_coef() noexcept {
-  for (auto& point : points_) point.assign_friction_coef(friction_coef_);
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); pitr++)
+    (*pitr)->assign_friction_coef(friction_coef_);
 }
 
 //! Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Discontinuity3D<Tdim>::compute_updated_position(double dt) noexcept {
-  for (auto& point : this->points_)
-    point.compute_updated_position(dt, move_direction_);
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); pitr++)
+    (*pitr)->compute_updated_position_discontinuity_point(dt, move_direction_);
 
   initialise_center_normal();
 }

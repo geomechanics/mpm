@@ -322,3 +322,16 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
                    exception.what());
   }
 }
+
+//! Output results
+template <unsigned Tdim>
+void mpm::XMPMExplicit<Tdim>::write_outputs(mpm::Index step) {
+  mpm::MPMBase<Tdim>::write_outputs(step);
+  if (step % this->output_steps_ == 0) {
+    const auto& points = mesh_->discontinuity_points();
+#ifdef USE_VTK
+    // VTK outputs
+    this->write_point_vtk(step, this->nsteps_, points);
+#endif
+  }
+}

@@ -88,10 +88,18 @@ bool mpm::DiscontinuityBase<Tdim>::create_points(
     // Iterate over all coordinates
     for (const auto& point_coordinates : coordinates) {
 
-      // Add point
-      mpm::discontinuity_point<Tdim> point(point_coordinates);
+      // Create discontinuity point
+      const std::string& point_type = "DiscontinuityPoint3D";
+      auto point = Factory<mpm::PointBase<Tdim>,
+                           const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                       ->create(point_type, point_coordinates);
 
-      points_.emplace_back(point);  //
+      bool insert_status = this->add_point(point);
+
+      // When addition of point fails
+      if (!insert_status)
+        throw std::runtime_error(
+            "Addition of discontinuity point to mesh failed!");
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -104,22 +112,23 @@ template <unsigned Tdim>
 void mpm::DiscontinuityBase<Tdim>::locate_discontinuity_mesh(
     const Vector<Cell<Tdim>>& cells,
     const Map<Cell<Tdim>>& map_cells) noexcept {
-  for (auto& point : this->points_)
-    point.locate_discontinuity_mesh(cells, map_cells, id_, true);
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); pitr++)
+    (*pitr)->locate_discontinuity_mesh(cells, map_cells, id_, true);
 }
 
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::DiscontinuityBase<Tdim>::compute_updated_position(
     double dt) noexcept {
-  for (auto& point : this->points_)
-    point.compute_updated_position(dt, move_direction_);
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); pitr++)
+    (*pitr)->compute_updated_position_discontinuity_point(dt, move_direction_);
 }
 
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::DiscontinuityBase<Tdim>::compute_shapefn() noexcept {
-  for (auto& point : this->points_) point.compute_shapefn();
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); pitr++)
+    (*pitr)->compute_shapefn();
 }
 
 //! Insert new point
@@ -127,23 +136,16 @@ template <unsigned Tdim>
 void mpm::DiscontinuityBase<Tdim>::insert_points(
     VectorDim& coordinates, const Vector<Cell<Tdim>>& cells,
     const Map<Cell<Tdim>>& map_cells) {
-  // add points
-  mpm::discontinuity_point<Tdim> point(coordinates);
-  point.locate_discontinuity_mesh(cells, map_cells, id_, false);
-  point.compute_shapefn();
-  points_.emplace_back(point);
-}
+  const std::string& point_type = "DiscontinuityPoint3D";
+  auto point = Factory<mpm::PointBase<Tdim>,
+                       const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                   ->create(point_type, coordinates);
 
-//! Output mark points
-template <unsigned Tdim>
-void mpm::DiscontinuityBase<Tdim>::output_markpoints(int step) {
+  point->locate_discontinuity_mesh(cells, map_cells, id_, false);
+  point->compute_shapefn();
+  bool insert_status = this->add_point(point);
 
-  std::ofstream path("markpoints.txt", std::ios::app);
-  path << step << ":" << std::endl;
-  for (auto& point : this->points_) {
-    path << point.coordinates()[0] << "    " << point.coordinates()[1] << "    "
-         << point.coordinates()[2] << std::endl;
-  }
-  path << std::endl;
-  path.close();
+  // When addition of point fails
+  if (!insert_status)
+    throw std::runtime_error("Addition of discontinuity point to mesh failed!");
 }

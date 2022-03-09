@@ -63,7 +63,7 @@ class ParticleXMPM : public Particle<Tdim> {
 
   //! Map particle mass_h to nodes
   //! \ingroup XMPM
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void map_mass_h_to_nodes(unsigned dis_id) noexcept;
 
   //! Map body force
@@ -115,7 +115,7 @@ class ParticleXMPM : public Particle<Tdim> {
   //! compute the minimum eigenvalue of the acoustic tensor
   //! \param[in] the normal direction of the previous discontinuity
   //! \param[in] do the initiation detection loop
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation,
                                unsigned dis_id = 0);
 

@@ -227,7 +227,7 @@ class Cell {
   //! Assign discontinuity element type
   //! \ingroup XMPM
   //! \param[in] the enriched type
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void assign_discontinuity_type(mpm::EnrichType type, unsigned dis_id);
 
   //! Initialize discontinuity element properties
@@ -242,7 +242,7 @@ class Cell {
   //! Assign the constant parameters of the discontinuity in the cell
   //! \ingroup XMPM
   //! \param[in] the constant parameters
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void assign_d_discontinuity(double d, unsigned dis_id) {
     this->discontinuity_element_[dis_id]->assign_d(d);
   };
@@ -251,7 +251,7 @@ class Cell {
   //! \ingroup XMPM
   //! \param[in] the normal direction
   //! \param[in] the plane constant
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void assign_normal_discontinuity(VectorDim normal, double d, unsigned dis_id);
 
   //! Return the normal direction of the discontinuity in the cell

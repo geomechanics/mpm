@@ -548,12 +548,12 @@ class Mesh {
 
   //! The evolution of the discontinuity
   //! \ingroup XMPM
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void update_discontinuity(unsigned dis_id);
 
   //! Find next tip element
   //! \ingroup XMPM
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void find_next_tip_cells(unsigned dis_id);
 
   // Initialize the cells in node
@@ -650,6 +650,9 @@ class Mesh {
   //! \ingroup XMPM
   //! \param[in] discontinuity id
   void determine_enriched_node_by_mass_h(unsigned dis_id);
+
+  // Return all the discontinuity points
+  const mpm::Vector<mpm::PointBase<Tdim>> discontinuity_points();
 
   /**@}*/
 

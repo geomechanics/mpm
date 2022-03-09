@@ -420,7 +420,7 @@ class ParticleBase {
   //! \ingroup XMPM
   //! \param[in] the normal direction of the previous discontinuity
   //! \param[in] do the initiation detection loop
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   //! \retval whether initiate or propagate
   virtual bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation,
                                        unsigned dis_id = 0) {
@@ -441,7 +441,7 @@ class ParticleBase {
   }
   //! Map particle mass_h to nodes
   //! \ingroup XMPM
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   virtual void map_mass_h_to_nodes(unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function (map_mass_h_to_nodes) in "

@@ -52,7 +52,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! Update the nodal levelset values
   //! \ingroup XMPM
   //! \param[in] the value of the nodal levelset_phi
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void update_levelset_phi(double phi, int dis_id) {
     levelset_phi_[dis_id] += phi;
   };
@@ -60,7 +60,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! assign the nodal levelset values
   //! \ingroup XMPM
   //! \param[in] the value of the nodal levelset_phi
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void assign_levelset_phi(double phi, int dis_id) {
     levelset_phi_[dis_id] = phi;
   };
@@ -232,13 +232,13 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   void apply_velocity_constraints() override;
 
   //! Return normal at a given node for a given phase
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   VectorDim normal(unsigned dis_id) { return normal_[dis_id]; }
 
   //! Assign normal at a given node
   //! \ingroup XMPM
   //! \param[in] the normal direction
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void assign_normal(VectorDim normal, unsigned dis_id) {
     normal_[dis_id] = normal;
   }
@@ -261,7 +261,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! Assign friction coefficient
   //! \ingroup XMPM
   //! \param[in] the friction coefficient
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void assign_friction_coef(double friction_coef, unsigned dis_id) {
     if (enrich_type_ == mpm::NodeEnrichType::regular) return;
     if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
@@ -276,7 +276,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! Assign cohesion
   //! \ingroup XMPM
   //! \param[in] the cohesion
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void assign_cohesion(double cohesion, unsigned dis_id) {
     if (enrich_type_ == mpm::NodeEnrichType::regular) return;
     if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
@@ -291,7 +291,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! Update cohesion area
   //! \ingroup XMPM
   //! \param[in] the cohesion area
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   void update_cohesion_area(double cohesion_area, unsigned dis_id) {
     if (enrich_type_ == mpm::NodeEnrichType::regular) return;
     if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&

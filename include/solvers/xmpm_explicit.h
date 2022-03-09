@@ -32,6 +32,10 @@ class XMPMExplicit : public MPMBase<Tdim> {
   //! Initialise discontinuity
   void initialise_discontinuity();
 
+  //! Output results
+  //! \param[in] step Time step
+  void write_outputs(mpm::Index step) override;
+
  protected:
   // Generate a unique id for the analysis
   using mpm::MPMBase<Tdim>::uuid_;

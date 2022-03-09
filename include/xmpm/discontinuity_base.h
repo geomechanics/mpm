@@ -4,6 +4,7 @@
 #include "cell.h"
 #include "data_types.h"
 #include "discontinuity_element.h"
+#include "discontinuity_point.h"
 #include "io_mesh.h"
 #include "logger.h"
 #include "memory.h"
@@ -12,10 +13,6 @@
 #include <iostream>
 
 namespace mpm {
-
-template <unsigned Tdim>
-struct discontinuity_point;
-
 //! Class for describe the discontinuous surface
 //! \brief
 //! \tparam Tdim Dimension
@@ -125,9 +122,6 @@ class DiscontinuityBase {
   void insert_points(VectorDim& point, const Vector<Cell<Tdim>>& cells,
                      const Map<Cell<Tdim>>& map_cells);
 
-  //! TODO: to do:output mark points
-  void output_markpoints(int step);
-
   //! Return propagation
   bool propagation() { return propagation_; }
 
@@ -137,13 +131,20 @@ class DiscontinuityBase {
   //! Return mls_
   bool mls() { return mls_; }
 
+  //! Add a discontinuity point to the discontinuity
+  bool add_point(const std::shared_ptr<mpm::PointBase<Tdim>>& point,
+                 bool check_duplicates = false) {
+    bool insert_status = points_.add(point, check_duplicates);
+    return insert_status;
+  }
+
  protected:
   //! Id
   int id_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Vector of points
-  std::vector<mpm::discontinuity_point<Tdim>> points_;
+  mpm::Vector<mpm::PointBase<Tdim>> points_;
   //! Self-contact
   bool self_contact_{true};
   //! Friction coefficient
@@ -167,104 +168,6 @@ class DiscontinuityBase {
   //! Use mls to compute the nodal levelset values or not
   bool mls_{false};
 };  // DiscontinuityBase class
-
-//! Struct of discontinuity point
-template <unsigned Tdim>
-struct discontinuity_point {
- public:
-  //! Define a vector of size dimension
-  using VectorDim = Eigen::Matrix<double, Tdim, 1>;
-
-  //! Construct with coordinate
-  discontinuity_point(const VectorDim& coordinate) {
-    friction_coef_ = 0;
-    cohesion_ = 0;
-    coordinates_ = coordinate;
-    cell_ = nullptr;
-    //! Logger
-    console_ = spdlog::get("discontinuity_point");
-  }
-
-  //! Return coordinates
-  //! \retval return coordinates
-  VectorDim coordinates() const { return coordinates_; }
-
-  //! Return cell_id
-  //! \retval return cell_id_
-  Index cell_id() const { return cell_id_; }
-
-  //! Assign a cell to point
-  //! \param[in] cellptr Pointer to a cell
-  //! \param[in] xi Local coordinates of the point in reference cell
-  bool assign_cell_xi(const std::shared_ptr<Cell<Tdim>>& cellptr,
-                      const Eigen::Matrix<double, Tdim, 1>& xi);
-
-  //! Return cell ptr status
-  bool cell_ptr() const { return cell_ != nullptr; }
-
-  //! Assign a cell to point
-  //! \param[in] cellptr Pointer to a cell
-  bool assign_cell(const std::shared_ptr<Cell<Tdim>>& cellptr);
-
-  //! Assign the discontinuity type to cell
-  //! \param[in] map_cells map of cells
-  //! \param[in] the discontinuity id
-  void assign_cell_enrich(const Map<Cell<Tdim>>& map_cells, unsigned dis_id);
-
-  //! Compute reference coordinates in a cell
-  bool compute_reference_location() noexcept;
-
-  //! Locate particles in a cell
-  //! \param[in] cells vector of cells
-  //! \param[in] map_cells map of cells
-  //! \param[in] the discontinuity id
-  //! \param[in] update update cell type or not
-  void locate_discontinuity_mesh(const Vector<Cell<Tdim>>& cells,
-                                 const Map<Cell<Tdim>>& map_cells,
-                                 unsigned dis_id, bool update) noexcept;
-
-  //! Compute updated position
-  void compute_updated_position(double dt, int move_direction) noexcept;
-
-  //! Compute shape function
-  void compute_shapefn() noexcept;
-
-  //! Assign point friction coefficient
-  //! \param[in] friction_coef
-  void assign_friction_coef(double friction_coef) noexcept {
-    friction_coef_ = friction_coef;
-  }
-
-  //! Assign cohesion
-  //! \param[in] friction_coef
-  void assign_cohesion(double cohesion) noexcept { cohesion_ = cohesion; }
-
-  //! Assign tip
-  //! \param[in] tip
-  void assign_tip(bool tip) { tip_ = tip; }
-
- private:
-  //! point coordinates
-  VectorDim coordinates_;
-  //! Cell id
-  Index cell_id_{std::numeric_limits<Index>::max()};
-  //! Shape functions
-  Eigen::VectorXd shapefn_;
-  //! Cell
-  std::shared_ptr<Cell<Tdim>> cell_;
-  //! Reference coordinates (in a cell)
-  Eigen::Matrix<double, Tdim, 1> xi_;
-  //! Vector of nodal pointers
-  std::vector<std::shared_ptr<NodeBase<Tdim>>> nodes_;
-  //! Logger
-  std::shared_ptr<spdlog::logger> console_;
-  //! friction coefficient
-  double friction_coef_{0.};
-  //! cohesion
-  double cohesion_{0.};
-  //! tip
-  bool tip_{false};
-};
 
 //! To do: Struct of discontinuity line: for 2d
 struct discontinuity_line {
@@ -330,6 +233,5 @@ struct discontinuity_surface {
 }  // namespace mpm
 
 #include "discontinuity_base.tcc"
-#include "discontinuity_point.tcc"
 
 #endif  // MPM_DiscontinuityBase_H_

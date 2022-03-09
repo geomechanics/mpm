@@ -609,7 +609,7 @@ class NodeBase {
 
   //! Return normal at a given node
   //! \ingroup XMPM
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   virtual VectorDim normal(unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function normal in "
@@ -619,7 +619,7 @@ class NodeBase {
 
   //! Assign normal at a given node
   //! \ingroup XMPM
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   virtual void assign_normal(VectorDim normal, unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function normal in "
@@ -651,7 +651,7 @@ class NodeBase {
   //! Assign friction coefficient
   //! \ingroup XMPM
   //! \param[in] the friction coefficient
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   virtual void assign_friction_coef(double friction_coef, unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function assign_friction_coef in "
@@ -662,7 +662,7 @@ class NodeBase {
   //! Assign cohesion
   //! \ingroup XMPM
   //! \param[in] the cohesion
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   virtual void assign_cohesion(double cohesion, unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function assign_cohesion in "
@@ -673,7 +673,7 @@ class NodeBase {
   //! update cohesion area
   //! \ingroup XMPM
   //! \param[in] the cohesion area
-  //! \param[in] the discontinuity id
+  //! \param[in] dis_id the discontinuity id
   virtual void update_cohesion_area(double cohesion, unsigned dis_id) {
     throw std::runtime_error(
         "Calling the base class function update_cohesion_area in "

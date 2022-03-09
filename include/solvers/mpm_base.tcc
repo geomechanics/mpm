@@ -705,7 +705,7 @@ void mpm::MPMBase<Tdim>::write_point_vtk(
 
   // Write input geometry to vtk file
   const std::string extension = "_point.vtp";
-  const std::string attribute = "geometry_point";
+  const std::string attribute = "geometry";
   auto meshfile =
       io_->output_file(attribute, extension, uuid_, step, max_steps).string();
   vtk_writer->write_geometry(meshfile);

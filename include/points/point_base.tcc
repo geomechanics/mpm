@@ -1,14 +1,20 @@
 //! Constructor with id and coordinates
 template <unsigned Tdim>
-mpm::PointBase<Tdim>::PointBase(Index id, const VectorDim& coord) : id_{id} {
+mpm::PointBase<Tdim>::PointBase(const VectorDim& coord) {
   // Check if the dimension is between 1 & 3
   static_assert((Tdim >= 1 && Tdim <= 3), "Invalid global dimension");
   coordinates_ = coord;
-  status_ = true;
   // Logger
-  std::string logger =
-      "point" + std::to_string(Tdim) + "d::" + std::to_string(id);
+  std::string logger = "point" + std::to_string(Tdim) + "d";
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+  initialise();
+}
+
+//! Constructor with id and coordinates
+template <unsigned Tdim>
+mpm::PointBase<Tdim>::PointBase(Index id, const VectorDim& coord)
+    : mpm::PointBase<Tdim>::PointBase(coord) {
+  id_ = id;
 }
 
 //! Constructor with id, coordinates and status
@@ -16,10 +22,6 @@ template <unsigned Tdim>
 mpm::PointBase<Tdim>::PointBase(Index id, const VectorDim& coord, bool status)
     : mpm::PointBase<Tdim>::PointBase(id, coord) {
   status_ = status;
-  // Logger
-  std::string logger =
-      "point" + std::to_string(Tdim) + "d::" + std::to_string(id);
-  console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
 // Compute reference location cell to point

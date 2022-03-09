@@ -35,6 +35,10 @@ class PointBase {
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
   //! Constructor with id and coordinates
+  //! \param[in] coord coordinates of the point
+  PointBase(const VectorDim& coord);
+
+  //! Constructor with id and coordinates
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
   PointBase(Index id, const VectorDim& coord);

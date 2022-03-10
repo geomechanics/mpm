@@ -21,6 +21,128 @@ mpm::ParticleFiniteStrain<Tdim>::ParticleFiniteStrain(Index id,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
+// Compute stress
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::compute_stress() noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+  // Calculate stress
+  this->stress_ =
+      (this->material())
+          ->compute_stress(stress_, deformation_gradient_,
+                           deformation_gradient_increment_, this,
+                           &state_variables_[mpm::ParticlePhase::Solid]);
+
+  // Update deformation gradient
+  deformation_gradient_ =
+      deformation_gradient_increment_ * deformation_gradient_;
+}
+
+// Compute strain of the particle
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::compute_strain(double dt) noexcept {
+  // Compute deformation gradient increment
+  // Note: Deformation gradient must be updated after compute_stress
+  deformation_gradient_increment_ =
+      this->compute_deformation_gradient_increment(
+          dn_dx_, mpm::ParticlePhase::Solid, dt);
+}
+
+// Compute deformation gradient increment using nodal velocity
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::ParticleFiniteStrain<1>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase,
+        const double dt) noexcept {
+  // Define deformation gradient rate
+  Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
+      Eigen::Matrix<double, 3, 3>::Zero();
+  deformation_gradient_rate(0, 0) = 1.;
+  deformation_gradient_rate(1, 1) = 1.;
+  deformation_gradient_rate(2, 2) = 1.;
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 1, 1> velocity = nodes_[i]->velocity(phase);
+    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
+  }
+
+  if (std::fabs(deformation_gradient_rate(0, 0) - 1.) < 1.E-15)
+    deformation_gradient_rate(0, 0) = 1.;
+  return deformation_gradient_rate;
+}
+
+// Compute deformation gradient increment using nodal velocity
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::ParticleFiniteStrain<2>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase,
+        const double dt) noexcept {
+  // Define deformation gradient rate
+  Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
+      Eigen::Matrix<double, 3, 3>::Zero();
+  deformation_gradient_rate(0, 0) = 1.;
+  deformation_gradient_rate(1, 1) = 1.;
+  deformation_gradient_rate(2, 2) = 1.;
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 2, 1> velocity = nodes_[i]->velocity(phase);
+    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
+    deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
+    deformation_gradient_rate(1, 0) += dn_dx(i, 0) * velocity[1] * dt;
+    deformation_gradient_rate(1, 1) += dn_dx(i, 1) * velocity[1] * dt;
+  }
+
+  for (unsigned i = 0; i < 2; ++i) {
+    for (unsigned j = 0; i < 2; ++i) {
+      if (i != j && std::fabs(deformation_gradient_rate(i, j)) < 1.E-15)
+        deformation_gradient_rate(i, j) = 0.;
+      if (i == j && std::fabs(deformation_gradient_rate(i, j) - 1.) < 1.E-15)
+        deformation_gradient_rate(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_rate;
+}
+
+// Compute deformation gradient increment using nodal velocity
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::ParticleFiniteStrain<3>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase,
+        const double dt) noexcept {
+  // Define deformation gradient rate
+  Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
+      Eigen::Matrix<double, 3, 3>::Zero();
+  deformation_gradient_rate(0, 0) = 1.;
+  deformation_gradient_rate(1, 1) = 1.;
+  deformation_gradient_rate(2, 2) = 1.;
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 3, 1> velocity = nodes_[i]->velocity(phase);
+    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
+    deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
+    deformation_gradient_rate(0, 2) += dn_dx(i, 2) * velocity[0] * dt;
+    deformation_gradient_rate(1, 0) += dn_dx(i, 0) * velocity[1] * dt;
+    deformation_gradient_rate(1, 1) += dn_dx(i, 1) * velocity[1] * dt;
+    deformation_gradient_rate(1, 2) += dn_dx(i, 2) * velocity[1] * dt;
+    deformation_gradient_rate(2, 0) += dn_dx(i, 0) * velocity[2] * dt;
+    deformation_gradient_rate(2, 1) += dn_dx(i, 1) * velocity[2] * dt;
+    deformation_gradient_rate(2, 2) += dn_dx(i, 2) * velocity[2] * dt;
+  }
+
+  for (unsigned i = 0; i < 3; ++i) {
+    for (unsigned j = 0; i < 3; ++i) {
+      if (i != j && std::fabs(deformation_gradient_rate(i, j)) < 1.E-15)
+        deformation_gradient_rate(i, j) = 0.;
+      if (i == j && std::fabs(deformation_gradient_rate(i, j) - 1.) < 1.E-15)
+        deformation_gradient_rate(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_rate;
+}
+
 //! Function to reinitialise material to be run at the beginning of each time
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::initialise_constitutive_law() noexcept {

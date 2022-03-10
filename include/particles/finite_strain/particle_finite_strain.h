@@ -47,8 +47,14 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
-  //! Update volume based on centre volumetric strain rate
+  //! Update volume based on deformation gradient increment
   virtual void update_volume() noexcept override;
+
+  //! Compute deformation gradient increment using nodal velocity
+  void compute_strain(double dt) noexcept override;
+
+  //! Compute stress and update deformation gradient
+  void compute_stress() noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -69,11 +75,19 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   /**@}*/
 
  protected:
+  //! Compute deformation gradient increment using nodal displacement
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval deformaton gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase, const double dt) noexcept;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
-  //! Compute deformation gradient increment
+  //! Compute deformation gradient increment using nodal displacement
+  //! \ingroup Implicit
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
   //! \retval deformaton gradient increment at particle inside a cell
@@ -81,6 +95,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
   //! Compute Hencky strain using deformation gradient
+  //! \ingroup Implicit
   inline Eigen::Matrix<double, 6, 1> compute_hencky_strain(
       const Eigen::Matrix<double, 3, 3>& deformation_gradient);
 

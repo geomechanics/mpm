@@ -158,7 +158,7 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain
   //! \param[in] dt Analysis time step
-  void compute_strain(double dt) noexcept override;
+  virtual void compute_strain(double dt) noexcept override;
 
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override { return strain_; }
@@ -186,7 +186,7 @@ class Particle : public ParticleBase<Tdim> {
   }
 
   //! Compute stress
-  void compute_stress() noexcept override;
+  virtual void compute_stress() noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }

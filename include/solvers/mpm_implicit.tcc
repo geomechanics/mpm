@@ -381,11 +381,8 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
   bool status = true;
   try {
     // Compute local cell stiffness matrices
-    mesh_->iterate_over_particles(std::bind(
-        &mpm::ParticleBase<Tdim>::map_material_stiffness_matrix_to_cell,
-        std::placeholders::_1));
     mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::map_mass_matrix_to_cell,
+        std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
                   std::placeholders::_1, newmark_beta_, dt_));
 
     // Assemble global stiffness matrix

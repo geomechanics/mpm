@@ -376,6 +376,12 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   VectorDim acceleration() const override { return acceleration_; }
 
+  //! Map mass and material stiffness matrix to cell (used in equilibrium
+  //! equation LHS) \ingroup Implicit \param[in] newmark_beta parameter beta of
+  //! Newmark scheme \param[in] dt parameter beta of Newmark scheme
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                           double dt) override;
+
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   inline bool map_material_stiffness_matrix_to_cell() override;

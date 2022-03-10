@@ -364,6 +364,12 @@ class ParticleBase {
   //! \ingroup Implicit
   virtual VectorDim acceleration() const = 0;
 
+  //! Map mass and material stiffness matrix to cell (used in equilibrium
+  //! equation LHS) \ingroup Implicit \param[in] newmark_beta parameter beta of
+  //! Newmark scheme \param[in] dt parameter beta of Newmark scheme
+  virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                                   double dt) = 0;
+
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   virtual inline bool map_material_stiffness_matrix_to_cell() = 0;

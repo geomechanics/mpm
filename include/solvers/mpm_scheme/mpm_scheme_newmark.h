@@ -42,15 +42,6 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   virtual inline void postcompute_stress_strain(
       unsigned phase, bool pressure_smoothing) override;
 
-  //! Compute forces
-  //! \param[in] gravity Acceleration due to gravity
-  //! \param[in] step Number of step in solver
-  //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
-  //! is applied or not
-  virtual inline void compute_forces(
-      const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-      unsigned step, bool concentrated_nodal_forces) override;
-
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Velocity or acceleration update flag
   //! \param[in] phase Phase of particle
@@ -72,6 +63,18 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
+  //! Compute forces
+  //! \ingroup Implicit
+  //! \param[in] gravity Acceleration due to gravity
+  //! \param[in] step Number of step in solver
+  //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
+  //! is applied or not
+  //! \param[in] quasi_static Boolean of quasi-static analysis
+  inline void compute_forces(const Eigen::Matrix<double, Tdim, 1>& gravity,
+                             unsigned phase, unsigned step,
+                             bool concentrated_nodal_forces,
+                             bool quasi_static) override;
+
   //! Update nodal kinematics by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] newmark_beta Parameter beta of Newmark scheme

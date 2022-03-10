@@ -46,7 +46,7 @@ void mpm::Particle<Tdim>::map_inertial_force() noexcept {
 //! LHS)
 template <unsigned Tdim>
 inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
-    double newmark_beta, double dt) {
+    double newmark_beta, double dt, bool quasi_static) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -56,7 +56,7 @@ inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
     this->map_material_stiffness_matrix_to_cell();
 
     // Compute mass matrix
-    this->map_mass_matrix_to_cell(newmark_beta, dt);
+    if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

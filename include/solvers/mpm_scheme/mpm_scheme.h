@@ -83,6 +83,21 @@ class MPMScheme {
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
+  //! Compute forces
+  //! \ingroup Implicit
+  //! \param[in] gravity Acceleration due to gravity
+  //! \param[in] step Number of step in solver
+  //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
+  //! is applied or not
+  //! \param[in] quasi_static Boolean of quasi-static analysis
+  virtual inline void compute_forces(
+      const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
+      unsigned step, bool concentrated_nodal_forces, bool quasi_static) {
+    throw std::runtime_error(
+        "Calling the base class function (compute_forces) in "
+        "MPMScheme:: illegal operation!");
+  };
+
   //! Update nodal kinematics by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] newmark_beta Parameter beta of Newmark scheme

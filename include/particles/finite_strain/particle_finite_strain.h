@@ -92,12 +92,16 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
  protected:
   //! Nodes
   using ParticleBase<Tdim>::nodes_;
+  //! Cell
+  using ParticleBase<Tdim>::cell_;
   //! State variables
   using ParticleBase<Tdim>::state_variables_;
   //! Material
   using ParticleBase<Tdim>::material_;
   //! Volume
   using Particle<Tdim>::volume_;
+  //! Volumetric mass density (mass / volume)
+  using Particle<Tdim>::mass_density_;
   //! Stresses
   using Particle<Tdim>::stress_;
   //! Strains

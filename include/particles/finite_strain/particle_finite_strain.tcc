@@ -46,6 +46,10 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_strain(double dt) noexcept {
   deformation_gradient_increment_ =
       this->compute_deformation_gradient_increment(
           dn_dx_, mpm::ParticlePhase::Solid, dt);
+
+  // Update volume and mass density
+  this->volume_ *= this->deformation_gradient_increment_.determinant();
+  this->mass_density_ /= this->deformation_gradient_increment_.determinant();
 }
 
 // Compute deformation gradient increment using nodal velocity
@@ -184,10 +188,18 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {
 // Compute deformation gradient increment of the particle
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::compute_strain_newmark() noexcept {
+  // Compute volume and mass density at the previous time step
+  this->volume_ /= this->deformation_gradient_increment_.determinant();
+  this->mass_density_ *= this->deformation_gradient_increment_.determinant();
+
   // Compute deformation gradient increment from previous time step
   this->deformation_gradient_increment_ =
       this->compute_deformation_gradient_increment(this->dn_dx_,
                                                    mpm::ParticlePhase::Solid);
+
+  // Update volume and mass density
+  this->volume_ *= this->deformation_gradient_increment_.determinant();
+  this->mass_density_ /= this->deformation_gradient_increment_.determinant();
 }
 
 // Compute deformation gradient increment of the particle
@@ -332,18 +344,6 @@ inline Eigen::Matrix<double, 6, 1>
   hencky_strain_vector(5) = 2. * hencky_strain(2, 0);
 
   return hencky_strain_vector;
-}
-
-// Update volume based on the deformation gradient increment
-template <unsigned Tdim>
-void mpm::ParticleFiniteStrain<Tdim>::update_volume() noexcept {
-  // Check if particle has a valid cell ptr and a valid volume
-  assert(cell_ != nullptr && volume_ != std::numeric_limits<double>::max());
-  // Compute at centroid
-  // Strain rate for reduced integration
-  this->volume_ *= this->deformation_gradient_increment_.determinant();
-  this->mass_density_ =
-      this->mass_density_ / this->deformation_gradient_increment_.determinant();
 }
 
 // Update stress and strain after convergence of Newton-Raphson iteration

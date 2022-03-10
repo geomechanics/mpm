@@ -48,7 +48,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
   //! Update volume based on deformation gradient increment
-  virtual void update_volume() noexcept override;
+  //! Note: Volume is updated in compute_strain_newmark() every N-R iteration
+  void update_volume() noexcept override{};
 
   //! Compute deformation gradient increment using nodal velocity
   void compute_strain(double dt) noexcept override;

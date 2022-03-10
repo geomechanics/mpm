@@ -90,9 +90,11 @@ bool mpm::DiscontinuityBase<Tdim>::create_points(
 
       // Create discontinuity point
       const std::string& point_type = "DiscontinuityPoint3D";
-      auto point = Factory<mpm::PointBase<Tdim>,
-                           const Eigen::Matrix<double, Tdim, 1>&>::instance()
-                       ->create(point_type, point_coordinates);
+      auto point =
+          Factory<mpm::PointBase<Tdim>, const Eigen::Matrix<double, Tdim, 1>&,
+                  mpm::Index>::instance()
+              ->create(point_type, point_coordinates,
+                       static_cast<mpm::Index>(id_));
 
       bool insert_status = this->add_point(point);
 
@@ -137,9 +139,10 @@ void mpm::DiscontinuityBase<Tdim>::insert_points(
     VectorDim& coordinates, const Vector<Cell<Tdim>>& cells,
     const Map<Cell<Tdim>>& map_cells) {
   const std::string& point_type = "DiscontinuityPoint3D";
-  auto point = Factory<mpm::PointBase<Tdim>,
-                       const Eigen::Matrix<double, Tdim, 1>&>::instance()
-                   ->create(point_type, coordinates);
+  auto point =
+      Factory<mpm::PointBase<Tdim>, const Eigen::Matrix<double, Tdim, 1>&,
+              mpm::Index>::instance()
+          ->create(point_type, coordinates, static_cast<mpm::Index>(id_));
 
   point->locate_discontinuity_mesh(cells, map_cells, id_, false);
   point->compute_shapefn();

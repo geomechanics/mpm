@@ -54,6 +54,9 @@ class PointBase {
   //! Delete assignement operator
   PointBase& operator=(const PointBase<Tdim>&) = delete;
 
+  //! Initialise properties
+  virtual void initialise();
+
   //! Return id of the pointBase
   Index id() const { return id_; }
 
@@ -93,9 +96,6 @@ class PointBase {
   //! Compute shape functions
   virtual void compute_shapefn() noexcept;
 
-  //! Initialise properties
-  virtual void initialise();
-
   //! Return displacement of the point
   virtual VectorDim displacement() const { return displacement_; }
 
@@ -123,6 +123,12 @@ class PointBase {
    * \defgroup discontinuity point dealing with XMPM
    */
   /**@{*/
+
+  //! Constructor with id and coordinates
+  //! \param[in] coord coordinates of the point
+  //! \param[in] dis_id the discontinuity id
+  PointBase(const VectorDim& coord, mpm::Index dis_id){};
+
   //! Locate particles in a cell
   //! \param[in] cells vector of cells
   //! \param[in] map_cells map of cells

@@ -143,7 +143,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   // Variable list for points
   tsl::robin_map<std::string, VariableType> variables_point = {
       // Scalar variables
-      {"dis_id", VariableType::Scalar},
+      {"discontinuity_id", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector}
       // Tensor variables

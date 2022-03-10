@@ -16,7 +16,8 @@ class DiscontinuityPoint : public PointBase<Tdim> {
 
   //! Constructor with id and coordinates
   //! \param[in] coord coordinates of the point
-  DiscontinuityPoint(const VectorDim& coord);
+  //! \param[in] dis_id the discontinuity id
+  DiscontinuityPoint(const VectorDim& coord, mpm::Index dis_id);
 
   //! Destructor
   virtual ~DiscontinuityPoint(){};
@@ -26,6 +27,9 @@ class DiscontinuityPoint : public PointBase<Tdim> {
 
   //! Delete assignement operator
   DiscontinuityPoint& operator=(const DiscontinuityPoint<Tdim>&) = delete;
+
+  //! Initialise properties
+  void initialise() override;
 
   //! Assign the discontinuity type to cell
   //! \param[in] map_cells map of cells
@@ -87,6 +91,8 @@ class DiscontinuityPoint : public PointBase<Tdim> {
   using PointBase<Tdim>::tensor_properties_;
 
  private:
+  //! discontinuity_id_
+  mpm::Index dis_id_;
   //! friction coefficient
   double friction_coef_{0.};
   //! cohesion

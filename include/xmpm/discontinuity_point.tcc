@@ -1,14 +1,20 @@
 //! Constructor with id and coordinates
 template <unsigned Tdim>
-mpm::DiscontinuityPoint<Tdim>::DiscontinuityPoint(const VectorDim& coord)
+mpm::DiscontinuityPoint<Tdim>::DiscontinuityPoint(const VectorDim& coord,
+                                                  mpm::Index dis_id)
     : mpm::PointBase<Tdim>(coord) {
-  // Check if the dimension is between 1 & 3
-  static_assert((Tdim >= 1 && Tdim <= 3), "Invalid global dimension");
-  this->coordinates_ = coord;
-  status_ = true;
+  // dis_id
+  dis_id_ = dis_id;
   // Logger
   std::string logger = "discontinuity point" + std::to_string(Tdim) + "d";
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+  // initialise
+  initialise();
+}
+//! Initialise properties
+template <unsigned Tdim>
+void mpm::DiscontinuityPoint<Tdim>::initialise() {
+  this->scalar_properties_["discontinuity_id"] = [&]() { return dis_id_; };
 }
 
 //! Locate points in a cell

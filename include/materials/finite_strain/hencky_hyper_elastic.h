@@ -99,8 +99,6 @@ class HenckyHyperElastic : public Material<Tdim> {
   double youngs_modulus_{std::numeric_limits<double>::max()};
   //! Poisson ratio
   double poisson_ratio_{std::numeric_limits<double>::max()};
-  //! Bulk modulus
-  double bulk_modulus_{std::numeric_limits<double>::max()};
   //! mu of Lame's constants
   double mu_{std::numeric_limits<double>::max()};
   //! lambda of Lame's constants

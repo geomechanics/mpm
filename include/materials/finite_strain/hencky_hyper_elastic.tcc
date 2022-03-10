@@ -10,9 +10,6 @@ mpm::HenckyHyperElastic<Tdim>::HenckyHyperElastic(
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
 
-    // Calculate bulk modulus
-    bulk_modulus_ = youngs_modulus_ / (3.0 * (1. - 2. * poisson_ratio_));
-
     // Calculate Lame's constants
     mu_ = youngs_modulus_ / (2.0 * (1. + poisson_ratio_));
     lambda_ = youngs_modulus_ * poisson_ratio_ /

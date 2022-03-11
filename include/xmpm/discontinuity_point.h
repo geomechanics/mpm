@@ -62,6 +62,12 @@ class DiscontinuityPoint : public PointBase<Tdim> {
   //! \param[in] friction_coef
   void assign_cohesion(double cohesion) { cohesion_ = cohesion; }
 
+  //! Assign the status of terminal point
+  //! \param[in] terminal_point
+  void assign_terminal_point(bool terminal_point) {
+    terminal_point_ = terminal_point;
+  }
+
  protected:
   //! coordinates
   using PointBase<Tdim>::coordinates_;
@@ -99,6 +105,8 @@ class DiscontinuityPoint : public PointBase<Tdim> {
   double cohesion_{0.};
   //! tip
   bool tip_{false};
+  //! end for search next tip
+  bool terminal_point_{false};
 };  // DiscontinuityPoint class
 }  // namespace mpm
 

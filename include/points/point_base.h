@@ -187,6 +187,16 @@ class PointBase {
         "illegal operation!");
   }
 
+  //! Assign the status of terminal point
+  //! \param[in] terminal_point
+  virtual void assign_terminal_point(bool terminal_point) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(assign_terminal_point) in "
+        "PointBase:: "
+        "illegal operation!");
+  }
+
   /**@}*/
 
  protected:

@@ -15,6 +15,9 @@ mpm::DiscontinuityPoint<Tdim>::DiscontinuityPoint(const VectorDim& coord,
 template <unsigned Tdim>
 void mpm::DiscontinuityPoint<Tdim>::initialise() {
   this->scalar_properties_["discontinuity_id"] = [&]() { return dis_id_; };
+  this->scalar_properties_["terminal_point"] = [&]() {
+    return terminal_point_;
+  };
 }
 
 //! Locate points in a cell
@@ -51,7 +54,7 @@ void mpm::DiscontinuityPoint<Tdim>::locate_discontinuity_mesh(
     Eigen::Matrix<double, Tdim, 1> xi;
     if ((*citr)->is_point_in_cell(coordinates_, &xi)) {
       this->assign_cell_xi(*citr, xi);
-      assign_cell_enrich(map_cells, dis_id);
+      if (update) assign_cell_enrich(map_cells, dis_id);
     }
   }
 }
@@ -110,6 +113,7 @@ void mpm::DiscontinuityPoint<Tdim>::assign_cell_enrich(
     const Map<Cell<Tdim>>& map_cells, unsigned dis_id) {
   if (cell_->nparticles() == 0) return;
   cell_->assign_discontinuity_type(mpm::EnrichType::Crossed, dis_id);
+  if (terminal_point_) return;
   const auto neighbours_1 = cell_->neighbours();
   for (auto neighbour_1 : neighbours_1) {
     if (map_cells[neighbour_1]->element_discontinuity_type(dis_id) ==

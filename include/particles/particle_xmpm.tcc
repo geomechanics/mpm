@@ -7,6 +7,11 @@ mpm::ParticleXMPM<Tdim>::ParticleXMPM(Index id, const VectorDim& coord)
   std::string logger =
       "particlexmpm" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+  if (coordinates_[0] < 2.5 && coordinates_[1] > 0.5) velocity_[0] = -1;
+
+  if (coordinates_[0] > 2.5 && coordinates_[1] > 0.5) velocity_[0] = 1;
+
+  if (coordinates_[0] > 2.5 && coordinates_[1] < 0.5) velocity_[0] = 0.5;
 }
 
 //! Initialise particle data from pod

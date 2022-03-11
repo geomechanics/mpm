@@ -343,6 +343,18 @@ class Cell {
     discontinuity_element_.resize(size, nullptr);
   };
 
+  //! Assign interaction element type
+  //! \param[in] the interaction type
+  void assign_interaction_type(unsigned dis_id, mpm::InteractionType type) {
+    this->discontinuity_element_[dis_id]->assign_interaction_type(type);
+  }
+
+  //! Return interaction element type
+  //! \retval the interaction type
+  unsigned interaction_type(unsigned dis_id) {
+    return this->discontinuity_element_[dis_id]->interaction_type();
+  }
+
   /**@}*/
 
   /**

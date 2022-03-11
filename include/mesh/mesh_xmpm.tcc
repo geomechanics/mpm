@@ -520,11 +520,12 @@ void mpm::Mesh<Tdim>::remove_spurious_potential_tip_cells(unsigned dis_id) {
     // Algorithm to check if the assigned potential tip cell is stable
     bool potential_tip = false;
     for (auto neighbour : (*citr)->neighbours()) {
-      if (cells_[neighbour]->element_discontinuity_type(dis_id) !=
+      if (map_cells_[neighbour]->element_discontinuity_type(dis_id) !=
           mpm::EnrichType::NeighbourTip_2)
         continue;
 
-      if (cells_[neighbour]->product_levelset(dis_id) < 0) potential_tip = true;
+      if (map_cells_[neighbour]->product_levelset(dis_id) < 0)
+        potential_tip = true;
     }
 
     // If stable, exit
@@ -1077,9 +1078,73 @@ void mpm::Mesh<Tdim>::postprocess_discontinuity() {
     if (!propagation) continue;
     // Localization propagation search
     find_next_tip_cells(dis_id);
+  }
+
+  interaction_discontinuity();
+
+  // Loop over discontinuity
+  for (unsigned dis_id = 0; dis_id < discontinuity_num(); dis_id++) {
+    // Check if discontinuity is allowed to propagate
+    const bool propagation = discontinuity_[dis_id]->propagation();
+    const auto& type = discontinuity_[dis_id]->description_type();
+
+    if (!propagation) continue;
 
     // Update the discontinuity information
     update_discontinuity(dis_id);
+  }
+}
+
+//! The post-process of discontinuity
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::interaction_discontinuity() {
+  // Loop over cells
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); citr++) {
+    for (int i = 0; i < discontinuity_num() - 1; i++) {
+      // Exit if it's not nexttip cell of discontinuity i
+      if ((*citr)->element_discontinuity_type(i) != mpm::EnrichType::NextTip)
+        continue;
+
+      // List of neighbouring cells and itself
+      auto cell_list = (*citr)->neighbours();
+      cell_list.insert((*citr)->id());
+
+      for (int j = i + 1; j < discontinuity_num(); j++) {
+        // loop over the neigh cells
+        for (auto& cell : cell_list) {
+          if (map_cells_[cell]->element_discontinuity_type(j) !=
+              mpm::EnrichType::NextTip)
+            continue;
+          // TODO:etermine the interaction type
+          auto interaction_type = mpm::InteractionType::Combined;
+
+          // assign the interaction type
+          (*citr)->assign_interaction_type(i, interaction_type);
+          map_cells_[cell]->assign_interaction_type(j, interaction_type);
+        }
+      }
+    }
+
+    for (int i = 0; i < discontinuity_num() - 1; i++) {
+      // Exit if it's not nexttip cell of discontinuity i
+      if ((*citr)->element_discontinuity_type(i) != mpm::EnrichType::NextTip)
+        continue;
+
+      for (int j = 0; j < discontinuity_num(); j++) {
+        if (j == i) continue;
+
+        if ((*citr)->element_discontinuity_type(j) !=
+                mpm::EnrichType::Crossed &&
+            (*citr)->element_discontinuity_type(j) != mpm::EnrichType::Tip)
+          continue;
+
+        // TODO:etermine the interaction type
+        auto interaction_type = mpm::InteractionType::terminated;
+
+        // assign the interaction type
+        (*citr)->assign_interaction_type(i, interaction_type);
+      }
+    }
   }
 }
 

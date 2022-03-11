@@ -79,6 +79,7 @@ bool mpm::Discontinuity3D<3>::initialise_center_normal() {
       points = surf.points();
 
       // the center of the surfaces
+      // TODO: refactor with map_points_
       for (int i = 0; i < 3; i++)
         center[i] = 1.0 / 3 *
                     (points_[points[0]]->coordinates()[i] +

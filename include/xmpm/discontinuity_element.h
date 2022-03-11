@@ -27,6 +27,9 @@ enum EnrichType {
   Irregular = 13
 };
 
+// Element enrich type
+enum InteractionType { Single = 1, Combined = 2, terminated = 3 };
+
 // Discontinuity element class
 //! \brief Base class for  Discontinuity element
 //! \tparam Tdim Dimension
@@ -47,11 +50,18 @@ class DiscontinuityElement {
     d_ = 0;
     area_ = 0;
     cohesion_cor_ = VectorDim::Ones() * std::numeric_limits<double>::max();
+    interaction_type_ = mpm::InteractionType::Single;
   }
 
   //! Assign discontinuity element type
   //! \param[in] the element type
   void assign_element_type(mpm::EnrichType type) { enrich_type_ = type; }
+
+  //! Assign interaction element type
+  //! \param[in] the interaction type
+  void assign_interaction_type(mpm::InteractionType type) {
+    interaction_type_ = type;
+  }
 
   //! Assign the normal direction of the discontinuity in the cell
   //! \param[in] the normal direction
@@ -73,6 +83,10 @@ class DiscontinuityElement {
   //! \retval the element type
   unsigned element_type() { return enrich_type_; }
 
+  //! Return interaction type
+  //! \retval the interaction type
+  unsigned interaction_type() { return interaction_type_; }
+
   //! Return normal_discontinuity
   //! \retval the normal of the discontinuity at the cell center
   VectorDim normal_discontinuity() { return normal_; }
@@ -90,7 +104,7 @@ class DiscontinuityElement {
   VectorDim cohesion_cor() { return cohesion_cor_; }
 
  private:
-  //! Default enrich type
+  //! Enrich type
   mpm::EnrichType enrich_type_;
   //! Normal direction
   VectorDim normal_;
@@ -102,6 +116,9 @@ class DiscontinuityElement {
   //! The center of the discontinuity
   VectorDim cohesion_cor_ =
       VectorDim::Ones() * std::numeric_limits<double>::max();
+
+  //! Interaction type
+  mpm::InteractionType interaction_type_;
 };
 
 }  // namespace mpm

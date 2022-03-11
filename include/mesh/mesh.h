@@ -651,6 +651,9 @@ class Mesh {
   //! \param[in] discontinuity id
   void determine_enriched_node_by_mass_h(unsigned dis_id);
 
+  //! Deal with the interaction between discontinuities
+  void interaction_discontinuity();
+
   // Return all the discontinuity points
   const mpm::Vector<mpm::PointBase<Tdim>> discontinuity_points();
 

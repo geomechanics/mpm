@@ -149,8 +149,7 @@ void mpm::DiscontinuityBase<Tdim>::insert_points(
   // assign terminal type
   unsigned cell_interaction_type =
       map_cells[point->cell_id()]->interaction_type(id_);
-  if (cell_interaction_type == mpm::InteractionType::Combined ||
-      cell_interaction_type == mpm::InteractionType::terminated)
+  if (cell_interaction_type == mpm::InteractionType::Terminated)
     point->assign_terminal_point(true);
   bool insert_status = this->add_point(point);
 

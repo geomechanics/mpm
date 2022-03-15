@@ -355,6 +355,20 @@ class Cell {
     return this->discontinuity_element_[dis_id]->interaction_type();
   }
 
+  //! Return the maximum displacement
+  //! \param[in] the number of the discontinuity
+  //! \retval the maximum displacement
+  double max_dudx(unsigned dis_id) {
+    return this->discontinuity_element_[dis_id]->max_dudx();
+  }
+
+  //! Assign the maximum displacement
+  //! \param[in] max_dudx the maximum displacement
+  //! \param[in] the number of the discontinuity
+  void assign_max_dudx(double max_dudx, unsigned dis_id) {
+    this->discontinuity_element_[dis_id]->assign_max_dudx(max_dudx);
+  }
+
   /**@}*/
 
   /**

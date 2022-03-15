@@ -357,7 +357,7 @@ class ParticleBase {
   //! \ingroup XMPM
   //! \param[in] phivalue Signed distance function
   //! \param[in] discontinuity_id
-  virtual void assign_levelsetphi(double phivalue, int discontinuity_id = 0) {
+  virtual void assign_levelsetphi(double phivalue, int discontinuity_id) {
     throw std::runtime_error(
         "Calling the base class function (assign_levelsetphi) in "
         "ParticleBase:: "
@@ -408,7 +408,7 @@ class ParticleBase {
 
   //! Return levelset values
   //! \ingroup XMPM
-  virtual double levelset_phi(int discontinuity_id = 0) {
+  virtual double levelset_phi(int discontinuity_id) {
     throw std::runtime_error(
         "Calling the base class function (levelset_phi) in "
         "ParticleBase:: "
@@ -454,6 +454,16 @@ class ParticleBase {
   virtual void reset_discontinuity_size(int size) {
     throw std::runtime_error(
         "Calling the base class function (initialise_discontinuity_size) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Compute the maximum displacemnt gradient on the surface n
+  //! \param[in] vector_n normal vector of the surface
+  //! \retval the corresponding maximum displacement gradient
+  virtual double max_displacement_gradient(VectorDim vector_n) {
+    throw std::runtime_error(
+        "Calling the base class function (max_displacement_gradient) in "
         "ParticleBase:: "
         "illegal operation!");
   }

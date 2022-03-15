@@ -108,7 +108,7 @@ class ParticleXMPM : public Particle<Tdim> {
   //! return levelset values
   //! \retval particle levelset values
   //! \param[in] discontinuity_id
-  double levelset_phi(int discontinuity_id = 0) {
+  double levelset_phi(int discontinuity_id) {
     return levelset_phi_[discontinuity_id];
   }
 
@@ -134,7 +134,7 @@ class ParticleXMPM : public Particle<Tdim> {
   //! Assign the level set function values
   //! \param[in] phivalue The level set values
   //! \param[in] discontinuity_id
-  void assign_levelsetphi(double phivalue, int discontinuity_id = 0) {
+  void assign_levelsetphi(double phivalue, int discontinuity_id) {
     levelset_phi_[discontinuity_id] = phivalue;
   };
 
@@ -145,6 +145,11 @@ class ParticleXMPM : public Particle<Tdim> {
                ? 1.
                : ((x < -std::numeric_limits<double>::epsilon()) ? -1. : 0);
   }
+
+  //! Compute the displacemnt gradient on the surface n and towards m
+  //! \param[in] vector_n normal vector of the surface
+  //! \retval the corresponding maximum displacement gradient
+  double max_displacement_gradient(VectorDim vector_n);
 
  private:
   //! particle id

@@ -502,6 +502,8 @@ void mpm::Mesh<Tdim>::find_next_tip_cells(unsigned dis_id) {
     if (propagation) {
       (*citr)->assign_discontinuity_type(mpm::EnrichType::NextTip, dis_id);
       (*citr)->assign_normal_discontinuity(normal, dis_id);
+      (*citr)->assign_max_dudx(
+          map_particles_[pid]->max_displacement_gradient(normal), dis_id);
     }
   }
   return;
@@ -746,7 +748,7 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
       for (auto cell : (*nitr)->cells()) {
         for (auto particle : map_cells_[cell]->particles()) {
           const auto& corp = map_particles_[particle]->coordinates();
-          const double phi = map_particles_[particle]->levelset_phi();
+          const double phi = map_particles_[particle]->levelset_phi(dis_id[0]);
           const double dis = (corp - cor).dot(normal);
 
           if (phi > 0) dis_positive = dis < dis_positive ? dis : dis_positive;
@@ -1115,16 +1117,33 @@ void mpm::Mesh<Tdim>::interaction_discontinuity() {
           if (map_cells_[cell]->element_discontinuity_type(j) !=
               mpm::EnrichType::NextTip)
             continue;
-          // TODO:etermine the interaction type
-          auto interaction_type = mpm::InteractionType::Combined;
 
-          // assign the interaction type
-          (*citr)->assign_interaction_type(i, interaction_type);
-          map_cells_[cell]->assign_interaction_type(j, interaction_type);
+          auto normali = (*citr)->normal_discontinuity(i);
+          auto normalj = map_cells_[cell]->normal_discontinuity(j);
+          // if the inlined angle is less than 30 degrees, combine the 2
+          // discontinuity
+          if (std::abs(normali.dot(normalj)) > std::cos(30 / 180 * M_PI)) {
+
+            // assign the interaction type
+            (*citr)->assign_interaction_type(i,
+                                             mpm::InteractionType::Terminated);
+            map_cells_[cell]->assign_interaction_type(
+                j, mpm::InteractionType::Terminated);
+          } else {
+            // if the inlined angle is larger than 30 degrees, choose the
+            // direction with maximum displacement gradient
+            if ((*citr)->max_dudx(i) > map_cells_[cell]->max_dudx(j)) {
+              map_cells_[cell]->assign_interaction_type(
+                  j, mpm::InteractionType::Terminated);
+            } else {
+              (*citr)->assign_interaction_type(
+                  i, mpm::InteractionType::Terminated);
+            }
+          }
         }
       }
     }
-
+    // loop all the discontinuity
     for (int i = 0; i < discontinuity_num() - 1; i++) {
       // Exit if it's not nexttip cell of discontinuity i
       if ((*citr)->element_discontinuity_type(i) != mpm::EnrichType::NextTip)
@@ -1137,12 +1156,8 @@ void mpm::Mesh<Tdim>::interaction_discontinuity() {
                 mpm::EnrichType::Crossed &&
             (*citr)->element_discontinuity_type(j) != mpm::EnrichType::Tip)
           continue;
-
-        // TODO:etermine the interaction type
-        auto interaction_type = mpm::InteractionType::terminated;
-
         // assign the interaction type
-        (*citr)->assign_interaction_type(i, interaction_type);
+        (*citr)->assign_interaction_type(i, mpm::InteractionType::Terminated);
       }
     }
   }

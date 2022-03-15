@@ -28,7 +28,7 @@ enum EnrichType {
 };
 
 // Element enrich type
-enum InteractionType { Single = 1, Combined = 2, terminated = 3 };
+enum InteractionType { Propagate = 1, Terminated = 2 };
 
 // Discontinuity element class
 //! \brief Base class for  Discontinuity element
@@ -50,7 +50,8 @@ class DiscontinuityElement {
     d_ = 0;
     area_ = 0;
     cohesion_cor_ = VectorDim::Ones() * std::numeric_limits<double>::max();
-    interaction_type_ = mpm::InteractionType::Single;
+    interaction_type_ = mpm::InteractionType::Propagate;
+    max_dudx_ = 0;
   }
 
   //! Assign discontinuity element type
@@ -103,10 +104,18 @@ class DiscontinuityElement {
   //! \retval the center of the discontinuity
   VectorDim cohesion_cor() { return cohesion_cor_; }
 
+  //! Return the maximum displacement
+  //! \retval the maximum displacement
+  double max_dudx() { return max_dudx_; }
+
+  //! Assign the maximum displacement
+  //! \param[in] max_dudx the maximum displacement
+  void assign_max_dudx(double max_dudx) { max_dudx_ = max_dudx; }
+
  private:
   //! Enrich type
   mpm::EnrichType enrich_type_;
-  //! Normal direction
+  //! Normal directionthe maximum displacement
   VectorDim normal_;
   //! Constant value of the discontinuity plane equation a*x + b*y + c*z + d = 0
   double d_;
@@ -119,6 +128,9 @@ class DiscontinuityElement {
 
   //! Interaction type
   mpm::InteractionType interaction_type_;
+
+  //! maximum displacement gradient realated to the normal direction
+  double max_dudx_{0.};
 };
 
 }  // namespace mpm

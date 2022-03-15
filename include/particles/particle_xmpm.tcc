@@ -7,11 +7,6 @@ mpm::ParticleXMPM<Tdim>::ParticleXMPM(Index id, const VectorDim& coord)
   std::string logger =
       "particlexmpm" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
-  if (coordinates_[0] < 2.5 && coordinates_[1] > 0.5) velocity_[0] = -1;
-
-  if (coordinates_[0] > 2.5 && coordinates_[1] > 0.5) velocity_[0] = 1;
-
-  if (coordinates_[0] > 2.5 && coordinates_[1] < 0.5) velocity_[0] = 0.5;
 }
 
 //! Initialise particle data from pod
@@ -735,12 +730,8 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
   const double PI = M_PI / 180;
 
   // Variables used in the loop
-  VectorDim normal_m;
-  VectorDim normal_m1;
-  VectorDim normal_m2;
   VectorDim dudx_n;
   VectorDim normal;
-  double a1, a2;
 
   Eigen::Matrix<double, 3, 3> dp_n;
   Eigen::Matrix<double, 3, 3> de_n;
@@ -787,19 +778,8 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
       const double ratio = det_dp_n / det_de_n;
       if (ratio > 0.01) continue;
 
-      dudx_n = du_dx_ * normal;
+      const double dudx_mn = max_displacement_gradient(normal);
 
-      normal_m1 << std::sin(theta), -std::cos(theta), 0;
-      normal_m2 = normal.cross(normal_m1);
-
-      a1 = dudx_n.dot(normal_m1);
-      a2 = dudx_n.dot(normal_m2);
-
-      double angle = std::atan(a2 / a1);
-      if (std::abs(a1) < std::numeric_limits<double>::epsilon()) angle = M_PI_2;
-
-      const double dudx_mn =
-          std::abs(a1 * std::cos(angle) + a2 * std::sin(angle));
       if (dudx_mn > max_dudxmn) {
         max_dudxmn = dudx_mn;
         normal_initiation = normal;
@@ -881,4 +861,24 @@ void mpm::ParticleXMPM<Tdim>::check_levelset(unsigned dis_id) noexcept {
     levelset_phi_[dis_id] = coordinates_.dot(normal) + d;
     return;
   }
+}
+
+//! Compute the displacemnt gradient on the surface n and towards m
+template <unsigned Tdim>
+double mpm::ParticleXMPM<Tdim>::max_displacement_gradient(VectorDim vector_n) {
+
+  const auto& dudx_n = du_dx_ * vector_n;
+  VectorDim normal_m1;
+  normal_m1 << vector_n[1], -vector_n[0], 0;
+  const auto& normal_m2 = vector_n.cross(normal_m1);
+
+  const double a1 = dudx_n.dot(normal_m1);
+  const double a2 = dudx_n.dot(normal_m2);
+
+  double angle = std::atan(a2 / a1);
+  if (std::abs(a1) < std::numeric_limits<double>::epsilon()) angle = M_PI_2;
+
+  double dudx_mn = std::abs(a1 * std::cos(angle) + a2 * std::sin(angle));
+
+  return dudx_mn;
 }

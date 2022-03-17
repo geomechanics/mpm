@@ -28,7 +28,11 @@ enum EnrichType {
 };
 
 // Element enrich type
-enum InteractionType { Propagate = 1, Terminated = 2 };
+// Propagate = 1: propagate after interaction
+// Terminated_1 = 2: terminated by combination
+// Terminated_2 = 3: terminated by cut
+
+enum InteractionType { Propagate = 1, Terminated_1 = 2, Terminated_2 = 3 };
 
 // Discontinuity element class
 //! \brief Base class for  Discontinuity element
@@ -131,6 +135,9 @@ class DiscontinuityElement {
 
   //! maximum displacement gradient realated to the normal direction
   double max_dudx_{0.};
+
+  //! discontinuity id which propagates normally in this cell
+  unsigned int dis_id_propa_{std::numeric_limits<int>::max()};
 };
 
 }  // namespace mpm

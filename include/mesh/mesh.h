@@ -654,6 +654,10 @@ class Mesh {
   //! Deal with the interaction between discontinuities
   void interaction_discontinuity();
 
+  //! Adjust particle levelset values due to the interaction between
+  //! discontinuities
+  void adjust_particle_levelset_interaction();
+
   // Return all the discontinuity points
   const mpm::Vector<mpm::PointBase<Tdim>> discontinuity_points();
 

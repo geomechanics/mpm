@@ -151,6 +151,20 @@ class ParticleXMPM : public Particle<Tdim> {
   //! \retval the corresponding maximum displacement gradient
   double max_displacement_gradient(VectorDim vector_n);
 
+  //! Assign the levelset values of particles located on one side of the
+  //! discontinuity to zero
+  //! \param[in] side which side: true means the positive side
+  //! \param[in] stop_dis_id  the discontinuity id which the side belongs to
+  //! \param[in] dis_id assign the levelset of this discontinuity to zero
+  void assign_oneside_levelset_zero(bool side, unsigned stop_dis_id,
+                                    unsigned dis_id) {
+    if (side) {
+      if (levelset_phi_[stop_dis_id] > 0) assign_levelsetphi(0, dis_id);
+    } else {
+      if (levelset_phi_[stop_dis_id] < 0) assign_levelsetphi(0, dis_id);
+    }
+  }
+
  private:
   //! particle id
   using Particle<Tdim>::id_;

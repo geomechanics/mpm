@@ -1095,6 +1095,8 @@ void mpm::Mesh<Tdim>::postprocess_discontinuity() {
     // Update the discontinuity information
     update_discontinuity(dis_id);
   }
+
+  adjust_particle_levelset_interaction();
 }
 
 //! The post-process of discontinuity
@@ -1125,19 +1127,21 @@ void mpm::Mesh<Tdim>::interaction_discontinuity() {
           if (std::abs(normali.dot(normalj)) > std::cos(30 / 180 * M_PI)) {
 
             // assign the interaction type
-            (*citr)->assign_interaction_type(i,
-                                             mpm::InteractionType::Terminated);
+            (*citr)->assign_interaction_type(
+                i, mpm::InteractionType::Terminated_1);
             map_cells_[cell]->assign_interaction_type(
-                j, mpm::InteractionType::Terminated);
+                j, mpm::InteractionType::Terminated_1);
           } else {
             // if the inlined angle is larger than 30 degrees, choose the
             // direction with maximum displacement gradient
             if ((*citr)->max_dudx(i) > map_cells_[cell]->max_dudx(j)) {
               map_cells_[cell]->assign_interaction_type(
-                  j, mpm::InteractionType::Terminated);
+                  j, mpm::InteractionType::Terminated_2);
+              map_cells_[cell]->assign_dis_id(i);
             } else {
               (*citr)->assign_interaction_type(
-                  i, mpm::InteractionType::Terminated);
+                  i, mpm::InteractionType::Terminated_2);
+              (*citr)->assign_dis_id(j);
             }
           }
         }
@@ -1157,7 +1161,53 @@ void mpm::Mesh<Tdim>::interaction_discontinuity() {
             (*citr)->element_discontinuity_type(j) != mpm::EnrichType::Tip)
           continue;
         // assign the interaction type
-        (*citr)->assign_interaction_type(i, mpm::InteractionType::Terminated);
+        (*citr)->assign_interaction_type(i, mpm::InteractionType::Terminated_2);
+      }
+    }
+  }
+}
+
+//! Adjust particle levelset values due to the interaction between
+//! discontinuities
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::adjust_particle_levelset_interaction() {
+
+  for (unsigned i = 0; i < discontinuity_num(); i++) {
+    for (auto citr = cells_.cbegin(); citr != cells_.cend(); citr++) {
+      if ((*citr)->interaction_type(i) != mpm::InteractionType::Terminated_2)
+        continue;
+
+      // find neighbor crossed/tip cell
+      bool side = false;
+      unsigned stop_dis_id = (*citr)->dis_id();
+      if (stop_dis_id == std::numeric_limits<unsigned>::max()) continue;
+
+      for (auto cell : (*citr)->neighbours()) {
+        if (map_cells_[cell]->element_discontinuity_type(i) !=
+                mpm::EnrichType::Crossed &&
+            map_cells_[cell]->element_discontinuity_type(i) !=
+                mpm::EnrichType::Tip)
+          continue;
+        // average the particle levelset values in this cell to determine side
+        // value
+        double phi = 0;
+        for (auto pid : map_cells_[cell]->particles()) {
+          phi += map_particles_[pid]->levelset_phi(stop_dis_id);
+        }
+        if (phi < 0) side = true;
+      }
+
+      auto cell_list_2layer = (*citr)->neighbours();
+      // Expand cell list to include another two layers
+      for (auto cell_id1 : (*citr)->neighbours())
+        for (auto cell_id2 : map_cells_[cell_id1]->neighbours())
+          cell_list_2layer.insert(cell_id2);
+
+      for (auto cell : cell_list_2layer) {
+        for (auto pid : map_cells_[cell]->particles()) {
+          map_particles_[pid]->assign_oneside_levelset_zero(side, stop_dis_id,
+                                                            i);
+        }
       }
     }
   }

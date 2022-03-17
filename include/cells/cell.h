@@ -352,6 +352,8 @@ class Cell {
   //! Return interaction element type
   //! \retval the interaction type
   unsigned interaction_type(unsigned dis_id) {
+    if (discontinuity_element_[dis_id] == nullptr)
+      return mpm::InteractionType::Propagate;
     return this->discontinuity_element_[dis_id]->interaction_type();
   }
 
@@ -368,6 +370,14 @@ class Cell {
   void assign_max_dudx(double max_dudx, unsigned dis_id) {
     this->discontinuity_element_[dis_id]->assign_max_dudx(max_dudx);
   }
+
+  //! Return the discontinuity id which can propagates in this cell
+  //! \retval discontinuity id
+  unsigned dis_id() { return dis_id_; }
+
+  //! Assign the discontinuity id which can propagates in this cell
+  //! \param[in] dis_id discontinuity id
+  void assign_dis_id(unsigned dis_id) { dis_id_ = dis_id; }
 
   /**@}*/
 
@@ -666,6 +676,8 @@ class Cell {
   //! discontinuity element list
   std::vector<std::shared_ptr<DiscontinuityElement<Tdim>>>
       discontinuity_element_{nullptr};
+  //! discontinuity id which propagates normally in this cell
+  unsigned dis_id_;
   /**@}*/
 
   //! Logger

@@ -467,6 +467,19 @@ class ParticleBase {
         "ParticleBase:: "
         "illegal operation!");
   }
+
+  //! Assign the levelset values of particles located on one side of the
+  //! discontinuity to zero
+  //! \param[in] side which side: true means the positive side
+  //! \param[in] stop_dis_id  the discontinuity id which the side belongs to
+  //! \param[in] dis_id assign the levelset of this discontinuity to zero
+  virtual void assign_oneside_levelset_zero(bool side, unsigned stop_dis_id,
+                                            unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_oneside_levelset_zero) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
   /**@}*/
 
   /**

@@ -113,20 +113,19 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   return true;
 }
 
-// Write JSON Configuration file for implicit linear
-bool write_json_implicit_linear(unsigned dim, bool resume,
-                                const std::string& analysis,
-                                const std::string& mpm_scheme,
-                                const std::string& file_name,
-                                const std::string& linear_solver_type) {
+// Write JSON Configuration file for implicit
+bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& mpm_scheme, bool nonlinear,
+                         const std::string& file_name,
+                         const std::string& linear_solver_type) {
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
   auto particle_type = "P2D";
   auto node_type = "N2D";
-  auto cell_type = "ED2Q4";
+  auto cell_type = "ED2Q4P2B";
   auto io_type = "Ascii2D";
-  auto assembler_type = "EigenImplicitLinear2D";
+  auto assembler_type = "EigenImplicit2D";
   std::string entity_set_name = "entity_sets_0";
   std::string material = "LinearElastic2D";
   std::vector<double> gravity{{0., -9.81}};
@@ -140,7 +139,7 @@ bool write_json_implicit_linear(unsigned dim, bool resume,
     particle_type = "P3D";
     node_type = "N3D";
     cell_type = "ED3H8";
-    assembler_type = "EigenImplicitLinear3D";
+    assembler_type = "EigenImplicit3D";
     io_type = "Ascii3D";
     material = "LinearElastic3D";
     gravity.clear();
@@ -160,7 +159,10 @@ bool write_json_implicit_linear(unsigned dim, bool resume,
         {"boundary_conditions",
          {{"displacement_constraints",
            {{"file", "displacement-constraints.txt"}}}}},
-        {"cell_type", cell_type}}},
+        {"cell_type", cell_type},
+        {"nonlocal_mesh_properties",
+         {{"type", "BSPLINE"},
+          {"node_types", {{{"nset_id", 1}, {"dir", 0}, {"type", 1}}}}}}}},
       {"particles",
        {{{"group_id", 0},
          {"generator",
@@ -204,6 +206,15 @@ bool write_json_implicit_linear(unsigned dim, bool resume,
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
+        {"scheme_settings",
+         {{"nonlinear", nonlinear},
+          {"beta", 0.25},
+          {"gamma", 0.50},
+          {"max_iteration", 20},
+          {"displacement_tolerance", 1.0e-10},
+          {"residual_tolerance", 1.0e-10},
+          {"relative_residual_tolerance", 1.0e-6},
+          {"verbosity", 0}}},
         {"locate_particles", true},
         {"pressure_smoothing", true},
         {"dt", 0.0001},
@@ -424,7 +435,9 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
           {"pressure_constraints",
            {{{"phase_id", 1}, {"nset_id", 1}, {"pressure", 0.0}}}},
           {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
-        {"cell_type", cell_type}}},
+        {"cell_type", cell_type},
+        {"particles_pore_pressures",
+         {{"type", "isotropic"}, {"values", 0.0}}}}},
       {"particles",
        {{{"group_id", 0},
          {"generator",
@@ -626,6 +639,12 @@ bool write_mesh_2d() {
   file_constraints << 1 << "\t" << 1 << "\t" << 0 << "\n";
   file_constraints.close();
 
+  // Dump mesh displacement constraints
+  file_constraints.open("displacement-constraints.txt");
+  file_constraints << 0 << "\t" << 1 << "\t" << 0 << "\n";
+  file_constraints << 1 << "\t" << 1 << "\t" << 0 << "\n";
+  file_constraints.close();
+
   return true;
 }
 
@@ -765,6 +784,14 @@ bool write_mesh_3d() {
   // Dump mesh velocity constraints
   std::ofstream file_constraints;
   file_constraints.open("velocity-constraints.txt");
+  file_constraints << 0 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints << 1 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints << 2 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints << 3 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints.close();
+
+  // Dump mesh displacement constraints
+  file_constraints.open("displacement-constraints.txt");
   file_constraints << 0 << "\t" << 3 << "\t" << 0 << "\n";
   file_constraints << 1 << "\t" << 3 << "\t" << 0 << "\n";
   file_constraints << 2 << "\t" << 3 << "\t" << 0 << "\n";

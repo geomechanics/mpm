@@ -4,7 +4,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <iostream>
 
 #include "catch.hpp"
 #include "factory.h"

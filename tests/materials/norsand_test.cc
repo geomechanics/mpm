@@ -132,12 +132,12 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
               Approx(0.0).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-          "M_theta",         "M_image",         "M_image_tc",
-          "void_ratio",      "e_image",         "psi_image",
-          "p_image",         "p_cohesion",      "p_dilation",
-          "pdstrain",        "plastic_strain0", "plastic_strain1",
-          "plastic_strain2", "plastic_strain3", "plastic_strain4",
-          "plastic_strain5"};
+          "yield_state",     "M_theta",         "M_image",
+          "M_image_tc",      "void_ratio",      "e_image",
+          "psi_image",       "p_image",         "p_cohesion",
+          "p_dilation",      "pdstrain",        "plastic_strain0",
+          "plastic_strain1", "plastic_strain2", "plastic_strain3",
+          "plastic_strain4", "plastic_strain5"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
     }
@@ -175,16 +175,39 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
-    stress =
+    material->initialise(&state_vars);
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-2.011384615384615E+05).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-1.994307692307692E+05).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-1.994307692307692E+05).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) ==
+            Approx(-2.011384615384615E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) ==
+            Approx(-1.994307692307692E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) ==
+            Approx(-1.994307692307692E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check << 19923076.9231, 8538461.53846, 8538461.53846,             0,             0,             0,
+                 8538461.53846, 19923076.9231, 8538461.53846,             0,             0,             0,
+                 8538461.53846, 8538461.53846, 19923076.9231,             0,             0,             0,
+                             0,             0,             0, 5692307.69231,             0,             0,
+                             0,             0,             0,             0, 5692307.69231,             0,
+                             0,             0,             0,             0,             0, 5692307.69231;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
 
     // Initialise dstrain
     dstrain(0) = -0.00010000;
@@ -207,16 +230,40 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
     REQUIRE(stress(5) == Approx(0.).epsilon(Tolerance));
 
     // Compute updated stress
-    stress =
+    updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-2.028461538461538E+05).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-2.022769230769231E+05).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-2.022769230769231E+05).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(-0.000056923076923E+05).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(-0.000113846153846E+05).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(-0.000170769230769E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) ==
+            Approx(-2.028461538461538E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) ==
+            Approx(-2.022769230769231E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) ==
+            Approx(-2.022769230769231E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) ==
+            Approx(-0.000056923076923E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) ==
+            Approx(-0.000113846153846E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) ==
+            Approx(-0.000170769230769E+05).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    // clang-format off
+    dep_check << 20164761.1128, 8642040.47692, 8642040.47692,             0,             0,             0,
+                 8642040.47692, 20164761.1128, 8642040.47692,             0,             0,             0,
+                 8642040.47692, 8642040.47692, 20164761.1128,             0,             0,             0,
+                             0,             0,             0, 5761360.31795,             0,             0,
+                             0,             0,             0,             0, 5761360.31795,             0,
+                             0,             0,             0,             0,             0, 5761360.31795;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 
   SECTION("NorSand check undrained stresses after yielding with bonded model") {
@@ -254,18 +301,22 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
     // Compute updated stress two times to get yielding
     mpm::dense_map state_vars = material->initialise_state_variables();
-    stress =
+    material->initialise(&state_vars);
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
-    stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    updated_stress = material->compute_stress(updated_stress, dstrain,
+                                              particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-3.135822631389302E+05).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-0.990588326830326E+05).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-0.990588326830326E+05).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) ==
+            Approx(-3.135822631389302E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) ==
+            Approx(-0.990588326830326E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) ==
+            Approx(-0.990588326830326E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
 
     // Check state variables
     REQUIRE(state_vars.empty() == false);
@@ -295,6 +346,25 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
     REQUIRE(state_vars.at("plastic_strain3") == Approx(0.0).epsilon(Tolerance));
     REQUIRE(state_vars.at("plastic_strain4") == Approx(0.0).epsilon(Tolerance));
     REQUIRE(state_vars.at("plastic_strain5") == Approx(0.0).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check << 3683242.14566,  17317764.2758,  17317764.2758,              0,              0,              0,
+                 17317764.2758,  9422661.78508, -286516.345527,              0,              0,              0,
+                 17317764.2758, -286516.345527,  9422661.78508,              0,              0,              0,
+                             0,              0,              0,   4854589.0653,              0,              0,
+                             0,              0,              0,              0,   4854589.0653,              0,
+                             0,              0,              0,              0,              0,   4854589.0653;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 }
 
@@ -472,16 +542,39 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
-    stress =
+    material->initialise(&state_vars);
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-2.011661538461538E+05).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-1.994169230769231E+05).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-1.994169230769231E+05).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) ==
+            Approx(-2.011661538461538E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) ==
+            Approx(-1.994169230769231E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) ==
+            Approx(-1.994169230769231E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check << 20407692.3077, 8746153.84615, 8746153.84615,             0,             0,             0,
+                 8746153.84615, 20407692.3077, 8746153.84615,             0,             0,             0,
+                 8746153.84615, 8746153.84615, 20407692.3077,             0,             0,             0,
+                             0,             0,             0, 5830769.23077,             0,             0,
+                             0,             0,             0,             0, 5830769.23077,             0,
+                             0,             0,             0,             0,             0, 5830769.23077;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
 
     // Initialise dstrain
     dstrain(0) = -0.00010000;
@@ -504,16 +597,40 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
     REQUIRE(stress(5) == Approx(0.).epsilon(Tolerance));
 
     // Compute updated stress
-    stress =
+    updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-2.029153846153846E+05).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-2.023323076923077E+05).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-2.023323076923077E+05).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(-0.000058307692308E+05).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(-0.000116615384615E+05).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(-0.000174923076923E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) ==
+            Approx(-2.029153846153846E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) ==
+            Approx(-2.023323076923077E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) ==
+            Approx(-2.023323076923077E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) ==
+            Approx(-0.000058307692308E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) ==
+            Approx(-0.000116615384615E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) ==
+            Approx(-0.000174923076923E+05).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    // clang-format off
+    dep_check << 20655352.2251, 8852293.81077, 8852293.81077,             0,             0,             0,
+                 8852293.81077, 20655352.2251, 8852293.81077,             0,             0,             0,
+                 8852293.81077, 8852293.81077, 20655352.2251,             0,             0,             0,
+                             0,             0,             0, 5901529.20718,             0,             0,
+                             0,             0,             0,             0, 5901529.20718,             0,
+                             0,             0,             0,             0,             0, 5901529.20718;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 
   SECTION("NorSand check undrained stresses after yielding with bonded model") {
@@ -551,18 +668,22 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
 
     // Compute updated stress two times to get yielding
     mpm::dense_map state_vars = material->initialise_state_variables();
-    stress =
+    material->initialise(&state_vars);
+    auto updated_stress =
         material->compute_stress(stress, dstrain, particle.get(), &state_vars);
-    stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    updated_stress = material->compute_stress(updated_stress, dstrain,
+                                              particle.get(), &state_vars);
 
     // Check stresses
-    REQUIRE(stress(0) == Approx(-3.683366868268871E+05).epsilon(Tolerance));
-    REQUIRE(stress(1) == Approx(-0.891399619172741E+05).epsilon(Tolerance));
-    REQUIRE(stress(2) == Approx(-0.891399619172741E+05).epsilon(Tolerance));
-    REQUIRE(stress(3) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(4) == Approx(0.000000).epsilon(Tolerance));
-    REQUIRE(stress(5) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) ==
+            Approx(-3.683366868268871E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) ==
+            Approx(-0.891399619172741E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) ==
+            Approx(-0.891399619172741E+05).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.000000).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.000000).epsilon(Tolerance));
 
     // Check state variables
     REQUIRE(state_vars.empty() == false);
@@ -594,5 +715,24 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
     REQUIRE(state_vars.at("plastic_strain3") == Approx(0.0).epsilon(Tolerance));
     REQUIRE(state_vars.at("plastic_strain4") == Approx(0.0).epsilon(Tolerance));
     REQUIRE(state_vars.at("plastic_strain5") == Approx(0.0).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+    dep_check <<  12000427.4924,  16078853.6317,  16078853.6317,              0,              0,              0,
+                  16078853.6317,  8697439.18576, -1940329.67724,              0,              0,              0,
+                  16078853.6317, -1940329.67724,  8697439.18576,              0,              0,              0,
+                              0,              0,              0,   5318884.4315,              0,              0,
+                              0,              0,              0,              0,   5318884.4315,              0,
+                              0,              0,              0,              0,              0,   5318884.4315;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
   }
 }

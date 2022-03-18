@@ -74,25 +74,13 @@ class MPMBase : public MPM {
   //! Checkpoint resume
   bool checkpoint_resume() override;
 
-#ifdef USE_VTK
-  //! Write VTK files
-  void write_vtk(mpm::Index step, mpm::Index max_steps) override;
-#endif
-
-#ifdef USE_PARTIO
-  //! Write PARTIO files
-  void write_partio(mpm::Index step, mpm::Index max_steps) override;
-#endif
-
-  //! Write HDF5 files
-  void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
-
-  //! Write HDF5 files
-  void write_hdf5_twophase(mpm::Index step, mpm::Index max_steps) override;
-
   //! Domain decomposition
   //! \param[in] initial_step Start of simulation or later steps
   void mpi_domain_decompose(bool initial_step = false) override;
+
+  //! Output results
+  //! \param[in] step Time step
+  void write_outputs(mpm::Index step) override;
 
   //! Pressure smoothing
   //! \param[in] phase Phase to smooth pressure
@@ -118,6 +106,19 @@ class MPMBase : public MPM {
           std::string,
           std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>&
           linear_solver);
+
+  //! Write HDF5 files
+  void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
+
+#ifdef USE_VTK
+  //! Write VTK files
+  void write_vtk(mpm::Index step, mpm::Index max_steps) override;
+#endif
+
+#ifdef USE_PARTIO
+  //! Write PARTIO files
+  void write_partio(mpm::Index step, mpm::Index max_steps) override;
+#endif
 
  private:
   //! Return if a mesh will be isoparametric or not
@@ -194,6 +195,10 @@ class MPMBase : public MPM {
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);
 
+  //! Initialise nonlocal mesh
+  //! \param[in] mesh_prop Mesh properties
+  void initialise_nonlocal_mesh(const Json& mesh_prop);
+
   //! Initialise particle types
   void initialise_particle_types();
 
@@ -263,13 +268,20 @@ class MPMBase : public MPM {
   double damping_factor_{0.};
   //! Locate particles
   bool locate_particles_{true};
-  //! Nonlocal node neighbourhood
-  unsigned node_neighbourhood_{0};
-  //! Absorbing Boundary Variables
-  bool absorbing_boundary_{false};
+  
   std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_constraint_;
   std::vector<int> absorbing_nset_id_;
   mpm::Position position_{mpm::Position::None};
+
+  /**
+   * \defgroup Nonlocal Variables for nonlocal MPM
+   * @{
+   */
+  // Cell neighbourhood: default 0 for linear element
+  unsigned cell_neighbourhood_{0};
+  // Node neighbourhood: default 1 for linear element
+  unsigned node_neighbourhood_{1};
+  /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING
   // graph pass the address of the container of cell

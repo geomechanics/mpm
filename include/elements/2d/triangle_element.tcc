@@ -265,7 +265,7 @@ inline Eigen::MatrixXd mpm::TriangleElement<Tdim, Tnfunctions>::ni_nj_matrix(
     const Eigen::Matrix<double, Tnfunctions, 1> shape_fn =
         this->shapefn(xi, Eigen::Matrix<double, Tdim, 1>::Zero(),
                       Eigen::Matrix<double, Tdim, 1>::Zero());
-    ni_nj_matrix += (shape_fn * shape_fn.transpose());
+    ni_nj_matrix.noalias() += (shape_fn * shape_fn.transpose());
   }
   return ni_nj_matrix;
 }
@@ -302,7 +302,7 @@ inline Eigen::MatrixXd mpm::TriangleElement<Tdim, Tnfunctions>::laplace_matrix(
     // dN/dx = [J]^-1 * dN/dxi
     const Eigen::MatrixXd grad_shapefn = grad_sf * jacobian.inverse();
 
-    laplace_matrix += (grad_shapefn * grad_shapefn.transpose());
+    laplace_matrix.noalias() += (grad_shapefn * grad_shapefn.transpose());
   }
   return laplace_matrix;
 }
@@ -354,12 +354,12 @@ inline Eigen::MatrixXi
 template <>
 inline Eigen::VectorXi
     mpm::TriangleElement<2, 3>::face_indices(unsigned face_id) const {
-  
+
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 2, 1>>
       face_indices_triangle{{0, Eigen::Matrix<int, 2, 1>(0, 1)},
                             {1, Eigen::Matrix<int, 2, 1>(1, 2)},
-                            {2, Eigen::Matrix<int, 2, 1>(2, 0)}}; 
+                            {2, Eigen::Matrix<int, 2, 1>(2, 0)}};
 
   return face_indices_triangle.at(face_id);
 }
@@ -369,7 +369,7 @@ inline Eigen::VectorXi
 template <>
 inline Eigen::VectorXi
     mpm::TriangleElement<2, 6>::face_indices(unsigned face_id) const {
-  
+
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 3, 1>>
       face_indices_triangle{{0, Eigen::Matrix<int, 3, 1>(0, 1, 3)},
@@ -422,7 +422,7 @@ inline double mpm::TriangleElement<Tdim, Tnfunctions>::compute_volume(
                              ((node0(0) * node2(1)) - (node2(0) * node0(1))) +
                              ((node0(0) * node1(1)) - (node1(0) * node0(1)))) *
     0.5;
-      
+
   return volume_;
 }
 
@@ -452,15 +452,15 @@ inline Eigen::Matrix<double, 2, 1> mpm::TriangleElement<2, 3>::natural_coordinat
   const double y2 = nodal_coordinates(1, 1);
   const double x3 = nodal_coordinates(2, 0);
   const double y3 = nodal_coordinates(2, 1);
-  
+
   // calculate matrix determinant of T
   const double T = (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3);
-  
+
   // determine the barycentric coordinates lambda1, lambda2 and lambda3
   const double lambda1 = ((y2 - y3) * (xa - x3) + (x3 - x2) * (ya - y3)) / T;
   const double lambda2 = ((y3 - y1) * (xa - x3) + (x1 - x3) * (ya - y3)) / T;
   const double lambda3 = 1 - lambda1 - lambda2;
-  
+
   xi(0) = lambda2;
   xi(1) = lambda3;
 
@@ -478,4 +478,15 @@ inline Eigen::Matrix<double, 2, 1> mpm::TriangleElement<2, 6>::natural_coordinat
   xi.fill(std::numeric_limits<double>::max());
   throw std::runtime_error("Analytical solution for Triangle<2, 6> has not been implemented");
   return xi;
+}
+
+//! Assign nodal connectivity property for bspline elements
+template <unsigned Tdim, unsigned Tnfunctions>
+void mpm::TriangleElement<Tdim, Tnfunctions>::
+    initialise_bspline_connectivity_properties(
+        const Eigen::MatrixXd& nodal_coordinates,
+        const std::vector<std::vector<unsigned>>& nodal_properties) {
+  throw std::runtime_error(
+      "Function to initialise nonlocal connectivity is not implemented for "
+      "Triangle<Tdim, Tnfunctions> ");
 }

@@ -7,13 +7,13 @@
 
 #include "Eigen/Dense"
 
-#include "material.h"
+#include "infinitesimal_elasto_plastic.h"
 
 namespace mpm {
 
 namespace mohrcoulomb {
 //! Failure state
-enum FailureState { Elastic, Tensile, Shear };
+enum FailureState { Elastic = 0, Shear = 1, Tensile = 2 };
 }  // namespace mohrcoulomb
 
 //! MohrCoulomb class
@@ -21,7 +21,7 @@ enum FailureState { Elastic, Tensile, Shear };
 //! \details Mohr Coulomb material model with softening
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class MohrCoulomb : public Material<Tdim> {
+class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
  public:
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
@@ -47,6 +47,13 @@ class MohrCoulomb : public Material<Tdim> {
 
   //! State variables
   std::vector<std::string> state_variables() const override;
+
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  void initialise(mpm::dense_map* state_vars) override {
+    (*state_vars).at("yield_state") = 0;
+  };
 
   //! Compute stress
   //! \param[in] stress Stress
@@ -95,10 +102,28 @@ class MohrCoulomb : public Material<Tdim> {
 
  private:
   //! Compute elastic tensor
-  bool compute_elastic_tensor();
+  //! \param[in] state_vars History-dependent state variables
+  Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
 
-  //! Elastic stiffness matrix
-  Matrix6x6 de_;
+  //! Compute constitutive relations matrix for elasto-plastic material
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] hardening Boolean to consider hardening, default=true. If
+  //! perfect-plastic tensor is needed pass false
+  //! \retval dmatrix Constitutive relations mattrix
+  Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
+                                          const Vector6d& dstrain,
+                                          const ParticleBase<Tdim>* ptr,
+                                          mpm::dense_map* state_vars,
+                                          bool hardening = true) override;
+
+  //! Inline ternary function to check negative or zero numbers
+  inline double check_low(double val) {
+    return (val > 1.0e-15 ? val : 1.0e-15);
+  }
+
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Youngs modulus
@@ -129,6 +154,11 @@ class MohrCoulomb : public Material<Tdim> {
   double tension_cutoff_{std::numeric_limits<double>::max()};
   //! softening
   bool softening_{false};
+  //! Failure state map
+  std::map<int, mpm::mohrcoulomb::FailureState> yield_type_ = {
+      {0, mpm::mohrcoulomb::FailureState::Elastic},
+      {1, mpm::mohrcoulomb::FailureState::Shear},
+      {2, mpm::mohrcoulomb::FailureState::Tensile}};
 };  // MohrCoulomb class
 }  // namespace mpm
 

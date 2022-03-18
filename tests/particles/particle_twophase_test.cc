@@ -1100,7 +1100,7 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
                       0., 0.1875 * 1.414213562 * 7.68;
     // clang-format on
     // Add previous external body force
-    traction_force += body_force;
+    traction_force.noalias() += body_force;
 
     // Check nodal traction force
     for (unsigned i = 0; i < traction_force.rows(); ++i)
@@ -2557,7 +2557,7 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
                       0., 0., 0.140625 * 1.587401052 * 7.68;
     // clang-format on
     // Add previous external body force
-    traction_force += body_force;
+    traction_force.noalias() += body_force;
 
     // Check nodal traction force
     for (unsigned i = 0; i < traction_force.rows(); ++i)

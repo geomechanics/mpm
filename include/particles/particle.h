@@ -185,6 +185,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] stress Initial sress
   void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) override {
     this->stress_ = stress;
+    this->previous_stress_ = stress;
   }
 
   //! Compute stress
@@ -368,6 +369,12 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   void map_inertial_force() noexcept override;
 
+  //! Assign acceleration to the particle (used for test)
+  //! \ingroup Implicit
+  //! \param[in] acceleration A vector of particle acceleration
+  //! \retval status Assignment status
+  bool assign_acceleration(const VectorDim& acceleration) override;
+
   //! Return acceleration of the particle
   //! \ingroup Implicit
   VectorDim acceleration() const override { return acceleration_; }
@@ -397,17 +404,30 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   void compute_strain_newmark() noexcept override;
 
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  void compute_stress_newmark() noexcept override;
+
+  //! Return stress at the previous time step of the particle
+  //! \ingroup Implicit
+  Eigen::Matrix<double, 6, 1> previous_stress() const override {
+    return previous_stress_;
+  }
+
   //! Compute updated position of the particle by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Update particle velocity from nodal vel
   void compute_updated_position_newmark(double dt) noexcept override;
 
-  //! Assign acceleration to the particle (used for test)
+  //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  //! \param[in] acceleration A vector of particle acceleration
-  //! \retval status Assignment status
-  bool assign_acceleration(const VectorDim& acceleration) override;
+  void update_stress_strain() noexcept override;
+
+  //! Function to reinitialise consitutive law to be run at the beginning of
+  //! each time step
+  //! \ingroup Implicit
+  void initialise_constitutive_law() noexcept override;
   /**@}*/
 
  protected:
@@ -424,7 +444,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
   //! \retval strain rate at particle inside a cell
-  inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
+  virtual inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
   //! Compute pack size
@@ -440,7 +460,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
   //! \retval strain increment at particle inside a cell
-  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
+  virtual inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
   /**@}*/
 
@@ -526,6 +546,10 @@ class Particle : public ParticleBase<Tdim> {
   /**@{*/
   //! Acceleration
   Eigen::Matrix<double, Tdim, 1> acceleration_;
+  //! Stresses at the last time step
+  Eigen::Matrix<double, 6, 1> previous_stress_;
+  //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
+  Eigen::MatrixXd constitutive_matrix_;
   /**@}*/
 
 };  // Particle class

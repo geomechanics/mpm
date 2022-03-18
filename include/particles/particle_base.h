@@ -389,16 +389,32 @@ class ParticleBase {
   //! \ingroup Implicit
   virtual void compute_strain_newmark() = 0;
 
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  virtual void compute_stress_newmark() = 0;
+
+  //! Return previous stress
+  virtual Eigen::Matrix<double, 6, 1> previous_stress() const = 0;
+
   //! Compute updated position by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
   virtual void compute_updated_position_newmark(double dt) = 0;
 
+  //! Update stress and strain after convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  virtual void update_stress_strain() = 0;
+
   //! Assign acceleration to the particle (used for test)
+  //! \ingroup Implicit
   //! \param[in] acceleration A vector of particle acceleration
   //! \retval status Assignment status
   virtual bool assign_acceleration(const VectorDim& acceleration) = 0;
-  /**@}*/
+
+  //! Function to reinitialise constitutive law to be run at the beginning of
+  //! each time step
+  //! \ingroup Implicit
+  virtual void initialise_constitutive_law() noexcept = 0;
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle

@@ -72,6 +72,9 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
     REQUIRE(material->template property<double>("youngs_modulus") ==
             Approx(jmaterial["youngs_modulus"]).epsilon(Tolerance));
 
+    // Get material properties fail
+    REQUIRE_THROWS(material->property<double>("shear_modulus"));
+
     // Check if state variable is initialised
     SECTION("State variable is initialised") {
       mpm::dense_map state_variables = material->initialise_state_variables();

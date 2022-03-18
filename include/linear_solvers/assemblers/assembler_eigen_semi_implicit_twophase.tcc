@@ -71,6 +71,9 @@ bool mpm::AssemblerEigenSemiImplicitTwoPhase<Tdim>::assemble_predictor_left(
             (*node_itr)->mass(mpm::NodePhase::NLiquid);
       }
 
+      // Apply null-space treatment
+      this->apply_null_space_treatment(coefficient_matrix, 2);
+
       // Add coefficient matrix to map
       if (predictor_lhs_matrix_.find(dir) != predictor_lhs_matrix_.end())
         predictor_lhs_matrix_.erase(dir);
@@ -367,8 +370,8 @@ bool mpm::AssemblerEigenSemiImplicitTwoPhase<
   try {
     // Modify the force vector(b = b - A * bc)
     for (unsigned dir = 0; dir < Tdim; dir++) {
-      predictor_rhs_vector_.col(dir) -=
-          predictor_lhs_matrix_.at(dir) * velocity_constraints_.col(dir);
+      predictor_rhs_vector_.col(dir) +=
+          -predictor_lhs_matrix_.at(dir) * velocity_constraints_.col(dir);
 
       // Iterate over velocity constraints (non-zero elements)
       for (unsigned j = 0; j < velocity_constraints_.outerSize(); ++j) {

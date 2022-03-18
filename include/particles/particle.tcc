@@ -86,6 +86,7 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->stress_[3] = particle.tau_xy;
   this->stress_[4] = particle.tau_yz;
   this->stress_[5] = particle.tau_xz;
+  this->previous_stress_ = stress_;
 
   // Strain
   this->strain_[0] = particle.strain_xx;
@@ -261,6 +262,7 @@ void mpm::Particle<Tdim>::initialise() {
   size_.setZero();
   strain_rate_.setZero();
   strain_.setZero();
+  previous_stress_.setZero();
   stress_.setZero();
   traction_.setZero();
   velocity_.setZero();
@@ -709,7 +711,7 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
   // Update strain
-  strain_ += dstrain_;
+  strain_.noalias() += dstrain_;
 
   // Compute at centroid
   // Strain rate for reduced integration
@@ -845,7 +847,7 @@ void mpm::Particle<Tdim>::compute_updated_position(
       Eigen::Matrix<double, Tdim, 1>::Zero();
 
   for (unsigned i = 0; i < nodes_.size(); ++i)
-    nodal_velocity +=
+    nodal_velocity.noalias() +=
         shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
 
   // Acceleration update
@@ -854,20 +856,20 @@ void mpm::Particle<Tdim>::compute_updated_position(
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
     for (unsigned i = 0; i < nodes_.size(); ++i)
-      nodal_acceleration +=
+      nodal_acceleration.noalias() +=
           shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
 
     // Update particle velocity from interpolated nodal acceleration
-    this->velocity_ += nodal_acceleration * dt;
+    this->velocity_.noalias() += nodal_acceleration * dt;
   }
   // Update particle velocity using interpolated nodal velocity
   else
     this->velocity_ = nodal_velocity;
 
   // New position  current position + velocity * dt
-  this->coordinates_ += nodal_velocity * dt;
+  this->coordinates_.noalias() += nodal_velocity * dt;
   // Update displacement (displacement is initialized from zero)
-  this->displacement_ += nodal_velocity * dt;
+  this->displacement_.noalias() += nodal_velocity * dt;
 }
 
 //! Map particle pressure to nodes
@@ -1203,6 +1205,7 @@ void mpm::Particle<Tdim>::deserialize(
   // Stress
   MPI_Unpack(data_ptr, data.size(), &position, stress_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);
+  this->previous_stress_ = stress_;
   // Strain
   MPI_Unpack(data_ptr, data.size(), &position, strain_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);

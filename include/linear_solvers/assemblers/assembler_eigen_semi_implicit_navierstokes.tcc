@@ -50,6 +50,9 @@ bool mpm::AssemblerEigenSemiImplicitNavierStokes<
 
     laplacian_matrix_ *= dt;
 
+    // Apply null-space treatment
+    this->apply_null_space_treatment(laplacian_matrix_);
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -184,7 +187,7 @@ void mpm::AssemblerEigenSemiImplicitNavierStokes<
     Tdim>::apply_pressure_constraints() {
   try {
     // Modify poisson_rhs_vector_
-    poisson_rhs_vector_ -= laplacian_matrix_ * pressure_constraints_;
+    poisson_rhs_vector_ += -laplacian_matrix_ * pressure_constraints_;
 
     // Apply free surface
     if (!free_surface_.empty()) {

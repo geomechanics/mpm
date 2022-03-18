@@ -29,3 +29,37 @@ bool mpm::AssemblerBase<Tdim>::assign_global_node_indices(
   }
   return status;
 }
+
+//! Assign global node indices
+template <unsigned Tdim>
+void mpm::AssemblerBase<Tdim>::apply_null_space_treatment(
+    Eigen::SparseMatrix<double>& coefficient_matrix, unsigned nblock) {
+  // Nodes container
+  const auto& nodes = mesh_->active_nodes();
+  std::vector<mpm::Index> null_space_node;
+  // Iterate over nodes to check if any nodal mass is zero
+#pragma omp parallel
+  {
+    std::vector<mpm::Index> ns_node;
+#pragma omp for nowait
+    for (auto node = nodes.cbegin(); node != nodes.cend(); ++node) {
+      if ((*node)->mass(mpm::NodePhase::NSinglePhase) <
+          std::numeric_limits<double>::epsilon()) {
+        const auto n_id = (*node)->active_id();
+        for (unsigned nb = 0; nb < nblock; nb++)
+          ns_node.push_back(nb * active_dof_ + n_id);
+      }
+    }
+
+#pragma omp critical
+    null_space_node.insert(null_space_node.end(),
+                           std::make_move_iterator(ns_node.begin()),
+                           std::make_move_iterator(ns_node.end()));
+  }
+
+  // Modify coefficient matrix diagonal element
+  for (const auto index : null_space_node) {
+    // Assign 1 to diagonal element
+    coefficient_matrix.coeffRef(index, index) = 1.0;
+  }
+}

@@ -268,7 +268,7 @@ class MPMBase : public MPM {
   double damping_factor_{0.};
   //! Locate particles
   bool locate_particles_{true};
-  
+
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
   std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_constraint_;

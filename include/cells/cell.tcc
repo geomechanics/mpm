@@ -478,8 +478,92 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
     // Indices of corner nodes
     Eigen::VectorXi indices = element_->corner_indices();
 
+    // Tetrahedron
+    if (indices.size() == 4) {
+      // Node numbering (k) convetion used herein has 0,0,0 node first
+      //
+      //       *
+      //      /|\ 
+      //     / | \ 
+      //    /  |  \ 
+      //   *. -|- .*
+      //      `*´
+      //
+
+      // Assemble Ainv
+      // 1. Temporary variables for node coordinants (xk, yk, zk)
+      // LEDT TODO once working remove temporary variables?
+      const double x1 = nodal_coordinates_(0, 0);
+      const double x2 = nodal_coordinates_(1, 0);
+      const double x3 = nodal_coordinates_(2, 0);
+      const double x4 = nodal_coordinates_(3, 0);
+      const double y1 = nodal_coordinates_(0, 1);
+      const double y2 = nodal_coordinates_(1, 1);
+      const double y3 = nodal_coordinates_(2, 1);
+      const double y4 = nodal_coordinates_(3, 1);
+      const double z1 = nodal_coordinates_(0, 2);
+      const double z2 = nodal_coordinates_(1, 2);
+      const double z3 = nodal_coordinates_(2, 2);
+      const double z4 = nodal_coordinates_(3, 2);
+
+      // 2. Volume of linear tetrahedron, multuiplied by 6 //LEDT TO DO CHECK?
+      const double tetrahedron_6xV = 6.0 * 
+        element_->compute_volume(this->nodal_coordinates_);
+      // const double tetrahedron_6xV =
+      //     x1 * y3 * z2 - x1 * y2 * z3 + x2 * y1 * z3 - x2 * y3 * z1 -
+      //     x3 * y1 * z2 + x3 * y2 * z1 + x1 * y2 * z4 - x1 * y4 * z2 -
+      //     x2 * y1 * z4 + x2 * y4 * z1 + x4 * y1 * z2 - x4 * y2 * z1 -
+      //     x1 * y3 * z4 + x1 * y4 * z3 + x3 * y1 * z4 - x3 * y4 * z1 -
+      //     x4 * y1 * z3 + x4 * y3 * z1 + x2 * y3 * z4 - x2 * y4 * z3 -
+      //     x3 * y2 * z4 + x3 * y4 * z2 + x4 * y2 * z3 - x4 * y3 * z2;
+
+      // 3. Assembled matrix in cpp numbering; with (1/(6*V)); without first row
+      // LEDT TODO multiply Ainv matrix by (1/(6*V)) scalar at end instead
+      Eigen::Matrix<double, 3, 4> Ainv;
+      Ainv.setZero();  // start with matrix of zeros
+      Ainv(0, 0) =
+          (1 / tetrahedron_6xV) * (x1 * y4 * z3 - x1 * y3 * z4 + x3 * y1 * z4 -
+                                   x3 * y4 * z1 - x4 * y1 * z3 + x4 * y3 * z1);
+      Ainv(0, 1) = (1 / tetrahedron_6xV) *
+                   (y1 * z3 - y3 * z1 - y1 * z4 + y4 * z1 + y3 * z4 - y4 * z3);
+      Ainv(0, 2) = (1 / tetrahedron_6xV) *
+                   (x3 * z1 - x1 * z3 + x1 * z4 - x4 * z1 - x3 * z4 + x4 * z3);
+      Ainv(0, 3) = (1 / tetrahedron_6xV) *
+                   (x1 * y3 - x3 * y1 - x1 * y4 + x4 * y1 + x3 * y4 - x4 * y3);
+      Ainv(1, 0) =
+          (1 / tetrahedron_6xV) * (x1 * y2 * z4 - x1 * y4 * z2 - x2 * y1 * z4 +
+                                   x2 * y4 * z1 + x4 * y1 * z2 - x4 * y2 * z1);
+      Ainv(1, 1) = (1 / tetrahedron_6xV) *
+                   (y2 * z1 - y1 * z2 + y1 * z4 - y4 * z1 - y2 * z4 + y4 * z2);
+      Ainv(1, 2) = (1 / tetrahedron_6xV) *
+                   (x1 * z2 - x2 * z1 - x1 * z4 + x4 * z1 + x2 * z4 - x4 * z2);
+      Ainv(1, 3) = (1 / tetrahedron_6xV) *
+                   (x2 * y1 - x1 * y2 + x1 * y4 - x4 * y1 - x2 * y4 + x4 * y2);
+      Ainv(2, 0) =
+          (1 / tetrahedron_6xV) * (x1 * y3 * z2 - x1 * y2 * z3 + x2 * y1 * z3 -
+                                   x2 * y3 * z1 - x3 * y1 * z2 + x3 * y2 * z1);
+      Ainv(2, 1) = (1 / tetrahedron_6xV) *
+                   (y1 * z2 - y2 * z1 - y1 * z3 + y3 * z1 + y2 * z3 - y3 * z2);
+      Ainv(2, 2) = (1 / tetrahedron_6xV) *
+                   (x2 * z1 - x1 * z2 + x1 * z3 - x3 * z1 - x2 * z3 + x3 * z2);
+      Ainv(2, 3) = (1 / tetrahedron_6xV) *
+                   (x1 * y2 - x2 * y1 - x1 * y3 + x3 * y1 + x2 * y3 - x3 * y2);
+
+      // Output point vector in natural coordinates (without zeta1: 3x4 Ainv
+      // matrix multiplied by 3x1 point matrix in global coordinates)
+      xi(0) = Ainv(0, 0) * 1 + Ainv(0, 1) * point(0) + Ainv(0, 2) * point(1) +
+              Ainv(0, 3) * point(2);
+      // zeta2
+      xi(1) = Ainv(1, 0) * 1 + Ainv(1, 1) * point(0) + Ainv(1, 2) * point(1) +
+              Ainv(1, 3) * point(2);
+      // zeta3
+      xi(2) = Ainv(2, 0) * 1 + Ainv(2, 1) * point(0) + Ainv(2, 2) * point(1) +
+              Ainv(2, 3) * point(2);
+      // zeta4
+    }
+
     // Hexahedron
-    if (indices.size() == 8) {
+    else if (indices.size() == 8) {
       // Node numbering as read in by mesh file
       //        3               2
       //          *_ _ _ _ _ _*
@@ -513,7 +597,10 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       xi(1) = 2. * (point(1) - centre(1)) / ylength;
       xi(2) = 2. * (point(2) - centre(2)) / zlength;
 
-    } else {
+    }
+
+    // Element not recognized
+    else {
       throw std::runtime_error("Unable to compute local coordinates");
     }
   } catch (std::exception& exception) {

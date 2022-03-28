@@ -35,7 +35,7 @@ inline Eigen::MatrixXd mpm::TetrahedronElement<3, 4>::grad_shapefn(
     const Eigen::Matrix<double, 3, 1>& xi,
     const Eigen::Matrix<double, 3, 1>& particle_size,
     const Eigen::Matrix<double, 3, 1>& deformation_gradient) const {
-  Eigen::Matrix<double, 4, 3> grad_shapefn;  // LEDT TODO CHECK (Nk, xi(k))
+  Eigen::Matrix<double, 4, 3> grad_shapefn;  //(Nk, xi(k))
   grad_shapefn(0, 0) = -1;
   grad_shapefn(1, 0) = 1;
   grad_shapefn(2, 0) = 0;
@@ -59,15 +59,14 @@ template <>
 inline Eigen::MatrixXd mpm::TetrahedronElement<3, 4>::unit_cell_coordinates()
     const {
   // Coordinates of a unit cell
-  Eigen::Matrix<double, 4, 3> unit_cell;  // LEDT TODO [000, 100, 010, 001]
-                                          // CHECK OK?
-                                          // clang-format off
+  Eigen::Matrix<double, 4, 3> unit_cell;  
+  // clang-format off
   unit_cell << 0., 0., 0.,
                1., 0., 0.,
                0., 1., 0.,
                0., 0., 1.;
-    // cppcheck-suppress * // LEDT TODO REMOVE?
-  // clang-format on // LEDT TODO REMOVE?
+    // cppcheck-suppress *
+  // clang-format on
   return unit_cell;
 }
 
@@ -267,7 +266,7 @@ inline Eigen::MatrixXi
              2, 3,
              3, 0,
              1, 3,
-             0, 2; //LEDT TODO ORDER?
+             0, 2;
   // clang-format on
   return indices;
 }
@@ -280,7 +279,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::VectorXi
     mpm::TetrahedronElement<Tdim, Tnfunctions>::corner_indices() const {
   Eigen::Matrix<int, 4, 1> indices;
-  // cppcheck-suppress * // LEDT TODO REMOVE?
+  // cppcheck-suppress *
   indices << 0, 1, 2, 3;
   return indices;
 }
@@ -298,7 +297,7 @@ inline Eigen::MatrixXi
              2, 3,
              3, 0,
              1, 3,
-             0, 2; //LEDT TODO ORDER?
+             0, 2;
   //clang-format on
   return indices;
 }
@@ -314,7 +313,7 @@ inline Eigen::VectorXi
       {0, Eigen::Matrix<int, 3, 1>(0, 1, 2)},
       {1, Eigen::Matrix<int, 3, 1>(0, 1, 3)},
       {2, Eigen::Matrix<int, 3, 1>(0, 2, 3)},
-      {3, Eigen::Matrix<int, 3, 1>(1, 2, 3)}}; //LEDT TODO ORDER?
+      {3, Eigen::Matrix<int, 3, 1>(1, 2, 3)}};
 
   return face_indices_tetrahedron.at(face_id);
 }
@@ -343,7 +342,7 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
   }
 }
 
-//! Compute volume //LEDT TODO CHECK (not 6xV just V)
+//! Compute volume
 //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
 //! \retval volume Return the volume of cell
 template <unsigned Tdim, unsigned Tnfunctions>
@@ -364,7 +363,7 @@ inline double mpm::TetrahedronElement<Tdim, Tnfunctions>::compute_volume(
   const double z3 = nodal_coordinates(2, 2);
   const double z4 = nodal_coordinates(3, 2);
 
-  double volume_ =
+  const double volume_ =
     (1.0 / 6)*
     ( x1 * y3 * z2 - x1 * y2 * z3 + x2 * y1 * z3 - x2 * y3 * z1 -
     x3 * y1 * z2 + x3 * y2 * z1 + x1 * y2 * z4 - x1 * y4 * z2 -

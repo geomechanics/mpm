@@ -59,7 +59,7 @@ template <>
 inline Eigen::MatrixXd mpm::TetrahedronElement<3, 4>::unit_cell_coordinates()
     const {
   // Coordinates of a unit cell
-  Eigen::Matrix<double, 4, 3> unit_cell;  
+  Eigen::Matrix<double, 4, 3> unit_cell;
   // clang-format off
   unit_cell << 0., 0., 0.,
                1., 0., 0.,

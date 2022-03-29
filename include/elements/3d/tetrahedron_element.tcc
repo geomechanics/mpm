@@ -318,26 +318,20 @@ inline Eigen::VectorXi
   return face_indices_tetrahedron.at(face_id);
 }
 
-//! Return quadrature //LEDT TODO
+//! Return quadrature //LEDT QT OK?
 template <unsigned Tdim, unsigned Tnfunctions>
 inline std::shared_ptr<mpm::Quadrature<Tdim>>
     mpm::TetrahedronElement<Tdim, Tnfunctions>::quadrature(
         unsigned nquadratures) const {
   switch (nquadratures) {
     case 1:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTET1");
       break;
     case 2:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH2");
-      break;
-    case 3:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH3");
-      break;
-    case 4:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH4");
-      break;
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTET2");
+      break; 
     default:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTET1");
       break;
   }
 }

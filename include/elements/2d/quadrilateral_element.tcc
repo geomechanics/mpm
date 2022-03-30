@@ -515,19 +515,19 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
         unsigned nquadratures) const {
   switch (nquadratures) {
     case 1:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD1");
       break;
     case 2:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ2");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD2");
       break;
     case 3:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ3");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD3");
       break;
     case 4:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ4");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD4");
       break;
     default:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD1");
       break;
   }
 }

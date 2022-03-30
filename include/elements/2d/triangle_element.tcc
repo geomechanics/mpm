@@ -386,13 +386,13 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
         unsigned nquadratures) const {
   switch (nquadratures) {
     case 1:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QT1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTRI1");
       break;
     case 2:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QT2");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTRI2");
       break;
     default:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QT1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTRI1");
       break;
   }
 }
@@ -418,12 +418,12 @@ inline double mpm::TriangleElement<Tdim, Tnfunctions>::compute_volume(
   // Area = 0.5 * [ (x1 * y2 - x2 * y1)
   //              - (x0 * y2 - x2 * y0)
   //              + (x0 * y1 - x1 * y0) ]
-  double volume_ = std::fabs(((node1(0) * node2(1)) - (node2(0) * node1(1))) -
+  const double volume = std::fabs(((node1(0) * node2(1)) - (node2(0) * node1(1))) -
                              ((node0(0) * node2(1)) - (node2(0) * node0(1))) +
                              ((node0(0) * node1(1)) - (node1(0) * node0(1)))) *
     0.5;
 
-  return volume_;
+  return volume;
 }
 
 //! Compute natural coordinates of a point (analytical)

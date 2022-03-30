@@ -607,19 +607,19 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
         unsigned nquadratures) const {
   switch (nquadratures) {
     case 1:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX1");
       break;
     case 2:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH2");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX2");
       break;
     case 3:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH3");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX3");
       break;
     case 4:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH4");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX4");
       break;
     default:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX1");
       break;
   }
 }
@@ -656,7 +656,7 @@ inline double mpm::HexahedronElement<Tdim, Tnfunctions>::compute_volume(
   const Eigen::Matrix<double, Tdim, 1> g = nodal_coordinates.row(1);
   const Eigen::Matrix<double, Tdim, 1> h = nodal_coordinates.row(0);
 
-  double volume_ =
+  const double volume =
       (1.0 / 12) * (a - g).dot(((b - d).cross(c - a)) + ((e - b).cross(f - a)) +
                                ((d - e).cross(h - a))) +
       (1.0 / 12) *
@@ -665,7 +665,7 @@ inline double mpm::HexahedronElement<Tdim, Tnfunctions>::compute_volume(
           (e - g).dot(((e - b).cross(f - a)) + ((f - g).cross(h - f))) +
       (1.0 / 12) * (d - g).dot(((d - e).cross(h - a)) + ((h - g).cross(h - c)));
 
-  return volume_;
+  return volume;
 }
 
 //! Compute natural coordinates of a point (analytical)

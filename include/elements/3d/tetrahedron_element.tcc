@@ -1,9 +1,9 @@
 // 4-node (Linear) Tetrahedron Element
 //!
 //!       *
-//!      /|\ 
-//!     / | \ 
-//!    /  |  \ 
+//!      /|\
+//!     / | \
+//!    /  |  \
 //!   *. -|- .*
 //!      `*´
 //!
@@ -318,7 +318,7 @@ inline Eigen::VectorXi
   return face_indices_tetrahedron.at(face_id);
 }
 
-//! Return quadrature //LEDT QT OK?
+//! Return quadrature
 template <unsigned Tdim, unsigned Tnfunctions>
 inline std::shared_ptr<mpm::Quadrature<Tdim>>
     mpm::TetrahedronElement<Tdim, Tnfunctions>::quadrature(
@@ -329,7 +329,7 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
       break;
     case 2:
       return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTET2");
-      break; 
+      break;
     default:
       return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTET1");
       break;
@@ -357,7 +357,7 @@ inline double mpm::TetrahedronElement<Tdim, Tnfunctions>::compute_volume(
   const double z3 = nodal_coordinates(2, 2);
   const double z4 = nodal_coordinates(3, 2);
 
-  const double volume_ =
+  const double volume =
     (1.0 / 6)*
     ( x1 * y3 * z2 - x1 * y2 * z3 + x2 * y1 * z3 - x2 * y3 * z1 -
     x3 * y1 * z2 + x3 * y2 * z1 + x1 * y2 * z4 - x1 * y4 * z2 -
@@ -366,7 +366,7 @@ inline double mpm::TetrahedronElement<Tdim, Tnfunctions>::compute_volume(
     x4 * y1 * z3 + x4 * y3 * z1 + x2 * y3 * z4 - x2 * y4 * z3 -
     x3 * y2 * z4 + x3 * y4 * z2 + x4 * y2 * z3 - x4 * y3 * z2 );
 
-  return volume_;
+  return volume;
 }
 
 //! Compute natural coordinates of a point (analytical)
@@ -380,7 +380,7 @@ inline Eigen::Matrix<double, Tdim, 1>
   xi.fill(std::numeric_limits<double>::max());
   throw std::runtime_error(
       "Analytical solution for Tet<Tdim, Tnfunctions> has not been "
-      "implemented");      
+      "implemented");
   return xi;
 }
 

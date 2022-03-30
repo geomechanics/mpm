@@ -483,9 +483,9 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       // Node numbering (k) convetion used herein has 0,0,0 node first
       //
       //       *
-      //      /|\ 
-      //     / | \ 
-      //    /  |  \ 
+      //      /|\
+      //     / | \
+      //    /  |  \
       //   *. -|- .*
       //      `*´
       //
@@ -540,7 +540,6 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
               Ainv(2, 3) * point(2);
       // zeta4
     }
-
     // Hexahedron
     else if (indices.size() == 8) {
       // Node numbering as read in by mesh file
@@ -576,7 +575,6 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       xi(1) = 2. * (point(1) - centre(1)) / ylength;
       xi(2) = 2. * (point(2) - centre(2)) / zlength;
     }
-
     // Element not recognized
     else {
       throw std::runtime_error("Unable to compute local coordinates");

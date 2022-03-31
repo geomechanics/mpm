@@ -57,6 +57,7 @@ inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
 
     // Compute mass matrix
     if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

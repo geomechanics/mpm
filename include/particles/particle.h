@@ -56,7 +56,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] materials Material associated with the particle arranged in a
   //! vector
   //! \retval status Status of reading POD particle
-  virtual bool initialise_particle(
+  bool initialise_particle(
       PODParticle& particle,
       const std::vector<std::shared_ptr<Material<Tdim>>>& materials) override;
 
@@ -65,7 +65,7 @@ class Particle : public ParticleBase<Tdim> {
   std::shared_ptr<void> pod() const override;
 
   //! Initialise properties
-  virtual void initialise() override;
+  void initialise() override;
 
   //! Compute reference coordinates in a cell
   bool compute_reference_location() noexcept override;
@@ -122,7 +122,7 @@ class Particle : public ParticleBase<Tdim> {
   void compute_volume() noexcept override;
 
   //! Update volume based on centre volumetric strain rate
-  virtual void update_volume() noexcept override;
+  void update_volume() noexcept override;
 
   //! Return mass density
   double mass_density() const override { return mass_density_; }
@@ -158,7 +158,7 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain
   //! \param[in] dt Analysis time step
-  virtual void compute_strain(double dt) noexcept override;
+  void compute_strain(double dt) noexcept override;
 
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override { return strain_; }
@@ -186,7 +186,7 @@ class Particle : public ParticleBase<Tdim> {
   }
 
   //! Compute stress
-  virtual void compute_stress() noexcept override;
+  void compute_stress() noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
@@ -408,11 +408,11 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain using nodal displacement
   //! \ingroup Implicit
-  virtual void compute_strain_newmark() noexcept override;
+  void compute_strain_newmark() noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  virtual void compute_stress_newmark() noexcept override;
+  void compute_stress_newmark() noexcept override;
 
   //! Return stress at the previous time step of the particle
   //! \ingroup Implicit
@@ -428,12 +428,12 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  virtual void update_stress_strain() noexcept override;
+  void update_stress_strain() noexcept override;
 
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
-  virtual void initialise_constitutive_law() noexcept override;
+  void initialise_constitutive_law() noexcept override;
   /**@}*/
 
  protected:

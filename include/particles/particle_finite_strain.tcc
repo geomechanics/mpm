@@ -3,6 +3,13 @@ template <unsigned Tdim>
 mpm::ParticleFiniteStrain<Tdim>::ParticleFiniteStrain(Index id,
                                                       const VectorDim& coord)
     : mpm::Particle<Tdim>(id, coord) {
+  this->initialise();
+  // Clear cell ptr
+  cell_ = nullptr;
+  // Nodes
+  nodes_.clear();
+  // Set material containers
+  this->initialise_material(1);
   // Logger
   std::string logger = "particle_finite_strain" + std::to_string(Tdim) +
                        "d::" + std::to_string(id);
@@ -19,6 +26,13 @@ mpm::ParticleFiniteStrain<Tdim>::ParticleFiniteStrain(Index id,
   std::string logger = "particle_finite_strain" + std::to_string(Tdim) +
                        "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+}
+
+// Initialise particle properties
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::initialise() {
+  mpm::Particle<Tdim>::initialise();
+  deformation_gradient_increment_.setIdentity();
 }
 
 // Compute stress
@@ -336,12 +350,6 @@ void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain() noexcept {
   this->deformation_gradient_ =
       this->deformation_gradient_increment_ * this->deformation_gradient_;
 
-  // Update total Hencky strain
-  // this->strain_ = this->compute_hencky_strain(this->deformation_gradient_);
-
   // Reset deformation gradient increment
-  this->deformation_gradient_increment_.setZero();
-  this->deformation_gradient_increment_(0, 0) = 1.;
-  this->deformation_gradient_increment_(1, 1) = 1.;
-  this->deformation_gradient_increment_(2, 2) = 1.;
+  this->deformation_gradient_increment_.setIdentity();
 }

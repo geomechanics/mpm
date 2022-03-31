@@ -44,6 +44,9 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Delete assignment operator
   ParticleFiniteStrain& operator=(const ParticleFiniteStrain<Tdim>&) = delete;
 
+  //! Initialise properties
+  void initialise() override;
+
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
@@ -152,7 +155,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
   //! Deformation gradient increment
-  using Particle<Tdim>::deformation_gradient_increment_;
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_;
   /**@}*/
 
 };  // ParticleFiniteStrain class

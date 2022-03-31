@@ -270,12 +270,8 @@ void mpm::Particle<Tdim>::initialise() {
   normal_.setZero();
   volume_ = std::numeric_limits<double>::max();
   volumetric_strain_centroid_ = 0.;
-  deformation_gradient_.setZero();
-  deformation_gradient_increment_.setZero();
-  for (unsigned i = 0; i < 3; i++) {
-    deformation_gradient_(i, i) = 1.;
-    deformation_gradient_increment_(i, i) = 1.;
-  }
+  deformation_gradient_.setIdentity();
+  deformation_gradient_increment_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_["mass"] = [&]() { return mass(); };

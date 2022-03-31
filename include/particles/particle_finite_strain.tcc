@@ -48,8 +48,9 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_strain(double dt) noexcept {
           dn_dx_, mpm::ParticlePhase::Solid, dt);
 
   // Update volume and mass density
-  this->volume_ *= this->deformation_gradient_increment_.determinant();
-  this->mass_density_ /= this->deformation_gradient_increment_.determinant();
+  const double deltaJ = this->deformation_gradient_increment_.determinant();
+  this->volume_ *= deltaJ;
+  this->mass_density_ /= deltaJ;
 }
 
 // Compute deformation gradient increment using nodal velocity
@@ -180,8 +181,9 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::compute_strain_newmark() noexcept {
   // Compute volume and mass density at the previous time step
-  this->volume_ /= this->deformation_gradient_increment_.determinant();
-  this->mass_density_ *= this->deformation_gradient_increment_.determinant();
+  double deltaJ = this->deformation_gradient_increment_.determinant();
+  this->volume_ /= deltaJ;
+  this->mass_density_ *= deltaJ;
 
   // Compute deformation gradient increment from previous time step
   this->deformation_gradient_increment_ =
@@ -189,8 +191,9 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_strain_newmark() noexcept {
                                                    mpm::ParticlePhase::Solid);
 
   // Update volume and mass density
-  this->volume_ *= this->deformation_gradient_increment_.determinant();
-  this->mass_density_ /= this->deformation_gradient_increment_.determinant();
+  deltaJ = this->deformation_gradient_increment_.determinant();
+  this->volume_ *= deltaJ;
+  this->mass_density_ /= deltaJ;
 }
 
 // Compute deformation gradient increment of the particle

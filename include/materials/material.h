@@ -73,7 +73,14 @@ class Material {
   //! \param[in] state_vars History-dependent state variables
   virtual void initialise(mpm::dense_map* state_vars){};
 
+  /**
+   * \defgroup InfinitesimalStrain Functions for infinitesimal strain
+   * formulation
+   */
+  /**@{*/
+
   //! Compute stress
+  //! \ingroup InfinitesimalStrain
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
@@ -91,6 +98,7 @@ class Material {
   };
 
   //! Compute consistent tangent matrix
+  //! \ingroup InfinitesimalStrain
   //! \param[in] stress Updated stress
   //! \param[in] prev_stress Stress at the current step
   //! \param[in] dstrain Strain
@@ -107,6 +115,7 @@ class Material {
         "in Material:: illegal operation!");
     return error;
   };
+  /**@}*/
 
   /**
    * \defgroup FiniteStrain Functions for finite strain formulation

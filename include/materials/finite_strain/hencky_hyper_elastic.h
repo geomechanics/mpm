@@ -44,12 +44,7 @@ class HenckyHyperElastic : public Material<Tdim> {
   //! State variables
   std::vector<std::string> state_variables() const override { return {}; }
 
-  /**
-   * \defgroup FiniteStrain Functions for finite strain formulation
-   */
-  /**@{*/
   //! Compute stress
-  //! \ingroup FiniteStrain
   //! \param[in] stress Stress
   //! \param[in] deformation_gradient Deformation gradient at the current step
   //! \param[in] deformation_gradient_increment Deformation gradient increment
@@ -63,7 +58,6 @@ class HenckyHyperElastic : public Material<Tdim> {
       const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) override;
 
   //! Compute consistent tangent matrix
-  //! \ingroup FiniteStrain
   //! \param[in] stress Updated stress
   //! \param[in] prev_stress Stress at the current step
   //! \param[in] deformation_gradient Deformation gradient at the current step
@@ -76,7 +70,6 @@ class HenckyHyperElastic : public Material<Tdim> {
       const Eigen::Matrix<double, 3, 3>& deformation_gradient,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
       const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) override;
-  /**@}*/
 
  protected:
   //! material id
@@ -103,10 +96,6 @@ class HenckyHyperElastic : public Material<Tdim> {
   double mu_{std::numeric_limits<double>::max()};
   //! lambda of Lame's constants
   double lambda_{std::numeric_limits<double>::max()};
-  //! Compressional Wave Velocity
-  double vp_{std::numeric_limits<double>::max()};
-  //! Shear Wave Velocity
-  double vs_{std::numeric_limits<double>::max()};
 };  // HenckyHyperElastic class
 }  // namespace mpm
 

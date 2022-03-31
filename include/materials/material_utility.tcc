@@ -220,6 +220,39 @@ inline double mpm::materials::pdstrain(
   return pdstrain;
 }
 
+//! Compute principal stress/strain from given stress/strain in matrix form
+inline const Eigen::Matrix<double, 3, 1> mpm::materials::principal_tensor(
+    const Eigen::Matrix<double, 3, 3>& matrix_tensor) {
+
+  Eigen::Matrix<double, 3, 1> principal_tensor;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(matrix_tensor);
+  principal_tensor = es.eigenvalues();
+
+  // Sort principal tensor, 0: major, 1: intermediate, 2: minor
+  std::swap(principal_tensor[0], principal_tensor[2]);
+
+  return principal_tensor;
+}
+
+//! Compute principal stress/strain from given stress/strain in matrix form
+inline const Eigen::Matrix<double, 3, 1> mpm::materials::principal_tensor(
+    const Eigen::Matrix<double, 3, 3>& matrix_tensor,
+    Eigen::Matrix<double, 3, 3>& directors) {
+
+  Eigen::Matrix<double, 3, 1> principal_tensor;
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(matrix_tensor);
+  principal_tensor = es.eigenvalues();
+  directors = es.eigenvectors();
+
+  // Sort principal tensor and directors
+  std::swap(principal_tensor[0], principal_tensor[2]);
+  Eigen::Matrix<double, 3, 1> temp_vector = directors.col(0);
+  directors.col(0) = directors.col(2);
+  directors.col(2) = temp_vector;
+
+  return principal_tensor;
+}
+
 //! Compute principal stress/strain from given stress/strain in voigt notation
 inline const Eigen::Matrix<double, 3, 1> mpm::materials::principal_tensor(
     const Eigen::Matrix<double, 6, 1>& voigt_tensor) {

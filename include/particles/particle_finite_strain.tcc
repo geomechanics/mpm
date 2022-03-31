@@ -34,8 +34,8 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_stress() noexcept {
                            &state_variables_[mpm::ParticlePhase::Solid]);
 
   // Update deformation gradient
-  deformation_gradient_ =
-      deformation_gradient_increment_ * deformation_gradient_;
+  this->deformation_gradient_ =
+      this->deformation_gradient_increment_ * this->deformation_gradient_;
 }
 
 // Compute strain of the particle
@@ -60,14 +60,11 @@ inline Eigen::Matrix<double, 3, 3>
         const double dt) noexcept {
   // Define deformation gradient rate
   Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  deformation_gradient_rate(0, 0) = 1.;
-  deformation_gradient_rate(1, 1) = 1.;
-  deformation_gradient_rate(2, 2) = 1.;
+      Eigen::Matrix<double, 3, 3>::Identity();
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 1, 1> velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = nodes_[i]->velocity(phase);
     deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
   }
 
@@ -84,14 +81,11 @@ inline Eigen::Matrix<double, 3, 3>
         const double dt) noexcept {
   // Define deformation gradient rate
   Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  deformation_gradient_rate(0, 0) = 1.;
-  deformation_gradient_rate(1, 1) = 1.;
-  deformation_gradient_rate(2, 2) = 1.;
+      Eigen::Matrix<double, 3, 3>::Identity();
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = nodes_[i]->velocity(phase);
     deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
     deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
     deformation_gradient_rate(1, 0) += dn_dx(i, 0) * velocity[1] * dt;
@@ -117,14 +111,11 @@ inline Eigen::Matrix<double, 3, 3>
         const double dt) noexcept {
   // Define deformation gradient rate
   Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  deformation_gradient_rate(0, 0) = 1.;
-  deformation_gradient_rate(1, 1) = 1.;
-  deformation_gradient_rate(2, 2) = 1.;
+      Eigen::Matrix<double, 3, 3>::Identity();
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = nodes_[i]->velocity(phase);
     deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
     deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
     deformation_gradient_rate(0, 2) += dn_dx(i, 2) * velocity[0] * dt;
@@ -209,14 +200,11 @@ inline Eigen::Matrix<double, 3, 3>
         const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
   // Define deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  deformation_gradient_increment(0, 0) = 1.;
-  deformation_gradient_increment(1, 1) = 1.;
-  deformation_gradient_increment(2, 2) = 1.;
+      Eigen::Matrix<double, 3, 3>::Identity();
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 1, 1> displacement = nodes_[i]->displacement(phase);
+    const auto& displacement = nodes_[i]->displacement(phase);
     deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
   }
 
@@ -232,14 +220,11 @@ inline Eigen::Matrix<double, 3, 3>
         const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
   // Define deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  deformation_gradient_increment(0, 0) = 1.;
-  deformation_gradient_increment(1, 1) = 1.;
-  deformation_gradient_increment(2, 2) = 1.;
+      Eigen::Matrix<double, 3, 3>::Identity();
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
+    const auto& displacement = nodes_[i]->displacement(phase);
     deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
     deformation_gradient_increment(0, 1) += dn_dx(i, 1) * displacement[0];
     deformation_gradient_increment(1, 0) += dn_dx(i, 0) * displacement[1];
@@ -265,14 +250,11 @@ inline Eigen::Matrix<double, 3, 3>
         const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
   // Define deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  deformation_gradient_increment(0, 0) = 1.;
-  deformation_gradient_increment(1, 1) = 1.;
-  deformation_gradient_increment(2, 2) = 1.;
+      Eigen::Matrix<double, 3, 3>::Identity();
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> displacement = nodes_[i]->displacement(phase);
+    const auto& displacement = nodes_[i]->displacement(phase);
     deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
     deformation_gradient_increment(0, 1) += dn_dx(i, 1) * displacement[0];
     deformation_gradient_increment(0, 2) += dn_dx(i, 2) * displacement[0];
@@ -299,43 +281,31 @@ inline Eigen::Matrix<double, 3, 3>
 // Compute Hencky strain
 template <unsigned Tdim>
 inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticleFiniteStrain<Tdim>::compute_hencky_strain(
-        const Eigen::Matrix<double, 3, 3>& deformation_gradient) {
+    mpm::ParticleFiniteStrain<Tdim>::compute_hencky_strain() const {
 
   // Left Cauchy-Green strain
-  Eigen::Matrix<double, 3, 3> left_cauchy_green =
-      deformation_gradient * deformation_gradient.transpose();
+  const Eigen::Matrix<double, 3, 3> left_cauchy_green_tensor =
+      deformation_gradient_ * deformation_gradient_.transpose();
 
-  // Left Cauchy-Green strain (Voigt vector)
-  // Check necessity of 2.0
-  Eigen::Matrix<double, 6, 1> left_cauchy_green_vector =
-      Eigen::Matrix<double, 6, 1>::Zero();
-  left_cauchy_green_vector(0) = left_cauchy_green(0, 0);
-  left_cauchy_green_vector(1) = left_cauchy_green(1, 1);
-  left_cauchy_green_vector(2) = left_cauchy_green(2, 2);
-  left_cauchy_green_vector(3) = left_cauchy_green(0, 1);
-  left_cauchy_green_vector(4) = left_cauchy_green(1, 2);
-  left_cauchy_green_vector(5) = left_cauchy_green(2, 0);
-
-  // Principal value of left Cauchy-Green strain
-  Eigen::Matrix<double, 3, 1> principal_left_cauchy_green =
-      Eigen::Matrix<double, 3, 1>::Zero();
+  // Principal values of left Cauchy-Green strain
   Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-  principal_left_cauchy_green =
-      mpm::materials::principal_tensor(left_cauchy_green_vector, directors);
+  const Eigen::Matrix<double, 3, 1> principal_left_cauchy_green_strain =
+      mpm::materials::principal_tensor(left_cauchy_green_tensor, directors);
 
   // Principal value of Hencky (logarithmic) strain
   Eigen::Matrix<double, 3, 3> principal_hencky_strain =
       Eigen::Matrix<double, 3, 3>::Zero();
-  principal_hencky_strain(0, 0) = 0.5 * log(principal_left_cauchy_green(0));
-  principal_hencky_strain(1, 1) = 0.5 * log(principal_left_cauchy_green(1));
-  principal_hencky_strain(2, 2) = 0.5 * log(principal_left_cauchy_green(2));
+  principal_hencky_strain(0, 0) =
+      0.5 * std::log(principal_left_cauchy_green_strain(0));
+  principal_hencky_strain(1, 1) =
+      0.5 * std::log(principal_left_cauchy_green_strain(1));
+  principal_hencky_strain(2, 2) =
+      0.5 * std::log(principal_left_cauchy_green_strain(2));
 
-  // Hencky strain tensor
-  Eigen::Matrix<double, 3, 3> hencky_strain =
+  // Hencky strain tensor and vector
+  const Eigen::Matrix<double, 3, 3> hencky_strain =
       directors * principal_hencky_strain * directors.transpose();
-  Eigen::Matrix<double, 6, 1> hencky_strain_vector =
-      Eigen::Matrix<double, 6, 1>::Zero();
+  Eigen::Matrix<double, 6, 1> hencky_strain_vector;
   hencky_strain_vector(0) = hencky_strain(0, 0);
   hencky_strain_vector(1) = hencky_strain(1, 1);
   hencky_strain_vector(2) = hencky_strain(2, 2);

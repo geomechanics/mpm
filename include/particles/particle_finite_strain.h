@@ -47,6 +47,12 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
+  //! Return strain of the particle
+  Eigen::Matrix<double, 6, 1> strain() const override {
+    const auto& strain = this->compute_hencky_strain();
+    return strain;
+  }
+
   //! Update volume based on deformation gradient increment
   //! Note: Volume is updated in compute_strain_newmark() every N-R iteration
   void update_volume() noexcept override{};
@@ -73,12 +79,20 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
   void compute_stress_newmark() noexcept override;
+
+  //! Update stress and strain after convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  void update_stress_strain() noexcept override;
   /**@}*/
 
  protected:
-  //! Compute deformation gradient increment using nodal displacement
+  //! Compute Hencky strain using deformation gradient
+  inline Eigen::Matrix<double, 6, 1> compute_hencky_strain() const;
+
+  //! Compute deformation gradient increment using nodal velocity
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
+  //! \param[in] dt time increment
   //! \retval deformaton gradient increment at particle inside a cell
   inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase, const double dt) noexcept;
@@ -94,15 +108,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \retval deformaton gradient increment at particle inside a cell
   inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
-
-  //! Compute Hencky strain using deformation gradient
-  //! \ingroup Implicit
-  inline Eigen::Matrix<double, 6, 1> compute_hencky_strain(
-      const Eigen::Matrix<double, 3, 3>& deformation_gradient);
-
-  //! Update stress and strain after convergence of Newton-Raphson iteration
-  //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
   /**@}*/
 
  protected:

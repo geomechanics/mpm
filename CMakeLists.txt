@@ -161,6 +161,8 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/loads_bcs/
   ${mpm_SOURCE_DIR}/include/materials/
   ${mpm_SOURCE_DIR}/include/materials/finite_strain
+  ${mpm_SOURCE_DIR}/include/materials/infinitesimal_strain
+  ${mpm_SOURCE_DIR}/include/materials/strain_rate
   ${mpm_SOURCE_DIR}/include/mesh/
   ${mpm_SOURCE_DIR}/include/nodes/
   ${mpm_SOURCE_DIR}/include/particles/

@@ -26,7 +26,7 @@ typedef struct PODParticle {
   double nsize_x, nsize_y, nsize_z;
   // Velocity
   double velocity_x, velocity_y, velocity_z;
-  // Velocity
+  // Acceleration
   double acceleration_x, acceleration_y, acceleration_z;
   // Stresses
   double stress_xx, stress_yy, stress_zz;

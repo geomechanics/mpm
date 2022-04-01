@@ -16,6 +16,7 @@
 #include "function_base.h"
 #include "material.h"
 #include "pod_particle.h"
+#include "pod_particle_finite_strain.h"
 #include "pod_particle_twophase.h"
 
 namespace mpm {

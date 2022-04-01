@@ -75,12 +75,8 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
       de_.block<3, 3>(0, 0) * principal_hencky_strain;
 
   // Principal values of Cauchy stress
-  Eigen::Matrix<double, 3, 3> principal_cauchy_stress =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  principal_cauchy_stress(0, 0) = principal_kirchhoff_stress(0);
-  principal_cauchy_stress(1, 1) = principal_kirchhoff_stress(1);
-  principal_cauchy_stress(2, 2) = principal_kirchhoff_stress(2);
-  principal_cauchy_stress *= 1 / updated_jacobian;
+  const Eigen::Matrix<double, 3, 3> principal_cauchy_stress =
+      1.0 / updated_jacobian * principal_kirchhoff_stress.asDiagonal();
 
   // Cauchy stress
   const Eigen::Matrix<double, 3, 3> cauchy_stress =

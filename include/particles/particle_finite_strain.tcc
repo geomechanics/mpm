@@ -486,12 +486,8 @@ inline Eigen::Matrix<double, 6, 1>
   // Principal value of Hencky (logarithmic) strain
   Eigen::Matrix<double, 3, 3> principal_hencky_strain =
       Eigen::Matrix<double, 3, 3>::Zero();
-  principal_hencky_strain(0, 0) =
-      0.5 * std::log(principal_left_cauchy_green_strain(0));
-  principal_hencky_strain(1, 1) =
-      0.5 * std::log(principal_left_cauchy_green_strain(1));
-  principal_hencky_strain(2, 2) =
-      0.5 * std::log(principal_left_cauchy_green_strain(2));
+  principal_hencky_strain.diagonal() =
+      0.5 * principal_left_cauchy_green_strain.array().log();
 
   // Hencky strain tensor and vector
   const Eigen::Matrix<double, 3, 3> hencky_strain =

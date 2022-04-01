@@ -61,15 +61,15 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODParticleFiniteStrain, svars[18]),
     HOFFSET(PODParticleFiniteStrain, svars[19]),
     // Finite strain
+    HOFFSET(PODParticleFiniteStrain, defgrad_00),
+    HOFFSET(PODParticleFiniteStrain, defgrad_01),
+    HOFFSET(PODParticleFiniteStrain, defgrad_02),
+    HOFFSET(PODParticleFiniteStrain, defgrad_10),
     HOFFSET(PODParticleFiniteStrain, defgrad_11),
     HOFFSET(PODParticleFiniteStrain, defgrad_12),
-    HOFFSET(PODParticleFiniteStrain, defgrad_13),
+    HOFFSET(PODParticleFiniteStrain, defgrad_20),
     HOFFSET(PODParticleFiniteStrain, defgrad_21),
     HOFFSET(PODParticleFiniteStrain, defgrad_22),
-    HOFFSET(PODParticleFiniteStrain, defgrad_23),
-    HOFFSET(PODParticleFiniteStrain, defgrad_31),
-    HOFFSET(PODParticleFiniteStrain, defgrad_32),
-    HOFFSET(PODParticleFiniteStrain, defgrad_33),
 };
 
 // Get size of particletwophase
@@ -133,15 +133,15 @@ const size_t dst_sizes[NFIELDS] = {
     sizeof(particle.svars[18]),
     sizeof(particle.svars[19]),
     // Finite strain
+    sizeof(particle.defgrad_00),
+    sizeof(particle.defgrad_01),
+    sizeof(particle.defgrad_02),
+    sizeof(particle.defgrad_10),
     sizeof(particle.defgrad_11),
     sizeof(particle.defgrad_12),
-    sizeof(particle.defgrad_13),
+    sizeof(particle.defgrad_20),
     sizeof(particle.defgrad_21),
     sizeof(particle.defgrad_22),
-    sizeof(particle.defgrad_23),
-    sizeof(particle.defgrad_31),
-    sizeof(particle.defgrad_32),
-    sizeof(particle.defgrad_33),
 };
 
 // Define particletwophase field information
@@ -204,15 +204,15 @@ const char* field_names[NFIELDS] = {
     "svars_18",
     "svars_19",
     // Finite strain
+    "defgrad_00",
+    "defgrad_01",
+    "defgrad_02",
+    "defgrad_10",
     "defgrad_11",
     "defgrad_12",
-    "defgrad_13",
+    "defgrad_20",
     "defgrad_21",
     "defgrad_22",
-    "defgrad_23",
-    "defgrad_31",
-    "defgrad_32",
-    "defgrad_33",
 };
 
 // Initialize field types

@@ -8,9 +8,9 @@ namespace mpm {
 // Define a struct of particle
 typedef struct PODParticleFiniteStrain : PODParticle {
   // Deformation gradient
-  double defgrad_11, defgrad_12, defgrad_13;
-  double defgrad_21, defgrad_22, defgrad_23;
-  double defgrad_31, defgrad_32, defgrad_33;
+  double defgrad_00, defgrad_01, defgrad_02;
+  double defgrad_10, defgrad_11, defgrad_12;
+  double defgrad_20, defgrad_21, defgrad_22;
   // Destructor
   virtual ~PODParticleFiniteStrain() = default;
 } PODParticleFiniteStrain;

@@ -50,6 +50,17 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
+  //! Serialize
+  //! \retval buffer Serialized buffer data
+  std::vector<uint8_t> serialize() override;
+
+  //! Deserialize
+  //! \param[in] buffer Serialized buffer data
+  //! \param[in] material Particle material pointers
+  void deserialize(
+      const std::vector<uint8_t>& buffer,
+      std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) override;
+
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override {
     const auto& strain = this->compute_hencky_strain();
@@ -100,6 +111,10 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase, const double dt) noexcept;
 
+  //! Compute pack size
+  //! \retval pack size of serialized object
+  int compute_pack_size() const override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -114,28 +129,46 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   /**@}*/
 
  protected:
-  //! Nodes
-  using ParticleBase<Tdim>::nodes_;
+  //! particle id
+  using ParticleBase<Tdim>::id_;
+  //! coordinates
+  using ParticleBase<Tdim>::coordinates_;
+  //! Status
+  using ParticleBase<Tdim>::status_;
   //! Cell
   using ParticleBase<Tdim>::cell_;
+  //! Cell id
+  using ParticleBase<Tdim>::cell_id_;
+  //! Nodes
+  using ParticleBase<Tdim>::nodes_;
   //! State variables
   using ParticleBase<Tdim>::state_variables_;
   //! Material
   using ParticleBase<Tdim>::material_;
+  //! Material ids
+  using ParticleBase<Tdim>::material_id_;
+  //! Particle mass
+  using Particle<Tdim>::mass_;
   //! Volume
   using Particle<Tdim>::volume_;
   //! Volumetric mass density (mass / volume)
   using Particle<Tdim>::mass_density_;
   //! Stresses
   using Particle<Tdim>::stress_;
-  //! Strains
-  // using Particle<Tdim>::strain_;
   //! Velocity
   using Particle<Tdim>::velocity_;
+  //! Acceleration
+  using Particle<Tdim>::acceleration_;
   //! Displacement
   using Particle<Tdim>::displacement_;
   //! dN/dX
   using Particle<Tdim>::dn_dx_;
+  //! Size of particle in natural coordinates
+  using Particle<Tdim>::natural_size_;
+  //! Size of particle
+  using Particle<Tdim>::pack_size_;
+  //! Volumetric strain at centroid
+  using Particle<Tdim>::volumetric_strain_centroid_;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

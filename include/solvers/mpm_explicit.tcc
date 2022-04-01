@@ -123,6 +123,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Initialise loading conditions
   this->initialise_loads();
 
+  // Write initial outputs
+  if (!resume) this->write_outputs(this->step_);
+
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
   for (; step_ < nsteps_; ++step_) {
@@ -179,18 +182,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 #endif
 #endif
 
-    if (step_ % output_steps_ == 0) {
-      // HDF5 outputs
-      this->write_hdf5(this->step_, this->nsteps_);
-#ifdef USE_VTK
-      // VTK outputs
-      this->write_vtk(this->step_, this->nsteps_);
-#endif
-#ifdef USE_PARTIO
-      // Partio outputs
-      this->write_partio(this->step_, this->nsteps_);
-#endif
-    }
+    // Write outputs
+    this->write_outputs(this->step_ + 1);
   }
   auto solver_end = std::chrono::steady_clock::now();
   console_->info("Rank {}, Explicit {} solver duration: {} ms", mpi_rank,

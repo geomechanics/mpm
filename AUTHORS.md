@@ -8,4 +8,4 @@
 ## Advised by
 * Prof. Kenichi Soga, UC Berkeley, USA.
 
-> The UCB geomechanics MPM code is based on the CB-Geo framework; please see the updated list of the [CB-Geo Material Point Method contributors](https://github.com/cb-geo/mpm/blob/develop/AUTHORS.md).
+> The UCB geomechanics MPM code is based on the [CB-Geo](https://github.com/cb-geo/mpm) framework; please see the updated list of the [CB-Geo Material Point Method contributors](https://github.com/cb-geo/mpm/blob/develop/AUTHORS.md).

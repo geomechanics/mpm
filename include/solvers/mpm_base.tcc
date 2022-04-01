@@ -497,8 +497,6 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     if (!unlocatable_particles.empty())
       throw std::runtime_error("Particle outside the mesh domain");
 
-    // Increament step
-    ++this->step_;
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
 
@@ -681,6 +679,23 @@ void mpm::MPMBase<Tdim>::write_partio(mpm::Index step, mpm::Index max_steps) {
   mpm::partio::write_particles(file, mesh_->particles_hdf5());
 }
 #endif  // USE_PARTIO
+
+//! Output results
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_outputs(mpm::Index step) {
+  if (step % this->output_steps_ == 0) {
+    // HDF5 outputs
+    this->write_hdf5(step, this->nsteps_);
+#ifdef USE_VTK
+    // VTK outputs
+    this->write_vtk(step, this->nsteps_);
+#endif
+#ifdef USE_PARTIO
+    // Partio outputs
+    this->write_partio(step, this->nsteps_);
+#endif
+  }
+}
 
 //! Return if a mesh is isoparametric
 template <unsigned Tdim>

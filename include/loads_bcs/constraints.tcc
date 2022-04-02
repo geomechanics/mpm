@@ -219,7 +219,6 @@ bool mpm::Constraints<Tdim>::assign_nodal_absorbing_constraint(
     const std::shared_ptr<mpm::AbsorbingConstraint>& absorbing_constraint) {
   bool status = true;
   try {
-    // int set_id = absorbing_constraint->setid();
     int set_id = nset_id;
     auto nset = mesh_->nodes(set_id);
     if (nset.size() == 0)

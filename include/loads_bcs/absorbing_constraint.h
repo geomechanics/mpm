@@ -59,9 +59,9 @@ class AbsorbingConstraint {
   double delta_;
   // Cell height
   double h_min_;
-  // a
+  // a, dimensionless dashpot weight factor, p-wave
   double a_;
-  // b
+  // b, dimensionless dashpot weight factor, s-wave
   double b_;
   // Node position
   mpm::Position position_;

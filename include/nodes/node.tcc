@@ -584,11 +584,11 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::apply_absorbing_constraint(
       auto mat_id = material_ids_.begin();
 
       // Extract material properties and displacements
-      double pwave_v = this->property_handle_->property(
+      const double pwave_v = this->property_handle_->property(
           "wave_velocities", prop_id_, *mat_id, Tdim)(0);
-      double swave_v = this->property_handle_->property(
+      const double swave_v = this->property_handle_->property(
           "wave_velocities", prop_id_, *mat_id, Tdim)(1);
-      double density =
+      const double density =
           this->property_handle_->property("density", prop_id_, *mat_id)(0);
       Eigen::Matrix<double, Tdim, 1> material_displacement =
           this->property_handle_->property("displacements", prop_id_, *mat_id,
@@ -600,8 +600,8 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::apply_absorbing_constraint(
           Eigen::MatrixXd::Constant(Tdim, 1, b * swave_v);
       wave_velocity(dir, 0) = a * pwave_v;
       // Spring constant Eigen matrix
-      double k_s = (density * pow(swave_v, 2)) / delta;
-      double k_p = (density * pow(pwave_v, 2)) / delta;
+      const double k_s = (density * pow(swave_v, 2)) / delta;
+      const double k_p = (density * pow(pwave_v, 2)) / delta;
       Eigen::Matrix<double, Tdim, 1> spring_constant =
           Eigen::MatrixXd::Constant(Tdim, 1, k_s);
       spring_constant(dir, 0) = k_p;

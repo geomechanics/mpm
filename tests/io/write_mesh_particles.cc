@@ -114,8 +114,11 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
 }
 
 // Write JSON Configuration file for absorbing boundary
-bool write_json_absorbing(unsigned dim, bool resume, const std::string& analysis,
-                const std::string& mpm_scheme, const std::string& file_name, const std::string& position) {
+bool write_json_absorbing(unsigned dim, bool resume,
+                          const std::string& analysis,
+                          const std::string& mpm_scheme,
+                          const std::string& file_name,
+                          const std::string& position) {
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
@@ -151,22 +154,22 @@ bool write_json_absorbing(unsigned dim, bool resume, const std::string& analysis
         {"isoparametric", false},
         {"node_type", node_type},
         {"boundary_conditions",
-         {{"absorbing_constraints", 
-           {{{"nset_id", 97}, 
+         {{"absorbing_constraints",
+           {{{"nset_id", 97},
              {"dir", 1},
              {"delta", 100},
              {"h_min", 0.5},
              {"a", 1},
              {"b", 1},
              {"position", "corner"}},
-            {{"nset_id", 98}, 
+            {{"nset_id", 98},
              {"dir", 1},
              {"delta", 100},
              {"h_min", 0.5},
              {"a", 1},
              {"b", 1},
              {"position", "edge"}},
-            {{"nset_id", 99}, 
+            {{"nset_id", 99},
              {"dir", 1},
              {"delta", 100},
              {"h_min", 0.5},
@@ -197,8 +200,7 @@ bool write_json_absorbing(unsigned dim, bool resume, const std::string& analysis
          {"poisson_ratio", 0.25}}}},
       {"material_sets",
        {{{"material_id", 1}, {"phase_id", 0}, {"pset_id", 2}}}},
-      {"external_loading_conditions",
-       {{"gravity", gravity}}},
+      {"external_loading_conditions", {{"gravity", gravity}}},
       {"math_functions",
        {{{"id", 0},
          {"type", "Linear"},
@@ -685,8 +687,8 @@ bool write_entity_set() {
       {"particle_sets",
        {{{"id", 2},
          {"set", {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}}}}},
-      {"node_sets", 
-       {{{"id", 1},  {"set", {4,5}}},
+      {"node_sets",
+       {{{"id", 1}, {"set", {4, 5}}},
         {{"id", 97}, {"set", {0}}},
         {{"id", 98}, {"set", {1}}},
         {{"id", 99}, {"set", {4}}}}}};

@@ -47,10 +47,27 @@ TEST_CASE("MPM 2D Explicit Absorbing Boundary is checked",
 
     // Initialise materials
     REQUIRE_NOTHROW(mpm->initialise_materials());
-
-    // Initialise mesh and particles
+    // Initialise mesh
     REQUIRE_NOTHROW(mpm->initialise_mesh());
+    // Initialise particles
     REQUIRE_NOTHROW(mpm->initialise_particles());
+
+    // Initialise external loading
+    REQUIRE_NOTHROW(mpm->initialise_loads());
+
+    // Renitialise materials
+    REQUIRE_THROWS(mpm->initialise_materials());
+  }
+
+  SECTION("Check solver") {
+    // Create an IO object
+    auto io = std::make_unique<mpm::IO>(argc, argv);
+    // Run explicit MPM
+    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Solve
+    REQUIRE(mpm->solve() == true);
+    // Test check point restart
+    REQUIRE(mpm->checkpoint_resume() == false);
   }
 }
 
@@ -94,9 +111,26 @@ TEST_CASE("MPM 3D Explicit Absorbing Boundary is checked",
 
     // Initialise materials
     REQUIRE_NOTHROW(mpm->initialise_materials());
-
-    // Initialise mesh and particles
+    // Initialise mesh
     REQUIRE_NOTHROW(mpm->initialise_mesh());
+    // Initialise particles
     REQUIRE_NOTHROW(mpm->initialise_particles());
+
+    // Initialise external loading
+    REQUIRE_NOTHROW(mpm->initialise_loads());
+
+    // Renitialise materials
+    REQUIRE_THROWS(mpm->initialise_materials());
+  }
+
+  SECTION("Check solver") {
+    // Create an IO object
+    auto io = std::make_unique<mpm::IO>(argc, argv);
+    // Run explicit MPM
+    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Solve
+    REQUIRE(mpm->solve() == true);
+    // Test check point restart
+    REQUIRE(mpm->checkpoint_resume() == false);
   }
 }

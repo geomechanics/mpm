@@ -127,8 +127,8 @@ bool write_json_absorbing(unsigned dim, bool resume,
   auto cell_type = "ED2Q4";
   auto io_type = "Ascii2D";
   std::string material = "LinearElastic2D";
-  std::vector<double> gravity{{0., -9.81}};
-  unsigned material_id = 1;
+  std::vector<double> gravity{{0., 0.}};
+  unsigned material_id = 0;
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
 
@@ -141,7 +141,7 @@ bool write_json_absorbing(unsigned dim, bool resume,
     io_type = "Ascii3D";
     material = "LinearElastic3D";
     gravity.clear();
-    gravity = {0., 0., -9.81};
+    gravity = {0., 0., 0.};
   }
 
   Json json_file = {
@@ -191,16 +191,18 @@ bool write_json_absorbing(unsigned dim, bool resume,
        {{{"id", 0},
          {"type", material},
          {"density", 1000.},
-         {"youngs_modulus", 1.0E+8},
-         {"poisson_ratio", 0.495}},
-        {{"id", 1},
-         {"type", material},
-         {"density", 2300.},
-         {"youngs_modulus", 1.5E+6},
-         {"poisson_ratio", 0.25}}}},
+         {"youngs_modulus", 1.0E+6},
+         {"poisson_ratio", 0.0}},
+        }},
       {"material_sets",
-       {{{"material_id", 1}, {"phase_id", 0}, {"pset_id", 2}}}},
-      {"external_loading_conditions", {{"gravity", gravity}}},
+       {{{"material_id", 0}, {"phase_id", 0}, {"pset_id", 2}}}},
+      {"external_loading_conditions",
+       {{"gravity", gravity},
+        {"particle_surface_traction",
+         {{{"math_function_id", 0},
+           {"pset_id", -1},
+           {"dir", 1},
+           {"traction", 10.5}}}}}},
       {"math_functions",
        {{{"id", 0},
          {"type", "Linear"},

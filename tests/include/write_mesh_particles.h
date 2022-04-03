@@ -13,7 +13,8 @@ bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,
                           const std::string& mpm_scheme,
                           const std::string& file_name,
-                          const std::string& position);
+                          const std::string& position,
+                          const double delta = 100.0);
 
 // Write JSON Configuration file for implicit
 bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,

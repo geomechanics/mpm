@@ -45,9 +45,12 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
   if (analysis_.find("pressure_smoothing") != analysis_.end())
     pressure_smoothing_ = analysis_["pressure_smoothing"].template get<bool>();
 
-  // Projection method parameter (beta)
-  if (analysis_.find("semi_implicit") != analysis_.end())
-    beta_ = analysis_["semi_implicit"]["beta"].template get<double>();
+  // Read settings for two-phase analysis
+  if (analysis_.contains("scheme_settings")) {
+    // Parameter to determine full and incremental projection
+    if (analysis_["scheme_settings"].contains("beta"))
+      beta_ = analysis_["scheme_settings"]["beta"].template get<double>();
+  }
 
   // Initialise material
   this->initialise_materials();

@@ -2,9 +2,7 @@
 template <unsigned Tdim>
 mpm::dense_map mpm::FiniteElastoPlastic<Tdim>::initialise_state_variables() {
   // Base state variable
-  mpm::dense_map state_vars = {// Yield state: 0: elastic, 1: plastic
-                               {"yield_state", 0},
-                               // Left elastic Cauchy Green tensor
+  mpm::dense_map state_vars = {// Left elastic Cauchy Green tensor
                                {"elastic_left_cauchy_green_00", 0.},
                                {"elastic_left_cauchy_green_11", 0.},
                                {"elastic_left_cauchy_green_22", 0.},
@@ -18,19 +16,16 @@ mpm::dense_map mpm::FiniteElastoPlastic<Tdim>::initialise_state_variables() {
 template <unsigned Tdim>
 std::vector<std::string> mpm::FiniteElastoPlastic<Tdim>::state_variables()
     const {
-  const std::vector<std::string> state_vars = {"yield_state",
-                                               "elastic_left_cauchy_green_00",
-                                               "elastic_left_cauchy_green_11",
-                                               "elastic_left_cauchy_green_22",
-                                               "elastic_left_cauchy_green_01",
-                                               "elastic_left_cauchy_green_12",
-                                               "elastic_left_cauchy_green_02"};
+  const std::vector<std::string> state_vars = {
+      "elastic_left_cauchy_green_00", "elastic_left_cauchy_green_11",
+      "elastic_left_cauchy_green_22", "elastic_left_cauchy_green_01",
+      "elastic_left_cauchy_green_12", "elastic_left_cauchy_green_02"};
   return state_vars;
 }
 
 //! Compute stress
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
+Eigen::Matrix<double, 6, 1> mpm::FiniteElastoPlastic<Tdim>::compute_stress(
     const Vector6d& stress, const Matrix3x3& deformation_gradient,
     const Matrix3x3& deformation_gradient_increment,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
@@ -43,17 +38,17 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
   // Elastic left Cauchy-Green tensor
   Matrix3x3 elastic_left_cauchy_green = Matrix3x3::Zero();
   elastic_left_cauchy_green(0, 0) =
-      state_vars.at("elastic_left_cauchy_green_00");
+      (*state_vars).at("elastic_left_cauchy_green_00");
   elastic_left_cauchy_green(1, 1) =
-      state_vars.at("elastic_left_cauchy_green_11");
+      (*state_vars).at("elastic_left_cauchy_green_11");
   elastic_left_cauchy_green(2, 2) =
-      state_vars.at("elastic_left_cauchy_green_22");
+      (*state_vars).at("elastic_left_cauchy_green_22");
   elastic_left_cauchy_green(0, 1) =
-      state_vars.at("elastic_left_cauchy_green_01");
+      (*state_vars).at("elastic_left_cauchy_green_01");
   elastic_left_cauchy_green(1, 2) =
-      state_vars.at("elastic_left_cauchy_green_12");
+      (*state_vars).at("elastic_left_cauchy_green_12");
   elastic_left_cauchy_green(0, 2) =
-      state_vars.at("elastic_left_cauchy_green_02");
+      (*state_vars).at("elastic_left_cauchy_green_02");
   elastic_left_cauchy_green(1, 0) = elastic_left_cauchy_green(0, 1);
   elastic_left_cauchy_green(2, 1) = elastic_left_cauchy_green(1, 2);
   elastic_left_cauchy_green(2, 0) = elastic_left_cauchy_green(0, 2);
@@ -100,17 +95,17 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
   elastic_left_cauchy_green =
       directors * elastic_left_cauchy_green * directors.transpose();
 
-  state_vars.at("elastic_left_cauchy_green_00") =
+  (*state_vars).at("elastic_left_cauchy_green_00") =
       elastic_left_cauchy_green(0, 0);
-  state_vars.at("elastic_left_cauchy_green_11") =
+  (*state_vars).at("elastic_left_cauchy_green_11") =
       elastic_left_cauchy_green(1, 1);
-  state_vars.at("elastic_left_cauchy_green_22") =
+  (*state_vars).at("elastic_left_cauchy_green_22") =
       elastic_left_cauchy_green(2, 2);
-  state_vars.at("elastic_left_cauchy_green_01") =
+  (*state_vars).at("elastic_left_cauchy_green_01") =
       elastic_left_cauchy_green(0, 1);
-  state_vars.at("elastic_left_cauchy_green_12") =
+  (*state_vars).at("elastic_left_cauchy_green_12") =
       elastic_left_cauchy_green(1, 2);
-  state_vars.at("elastic_left_cauchy_green_02") =
+  (*state_vars).at("elastic_left_cauchy_green_02") =
       elastic_left_cauchy_green(0, 2);
 
   return cauchy_stress_vector;
@@ -119,7 +114,7 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
 //! Compute consistent tangent matrix
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6>
-    mpm::HenckyHyperElastic<Tdim>::compute_consistent_tangent_matrix(
+    mpm::FiniteElastoPlastic<Tdim>::compute_consistent_tangent_matrix(
         const Vector6d& stress, const Vector6d& prev_stress,
         const Matrix3x3& deformation_gradient,
         const Matrix3x3& deformation_gradient_increment,
@@ -128,17 +123,17 @@ Eigen::Matrix<double, 6, 6>
   // Elastic left Cauchy-Green tensor
   Matrix3x3 elastic_left_cauchy_green = Matrix3x3::Zero();
   elastic_left_cauchy_green(0, 0) =
-      state_vars.at("elastic_left_cauchy_green_00");
+      (*state_vars).at("elastic_left_cauchy_green_00");
   elastic_left_cauchy_green(1, 1) =
-      state_vars.at("elastic_left_cauchy_green_11");
+      (*state_vars).at("elastic_left_cauchy_green_11");
   elastic_left_cauchy_green(2, 2) =
-      state_vars.at("elastic_left_cauchy_green_22");
+      (*state_vars).at("elastic_left_cauchy_green_22");
   elastic_left_cauchy_green(0, 1) =
-      state_vars.at("elastic_left_cauchy_green_01");
+      (*state_vars).at("elastic_left_cauchy_green_01");
   elastic_left_cauchy_green(1, 2) =
-      state_vars.at("elastic_left_cauchy_green_12");
+      (*state_vars).at("elastic_left_cauchy_green_12");
   elastic_left_cauchy_green(0, 2) =
-      state_vars.at("elastic_left_cauchy_green_02");
+      (*state_vars).at("elastic_left_cauchy_green_02");
   elastic_left_cauchy_green(1, 0) = elastic_left_cauchy_green(0, 1);
   elastic_left_cauchy_green(2, 1) = elastic_left_cauchy_green(1, 2);
   elastic_left_cauchy_green(2, 0) = elastic_left_cauchy_green(0, 2);

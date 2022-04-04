@@ -44,6 +44,13 @@ class FiniteElastoPlastic : public Material<Tdim> {
   //! Delete assignement operator
   FiniteElastoPlastic& operator=(const FiniteElastoPlastic&) = delete;
 
+  //! Initialise history variables
+  //! \retval state_vars State variables with history
+  mpm::dense_map initialise_state_variables() override;
+
+  //! State variables
+  std::vector<std::string> state_variables() const override;
+
   //! Compute stress
   //! \param[in] stress Stress
   //! \param[in] deformation_gradient Deformation gradient at the current step
@@ -82,9 +89,7 @@ class FiniteElastoPlastic : public Material<Tdim> {
   //! coordinate
   virtual Vector3d compute_return_mapping(
       Vector3d& principal_elastic_hencky_strain, const ParticleBase<Tdim>* ptr,
-      mpm::dense_map* state_vars) {
-    return Vector3d::Zero();
-  };
+      mpm::dense_map* state_vars) = 0;
 
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
@@ -97,9 +102,7 @@ class FiniteElastoPlastic : public Material<Tdim> {
   virtual Matrix6x6 compute_elasto_plastic_tensor(
       const Vector6d& stress, const Matrix3x3& elastic_left_cauchy_green,
       const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars,
-      bool hardening = true) {
-    return Matrix6x6::Zero();
-  };
+      bool hardening = true) = 0;
 
 };  // FiniteElastoPlastic class
 }  // namespace mpm

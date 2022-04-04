@@ -326,7 +326,8 @@ TEST_CASE("Interface functions are checked", "[interface]") {
                     k, 0) == Approx(normal(i * Dim + k, j)).epsilon(tolerance));
         REQUIRE(
             nodal_properties->property("wave_velocities", i, j, Dim)(k, 0) ==
-            Approx(wave_velocities(i * Dim + k, j)).epsilon(tolerance));
+            Approx(masses(i, j) * wave_velocities(i * Dim + k, j))
+                .epsilon(tolerance));
       }
       // Check if normal vector are also unit vectors
       REQUIRE(

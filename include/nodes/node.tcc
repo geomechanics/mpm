@@ -584,15 +584,20 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::apply_absorbing_constraint(
       auto mat_id = material_ids_.begin();
 
       // Extract material properties and displacements
-      const double pwave_v = this->property_handle_->property(
+      double pwave_v = this->property_handle_->property(
           "wave_velocities", prop_id_, *mat_id, Tdim)(0);
-      const double swave_v = this->property_handle_->property(
+      double swave_v = this->property_handle_->property(
           "wave_velocities", prop_id_, *mat_id, Tdim)(1);
-      const double density =
+      double density =
           this->property_handle_->property("density", prop_id_, *mat_id)(0);
       Eigen::Matrix<double, Tdim, 1> material_displacement =
           this->property_handle_->property("displacements", prop_id_, *mat_id,
                                            Tdim);
+
+      // Update quantities based on nodal mass
+      pwave_v /= this->mass(*mat_id);
+      swave_v /= this->mass(*mat_id);
+      density /= this->mass(*mat_id);
       material_displacement /= this->mass(*mat_id);
 
       // Wave velocity Eigen Matrix

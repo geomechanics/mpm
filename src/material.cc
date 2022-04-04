@@ -1,5 +1,6 @@
 #include "material.h"
 #include "bingham.h"
+#include "finite_mohr_coulomb.h"
 #include "hencky_hyper_elastic.h"
 #include "linear_elastic.h"
 #include "modified_cam_clay.h"
@@ -33,12 +34,14 @@ static Register<mpm::Material<3>, mpm::ModifiedCamClay<3>, unsigned,
                 const Json&>
     modified_cam_clay_3d("ModifiedCamClay3D");
 
-// MohrCoulomb 2D
-static Register<mpm::Material<2>, mpm::MohrCoulomb<2>, unsigned, const Json&>
+// FiniteMohrCoulomb 2D
+static Register<mpm::Material<2>, mpm::FiniteMohrCoulomb<2>, unsigned,
+                const Json&>
     mohr_coulomb_2d("MohrCoulomb2D");
 
-// MohrCoulomb 3D
-static Register<mpm::Material<3>, mpm::MohrCoulomb<3>, unsigned, const Json&>
+// FiniteMohrCoulomb 3D
+static Register<mpm::Material<3>, mpm::FiniteMohrCoulomb<3>, unsigned,
+                const Json&>
     mohr_coulomb_3d("MohrCoulomb3D");
 
 // Newtonian 2D
@@ -66,3 +69,13 @@ static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,
 static Register<mpm::Material<3>, mpm::HenckyHyperElastic<3>, unsigned,
                 const Json&>
     hencky_hyper_elastic_3d("HenckyHyperElastic3D");
+
+// FiniteMohrCoulomb 2D
+static Register<mpm::Material<2>, mpm::FiniteMohrCoulomb<2>, unsigned,
+                const Json&>
+    finite_mohr_coulomb_2d("FiniteMohrCoulomb2D");
+
+// FiniteMohrCoulomb 3D
+static Register<mpm::Material<3>, mpm::FiniteMohrCoulomb<3>, unsigned,
+                const Json&>
+    finite_mohr_coulomb_3d("FiniteMohrCoulomb3D");

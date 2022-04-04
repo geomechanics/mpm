@@ -44,6 +44,7 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     jsolid_material["k_x"] = 0.001;
     jsolid_material["k_y"] = 0.001;
     jsolid_material["k_z"] = 0.001;
+    jsolid_material["intrinsic_permeability"] = true;
     jliquid_material["density"] = 1000.;
     jliquid_material["bulk_modulus"] = 2.0E9;
     jliquid_material["dynamic_viscosity"] = 8.90E-4;

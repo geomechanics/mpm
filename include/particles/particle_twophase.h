@@ -170,7 +170,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! ----------------------------------------------------------------
 
   //! Assigning beta parameter to particle
-  //! \param[in] pressure parameter determining type of projection
+  //! \param[in] parameter parameter determining type of projection
   void assign_projection_parameter(double parameter) override {
     this->projection_param_ = parameter;
   };
@@ -220,6 +220,9 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
 
   //! Map two phase mixture internal force
   virtual void map_mixture_internal_force() noexcept;
+
+  //! Map liquid advection force
+  virtual void map_liquid_advection_force() noexcept;
 
   //! Compute updated velocity of the particle based on nodal velocity
   //! \param[in] dt Analysis time step

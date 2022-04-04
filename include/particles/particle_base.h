@@ -426,7 +426,7 @@ class ParticleBase {
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle
-  //! \param[in] pressure parameter determining type of projection
+  //! \param[in] parameter parameter determining type of projection
   virtual void assign_projection_parameter(double parameter) {
     throw std::runtime_error(
         "Calling the base class function (assign_projection_parameter) in "

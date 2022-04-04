@@ -46,7 +46,7 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! ----------------------------------------------------------------
 
   //! Assigning beta parameter to particle
-  //! \param[in] pressure parameter determining type of projection
+  //! \param[in] parameter parameter determining type of projection
   void assign_projection_parameter(double parameter) override {
     this->projection_param_ = parameter;
   };

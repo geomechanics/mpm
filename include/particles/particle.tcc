@@ -626,6 +626,33 @@ void mpm::Particle<
   }
 }
 
+//! Map linear elastic wave velocities to nodes
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_wave_velocities_to_nodes() noexcept {
+  // Unit 1x1 Eigen matrix to store scalar quantities
+  Eigen::Matrix<double, 1, 1> density;
+
+  // 2x1 Eigen matrix to store pressure and shear wave velocities
+  Eigen::Matrix<double, 2, 1> wave_velocities;
+  const double pwave =
+      (this->material())
+          ->template property<double>(std::string("pwave_velocity"));
+  const double swave =
+      (this->material())
+          ->template property<double>(std::string("swave_velocity"));
+
+  // Map pressure wave, shear wave and density to node with shapefunc and mass
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    wave_velocities(0) = pwave * mass_ * shapefn_[i];
+    wave_velocities(1) = swave * mass_ * shapefn_[i];
+    density(0) = this->mass_density_ * mass_ * shapefn_[i];
+    nodes_[i]->update_property(true, "wave_velocities", wave_velocities,
+                               this->material_id(), 2);
+    nodes_[i]->update_property(true, "density", density, this->material_id(),
+                               1);
+  }
+}
+
 // Compute strain rate of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_rate(

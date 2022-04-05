@@ -8,6 +8,9 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+// CSV-parser
+#include "csv/csv.h"
+
 // MPI
 #ifdef USE_MPI
 #include "mpi.h"

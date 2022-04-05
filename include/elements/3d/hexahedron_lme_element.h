@@ -102,7 +102,7 @@ class HexahedronLMEElement : public HexahedronElement<3, 8> {
 
   //! Return the type of shape function
   mpm::ShapefnType shapefn_type() const override {
-    return mpm::ShapefnType::LME;
+    return (anisotropy_) ? mpm::ShapefnType::ALME : mpm::ShapefnType::LME;
   }
 
   //! Return number of shape functions
@@ -131,7 +131,7 @@ class HexahedronLMEElement : public HexahedronElement<3, 8> {
   //! Support radius
   double support_radius_;
   //! Anisotropy parameter
-  bool anisotropy_;
+  bool anisotropy_{false};
   //! Nodal coordinates vector (n_connectivity_ x Tdim)
   Eigen::MatrixXd nodal_coordinates_;
 };

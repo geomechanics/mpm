@@ -82,6 +82,22 @@ class Constraints {
                                    double, mpm::Position>>&
           absorbing_constraints);
 
+  //! Save absorbing constraints pointers and ids
+  //! \param[in] nset_id Node set IDs
+  //! \param[in] absorbing_constraint Constraint at node
+  void save_absorbing_id_ptr(
+      unsigned nset_id,
+      std::shared_ptr<mpm::AbsorbingConstraint>& absorbing_constraint);
+
+  //! Absorbing constraint
+  std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_ptrs()
+      const {
+    return absorbing_constraint_;
+  }
+
+  //! Absorbing constraint node set IDs
+  std::vector<unsigned> absorbing_ids() const { return absorbing_nset_id_; }
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -108,6 +124,10 @@ class Constraints {
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  //! List of absorbing constraint ptrs
+  std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_constraint_;
+  //! List of absorbing constraint node set Ids
+  std::vector<unsigned> absorbing_nset_id_;
 };
 }  // namespace mpm
 

@@ -268,12 +268,8 @@ class MPMBase : public MPM {
   double damping_factor_{0.};
   //! Locate particles
   bool locate_particles_{true};
-
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
-  std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_constraint_;
-  std::vector<int> absorbing_nset_id_;
-  mpm::Position position_{mpm::Position::None};
 
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM

@@ -1134,28 +1134,28 @@ void mpm::MPMBase<Tdim>::nodal_absorbing_constraints(
         // b
         double b = constraints.at("b").template get<double>();
         // position
-        std::string position =
+        std::string position_str =
             constraints.at("position").template get<std::string>();
-        if (position == "corner")
-          position_ = mpm::Position::Corner;
-        else if (position == "edge")
-          position_ = mpm::Position::Edge;
-        else if (position == "face")
-          position_ = mpm::Position::Face;
-        else
-          position_ = mpm::Position::None;
+        mpm::Position position = mpm::Position::None;
+        if (position_str == "corner")
+          position = mpm::Position::Corner;
+        else if (position_str == "edge")
+          position = mpm::Position::Edge;
+        else if (position_str == "face")
+          position = mpm::Position::Face;
         // Add absorbing constraint to mesh
         auto absorbing_constraint = std::make_shared<mpm::AbsorbingConstraint>(
-            nset_id, dir, delta, h_min, a, b, position_);
+            nset_id, dir, delta, h_min, a, b, position);
         bool absorbing_constraints =
             constraints_->assign_nodal_absorbing_constraint(
                 nset_id, absorbing_constraint);
         if (!absorbing_constraints)
           throw std::runtime_error(
               "Nodal absorbing constraint is not properly assigned");
+        // Save node set IDs and list of constraints
+        constraints_->save_absorbing_id_ptr(nset_id, absorbing_constraint);
+        // Set bool for solve loop
         absorbing_boundary_ = true;
-        absorbing_nset_id_.emplace_back(nset_id);
-        absorbing_constraint_.emplace_back(absorbing_constraint);
       }
     } else
       throw std::runtime_error("Absorbing constraints JSON not found");
@@ -1169,12 +1169,14 @@ void mpm::MPMBase<Tdim>::nodal_absorbing_constraints(
 // Apply nodal absorbing constraints
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::nodal_absorbing_constraints() {
-  for (int i = 0; i < absorbing_nset_id_.size(); i++) {
-    auto nset_id_ = absorbing_nset_id_.at(i);
-    auto a_constraint_ = absorbing_constraint_.at(i);
+  std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_constraint =
+      constraints_->absorbing_ptrs();
+  std::vector<unsigned> absorbing_nset_id = constraints_->absorbing_ids();
+  for (unsigned i = 0; i < absorbing_nset_id.size(); i++) {
+    auto nset_id = absorbing_nset_id.at(i);
+    const auto& a_constraint = absorbing_constraint.at(i);
     bool absorbing_constraints =
-        constraints_->assign_nodal_absorbing_constraint(nset_id_,
-                                                        a_constraint_);
+        constraints_->assign_nodal_absorbing_constraint(nset_id, a_constraint);
     if (!absorbing_constraints)
       throw std::runtime_error(
           "Nodal absorbing constraint is not properly assigned");

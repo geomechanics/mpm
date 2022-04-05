@@ -1152,8 +1152,8 @@ void mpm::MPMBase<Tdim>::nodal_absorbing_constraints(
         if (!absorbing_constraints)
           throw std::runtime_error(
               "Nodal absorbing constraint is not properly assigned");
-        // Save node set IDs and list of constraints
-        constraints_->save_absorbing_id_ptr(nset_id, absorbing_constraint);
+        // Assign node set IDs and list of constraints
+        constraints_->assign_absorbing_id_ptr(nset_id, absorbing_constraint);
         // Set bool for solve loop
         absorbing_boundary_ = true;
       }

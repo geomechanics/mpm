@@ -171,8 +171,6 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
 // Assign Absorbing Boundary Properties
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
-  mesh_->create_nodal_properties();
-
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
 

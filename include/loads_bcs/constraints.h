@@ -82,10 +82,10 @@ class Constraints {
                                    double, mpm::Position>>&
           absorbing_constraints);
 
-  //! Save absorbing constraints pointers and ids
+  //! Assign absorbing constraints pointers and ids
   //! \param[in] nset_id Node set IDs
   //! \param[in] absorbing_constraint Constraint at node
-  void save_absorbing_id_ptr(
+  void assign_absorbing_id_ptr(
       unsigned nset_id,
       std::shared_ptr<mpm::AbsorbingConstraint>& absorbing_constraint);
 

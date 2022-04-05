@@ -291,9 +291,9 @@ bool mpm::Constraints<Tdim>::assign_nodal_absorbing_constraints(
   return status;
 }
 
-//! Save absorbing constraints pointers and ids
+//! Assign absorbing constraints pointers and ids
 template <unsigned Tdim>
-void mpm::Constraints<Tdim>::save_absorbing_id_ptr(
+void mpm::Constraints<Tdim>::assign_absorbing_id_ptr(
     unsigned nset_id,
     std::shared_ptr<mpm::AbsorbingConstraint>& absorbing_constraint) {
   this->absorbing_constraint_.emplace_back(absorbing_constraint);

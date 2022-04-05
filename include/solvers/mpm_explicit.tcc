@@ -118,7 +118,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   }
 
   // Create nodal properties
-  if (interface_) mesh_->create_nodal_properties();
+  if (interface_ or absorbing_boundary_) mesh_->create_nodal_properties();
 
   // Initialise loading conditions
   this->initialise_loads();

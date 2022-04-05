@@ -1557,6 +1557,7 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
     // Initialise additional properties
     tsl::robin_map<std::string, double> nonlocal_properties;
 
+    // Parameters for B-Spline elements
     if (cell_type.back() == 'B') {
       // Cell and node neighbourhood for quadratic B-Spline
       cell_neighbourhood_ = 1;
@@ -1586,7 +1587,9 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
           mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
         }
       }
-    } else if (cell_type.back() == 'L') {
+    }
+    // Parameters for LME elements
+    else if (cell_type.back() == 'L') {
       //! Read nodal type from entity sets
       if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end()) {
         const auto sf_type = mesh_props["nonlocal_mesh_properties"]["type"]
@@ -1594,8 +1597,9 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
         assert(sf_type == "LME");
 
         // Gamma parameter
-        double gamma = mesh_props["nonlocal_mesh_properties"]["gamma"]
-                           .template get<double>();
+        const double gamma = mesh_props["nonlocal_mesh_properties"]["gamma"]
+                                 .template get<double>();
+
         // Support tolerance
         double tol0 = 1.e-10;
         if (mesh_props["nonlocal_mesh_properties"].contains(
@@ -1613,14 +1617,12 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
 
         // Anisotropy parameter
         bool anisotropy = false;
-
         if (mesh_props["nonlocal_mesh_properties"].contains("anisotropy")) {
-
           anisotropy = mesh_props["nonlocal_mesh_properties"]["anisotropy"]
-                           .template get<unsigned>();
-          nonlocal_properties.insert(
-              std::pair<std::string, bool>("anisotropy", anisotropy));
+                           .template get<bool>();
         }
+        nonlocal_properties.insert(
+            std::pair<std::string, bool>("anisotropy", anisotropy));
 
         // Calculate beta
         const double beta = gamma / (h * h);

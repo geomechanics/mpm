@@ -36,28 +36,35 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Create relative coordinate vector
-    const auto rel_coordinates =
+    const auto& rel_coordinates =
         (-nodal_coordinates_.transpose()).colwise() + pcoord;
 
     //! Create metric tensor
-    Eigen::MatrixXd metric = Eigen::Matrix<double, Tdim, Tdim>::Identity();
+    Eigen::Matrix<double, Tdim, Tdim> metric =
+        Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
     if (anisotropy_) {
       //! Anisotropic metric tensor
-      const auto inverse_deformation_gradient = deformation_gradient.inverse();
+      const auto& inverse_deformation_gradient = deformation_gradient.inverse();
       metric = inverse_deformation_gradient.transpose() *
                inverse_deformation_gradient;
+    }
+
+    //! Compute particle-node distance once as a vector
+    Eigen::VectorXd distance =
+        Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
+    for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+      distance(n) = std::sqrt((rel_coordinates.col(n)).transpose() *
+                              (metric * rel_coordinates.col(n)));
     }
 
     //! Compute functional f in each connectivity
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     double sum_exp_f = 0.;
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const double distance = std::sqrt((rel_coordinates.col(n)).transpose() *
-                                        (metric * rel_coordinates.col(n)));
-      if (distance < this->support_radius_) {
-        f(n) =
-            -beta_ * distance * distance + lambda.dot(rel_coordinates.col(n));
+      if (distance(n) < this->support_radius_) {
+        f(n) = -beta_ * distance(n) * distance(n) +
+               lambda.dot(rel_coordinates.col(n));
         sum_exp_f += std::exp(f(n));
       }
     }
@@ -65,9 +72,8 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
     //! Compute p in each connectivity
     Eigen::VectorXd p = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const double distance = std::sqrt((rel_coordinates.col(n)).transpose() *
-                                        metric * rel_coordinates.col(n));
-      if (distance < this->support_radius_) p(n) = std::exp(f(n)) / sum_exp_f;
+      if (distance(n) < this->support_radius_)
+        p(n) = std::exp(f(n)) / sum_exp_f;
     }
 
     //! Compute vector r
@@ -96,18 +102,15 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
         for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
 
         //! Compute Delta lambda
-        VectorDim dlambda = J.inverse() * (-r);
+        const auto& dlambda = J.inverse() * (-r);
         lambda = lambda + dlambda;
 
         //! Reevaluate f, p, and r
         //! Compute functional f in each connectivity
         sum_exp_f = 0.;
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const double distance =
-              std::sqrt((rel_coordinates.col(n)).transpose() * metric *
-                        rel_coordinates.col(n));
-          if (distance < this->support_radius_) {
-            f(n) = -beta_ * distance * distance +
+          if (distance(n) < this->support_radius_) {
+            f(n) = -beta_ * distance(n) * distance(n) +
                    lambda.dot(rel_coordinates.col(n));
             sum_exp_f += std::exp(f(n));
           }
@@ -115,10 +118,7 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
 
         //! Compute p in each connectivity
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const double distance =
-              std::sqrt((rel_coordinates.col(n)).transpose() * metric *
-                        rel_coordinates.col(n));
-          if (distance < this->support_radius_)
+          if (distance(n) < this->support_radius_)
             p(n) = std::exp(f(n)) / sum_exp_f;
         }
 
@@ -133,7 +133,7 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
           convergence = true;
         } else if (it == max_it) {
           console_->warn(
-              "Max number of iteration for shapefn computation is "
+              "Max number of iteration for LME shapefn computation is "
               "reached!");
 
           //! Check condition number
@@ -141,7 +141,8 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
           const double rcond =
               svd.singularValues()(svd.singularValues().size() - 1) /
               svd.singularValues()(0);
-          if (rcond < 1E-8) console_->warn("The Hessian matrix is singular!");
+          if (rcond < 1E-8)
+            console_->warn("The LME Hessian matrix is singular!");
 
           convergence = true;
         }
@@ -184,28 +185,35 @@ inline Eigen::MatrixXd mpm::HexahedronLMEElement<Tdim>::grad_shapefn(
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Create relative coordinate vector
-    const auto rel_coordinates =
+    const auto& rel_coordinates =
         (-nodal_coordinates_.transpose()).colwise() + pcoord;
 
     //! Create metric tensor
-    Eigen::MatrixXd metric = Eigen::Matrix<double, Tdim, Tdim>::Identity();
+    Eigen::Matrix<double, Tdim, Tdim> metric =
+        Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
     if (anisotropy_) {
       //! Anisotropic metric tensor
-      const auto inverse_deformation_gradient = deformation_gradient.inverse();
+      const auto& inverse_deformation_gradient = deformation_gradient.inverse();
       metric = inverse_deformation_gradient.transpose() *
                inverse_deformation_gradient;
+    }
+
+    //! Compute particle-node distance once as a vector
+    Eigen::VectorXd distance =
+        Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
+    for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+      distance(n) = std::sqrt((rel_coordinates.col(n)).transpose() *
+                              (metric * rel_coordinates.col(n)));
     }
 
     //! Compute functional f in each connectivity
     Eigen::VectorXd f = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     double sum_exp_f = 0.;
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const double distance = std::sqrt((rel_coordinates.col(n)).transpose() *
-                                        metric * rel_coordinates.col(n));
-      if (distance < this->support_radius_) {
-        f(n) =
-            -beta_ * distance * distance + lambda.dot(rel_coordinates.col(n));
+      if (distance(n) < this->support_radius_) {
+        f(n) = -beta_ * distance(n) * distance(n) +
+               lambda.dot(rel_coordinates.col(n));
         sum_exp_f += std::exp(f(n));
       }
     }
@@ -213,9 +221,8 @@ inline Eigen::MatrixXd mpm::HexahedronLMEElement<Tdim>::grad_shapefn(
     //! Compute p in each connectivity
     Eigen::VectorXd p = Eigen::VectorXd::Constant(this->nconnectivity_, 0.0);
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      const double distance = std::sqrt((rel_coordinates.col(n)).transpose() *
-                                        metric * rel_coordinates.col(n));
-      if (distance < this->support_radius_) p(n) = std::exp(f(n)) / sum_exp_f;
+      if (distance(n) < this->support_radius_)
+        p(n) = std::exp(f(n)) / sum_exp_f;
     }
 
     //! Compute vector r
@@ -244,18 +251,15 @@ inline Eigen::MatrixXd mpm::HexahedronLMEElement<Tdim>::grad_shapefn(
       unsigned max_it = 10;
       while (!convergence) {
         //! Compute Delta lambda
-        VectorDim dlambda = J.inverse() * (-r);
+        const auto& dlambda = J.inverse() * (-r);
         lambda = lambda + dlambda;
 
         //! Reevaluate f, p, and r
         //! Compute functional f in each connectivity
         sum_exp_f = 0.;
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const double distance =
-              std::sqrt((rel_coordinates.col(n)).transpose() * metric *
-                        rel_coordinates.col(n));
-          if (distance < this->support_radius_) {
-            f(n) = -beta_ * std::pow(distance, 2) +
+          if (distance(n) < this->support_radius_) {
+            f(n) = -beta_ * distance(n) * distance(n) +
                    lambda.dot(rel_coordinates.col(n));
             sum_exp_f += std::exp(f(n));
           }
@@ -263,10 +267,7 @@ inline Eigen::MatrixXd mpm::HexahedronLMEElement<Tdim>::grad_shapefn(
 
         //! Compute p in each connectivity
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          const double distance =
-              std::sqrt((rel_coordinates.col(n)).transpose() * metric *
-                        rel_coordinates.col(n));
-          if (distance < this->support_radius_)
+          if (distance(n) < this->support_radius_)
             p(n) = std::exp(f(n)) / sum_exp_f;
         }
 

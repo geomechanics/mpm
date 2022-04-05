@@ -491,7 +491,7 @@ void mpm::TriangleElement<Tdim, Tnfunctions>::
         const Eigen::MatrixXd& nodal_coordinates,
         const std::vector<std::vector<unsigned>>& nodal_properties) {
   throw std::runtime_error(
-      "Function to initialise nonlocal connectivity is not implemented for "
+      "Function to initialise bspline connectivity is not implemented for "
       "Triangle<Tdim, Tnfunctions> ");
 }
 
@@ -501,6 +501,6 @@ void mpm::TriangleElement<Tdim, Tnfunctions>::
     initialise_lme_connectivity_properties(
         double beta, double radius, bool anisotropy, const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
-      "Function to initialise nonlocal connectivity is not implemented for "
+      "Function to initialise lme connectivity is not implemented for "
       "Triangle<Tdim, Tnfunctions> ");
 }

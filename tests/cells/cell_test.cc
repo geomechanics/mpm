@@ -266,6 +266,38 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
                   Approx(point_unit_cell[i]).epsilon(Tolerance));
       }
 
+      SECTION(
+          "Find local coordinates of a point in cell with triangle element") {
+        // 3-noded triangular shape functions
+        std::shared_ptr<mpm::Element<Dim>> tri_element =
+            Factory<mpm::Element<Dim>>::instance()->create("ED2T3");
+
+        auto cell = std::make_shared<mpm::Cell<Dim>>(0, 3, tri_element, true);
+
+        REQUIRE(cell->add_node(0, node0) == true);
+        REQUIRE(cell->add_node(1, node1) == true);
+        REQUIRE(cell->add_node(2, node3) == true);
+        REQUIRE(cell->nnodes() == 3);
+
+        // Initialise cell
+        REQUIRE(cell->initialise() == true);
+        REQUIRE(cell->is_initialised() == true);
+
+        // Coordinates of a point in real cell
+        Eigen::Vector2d point;
+        point << 0.5, 1.5;
+
+        // Coordinates of the point in an unit cell
+        Eigen::Matrix<double, 2, 1> point_unit_cell;
+        point_unit_cell << 0.25, 0.75;
+
+        // Get local coordinates of the point
+        auto local_point = cell->local_coordinates_point(point);
+        for (unsigned i = 0; i < local_point.size(); ++i)
+          REQUIRE(local_point[i] ==
+                  Approx(point_unit_cell[i]).epsilon(Tolerance));
+      }
+
       SECTION("Transform real to unit cell, xi is in negative coordinates") {
         // Number of nodes in cell
         const unsigned Nnodes = 4;

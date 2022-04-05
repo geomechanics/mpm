@@ -12,7 +12,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
   const double Tolerance = 1.E-6;
 
   Eigen::Vector3d zero = Eigen::Vector3d::Zero();
-  Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
+  const Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
 
   //! Check for center element nodes
   SECTION("Quadratic Hexahedron BSpline Element") {

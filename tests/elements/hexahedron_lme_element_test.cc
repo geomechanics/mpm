@@ -11,7 +11,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
   const double Tolerance = 1.E-6;
 
   Eigen::Vector3d zero = Eigen::Vector3d::Zero();
-  Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
+  const Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
   Eigen::Matrix3d def_gradient = Eigen::Matrix3d::Identity();
 
   //! Check for center element nodes

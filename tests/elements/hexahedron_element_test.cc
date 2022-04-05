@@ -11,7 +11,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
   const double Tolerance = 1.E-7;
 
   Eigen::Vector3d zero = Eigen::Vector3d::Zero();
-  Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
+  const Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
 
   //! Check for 8 noded element
   SECTION("Hexahedron element with eight nodes") {

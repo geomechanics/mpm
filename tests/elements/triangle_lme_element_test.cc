@@ -11,7 +11,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
   const double Tolerance = 1.E-6;
 
   Eigen::Vector2d zero = Eigen::Vector2d::Zero();
-  Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
+  const Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
   Eigen::Matrix2d def_gradient = Eigen::Matrix2d::Identity();
 
   //! Check for center element nodes

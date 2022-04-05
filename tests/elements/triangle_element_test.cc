@@ -11,7 +11,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
   const double Tolerance = 1.E-7;
 
   Eigen::Vector2d zero = Eigen::Vector2d::Zero();
-  Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
+  const Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
 
   //! Check for 3 noded element
   SECTION("Triangle element with three nodes") {

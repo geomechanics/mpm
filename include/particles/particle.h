@@ -460,6 +460,14 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval pack size of serialized object
   virtual int compute_pack_size() const;
 
+  //! Compute deformation gradient increment using nodal velocity
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \param[in] dt time increment
+  //! \retval deformaton gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -470,6 +478,14 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] phase Index to indicate phase
   //! \retval strain increment at particle inside a cell
   virtual inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
+  //! Compute deformation gradient increment using nodal displacement
+  //! \ingroup Implicit
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval deformaton gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
   /**@}*/
 
@@ -567,8 +583,6 @@ class Particle : public ParticleBase<Tdim> {
   /**@{*/
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
-  //! Deformation gradient increment
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_;
   /**@}*/
 
 };  // Particle class

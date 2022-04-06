@@ -528,17 +528,14 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       Ainv(2, 3) = (x1 * y2 - x2 * y1 - x1 * y3 + x3 * y1 + x2 * y3 - x3 * y2);
       Ainv *= (1 / tetrahedron_6xV);
 
-      // Output point vector in natural coordinates (without zeta1: 3x4 Ainv
-      // matrix multiplied by 3x1 point matrix in global coordinates)
+      // Output point in natural coordinates (3x4 Ainv matrix multiplied 
+      // by 3x1 point in global coordinates)
       xi(0) = Ainv(0, 0) * 1 + Ainv(0, 1) * point(0) + Ainv(0, 2) * point(1) +
               Ainv(0, 3) * point(2);
-      // zeta2
       xi(1) = Ainv(1, 0) * 1 + Ainv(1, 1) * point(0) + Ainv(1, 2) * point(1) +
               Ainv(1, 3) * point(2);
-      // zeta3
       xi(2) = Ainv(2, 0) * 1 + Ainv(2, 1) * point(0) + Ainv(2, 2) * point(1) +
               Ainv(2, 3) * point(2);
-      // zeta4
     }
     // Hexahedron
     else if (indices.size() == 8) {

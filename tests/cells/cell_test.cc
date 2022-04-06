@@ -7,6 +7,8 @@
 #include "cell.h"
 #include "element.h"
 #include "factory.h"
+#include "tetrahedron_element.h"
+#include "tetrahedron_quadrature.h"
 #include "hexahedron_element.h"
 #include "hexahedron_quadrature.h"
 #include "node.h"

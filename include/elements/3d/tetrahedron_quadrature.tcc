@@ -13,7 +13,7 @@ inline Eigen::MatrixXd mpm::TetrahedronQuadrature<3, 1>::quadratures() const {
 template <>
 inline Eigen::VectorXd mpm::TetrahedronQuadrature<3, 1>::weights() const {
   Eigen::VectorXd weights(1);
-  weights(0) = 1.0 / 6.;
+  weights(0) = 1.0 / 6;
 
   return weights;
 }

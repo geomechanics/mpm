@@ -284,7 +284,7 @@ inline Eigen::VectorXi
   return indices;
 }
 
-//! Return indices of a sub-tetrahedrons in a volume
+//! Return indices of a sub-tetrahedrons in a volume //LEDT CHECK
 //! to check if a point is inside /outside of a hedron
 //! \retval indices Indices that form sub-tetrahedrons
 template <unsigned Tdim, unsigned Tnfunctions>

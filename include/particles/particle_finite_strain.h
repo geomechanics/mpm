@@ -127,7 +127,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \param[in] dt time increment
   //! \retval deformaton gradient increment at particle inside a cell
   inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase, const double dt) noexcept;
+      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept;
 
   //! Compute pack size
   //! \retval pack size of serialized object

@@ -245,8 +245,7 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_strain(double dt) noexcept {
 template <>
 inline Eigen::Matrix<double, 3, 3>
     mpm::ParticleFiniteStrain<1>::compute_deformation_gradient_increment(
-        const Eigen::MatrixXd& dn_dx, unsigned phase,
-        const double dt) noexcept {
+        const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define deformation gradient rate
   Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
       Eigen::Matrix<double, 3, 3>::Identity();
@@ -266,8 +265,7 @@ inline Eigen::Matrix<double, 3, 3>
 template <>
 inline Eigen::Matrix<double, 3, 3>
     mpm::ParticleFiniteStrain<2>::compute_deformation_gradient_increment(
-        const Eigen::MatrixXd& dn_dx, unsigned phase,
-        const double dt) noexcept {
+        const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define deformation gradient rate
   Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
       Eigen::Matrix<double, 3, 3>::Identity();
@@ -296,8 +294,7 @@ inline Eigen::Matrix<double, 3, 3>
 template <>
 inline Eigen::Matrix<double, 3, 3>
     mpm::ParticleFiniteStrain<3>::compute_deformation_gradient_increment(
-        const Eigen::MatrixXd& dn_dx, unsigned phase,
-        const double dt) noexcept {
+        const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define deformation gradient rate
   Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
       Eigen::Matrix<double, 3, 3>::Identity();

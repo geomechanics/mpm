@@ -121,30 +121,9 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Compute Hencky strain using deformation gradient
   inline Eigen::Matrix<double, 6, 1> compute_hencky_strain() const;
 
-  //! Compute deformation gradient increment using nodal velocity
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \param[in] dt time increment
-  //! \retval deformaton gradient increment at particle inside a cell
-  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept;
-
   //! Compute pack size
   //! \retval pack size of serialized object
   int compute_pack_size() const override;
-
-  /**
-   * \defgroup Implicit Functions dealing with implicit MPM
-   */
-  /**@{*/
-  //! Compute deformation gradient increment using nodal displacement
-  //! \ingroup Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval deformaton gradient increment at particle inside a cell
-  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
-  /**@}*/
 
  protected:
   //! particle id

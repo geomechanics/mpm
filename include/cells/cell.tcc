@@ -530,11 +530,11 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
 
       // Output point in natural coordinates (3x4 Ainv matrix multiplied 
       // by 3x1 point in global coordinates)
-      xi(0) = Ainv(0, 0) * 1 + Ainv(0, 1) * point(0) + Ainv(0, 2) * point(1) +
+      xi(0) = Ainv(0, 0) + Ainv(0, 1) * point(0) + Ainv(0, 2) * point(1) +
               Ainv(0, 3) * point(2);
-      xi(1) = Ainv(1, 0) * 1 + Ainv(1, 1) * point(0) + Ainv(1, 2) * point(1) +
+      xi(1) = Ainv(1, 0) + Ainv(1, 1) * point(0) + Ainv(1, 2) * point(1) +
               Ainv(1, 3) * point(2);
-      xi(2) = Ainv(2, 0) * 1 + Ainv(2, 1) * point(0) + Ainv(2, 2) * point(1) +
+      xi(2) = Ainv(2, 0) + Ainv(2, 1) * point(0) + Ainv(2, 2) * point(1) +
               Ainv(2, 3) * point(2);
     }
     // Hexahedron

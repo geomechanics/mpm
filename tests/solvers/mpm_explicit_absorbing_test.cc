@@ -27,6 +27,9 @@ TEST_CASE("MPM 2D Explicit Absorbing Boundary is checked",
   // Write Particles
   REQUIRE(mpm_test::write_particles_2d() == true);
 
+  // Write Math Function csv
+  REQUIRE(mpm_test::write_math_function() == true);
+
   // Assign argc and argv to input arguments of MPM
   int argc = 5;
   // clang-format off
@@ -160,6 +163,9 @@ TEST_CASE("MPM 3D Explicit Absorbing Boundary is checked",
 
   // Write Particles
   REQUIRE(mpm_test::write_particles_3d() == true);
+
+  // Write Math Function csv
+  REQUIRE(mpm_test::write_math_function() == true);
 
   // Assign argc and argv to input arguments of MPM
   int argc = 5;

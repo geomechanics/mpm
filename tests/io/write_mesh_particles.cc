@@ -208,7 +208,8 @@ bool write_json_absorbing(unsigned dim, bool resume,
        {{{"id", 0},
          {"type", "Linear"},
          {"xvalues", xvalues},
-         {"fxvalues", fxvalues}}}},
+         {"fxvalues", fxvalues}},
+        {{"id", 1}, {"type", "Linear"}, {"file", "math_function.csv"}}}},
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
@@ -1013,6 +1014,29 @@ bool write_particles_3d() {
     for (unsigned i = 0; i < coord.size(); ++i) {
       file << coord[i] << "\t";
     }
+    file << "\n";
+  }
+
+  file.close();
+  return true;
+}
+
+// Write JSON Entity Set
+bool write_math_function() {
+  // Vector of math function
+  std::vector<std::tuple<double, double>> math_function;
+  math_function.emplace_back(std::make_tuple(0.0, 0.0));
+  math_function.emplace_back(std::make_tuple(0.5, 1.0));
+  math_function.emplace_back(std::make_tuple(1.0, 1.0));
+
+  // Dump math function as an input file to be read
+  std::ofstream file;
+  file.open("math-function.csv");
+  // Write math function file
+  for (const auto& math_fn : math_function) {
+    file << std::get<0>(math_fn) << "\t";
+    file << std::get<1>(math_fn) << "\t";
+
     file << "\n";
   }
 

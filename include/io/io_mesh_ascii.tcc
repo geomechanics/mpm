@@ -54,6 +54,8 @@ std::vector<Eigen::Matrix<double, Tdim, 1>>
           ++nlines;
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -124,6 +126,8 @@ std::vector<std::vector<mpm::Index>> mpm::IOMeshAscii<Tdim>::read_mesh_cells(
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -180,6 +184,8 @@ std::vector<Eigen::Matrix<double, Tdim, 1>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -237,6 +243,8 @@ std::vector<Eigen::Matrix<double, 6, 1>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -280,8 +288,10 @@ std::vector<std::tuple<mpm::Index, double>>
           }
         }
       }
-      file.close();
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
+    file.close();
   } catch (std::exception& exception) {
     console_->error("Read particle {} #{}: {}\n", __FILE__, __LINE__,
                     exception.what());
@@ -324,6 +334,8 @@ std::vector<std::tuple<mpm::Index, double>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -368,6 +380,8 @@ std::map<mpm::Index, Eigen::Matrix<double, Tdim, 1>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -412,6 +426,8 @@ std::vector<std::tuple<mpm::Index, double>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -454,6 +470,8 @@ std::vector<std::array<mpm::Index, 2>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -709,6 +727,8 @@ std::vector<std::tuple<mpm::Index, unsigned, double>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {

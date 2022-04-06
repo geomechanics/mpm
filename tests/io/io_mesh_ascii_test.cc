@@ -204,7 +204,7 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
 
     // Dump constratints as an input file to be read
     std::ofstream file;
-    file.open("displacement-constraints-3d.txt");
+    file.open("displacement-constraints-2d.txt");
     // Write particle coordinates
     for (const auto& displacement_constraint : displacement_constraints) {
       file << std::get<0>(displacement_constraint) << "\t";
@@ -229,7 +229,7 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
 
       // Check constraints
       constraints = read_mesh->read_displacement_constraints(
-          "displacement-constraints-3d.txt");
+          "displacement-constraints-2d.txt");
       // Check number of particles
       REQUIRE(constraints.size() == displacement_constraints.size());
 
@@ -574,6 +574,105 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
           REQUIRE(read_euler_angles.at(i)(j) ==
                   Approx(euler_angles.at(i)(j)).epsilon(Tolerance));
         }
+      }
+    }
+  }
+
+  SECTION("Check particles volume file") {
+    // Map of particle volumes
+    std::vector<std::tuple<mpm::Index, double>> particles_volumes;
+    particles_volumes.emplace_back(std::make_tuple(0, 1.5));
+    particles_volumes.emplace_back(std::make_tuple(1, 2.5));
+    particles_volumes.emplace_back(std::make_tuple(2, 3.5));
+    particles_volumes.emplace_back(std::make_tuple(3, 0.0));
+
+    // Dump particle volumes as an input file to be read
+    std::ofstream file;
+    file.open("particles-volumes-2d.txt");
+    // Write particle volumes
+    for (const auto& particles_volume : particles_volumes) {
+      file << std::get<0>(particles_volume) << "\t";
+      file << std::get<1>(particles_volume) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read particles volumes
+    SECTION("Check particles volumes") {
+      // Create a io_mesh object
+      auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read particles volumes from a non-existant file
+      auto read_volumes =
+          io_mesh->read_particles_volumes("particles-volumes-missing.txt");
+      // Check number of particle volumes
+      REQUIRE(read_volumes.size() == 0);
+
+      // Check particles volumes
+      read_volumes =
+          io_mesh->read_particles_volumes("particles-volumes-2d.txt");
+
+      // Check number of elements
+      REQUIRE(read_volumes.size() == particles_volumes.size());
+
+      // Check particles volumes
+      for (unsigned i = 0; i < particles_volumes.size(); ++i) {
+        REQUIRE(
+            std::get<0>(read_volumes.at(i)) ==
+            Approx(std::get<0>(particles_volumes.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<1>(read_volumes.at(i)) ==
+            Approx(std::get<1>(particles_volumes.at(i))).epsilon(Tolerance));
+      }
+    }
+  }
+
+  SECTION("Check particles cells file") {
+    // Map of particle volumes
+    std::vector<std::tuple<mpm::Index, mpm::Index>> particles_cells;
+    particles_cells.emplace_back(std::make_tuple(0, 0));
+    particles_cells.emplace_back(std::make_tuple(1, 0));
+    particles_cells.emplace_back(std::make_tuple(2, 1));
+    particles_cells.emplace_back(std::make_tuple(3, 1));
+
+    // Dump particle cells as an input file to be read
+    std::ofstream file;
+    file.open("particles-cells-2d.txt");
+    // Write particle coordinates
+    for (const auto& particles_cell : particles_cells) {
+      file << std::get<0>(particles_cell) << "\t";
+      file << std::get<1>(particles_cell) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read particles cells
+    SECTION("Check particles cells") {
+      // Create a io_mesh object
+      auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read particles cells from a non-existant file
+      auto read_cells =
+          io_mesh->read_particles_cells("particles-cells-missing.txt");
+      // Check number of particle cells
+      REQUIRE(read_cells.size() == 0);
+
+      // Check particles cells
+      read_cells = io_mesh->read_particles_cells("particles-cells-2d.txt");
+
+      // Check number of elements
+      REQUIRE(read_cells.size() == particles_cells.size());
+
+      // Check particles cells
+      for (unsigned i = 0; i < particles_cells.size(); ++i) {
+        REQUIRE(std::get<0>(read_cells.at(i)) ==
+                Approx(std::get<0>(particles_cells.at(i))).epsilon(Tolerance));
+        REQUIRE(std::get<1>(read_cells.at(i)) ==
+                Approx(std::get<1>(particles_cells.at(i))).epsilon(Tolerance));
       }
     }
   }
@@ -1354,6 +1453,105 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
           REQUIRE(read_euler_angles.at(i)(j) ==
                   Approx(euler_angles.at(i)(j)).epsilon(Tolerance));
         }
+      }
+    }
+  }
+
+  SECTION("Check particles volume file") {
+    // Map of particle volumes
+    std::vector<std::tuple<mpm::Index, double>> particles_volumes;
+    particles_volumes.emplace_back(std::make_tuple(0, 1.5));
+    particles_volumes.emplace_back(std::make_tuple(1, 2.5));
+    particles_volumes.emplace_back(std::make_tuple(2, 3.5));
+    particles_volumes.emplace_back(std::make_tuple(3, 0.0));
+
+    // Dump particle volumes as an input file to be read
+    std::ofstream file;
+    file.open("particles-volumes-3d.txt");
+    // Write particle volumes
+    for (const auto& particles_volume : particles_volumes) {
+      file << std::get<0>(particles_volume) << "\t";
+      file << std::get<1>(particles_volume) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read particles volumes
+    SECTION("Check particles volumes") {
+      // Create a io_mesh object
+      auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read particles volumes from a non-existant file
+      auto read_volumes =
+          io_mesh->read_particles_volumes("particles-volumes-missing.txt");
+      // Check number of particle volumes
+      REQUIRE(read_volumes.size() == 0);
+
+      // Check particles volumes
+      read_volumes =
+          io_mesh->read_particles_volumes("particles-volumes-3d.txt");
+
+      // Check number of elements
+      REQUIRE(read_volumes.size() == particles_volumes.size());
+
+      // Check particles volumes
+      for (unsigned i = 0; i < particles_volumes.size(); ++i) {
+        REQUIRE(
+            std::get<0>(read_volumes.at(i)) ==
+            Approx(std::get<0>(particles_volumes.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<1>(read_volumes.at(i)) ==
+            Approx(std::get<1>(particles_volumes.at(i))).epsilon(Tolerance));
+      }
+    }
+  }
+
+  SECTION("Check particles cells file") {
+    // Map of particle volumes
+    std::vector<std::tuple<mpm::Index, mpm::Index>> particles_cells;
+    particles_cells.emplace_back(std::make_tuple(0, 0));
+    particles_cells.emplace_back(std::make_tuple(1, 0));
+    particles_cells.emplace_back(std::make_tuple(2, 1));
+    particles_cells.emplace_back(std::make_tuple(3, 1));
+
+    // Dump particle cells as an input file to be read
+    std::ofstream file;
+    file.open("particles-cells-3d.txt");
+    // Write particle coordinates
+    for (const auto& particles_cell : particles_cells) {
+      file << std::get<0>(particles_cell) << "\t";
+      file << std::get<1>(particles_cell) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read particles cells
+    SECTION("Check particles cells") {
+      // Create a io_mesh object
+      auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read particles cells from a non-existant file
+      auto read_cells =
+          io_mesh->read_particles_cells("particles-cells-missing.txt");
+      // Check number of particle cells
+      REQUIRE(read_cells.size() == 0);
+
+      // Check particles cells
+      read_cells = io_mesh->read_particles_cells("particles-cells-3d.txt");
+
+      // Check number of elements
+      REQUIRE(read_cells.size() == particles_cells.size());
+
+      // Check particles cells
+      for (unsigned i = 0; i < particles_cells.size(); ++i) {
+        REQUIRE(std::get<0>(read_cells.at(i)) ==
+                Approx(std::get<0>(particles_cells.at(i))).epsilon(Tolerance));
+        REQUIRE(std::get<1>(read_cells.at(i)) ==
+                Approx(std::get<1>(particles_cells.at(i))).epsilon(Tolerance));
       }
     }
   }

@@ -191,6 +191,63 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
     }
   }
 
+  SECTION("Check displacement constraints file") {
+    // Vector of particle coordinates
+    std::vector<std::tuple<mpm::Index, unsigned, double>>
+        displacement_constraints;
+
+    // Constraint
+    displacement_constraints.emplace_back(std::make_tuple(0, 0, 10.5));
+    displacement_constraints.emplace_back(std::make_tuple(1, 1, -10.5));
+    displacement_constraints.emplace_back(std::make_tuple(2, 2, -12.5));
+    displacement_constraints.emplace_back(std::make_tuple(3, 0, 0.0));
+
+    // Dump constratints as an input file to be read
+    std::ofstream file;
+    file.open("displacement-constraints-3d.txt");
+    // Write particle coordinates
+    for (const auto& displacement_constraint : displacement_constraints) {
+      file << std::get<0>(displacement_constraint) << "\t";
+      file << std::get<1>(displacement_constraint) << "\t";
+      file << std::get<2>(displacement_constraint) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read displacement constraints
+    SECTION("Check displacement constraints") {
+      // Create a read_mesh object
+      auto read_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read constrtaints from a non-existant file
+      auto constraints = read_mesh->read_displacement_constraints(
+          "displacement-constraints-missing.txt");
+      // Check number of constraints
+      REQUIRE(constraints.size() == 0);
+
+      // Check constraints
+      constraints = read_mesh->read_displacement_constraints(
+          "displacement-constraints-3d.txt");
+      // Check number of particles
+      REQUIRE(constraints.size() == displacement_constraints.size());
+
+      // Check coordinates of nodes
+      for (unsigned i = 0; i < displacement_constraints.size(); ++i) {
+        REQUIRE(std::get<0>(constraints.at(i)) ==
+                Approx(std::get<0>(displacement_constraints.at(i)))
+                    .epsilon(Tolerance));
+        REQUIRE(std::get<1>(constraints.at(i)) ==
+                Approx(std::get<1>(displacement_constraints.at(i)))
+                    .epsilon(Tolerance));
+        REQUIRE(std::get<2>(constraints.at(i)) ==
+                Approx(std::get<2>(displacement_constraints.at(i)))
+                    .epsilon(Tolerance));
+      }
+    }
+  }
+
   SECTION("Check velocity constraints file") {
     // Vector of velocity constraints
     std::vector<std::tuple<mpm::Index, unsigned, double>> velocity_constraints;
@@ -910,6 +967,63 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
           REQUIRE(particles[i][j] ==
                   Approx(coordinates[i][j]).epsilon(Tolerance));
         }
+      }
+    }
+  }
+
+  SECTION("Check displacement constraints file") {
+    // Vector of particle coordinates
+    std::vector<std::tuple<mpm::Index, unsigned, double>>
+        displacement_constraints;
+
+    // Constraint
+    displacement_constraints.emplace_back(std::make_tuple(0, 0, 10.5));
+    displacement_constraints.emplace_back(std::make_tuple(1, 1, -10.5));
+    displacement_constraints.emplace_back(std::make_tuple(2, 2, -12.5));
+    displacement_constraints.emplace_back(std::make_tuple(3, 0, 0.0));
+
+    // Dump constratints as an input file to be read
+    std::ofstream file;
+    file.open("displacement-constraints-3d.txt");
+    // Write particle coordinates
+    for (const auto& displacement_constraint : displacement_constraints) {
+      file << std::get<0>(displacement_constraint) << "\t";
+      file << std::get<1>(displacement_constraint) << "\t";
+      file << std::get<2>(displacement_constraint) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read displacement constraints
+    SECTION("Check displacement constraints") {
+      // Create a read_mesh object
+      auto read_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read constrtaints from a non-existant file
+      auto constraints = read_mesh->read_displacement_constraints(
+          "displacement-constraints-missing.txt");
+      // Check number of constraints
+      REQUIRE(constraints.size() == 0);
+
+      // Check constraints
+      constraints = read_mesh->read_displacement_constraints(
+          "displacement-constraints-3d.txt");
+      // Check number of particles
+      REQUIRE(constraints.size() == displacement_constraints.size());
+
+      // Check coordinates of nodes
+      for (unsigned i = 0; i < displacement_constraints.size(); ++i) {
+        REQUIRE(std::get<0>(constraints.at(i)) ==
+                Approx(std::get<0>(displacement_constraints.at(i)))
+                    .epsilon(Tolerance));
+        REQUIRE(std::get<1>(constraints.at(i)) ==
+                Approx(std::get<1>(displacement_constraints.at(i)))
+                    .epsilon(Tolerance));
+        REQUIRE(std::get<2>(constraints.at(i)) ==
+                Approx(std::get<2>(displacement_constraints.at(i)))
+                    .epsilon(Tolerance));
       }
     }
   }

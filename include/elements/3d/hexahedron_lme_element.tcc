@@ -28,8 +28,8 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
 
   try {
     //! Convert local coordinates to real coordinates
-    Eigen::Matrix<double, Tdim, 1> pcoord;
-    pcoord.setZero();
+    Eigen::Matrix<double, Tdim, 1> pcoord =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
     auto local_shapefn = this->shapefn_local(xi, lambda, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord.noalias() +=
@@ -90,8 +90,7 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
       const unsigned max_it = 10;
       while (!convergence) {
         //! Compute matrix J
-        Eigen::MatrixXd J(Tdim, Tdim);
-        J.setZero();
+        Eigen::Matrix3d J = Eigen::Matrix3d::Zero();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
           J.noalias() += p(n) * (rel_coordinates.col(n)) *
                          (rel_coordinates.col(n)).transpose();
@@ -177,8 +176,8 @@ inline Eigen::MatrixXd mpm::HexahedronLMEElement<Tdim>::grad_shapefn(
 
   try {
     //! Convert local coordinates to real coordinates
-    Eigen::Matrix<double, Tdim, 1> pcoord;
-    pcoord.setZero();
+    Eigen::Matrix<double, Tdim, 1> pcoord =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
     auto local_shapefn = this->shapefn_local(xi, lambda, deformation_gradient);
     for (unsigned i = 0; i < local_shapefn.size(); ++i)
       pcoord.noalias() +=
@@ -232,8 +231,7 @@ inline Eigen::MatrixXd mpm::HexahedronLMEElement<Tdim>::grad_shapefn(
     }
 
     //! Compute matrix J
-    Eigen::MatrixXd J(Tdim, Tdim);
-    J.setZero();
+    Eigen::Matrix3d J = Eigen::Matrix3d::Zero();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
       J.noalias() += p(n) * (rel_coordinates.col(n)) *
                      (rel_coordinates.col(n)).transpose();

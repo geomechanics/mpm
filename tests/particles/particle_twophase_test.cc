@@ -832,6 +832,7 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
     jmaterial["porosity"] = 0.3;
     jmaterial["k_x"] = 0.001;
     jmaterial["k_y"] = 0.001;
+    jmaterial["intrinsic_permeability"] = false;
 
     auto material =
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
@@ -2268,6 +2269,7 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
     jmaterial["k_x"] = 0.001;
     jmaterial["k_y"] = 0.001;
     jmaterial["k_z"] = 0.001;
+    jmaterial["intrinsic_permeability"] = false;
 
     auto material =
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(

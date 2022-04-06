@@ -829,7 +829,7 @@ bool mpm::MPMBase<Tdim>::initialise_math_functions(const Json& math_functions) {
       // Create a file reader
       const std::string io_type =
           io_->json_object("mesh")["io_type"].template get<std::string>();
-      auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+      const auto& reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
 
       // Math function is specified in a file, replace function_props_update
       if (function_props.find("file") != function_props.end()) {

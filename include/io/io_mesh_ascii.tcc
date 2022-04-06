@@ -516,6 +516,8 @@ std::vector<std::tuple<mpm::Index, unsigned, double>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -562,6 +564,8 @@ std::vector<std::tuple<mpm::Index, unsigned, double>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -608,6 +612,8 @@ std::vector<std::tuple<mpm::Index, unsigned, double>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {
@@ -656,6 +662,8 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double>>
           }
         }
       }
+    } else {
+      throw std::runtime_error("File not open or not good!");
     }
     file.close();
   } catch (std::exception& exception) {

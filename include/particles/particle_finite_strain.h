@@ -104,9 +104,9 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \ingroup Implicit
   void initialise_constitutive_law() noexcept override;
 
-  //! Compute strain using nodal displacement
+  //! Compute deformation gradient and volume using nodal displacement
   //! \ingroup Implicit
-  void compute_strain_newmark() noexcept override;
+  void compute_strain_volume_newmark() noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit

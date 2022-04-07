@@ -88,9 +88,11 @@ template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
     unsigned phase, bool pressure_smoothing) {
 
-  // Iterate over each particle to calculate strain using nodal displacement
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_strain_newmark, std::placeholders::_1));
+  // Iterate over each particle to calculate strain and volume using nodal
+  // displacement
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_strain_volume_newmark,
+                std::placeholders::_1));
 
   // Pressure smoothing
   if (pressure_smoothing) this->pressure_smoothing(phase);
@@ -173,10 +175,6 @@ inline void
   // Iterate over each particle to update particle stress and strain
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
-
-  // Iterate over each particle to update particle volume
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));
 }
 
 //! Postcompute nodal kinematics - map mass and momentum to nodes

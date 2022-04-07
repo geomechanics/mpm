@@ -279,9 +279,9 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark() noexcept {
           deformation_gradient_increment_, this, &temp_state_variables);
 }
 
-// Compute deformation gradient increment of the particle
+// Compute deformation gradient increment and volume of the particle
 template <unsigned Tdim>
-void mpm::ParticleFiniteStrain<Tdim>::compute_strain_newmark() noexcept {
+void mpm::ParticleFiniteStrain<Tdim>::compute_strain_volume_newmark() noexcept {
   // Compute volume and mass density at the previous time step
   double deltaJ = this->deformation_gradient_increment_.determinant();
   this->volume_ /= deltaJ;

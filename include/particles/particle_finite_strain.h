@@ -104,6 +104,15 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \ingroup Implicit
   void initialise_constitutive_law() noexcept override;
 
+  //! Map mass, material and geometric stiffness matrix to cell
+  //! (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] quasi_static Boolean of quasi-static analysis
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
+                                           bool quasi_static) override;
+
   //! Compute deformation gradient and volume using nodal displacement
   //! \ingroup Implicit
   void compute_strain_volume_newmark() noexcept override;
@@ -118,6 +127,16 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   /**@}*/
 
  protected:
+  //! Map geometric stiffness matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  inline bool map_geometric_stiffness_matrix_to_cell();
+
+  //! Compute G matrix for geometric stiffnexx
+  inline Eigen::MatrixXd compute_gmatrix() noexcept;
+
+  //! Compute stress component matrix for geometric stiffnexx
+  inline Eigen::MatrixXd compute_stress_matrix() noexcept;
+
   //! Compute Hencky strain using deformation gradient
   inline Eigen::Matrix<double, 6, 1> compute_hencky_strain() const;
 

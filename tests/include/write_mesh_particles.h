@@ -50,4 +50,7 @@ bool write_mesh_3d();
 // Write particles file in 3D
 bool write_particles_3d();
 
+// Write math function csv
+bool write_math_function();
+
 }  // namespace mpm_test

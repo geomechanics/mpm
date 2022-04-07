@@ -19,25 +19,6 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
     contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
 }
 
-//! MPM Explicit compute stress strain
-template <unsigned Tdim>
-void mpm::MPMExplicit<Tdim>::compute_stress_strain(unsigned phase) {
-  // Iterate over each particle to calculate strain
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_strain, std::placeholders::_1, dt_));
-
-  // Iterate over each particle to update particle volume
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));
-
-  // Pressure smoothing
-  if (pressure_smoothing_) this->pressure_smoothing(phase);
-
-  // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
-}
-
 //! MPM Explicit solver
 template <unsigned Tdim>
 bool mpm::MPMExplicit<Tdim>::solve() {

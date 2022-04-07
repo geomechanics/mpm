@@ -44,27 +44,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Delete assignment operator
   ParticleFiniteStrain& operator=(const ParticleFiniteStrain<Tdim>&) = delete;
 
-  //! Initialise particle from POD data
-  //! \param[in] particle POD data of particle
-  //! \retval status Status of reading POD particle
-  bool initialise_particle(PODParticle& particle) override;
-
-  //! Initialise particle POD data and material
-  //! \param[in] particle POD data of particle
-  //! \param[in] materials Material associated with the particle arranged in a
-  //! vector
-  //! \retval status Status of reading POD particle
-  bool initialise_particle(
-      PODParticle& particle,
-      const std::vector<std::shared_ptr<Material<Tdim>>>& materials) override;
-
-  //! Initialise properties
-  void initialise() override;
-
-  //! Return particle data as POD
-  //! \retval particle POD of the particle
-  std::shared_ptr<void> pod() const override;
-
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
@@ -185,7 +164,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
   //! Deformation gradient increment
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_;
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_{
+      Eigen::Matrix<double, 3, 3>::Identity()};
   /**@}*/
 
 };  // ParticleFiniteStrain class

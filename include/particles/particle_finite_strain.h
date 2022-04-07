@@ -47,17 +47,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
-  //! Serialize
-  //! \retval buffer Serialized buffer data
-  std::vector<uint8_t> serialize() override;
-
-  //! Deserialize
-  //! \param[in] buffer Serialized buffer data
-  //! \param[in] material Particle material pointers
-  void deserialize(
-      const std::vector<uint8_t>& buffer,
-      std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) override;
-
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override {
     const auto& strain = this->compute_hencky_strain();
@@ -99,10 +88,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
  protected:
   //! Compute Hencky strain using deformation gradient
   inline Eigen::Matrix<double, 6, 1> compute_hencky_strain() const;
-
-  //! Compute pack size
-  //! \retval pack size of serialized object
-  int compute_pack_size() const override;
 
  protected:
   //! particle id

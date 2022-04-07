@@ -181,6 +181,11 @@ class Particle : public ParticleBase<Tdim> {
     return volumetric_strain_centroid_;
   }
 
+  //! Deformation gradient
+  Eigen::Matrix<double, 3, 3> deformation_gradient() const override {
+    return deformation_gradient_;
+  }
+
   //! Initial stress
   //! \param[in] stress Initial sress
   void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) override {

@@ -87,6 +87,12 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     h5_particle.velocity_y = velocity[1];
     h5_particle.velocity_z = velocity[2];
 
+    Eigen::Vector3d acceleration;
+    acceleration << 15, 25, 0.0;
+    h5_particle.acceleration_x = acceleration[0];
+    h5_particle.acceleration_y = acceleration[1];
+    h5_particle.acceleration_z = acceleration[2];
+
     Eigen::Matrix<double, 6, 1> stress;
     stress << 11.5, -12.5, 13.5, 14.5, -15.5, 16.5;
     h5_particle.stress_xx = stress[0];
@@ -104,6 +110,18 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     h5_particle.gamma_xy = strain[3];
     h5_particle.gamma_yz = strain[4];
     h5_particle.gamma_xz = strain[5];
+
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
+    deformation_gradient << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0, -7.0, 8.0, -9.0;
+    h5_particle.defgrad_00 = deformation_gradient(0, 0);
+    h5_particle.defgrad_01 = deformation_gradient(0, 1);
+    h5_particle.defgrad_02 = deformation_gradient(0, 2);
+    h5_particle.defgrad_10 = deformation_gradient(1, 0);
+    h5_particle.defgrad_11 = deformation_gradient(1, 1);
+    h5_particle.defgrad_12 = deformation_gradient(1, 2);
+    h5_particle.defgrad_20 = deformation_gradient(2, 0);
+    h5_particle.defgrad_21 = deformation_gradient(2, 1);
+    h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
     h5_particle.epsilon_v = strain.head(Dim).sum();
 
@@ -187,6 +205,12 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     for (unsigned i = 0; i < Dim; ++i)
       REQUIRE(pvelocity(i) == Approx(velocity(i)).epsilon(Tolerance));
 
+    // Check acceleration
+    auto pacceleration = rparticle->acceleration();
+    REQUIRE(pacceleration.size() == Dim);
+    for (unsigned i = 0; i < Dim; ++i)
+      REQUIRE(pacceleration(i) == Approx(acceleration(i)).epsilon(Tolerance));
+
     // Check stress
     auto pstress = rparticle->stress();
     REQUIRE(pstress.size() == stress.size());
@@ -198,6 +222,15 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     REQUIRE(pstrain.size() == strain.size());
     for (unsigned i = 0; i < strain.size(); ++i)
       REQUIRE(pstrain(i) == Approx(strain(i)).epsilon(Tolerance));
+
+    // Check deformation gradient
+    auto pdef_grad = rparticle->deformation_gradient();
+    REQUIRE(pdef_grad.rows() == deformation_gradient.rows());
+    REQUIRE(pdef_grad.cols() == deformation_gradient.cols());
+    for (unsigned i = 0; i < deformation_gradient.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
+        REQUIRE(pdef_grad(i, j) ==
+                Approx(deformation_gradient(i, j)).epsilon(Tolerance));
 
     // Check particle volumetric strain centroid
     REQUIRE(particle->volumetric_strain_centroid() ==

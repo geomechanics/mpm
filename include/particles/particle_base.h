@@ -241,6 +241,9 @@ class ParticleBase {
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
 
+  //! Deformation gradient
+  virtual Eigen::Matrix<double, 3, 3> deformation_gradient() const = 0;
+
   //! Initial stress
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;
 

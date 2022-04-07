@@ -329,6 +329,19 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
     h5_particle.gamma_yz = strain[4];
     h5_particle.gamma_xz = strain[5];
 
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
+    deformation_gradient << 0.115, -0.125, 0.135, 0.145, -0.155, 0.165, 0.145,
+        -0.155, 0.165;
+    h5_particle.defgrad_00 = deformation_gradient(0, 0);
+    h5_particle.defgrad_01 = deformation_gradient(0, 1);
+    h5_particle.defgrad_02 = deformation_gradient(0, 2);
+    h5_particle.defgrad_10 = deformation_gradient(1, 0);
+    h5_particle.defgrad_11 = deformation_gradient(1, 1);
+    h5_particle.defgrad_12 = deformation_gradient(1, 2);
+    h5_particle.defgrad_20 = deformation_gradient(2, 0);
+    h5_particle.defgrad_21 = deformation_gradient(2, 1);
+    h5_particle.defgrad_22 = deformation_gradient(2, 2);
+
     h5_particle.epsilon_v = strain.head(Dim).sum();
 
     h5_particle.status = true;
@@ -394,6 +407,15 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
     REQUIRE(pstrain.size() == strain.size());
     for (unsigned i = 0; i < strain.size(); ++i)
       REQUIRE(pstrain(i) == Approx(strain(i)).epsilon(Tolerance));
+
+    // Check deformation gradient
+    auto pdef_grad = particle->deformation_gradient();
+    REQUIRE(pdef_grad.rows() == deformation_gradient.rows());
+    REQUIRE(pdef_grad.cols() == deformation_gradient.cols());
+    for (unsigned i = 0; i < deformation_gradient.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
+        REQUIRE(pdef_grad(i, j) ==
+                Approx(deformation_gradient(i, j)).epsilon(Tolerance));
 
     // Check particle volumetric strain centroid
     REQUIRE(particle->volumetric_strain_centroid() == h5_particle.epsilon_v);
@@ -464,6 +486,25 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
             Approx(pod_test->gamma_yz).epsilon(Tolerance));
     REQUIRE(h5_particle.gamma_xz ==
             Approx(pod_test->gamma_xz).epsilon(Tolerance));
+
+    REQUIRE(h5_particle.defgrad_00 ==
+            Approx(pod_test->defgrad_00).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_01 ==
+            Approx(pod_test->defgrad_01).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_02 ==
+            Approx(pod_test->defgrad_02).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_10 ==
+            Approx(pod_test->defgrad_10).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_11 ==
+            Approx(pod_test->defgrad_11).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_12 ==
+            Approx(pod_test->defgrad_12).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_20 ==
+            Approx(pod_test->defgrad_20).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_21 ==
+            Approx(pod_test->defgrad_21).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_22 ==
+            Approx(pod_test->defgrad_22).epsilon(Tolerance));
 
     REQUIRE(h5_particle.epsilon_v ==
             Approx(pod_test->epsilon_v).epsilon(Tolerance));
@@ -1498,7 +1539,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     h5_particle.velocity_z = velocity[2];
 
     Eigen::Vector3d acceleration;
-    velocity << 1.5, 2.5, 0.0;
+    acceleration << 1.5, 2.5, 0.0;
     h5_particle.acceleration_x = acceleration[0];
     h5_particle.acceleration_y = acceleration[1];
     h5_particle.acceleration_z = acceleration[2];
@@ -1520,6 +1561,19 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     h5_particle.gamma_xy = strain[3];
     h5_particle.gamma_yz = strain[4];
     h5_particle.gamma_xz = strain[5];
+
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
+    deformation_gradient << 0.115, -0.125, 0.135, 0.145, -0.155, 0.165, 0.145,
+        -0.155, 0.165;
+    h5_particle.defgrad_00 = deformation_gradient(0, 0);
+    h5_particle.defgrad_01 = deformation_gradient(0, 1);
+    h5_particle.defgrad_02 = deformation_gradient(0, 2);
+    h5_particle.defgrad_10 = deformation_gradient(1, 0);
+    h5_particle.defgrad_11 = deformation_gradient(1, 1);
+    h5_particle.defgrad_12 = deformation_gradient(1, 2);
+    h5_particle.defgrad_20 = deformation_gradient(2, 0);
+    h5_particle.defgrad_21 = deformation_gradient(2, 1);
+    h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
     h5_particle.epsilon_v = strain.head(Dim).sum();
 
@@ -1586,6 +1640,17 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(pstrain.size() == strain.size());
     for (unsigned i = 0; i < strain.size(); ++i)
       REQUIRE(pstrain(i) == Approx(strain(i)).epsilon(Tolerance));
+
+    // Check deformation gradient
+    auto pdef_grad = particle->deformation_gradient();
+    REQUIRE(pdef_grad.rows() == deformation_gradient.rows());
+    REQUIRE(pdef_grad.cols() == deformation_gradient.cols());
+    for (unsigned i = 0; i < deformation_gradient.rows(); ++i) {
+      for (unsigned j = 0; j < deformation_gradient.cols(); ++j) {
+        REQUIRE(pdef_grad(i, j) ==
+                Approx(deformation_gradient(i, j)).epsilon(Tolerance));
+      }
+    }
 
     // Check particle volumetric strain centroid
     REQUIRE(particle->volumetric_strain_centroid() == h5_particle.epsilon_v);
@@ -1656,6 +1721,25 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
             Approx(pod_test->gamma_yz).epsilon(Tolerance));
     REQUIRE(h5_particle.gamma_xz ==
             Approx(pod_test->gamma_xz).epsilon(Tolerance));
+
+    REQUIRE(h5_particle.defgrad_00 ==
+            Approx(pod_test->defgrad_00).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_01 ==
+            Approx(pod_test->defgrad_01).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_02 ==
+            Approx(pod_test->defgrad_02).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_10 ==
+            Approx(pod_test->defgrad_10).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_11 ==
+            Approx(pod_test->defgrad_11).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_12 ==
+            Approx(pod_test->defgrad_12).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_20 ==
+            Approx(pod_test->defgrad_20).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_21 ==
+            Approx(pod_test->defgrad_21).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_22 ==
+            Approx(pod_test->defgrad_22).epsilon(Tolerance));
 
     REQUIRE(h5_particle.epsilon_v ==
             Approx(pod_test->epsilon_v).epsilon(Tolerance));
@@ -2584,7 +2668,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
 
       // Map particle mass to nodes
       particle->assign_mass(std::numeric_limits<double>::max());
-      // TODO Assert: REQUIRE(particle->map_mass_momentum_to_nodes() == false);
+      // TODO Assert: REQUIRE(particle->map_mass_momentum_to_nodes() ==
+      // false);
 
       // Map particle pressure to nodes
       // TODO Assert: REQUIRE(particle->map_pressure_to_nodes() == false);
@@ -2924,6 +3009,19 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     h5_particle.gamma_yz = strain[4];
     h5_particle.gamma_xz = strain[5];
 
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
+    deformation_gradient << 0.115, -0.125, 0.135, 0.145, -0.155, 0.165, 0.145,
+        -0.155, 0.165;
+    h5_particle.defgrad_00 = deformation_gradient(0, 0);
+    h5_particle.defgrad_01 = deformation_gradient(0, 1);
+    h5_particle.defgrad_02 = deformation_gradient(0, 2);
+    h5_particle.defgrad_10 = deformation_gradient(1, 0);
+    h5_particle.defgrad_11 = deformation_gradient(1, 1);
+    h5_particle.defgrad_12 = deformation_gradient(1, 2);
+    h5_particle.defgrad_20 = deformation_gradient(2, 0);
+    h5_particle.defgrad_21 = deformation_gradient(2, 1);
+    h5_particle.defgrad_22 = deformation_gradient(2, 2);
+
     h5_particle.epsilon_v = strain.head(Dim).sum();
 
     h5_particle.status = true;
@@ -2984,6 +3082,15 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(pstrain.size() == strain.size());
     for (unsigned i = 0; i < strain.size(); ++i)
       REQUIRE(pstrain(i) == Approx(strain(i)).epsilon(Tolerance));
+
+    // Check deformation gradient
+    auto pdef_grad = particle->deformation_gradient();
+    REQUIRE(pdef_grad.rows() == deformation_gradient.rows());
+    REQUIRE(pdef_grad.cols() == deformation_gradient.cols());
+    for (unsigned i = 0; i < deformation_gradient.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
+        REQUIRE(pdef_grad(i, j) ==
+                Approx(deformation_gradient(i, j)).epsilon(Tolerance));
 
     // Check particle volumetric strain centroid
     REQUIRE(particle->volumetric_strain_centroid() == h5_particle.epsilon_v);
@@ -3054,6 +3161,25 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
             Approx(pod_test->gamma_yz).epsilon(Tolerance));
     REQUIRE(h5_particle.gamma_xz ==
             Approx(pod_test->gamma_xz).epsilon(Tolerance));
+
+    REQUIRE(h5_particle.defgrad_00 ==
+            Approx(pod_test->defgrad_00).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_01 ==
+            Approx(pod_test->defgrad_01).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_02 ==
+            Approx(pod_test->defgrad_02).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_10 ==
+            Approx(pod_test->defgrad_10).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_11 ==
+            Approx(pod_test->defgrad_11).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_12 ==
+            Approx(pod_test->defgrad_12).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_20 ==
+            Approx(pod_test->defgrad_20).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_21 ==
+            Approx(pod_test->defgrad_21).epsilon(Tolerance));
+    REQUIRE(h5_particle.defgrad_22 ==
+            Approx(pod_test->defgrad_22).epsilon(Tolerance));
 
     REQUIRE(h5_particle.epsilon_v ==
             Approx(pod_test->epsilon_v).epsilon(Tolerance));

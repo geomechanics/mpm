@@ -96,6 +96,17 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->strain_[4] = particle.gamma_yz;
   this->strain_[5] = particle.gamma_xz;
 
+  // Deformation gradient
+  this->deformation_gradient_(0, 0) = particle.defgrad_00;
+  this->deformation_gradient_(0, 1) = particle.defgrad_01;
+  this->deformation_gradient_(0, 2) = particle.defgrad_02;
+  this->deformation_gradient_(1, 0) = particle.defgrad_10;
+  this->deformation_gradient_(1, 1) = particle.defgrad_11;
+  this->deformation_gradient_(1, 2) = particle.defgrad_12;
+  this->deformation_gradient_(2, 0) = particle.defgrad_20;
+  this->deformation_gradient_(2, 1) = particle.defgrad_21;
+  this->deformation_gradient_(2, 2) = particle.defgrad_22;
+
   // Volumetric strain
   this->volumetric_strain_centroid_ = particle.epsilon_v;
 
@@ -224,6 +235,16 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   particle_data->gamma_xy = strain[3];
   particle_data->gamma_yz = strain[4];
   particle_data->gamma_xz = strain[5];
+
+  particle_data->defgrad_00 = deformation_gradient_(0, 0);
+  particle_data->defgrad_01 = deformation_gradient_(0, 1);
+  particle_data->defgrad_02 = deformation_gradient_(0, 2);
+  particle_data->defgrad_10 = deformation_gradient_(1, 0);
+  particle_data->defgrad_11 = deformation_gradient_(1, 1);
+  particle_data->defgrad_12 = deformation_gradient_(1, 2);
+  particle_data->defgrad_20 = deformation_gradient_(2, 0);
+  particle_data->defgrad_21 = deformation_gradient_(2, 1);
+  particle_data->defgrad_22 = deformation_gradient_(2, 2);
 
   particle_data->epsilon_v = this->volumetric_strain_centroid_;
 
@@ -1033,6 +1054,10 @@ int mpm::Particle<Tdim>::compute_pack_size() const {
   MPI_Pack_size(6 * 2, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
+  // Deformation gradient
+  MPI_Pack_size(9, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+
   // epsv
   MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
@@ -1119,6 +1144,9 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
   // Strain
   MPI_Pack(strain_.data(), 6, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
+  // Deformation Gradient
+  MPI_Pack(deformation_gradient_.data(), 9, MPI_DOUBLE, data_ptr, data.size(),
+           &position, MPI_COMM_WORLD);
 
   // epsv
   MPI_Pack(&volumetric_strain_centroid_, 1, MPI_DOUBLE, data_ptr, data.size(),
@@ -1216,6 +1244,9 @@ void mpm::Particle<Tdim>::deserialize(
   // Strain
   MPI_Unpack(data_ptr, data.size(), &position, strain_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);
+  // Deformation gradient
+  MPI_Unpack(data_ptr, data.size(), &position, deformation_gradient_.data(), 9,
+             MPI_DOUBLE, MPI_COMM_WORLD);
 
   // epsv
   MPI_Unpack(data_ptr, data.size(), &position, &volumetric_strain_centroid_, 1,

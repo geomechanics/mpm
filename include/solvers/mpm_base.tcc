@@ -528,8 +528,6 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
       mesh_->write_particles_hdf5(particles_file);
     else if (attribute == "twophase_particles")
       mesh_->write_particles_hdf5_twophase(particles_file);
-    else if (attribute == "particles_finite_strain")
-      mesh_->write_particles_hdf5_finite_strain(particles_file);
   }
 }
 

@@ -267,12 +267,23 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
   return strain_increment;
 }
 
-// Compute strain of the particle using nodal displacement
+// Compute strain and volume of the particle using nodal displacement
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain_newmark() noexcept {
+void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
+  // Compute the volume at the previous time step
+  this->volume_ /= 1. + dvolumetric_strain_;
+  this->mass_density_ *= 1. + dvolumetric_strain_;
+
   // Compute strain increment from previous time step
   this->dstrain_ =
       this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+
+  // Updated volumetric strain increment
+  this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
+
+  // Update volume using volumetric strain increment
+  this->volume_ *= 1. + dvolumetric_strain_;
+  this->mass_density_ /= 1. + dvolumetric_strain_;
 }
 
 // Compute stress using implicit updating scheme
@@ -338,14 +349,12 @@ void mpm::Particle<Tdim>::update_stress_strain() noexcept {
   // Update total strain
   this->strain_.noalias() += this->dstrain_;
 
-  // Volumetric strain increment
-  this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
-
   // Update volumetric strain at particle position (not at centroid)
   this->volumetric_strain_centroid_ += this->dvolumetric_strain_;
 
   // Reset strain increment
   this->dstrain_.setZero();
+  this->dvolumetric_strain_ = 0.;
 }
 
 // Assign acceleration to the particle

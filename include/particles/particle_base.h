@@ -398,9 +398,9 @@ class ParticleBase {
   virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
                                               double dt) = 0;
 
-  //! Compute strain using nodal displacement
+  //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
-  virtual void compute_strain_newmark() = 0;
+  virtual void compute_strain_volume_newmark() = 0;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit

@@ -341,7 +341,8 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Check volume
-    REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
+    // Since dvolumetric_strain_ is reset, volume is not expected to change
     REQUIRE_NOTHROW(particle->update_volume());
     REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
   }
@@ -717,7 +718,8 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Update volume
-    REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
+    // Since dvolumetric_strain_ is reset, volume is not expected to change
     REQUIRE_NOTHROW(particle->update_volume());
     REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
   }

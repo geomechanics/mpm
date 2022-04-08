@@ -79,21 +79,6 @@ inline const Eigen::Matrix<double, 6, 1> dtheta_dsigma(
 //! \retval plastic deviatoric strain
 inline double pdstrain(const Eigen::Matrix<double, 6, 1>& plastic_strain);
 
-//! Compute principal stress/strain from given stress/strain in voigt notation
-//! \param[in] voigt_tensor Tensor in Voigt notation
-//! \retval Sorted principal stresses from high to low
-inline const Eigen::Matrix<double, 3, 1> principal_tensor(
-    const Eigen::Matrix<double, 6, 1>& voigt_tensor);
-
-//! Compute principal stress/strain from given stress/strain in voigt notation
-//! \param[in] voigt_tensor Tensor in Voigt notation
-//! \param[in] directors Eigen vector describing the rotation of the tensor to
-//! principal coordinates
-//! \retval Sorted principal stresses from high to low
-inline const Eigen::Matrix<double, 3, 1> principal_tensor(
-    const Eigen::Matrix<double, 6, 1>& voigt_tensor,
-    Eigen::Matrix<double, 3, 3>& directors);
-
 }  // namespace materials
 }  // namespace mpm
 

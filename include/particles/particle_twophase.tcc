@@ -107,6 +107,16 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   particle_data->gamma_yz = strain[4];
   particle_data->gamma_xz = strain[5];
 
+  particle_data->defgrad_00 = deformation_gradient_(0, 0);
+  particle_data->defgrad_01 = deformation_gradient_(0, 1);
+  particle_data->defgrad_02 = deformation_gradient_(0, 2);
+  particle_data->defgrad_10 = deformation_gradient_(1, 0);
+  particle_data->defgrad_11 = deformation_gradient_(1, 1);
+  particle_data->defgrad_12 = deformation_gradient_(1, 2);
+  particle_data->defgrad_20 = deformation_gradient_(2, 0);
+  particle_data->defgrad_21 = deformation_gradient_(2, 1);
+  particle_data->defgrad_22 = deformation_gradient_(2, 2);
+
   particle_data->epsilon_v = this->volumetric_strain_centroid_;
 
   particle_data->status = this->status();
@@ -1057,6 +1067,9 @@ std::vector<uint8_t> mpm::TwoPhaseParticle<Tdim>::serialize() {
   // Strain
   MPI_Pack(strain_.data(), 6, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
+  // Deformation Gradient
+  MPI_Pack(deformation_gradient_.data(), 9, MPI_DOUBLE, data_ptr, data.size(),
+           &position, MPI_COMM_WORLD);
 
   // epsv
   MPI_Pack(&volumetric_strain_centroid_, 1, MPI_DOUBLE, data_ptr, data.size(),
@@ -1195,6 +1208,9 @@ void mpm::TwoPhaseParticle<Tdim>::deserialize(
   // Strain
   MPI_Unpack(data_ptr, data.size(), &position, strain_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);
+  // Deformation gradient
+  MPI_Unpack(data_ptr, data.size(), &position, deformation_gradient_.data(), 9,
+             MPI_DOUBLE, MPI_COMM_WORLD);
 
   // epsv
   MPI_Unpack(data_ptr, data.size(), &position, &volumetric_strain_centroid_, 1,

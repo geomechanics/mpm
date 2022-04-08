@@ -26,7 +26,7 @@ typedef struct PODParticle {
   double nsize_x, nsize_y, nsize_z;
   // Velocity
   double velocity_x, velocity_y, velocity_z;
-  // Velocity
+  // Acceleration
   double acceleration_x, acceleration_y, acceleration_z;
   // Stresses
   double stress_xx, stress_yy, stress_zz;
@@ -34,6 +34,10 @@ typedef struct PODParticle {
   // Strains
   double strain_xx, strain_yy, strain_zz;
   double gamma_xy, gamma_yz, gamma_xz;
+  // Deformation gradient
+  double defgrad_00, defgrad_01, defgrad_02;
+  double defgrad_10, defgrad_11, defgrad_12;
+  double defgrad_20, defgrad_21, defgrad_22;
   // Volumetric strain centroid
   double epsilon_v;
   // Index
@@ -52,7 +56,7 @@ typedef struct PODParticle {
 
 namespace pod {
 namespace particle {
-const hsize_t NFIELDS = 56;
+const hsize_t NFIELDS = 65;
 
 const size_t dst_size = sizeof(PODParticle);
 

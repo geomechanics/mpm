@@ -128,6 +128,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   const unsigned phase_{mpm::ParticlePhase::SinglePhase};
   //! Boolean of nonlinear analysis
   bool nonlinear_{true};
+  //! Boolean of quasi-static analysis
+  bool quasi_static_{false};
   //! Parameter beta of Newmark scheme
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme

@@ -8,9 +8,23 @@
 namespace mpm {
 namespace math {
 //! Convert 2nd-order symmetric tensor from voigt notation to full matrix form
+//! with template dimension
+//! \param[in] voigt_tensor Tensor in Voigt notation
+template <unsigned Tdim>
+inline const Eigen::Matrix<double, Tdim, Tdim> matrix_form(
+    const Eigen::Matrix<double, 6, 1>& voigt_tensor);
+
+//! Convert 2nd-order symmetric tensor from voigt notation to full matrix form
 //! \param[in] voigt_tensor Tensor in Voigt notation
 inline const Eigen::Matrix<double, 3, 3> matrix_form(
     const Eigen::Matrix<double, 6, 1>& voigt_tensor);
+
+//! Convert 2nd-order symmetric tensor from full matrix form to voigt notation
+//! with template dimension
+//! \param[in] matrix_tensor Tensor in matrix form
+template <unsigned Tdim>
+inline const Eigen::Matrix<double, 6, 1> voigt_form(
+    const Eigen::Matrix<double, Tdim, Tdim>& matrix_tensor);
 
 //! Convert 2nd-order symmetric tensor from full matrix form to voigt notation
 //! \param[in] matrix_tensor Tensor in matrix form

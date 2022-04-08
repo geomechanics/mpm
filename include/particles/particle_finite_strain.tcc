@@ -277,7 +277,7 @@ inline Eigen::Matrix<double, 6, 1>
   // Principal values of left Cauchy-Green strain
   Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
   const Eigen::Matrix<double, 3, 1> principal_left_cauchy_green_strain =
-      mpm::materials::principal_tensor(left_cauchy_green_tensor, directors);
+      mpm::math::principal_tensor(left_cauchy_green_tensor, directors);
 
   // Principal value of Hencky (logarithmic) strain
   Eigen::Matrix<double, 3, 3> principal_hencky_strain =

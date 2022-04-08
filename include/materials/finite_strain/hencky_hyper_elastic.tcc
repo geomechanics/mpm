@@ -64,7 +64,7 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
   // Principal values of left Cauchy-Green strain
   Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
   const Eigen::Matrix<double, 3, 1> principal_left_cauchy_green_strain =
-      mpm::materials::principal_tensor(left_cauchy_green_tensor, directors);
+      mpm::math::principal_tensor(left_cauchy_green_tensor, directors);
 
   // Principal values of Hencky (logarithmic) strain
   const Eigen::Matrix<double, 3, 1> principal_hencky_strain =

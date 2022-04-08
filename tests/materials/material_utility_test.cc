@@ -5,6 +5,7 @@
 #include "catch.hpp"
 
 #include "material_utility.h"
+#include "math_utility.h"
 
 //! \brief Check materials namespace functions
 TEST_CASE("materials utility is checked", "[material]") {
@@ -61,13 +62,13 @@ TEST_CASE("materials utility is checked", "[material]") {
     REQUIRE(lode_angle_tolerance == Approx(M_PI / 6.).epsilon(Tolerance));
 
     // Compute principal stresses and directions
-    auto principal_stresses = mpm::materials::principal_tensor(stress);
+    auto principal_stresses = mpm::math::principal_tensor(stress);
     REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
     REQUIRE(principal_stresses(1) == Approx(0.).epsilon(Tolerance));
     REQUIRE(principal_stresses(2) == Approx(0.).epsilon(Tolerance));
 
     Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-    principal_stresses = mpm::materials::principal_tensor(stress, directors);
+    principal_stresses = mpm::math::principal_tensor(stress, directors);
     REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
     REQUIRE(principal_stresses(1) == Approx(0.).epsilon(Tolerance));
     REQUIRE(principal_stresses(2) == Approx(0.).epsilon(Tolerance));
@@ -209,14 +210,14 @@ TEST_CASE("materials utility is checked", "[material]") {
             Approx(0.563342522771415).epsilon(Tolerance));
 
     // Compute principal stresses and directions
-    auto principal_stresses = mpm::materials::principal_tensor(stress);
+    auto principal_stresses = mpm::math::principal_tensor(stress);
 
     REQUIRE(principal_stresses(0) == Approx(-98.9515).epsilon(Tolerance));
     REQUIRE(principal_stresses(1) == Approx(-163.611442455).epsilon(Tolerance));
     REQUIRE(principal_stresses(2) == Approx(-237.837).epsilon(Tolerance));
 
     Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-    principal_stresses = mpm::materials::principal_tensor(stress, directors);
+    principal_stresses = mpm::math::principal_tensor(stress, directors);
 
     REQUIRE(principal_stresses(0) == Approx(-98.9515).epsilon(Tolerance));
     REQUIRE(principal_stresses(1) == Approx(-163.611442455).epsilon(Tolerance));

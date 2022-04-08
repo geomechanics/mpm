@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "logger.h"
+#include "math_utility.h"
 #include "particle.h"
 
 namespace mpm {

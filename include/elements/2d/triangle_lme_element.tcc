@@ -132,10 +132,6 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
         if (r.norm() < tolerance) {
           convergence = true;
         } else if (it == max_it) {
-          console_->warn(
-              "Max number of iteration for LME shapefn computation is "
-              "reached!");
-
           //! Check condition number
           Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
           const double rcond =

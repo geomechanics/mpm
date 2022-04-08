@@ -103,127 +103,30 @@ inline bool
     mpm::ParticleFiniteStrain<Tdim>::map_geometric_stiffness_matrix_to_cell() {
   bool status = true;
   try {
-    // Calculate G matrix
-    const Eigen::MatrixXd gmatrix = this->compute_gmatrix();
+    // Stress tensor in suitable dimension
+    const Eigen::Matrix<double, Tdim, Tdim>& stress_matrix =
+        mpm::math::matrix_form<Tdim>(this->stress_);
 
-    // Stress component matrix
-    Eigen::MatrixXd stress_matrix = compute_stress_matrix();
+    const auto& reduced_stiffness = dn_dx_ * stress_matrix * dn_dx_.transpose();
+
+    const Eigen::Matrix<double, Tdim, Tdim> Idim =
+        Eigen::Matrix<double, Tdim, Tdim>::Identity();
+
+    Eigen::MatrixXd geometric_stiffness(Idim.rows() * reduced_stiffness.rows(),
+                                        Idim.cols() * reduced_stiffness.cols());
+    for (int i = 0; i < reduced_stiffness.cols(); i++)
+      for (int j = 0; j < reduced_stiffness.rows(); j++)
+        geometric_stiffness.block(i * Idim.rows(), j * Idim.cols(), Idim.rows(),
+                                  Idim.cols()) = reduced_stiffness(i, j) * Idim;
 
     // Compute local geometric stiffness matrix
-    cell_->compute_local_material_stiffness_matrix(gmatrix, stress_matrix,
-                                                   volume_);
+    cell_->compute_local_geometric_stiffness_matrix(geometric_stiffness,
+                                                    volume_);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
   }
   return status;
-}
-
-// Compute G matrix for geometric stiffness
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<1>::compute_gmatrix() noexcept {
-  Eigen::MatrixXd gmatrix;
-  gmatrix.resize(1, this->nodes_.size());
-  gmatrix.setZero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    gmatrix(0, i) = dn_dx_(i, 0);
-  }
-  return gmatrix;
-}
-
-// Compute G matrix for geometric stiffness
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<2>::compute_gmatrix() noexcept {
-  Eigen::MatrixXd gmatrix;
-  gmatrix.resize(4, 2 * this->nodes_.size());
-  gmatrix.setZero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    gmatrix(0, 2 * i) = dn_dx_(i, 0);
-    gmatrix(1, 2 * i) = dn_dx_(i, 1);
-    gmatrix(2, 2 * i + 1) = dn_dx_(i, 0);
-    gmatrix(3, 2 * i + 1) = dn_dx_(i, 1);
-  }
-  return gmatrix;
-}
-
-// Compute G matrix for geometric stiffness
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<3>::compute_gmatrix() noexcept {
-  Eigen::MatrixXd gmatrix;
-  gmatrix.resize(9, 3 * this->nodes_.size());
-  gmatrix.setZero();
-
-  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    gmatrix(0, 3 * i) = dn_dx_(i, 0);
-    gmatrix(1, 3 * i) = dn_dx_(i, 1);
-    gmatrix(2, 3 * i) = dn_dx_(i, 2);
-    gmatrix(3, 3 * i + 1) = dn_dx_(i, 0);
-    gmatrix(4, 3 * i + 1) = dn_dx_(i, 1);
-    gmatrix(5, 3 * i + 1) = dn_dx_(i, 2);
-    gmatrix(6, 3 * i + 2) = dn_dx_(i, 0);
-    gmatrix(7, 3 * i + 2) = dn_dx_(i, 1);
-    gmatrix(8, 3 * i + 2) = dn_dx_(i, 2);
-  }
-  return gmatrix;
-}
-
-// Compute stress component matrix for geometric stiffness
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<1>::compute_stress_matrix() noexcept {
-  Eigen::MatrixXd stress_matrix;
-  stress_matrix.resize(1, 1);
-  stress_matrix.setZero();
-
-  stress_matrix(0, 0) = this->stress_(0);
-
-  return stress_matrix;
-}
-
-// Compute stress component matrix for geometric stiffness
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<2>::compute_stress_matrix() noexcept {
-  Eigen::MatrixXd stress_matrix;
-  stress_matrix.resize(4, 4);
-  stress_matrix.setZero();
-
-  for (unsigned i = 0; i <= 1; i++) {
-    stress_matrix(2 * i + 0, 2 * i + 0) = this->stress_(0);
-    stress_matrix(2 * i + 0, 2 * i + 1) = this->stress_(3);
-    stress_matrix(2 * i + 1, 2 * i + 0) = this->stress_(3);
-    stress_matrix(2 * i + 1, 2 * i + 1) = this->stress_(1);
-  }
-
-  return stress_matrix;
-}
-
-// Compute stress component matrix for geometric stiffness
-template <>
-inline Eigen::MatrixXd
-    mpm::ParticleFiniteStrain<3>::compute_stress_matrix() noexcept {
-  Eigen::MatrixXd stress_matrix;
-  stress_matrix.resize(9, 9);
-  stress_matrix.setZero();
-
-  for (unsigned i = 0; i <= 2; i++) {
-    stress_matrix(3 * i + 0, 3 * i + 0) = this->stress_(0);
-    stress_matrix(3 * i + 0, 3 * i + 1) = this->stress_(3);
-    stress_matrix(3 * i + 0, 3 * i + 2) = this->stress_(5);
-    stress_matrix(3 * i + 1, 3 * i + 0) = this->stress_(3);
-    stress_matrix(3 * i + 1, 3 * i + 1) = this->stress_(1);
-    stress_matrix(3 * i + 1, 3 * i + 2) = this->stress_(4);
-    stress_matrix(3 * i + 2, 3 * i + 0) = this->stress_(5);
-    stress_matrix(3 * i + 2, 3 * i + 1) = this->stress_(4);
-    stress_matrix(3 * i + 2, 3 * i + 2) = this->stress_(2);
-  }
-
-  return stress_matrix;
 }
 
 // Compute stress using implicit updating scheme

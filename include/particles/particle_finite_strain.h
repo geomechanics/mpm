@@ -100,12 +100,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \ingroup Implicit
   inline bool map_geometric_stiffness_matrix_to_cell();
 
-  //! Compute G matrix for geometric stiffnexx
-  inline Eigen::MatrixXd compute_gmatrix() noexcept;
-
-  //! Compute stress component matrix for geometric stiffnexx
-  inline Eigen::MatrixXd compute_stress_matrix() noexcept;
-
   //! Compute Hencky strain using deformation gradient
   inline Eigen::Matrix<double, 6, 1> compute_hencky_strain() const;
 

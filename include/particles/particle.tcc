@@ -500,7 +500,7 @@ void mpm::Particle<Tdim>::compute_shapefn() noexcept {
 
   // Deformation Gradient
   const Eigen::Matrix<double, Tdim, Tdim> def_grad =
-      this->deformation_gradient_.block<Tdim, Tdim>(0, 0);
+      this->deformation_gradient_.block(0, 0, Tdim, Tdim);
 
   // Compute shape function of the particle
   shapefn_ = element->shapefn(this->xi_, this->natural_size_, def_grad);

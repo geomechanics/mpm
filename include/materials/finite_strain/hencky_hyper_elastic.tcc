@@ -72,7 +72,7 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
 
   // Principal values of Kirchhoff stress
   const Eigen::Matrix<double, 3, 1> principal_kirchhoff_stress =
-      de_.block<3, 3>(0, 0) * principal_hencky_strain;
+      de_.block(0, 0, 3, 3) * principal_hencky_strain;
 
   // Principal values of Cauchy stress
   const Eigen::Matrix<double, 3, 3> principal_cauchy_stress =

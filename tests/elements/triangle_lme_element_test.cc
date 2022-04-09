@@ -74,7 +74,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
             beta, r, anisotropy, nodal_coords));
 
         // Coordinates is (0,0) after upgrade
-        SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
+        SECTION("2D LME element for coordinates(0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 1. / 3., 1. / 3.;
           auto shapefn = tri->shapefn(coords, zero, zero_matrix);
@@ -99,6 +99,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
           REQUIRE(shapefn(13) == Approx(0.).epsilon(Tolerance));
 
           // Check gradient of shape functions
+          zero.setZero();
           auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 14);
           REQUIRE(gradsf.cols() == Dim);
@@ -112,6 +113,23 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check the B-matrix assembly
+          auto bmatrix = tri->bmatrix(coords, nodal_coords, zero, zero_matrix);
+
+          // Check size of B-matrix
+          REQUIRE(bmatrix.size() == 14);
+
+          for (unsigned i = 0; i < 14; ++i) {
+            // clang-format off
+            REQUIRE(bmatrix.at(i)(0, 0) == Approx(gradsf(i, 0)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(0, 1) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(1, 0) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(1, 1) == Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(2, 0) == Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(2, 1) == Approx(gradsf(i, 0)).epsilon(Tolerance));
+            // clang-format on
+          }
         }
       }
     }
@@ -208,6 +226,7 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
             REQUIRE(shapefn(i) == Approx(shapefn_ans(i)).epsilon(Tolerance));
 
           // Check gradient of shape functions
+          zero.setZero();
           auto gradsf = tri->grad_shapefn(coords, zero, def_gradient);
           REQUIRE(gradsf.rows() == 108);
           REQUIRE(gradsf.cols() == Dim);

@@ -15,7 +15,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
   Eigen::Matrix3d def_gradient = Eigen::Matrix3d::Identity();
 
   //! Check for center element nodes
-  SECTION("Quadratic Hexahedron BSpline Element") {
+  SECTION("Quadratic Hexahedron LME Element") {
     std::shared_ptr<mpm::Element<Dim>> hex =
         std::make_shared<mpm::HexahedronLMEElement<Dim>>();
 
@@ -77,8 +77,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     }
 
     // Coordinates is (-1, -1, -1);
-    SECTION(
-        "3D BSpline element for coordinate (-1., -1., -1.) before upgrade") {
+    SECTION("3D LME element for coordinate (-1., -1., -1.) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << -1., -1., -1.;
       auto shapefn = hex->shapefn(coords, zero, zero_matrix);
@@ -128,7 +127,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     }
 
     // Initialising upgrade properties
-    SECTION("3D BSpline element regular element - nnodes = 64") {
+    SECTION("3D ALME element regular element - nnodes = 64") {
       Eigen::Matrix<double, 64, Dim> nodal_coords;
       // clang-format off
       nodal_coords <<-1,  1, -1,
@@ -197,7 +196,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
                       3, -3,  3;
       // clang-format on
 
-      SECTION("3D BSpline element regular element no support") {
+      SECTION("3D ALME element regular element no support") {
         double gamma = 20.0;
         double h = 2.0;
 
@@ -213,7 +212,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
             beta, r, anisotropy, nodal_coords));
 
         // Coordinates is (0,0,0) after upgrade
-        SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
+        SECTION("3D ALME element for coordinates(0,0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
           auto shapefn = hex->shapefn(coords, zero, zero_matrix);
@@ -288,6 +287,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
           REQUIRE(shapefn(63) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
+          zero.setZero();
           auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 64);
           REQUIRE(gradsf.cols() == Dim);
@@ -488,7 +488,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
       }
     }
 
-    SECTION("3D BSpline element anisotropic element - nnodes = 216") {
+    SECTION("3D ALME element anisotropic element - nnodes = 216") {
       Eigen::Matrix<double, 216, Dim> nodal_coords;
 
       nodal_coords << 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, 1, -1, -1, 1,
@@ -525,7 +525,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
           1, 5, 3, 1, 5, 5, -1, 3, 5, -1, 3, 3, -1, 5, 3, -1, 5, 5, 5, 3, 5, 5,
           3, 3, 5, 5, 3, 5, 5, 5, 3, 3, 5, 3, 3, 3, 3, 5, 3, 3;
 
-      SECTION("3D BSpline element anisotropic element no support") {
+      SECTION("3D ALME element anisotropic element no support") {
         double gamma = 0.5;
         double h = 2.0;
 
@@ -541,7 +541,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
             beta, r, anisotropy, nodal_coords));
 
         // Coordinates is (0,0,0) after upgrade
-        SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
+        SECTION("3D ALME element for coordinates(0,0,0) after upgrade") {
           def_gradient(0, 1) = 0.5;
           def_gradient(0, 2) = 0.5;
           Eigen::Matrix<double, Dim, 1> coords;
@@ -668,6 +668,7 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
             REQUIRE(shapefn(i) == Approx(shapefn_ans(i)).epsilon(Tolerance));
 
           // Check gradient of shape functions
+          zero.setZero();
           auto gradsf = hex->grad_shapefn(coords, zero, def_gradient);
           REQUIRE(gradsf.rows() == 216);
           REQUIRE(gradsf.cols() == Dim);

@@ -44,12 +44,12 @@ bool mpm::Cell<Tdim>::initialise() {
 
       Eigen::Matrix<double, Tdim, 1> zero =
           Eigen::Matrix<double, Tdim, 1>::Zero();
-      const Eigen::Matrix<double, Tdim, Tdim> zero_matrix =
-          Eigen::Matrix<double, Tdim, Tdim>::Zero();
+      const Eigen::Matrix<double, Tdim, Tdim> identity_matrix =
+          Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
       // dN/dX at the centroid
       dn_dx_centroid_ = element_->dn_dx(xi_centroid, this->nodal_coordinates_,
-                                        zero, zero_matrix);
+                                        zero, identity_matrix);
 
       status = true;
     } else {

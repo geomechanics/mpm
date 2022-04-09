@@ -48,9 +48,11 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
+  //! \param[in] update_defgrad Update deformation gradient
   inline void compute_particle_kinematics(bool velocity_update, unsigned phase,
                                           const std::string& damping_type,
-                                          double damping_factor) override;
+                                          double damping_factor,
+                                          bool update_defgrad) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] phase Phase to smooth pressure

@@ -192,7 +192,7 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
     bool velocity_update, unsigned phase, const std::string& damping_type,
-    double damping_factor) {
+    double damping_factor, bool update_defgrad) {
 
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
@@ -211,6 +211,12 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
                 std::placeholders::_1, dt_, velocity_update));
+
+  // Iterate over each particle to update deformation gradient
+  if (update_defgrad)
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
+                  std::placeholders::_1, "velocity", dt_));
 
   // Apply particle velocity constraints
   mesh_->apply_particle_velocity_constraints();

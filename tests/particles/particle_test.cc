@@ -562,6 +562,9 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     mpm::Index id = 0;
     auto particle = std::make_shared<mpm::Particle<Dim>>(id, coords);
 
+    // Particle type
+    REQUIRE(particle->type() == "P2D");
+
     //! Check for coordinates being zero
     auto coordinates = particle->coordinates();
     for (unsigned i = 0; i < coordinates.size(); ++i)
@@ -1905,6 +1908,9 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     // Create particle
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::Particle<Dim>>(id, coords);
+
+    // Particle type
+    REQUIRE(particle->type() == "P3D");
 
     //! Check for coordinates being zero
     auto coordinates = particle->coordinates();

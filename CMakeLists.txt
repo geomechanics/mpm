@@ -233,6 +233,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/elements/triangle_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/triangle_quadrature_test.cc
     ${mpm_SOURCE_DIR}/tests/functions/linear_function_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/material_utility_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/math_utility_test.cc
     ${mpm_SOURCE_DIR}/tests/functions/sin_function_test.cc
     ${mpm_SOURCE_DIR}/tests/functions/radial_basis_function_test.cc
     ${mpm_SOURCE_DIR}/tests/graph_test.cc
@@ -249,7 +251,6 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/materials/mohr_coulomb_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/newtonian_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/norsand_test.cc
-    ${mpm_SOURCE_DIR}/tests/materials/material_utility_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_free_surface_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_neighbours_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_2d.cc

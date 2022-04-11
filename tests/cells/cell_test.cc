@@ -1053,7 +1053,7 @@ TEST_CASE("Cell is checked for 3D case", "[cell][3D]") {
       SECTION(
           "Find local coordinates of a point in cell with tetrahedron "
           "element") {
-        // 4-noded tetrahedron shape functions //LEDT TODO
+        // 4-noded tetrahedron shape functions
         std::shared_ptr<mpm::Element<Dim>> tet_element =
             Factory<mpm::Element<Dim>>::instance()->create("ED3T4");
 

@@ -528,7 +528,7 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       Ainv(2, 3) = (x1 * y2 - x2 * y1 - x1 * y3 + x3 * y1 + x2 * y3 - x3 * y2);
       Ainv *= (1 / tetrahedron_6xV);
 
-      // Output point in natural coordinates (3x4 Ainv matrix multiplied 
+      // Output point in natural coordinates (3x4 Ainv matrix multiplied
       // by 3x1 point in global coordinates)
       xi(0) = Ainv(0, 0) + Ainv(0, 1) * point(0) + Ainv(0, 2) * point(1) +
               Ainv(0, 3) * point(2);

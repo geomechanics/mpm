@@ -639,25 +639,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       REQUIRE(indices(3) == 3);
     }
 
-    SECTION("Four noded quadrilateral element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = quad->inhedron_indices();
-      REQUIRE(indices.rows() == 4);
-      REQUIRE(indices.cols() == 2);
-
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 1);
-
-      REQUIRE(indices(1, 0) == 1);
-      REQUIRE(indices(1, 1) == 2);
-
-      REQUIRE(indices(2, 0) == 2);
-      REQUIRE(indices(2, 1) == 3);
-
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 0);
-    }
-
     SECTION("Four noded quadrilateral shape function for face indices") {
       // Check for face indices
       Eigen::Matrix<int, 4, 2> indices;
@@ -1437,25 +1418,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       REQUIRE(indices(1) == 1);
       REQUIRE(indices(2) == 2);
       REQUIRE(indices(3) == 3);
-    }
-
-    SECTION("Eight noded quadrilateral element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = quad->inhedron_indices();
-      REQUIRE(indices.rows() == 4);
-      REQUIRE(indices.cols() == 2);
-
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 1);
-
-      REQUIRE(indices(1, 0) == 1);
-      REQUIRE(indices(1, 1) == 2);
-
-      REQUIRE(indices(2, 0) == 2);
-      REQUIRE(indices(2, 1) == 3);
-
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 0);
     }
 
     SECTION("Eight noded quadrilateral shape function for face indices") {
@@ -2266,25 +2228,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       REQUIRE(indices(1) == 1);
       REQUIRE(indices(2) == 2);
       REQUIRE(indices(3) == 3);
-    }
-
-    SECTION("Nine noded quadrilateral element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = quad->inhedron_indices();
-      REQUIRE(indices.rows() == 4);
-      REQUIRE(indices.cols() == 2);
-
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 1);
-
-      REQUIRE(indices(1, 0) == 1);
-      REQUIRE(indices(1, 1) == 2);
-
-      REQUIRE(indices(2, 0) == 2);
-      REQUIRE(indices(2, 1) == 3);
-
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 0);
     }
 
     SECTION("Nine noded quadrilateral shape function for face indices") {

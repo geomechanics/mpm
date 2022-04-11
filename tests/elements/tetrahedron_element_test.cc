@@ -668,28 +668,6 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       REQUIRE(indices(3) == 3);
     }
 
-    SECTION("Four noded tetrahedron element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = tet->inhedron_indices();
-      REQUIRE(indices.rows() == 4);
-      REQUIRE(indices.cols() == 3);
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 1);
-      REQUIRE(indices(0, 2) == 2);
-
-      REQUIRE(indices(1, 0) == 0);
-      REQUIRE(indices(1, 1) == 1);
-      REQUIRE(indices(1, 2) == 3);
-
-      REQUIRE(indices(2, 0) == 0);
-      REQUIRE(indices(2, 1) == 2);
-      REQUIRE(indices(2, 2) == 3);
-
-      REQUIRE(indices(3, 0) == 1);
-      REQUIRE(indices(3, 1) == 2);
-      REQUIRE(indices(3, 2) == 3);
-    }
-
     SECTION("Four noded tetrahedron shape function for face indices") {
       // Check for face indices
       Eigen::Matrix<int, 4, 3> indices;

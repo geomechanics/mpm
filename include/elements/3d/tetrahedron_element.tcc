@@ -284,27 +284,11 @@ inline Eigen::VectorXi
   return indices;
 }
 
-//! Return indices of a sub-tetrahedrons in a volume
-//! to check if a point is inside /outside of a hedron
-//! \retval indices Indices that form sub-tetrahedrons
-template <unsigned Tdim, unsigned Tnfunctions>
-inline Eigen::MatrixXi
-    mpm::TetrahedronElement<Tdim, Tnfunctions>::inhedron_indices() const {
-  Eigen::Matrix<int, 4, Tdim, Eigen::RowMajor> indices;
-  // clang-format off
-  indices << 0, 1, 2,
-             0, 1, 3,
-             0, 2, 3,
-             1, 2, 3;
-  //clang-format on
-  return indices;
-}
-
 //! Return indices of a face of the element
 //! 4-noded tetrahedron
 template <>
-inline Eigen::VectorXi
-    mpm::TetrahedronElement<3, 4>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::TetrahedronElement<3, 4>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 3, 1>> face_indices_tetrahedron{
@@ -341,7 +325,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline double mpm::TetrahedronElement<Tdim, Tnfunctions>::compute_volume(
     const Eigen::MatrixXd& nodal_coordinates) const {
 
-  //Temporary variables for node coordinants (xk, yk, zk)
+  // Temporary variables for node coordinants (xk, yk, zk)
   const double x1 = nodal_coordinates(0, 0);
   const double x2 = nodal_coordinates(1, 0);
   const double x3 = nodal_coordinates(2, 0);
@@ -356,13 +340,12 @@ inline double mpm::TetrahedronElement<Tdim, Tnfunctions>::compute_volume(
   const double z4 = nodal_coordinates(3, 2);
 
   const double volume =
-    (1.0 / 6)*
-    ( x1 * y3 * z2 - x1 * y2 * z3 + x2 * y1 * z3 - x2 * y3 * z1 -
-    x3 * y1 * z2 + x3 * y2 * z1 + x1 * y2 * z4 - x1 * y4 * z2 -
-    x2 * y1 * z4 + x2 * y4 * z1 + x4 * y1 * z2 - x4 * y2 * z1 -
-    x1 * y3 * z4 + x1 * y4 * z3 + x3 * y1 * z4 - x3 * y4 * z1 -
-    x4 * y1 * z3 + x4 * y3 * z1 + x2 * y3 * z4 - x2 * y4 * z3 -
-    x3 * y2 * z4 + x3 * y4 * z2 + x4 * y2 * z3 - x4 * y3 * z2 );
+      (1.0 / 6) * (x1 * y3 * z2 - x1 * y2 * z3 + x2 * y1 * z3 - x2 * y3 * z1 -
+                   x3 * y1 * z2 + x3 * y2 * z1 + x1 * y2 * z4 - x1 * y4 * z2 -
+                   x2 * y1 * z4 + x2 * y4 * z1 + x4 * y1 * z2 - x4 * y2 * z1 -
+                   x1 * y3 * z4 + x1 * y4 * z3 + x3 * y1 * z4 - x3 * y4 * z1 -
+                   x4 * y1 * z3 + x4 * y3 * z1 + x2 * y3 * z4 - x2 * y4 * z3 -
+                   x3 * y2 * z4 + x3 * y4 * z2 + x4 * y2 * z3 - x4 * y3 * z2);
 
   return volume;
 }

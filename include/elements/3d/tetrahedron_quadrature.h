@@ -12,6 +12,7 @@ namespace mpm {
 
 //! Tetrahedron quadrature class derived from Quadrature class
 //! \brief Quadrature (gauss points) for a tetrahedron element
+//! source: http://solidmechanics.org/Text/Chapter8_1/Chapter8_1.php
 //! \tparam Tdim Dimension
 //! \tparam Tnquadratures number of quadratures
 template <unsigned Tdim, unsigned Tnquadratures>
@@ -31,7 +32,7 @@ class TetrahedronQuadrature : public Quadrature<Tdim> {
   //! Return weights
   //! \param[out] weights Weights for quadrature points
   Eigen::VectorXd weights() const override;
-};  // source: http://solidmechanics.org/Text/Chapter8_1/Chapter8_1.php
+};
 
 }  // namespace mpm
 

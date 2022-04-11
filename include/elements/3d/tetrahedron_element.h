@@ -15,9 +15,9 @@ namespace mpm {
 //! <pre>
 //!
 //!       *
-//!      /|\ 
-//!     / | \ 
-//!    /  |  \ 
+//!      /|\
+//!     / | \
+//!    /  |  \
 //!   *. -|- .*
 //!      `*´
 //!
@@ -149,11 +149,6 @@ class TetrahedronElement : public Element<Tdim> {
   //! Return the corner indices of a cell to calculate the cell volume
   //! \retval indices Outer-indices that form the cell
   Eigen::VectorXi corner_indices() const override;
-
-  //! Return indices of a sub-tetrahedrons in a volume
-  //! to check if a point is inside /outside of a hedron
-  //! \retval indices Indices that form sub-tetrahedrons
-  Eigen::MatrixXi inhedron_indices() const override;
 
   //! Return indices of a face of an element
   //! \param[in] face_id given id of the face

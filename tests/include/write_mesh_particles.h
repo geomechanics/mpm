@@ -8,6 +8,14 @@ namespace mpm_test {
 bool write_json(unsigned dim, bool resume, const std::string& analysis,
                 const std::string& mpm_scheme, const std::string& file_name);
 
+// Write JSON Configuration file for absorbing boundary
+bool write_json_absorbing(unsigned dim, bool resume,
+                          const std::string& analysis,
+                          const std::string& mpm_scheme,
+                          const std::string& file_name,
+                          const std::string& position,
+                          const double delta = 100.0);
+
 // Write JSON Configuration file for implicit
 bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& mpm_scheme, bool nonlinear,
@@ -41,5 +49,8 @@ bool write_particles_2d();
 bool write_mesh_3d();
 // Write particles file in 3D
 bool write_particles_3d();
+
+// Write math function csv
+bool write_math_function();
 
 }  // namespace mpm_test

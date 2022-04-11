@@ -118,7 +118,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   }
 
   // Create nodal properties
-  if (interface_) mesh_->create_nodal_properties();
+  if (interface_ or absorbing_boundary_) mesh_->create_nodal_properties();
 
   // Initialise loading conditions
   this->initialise_loads();
@@ -161,6 +161,12 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
+
+    // Apply Absorbing Constraint
+    if (absorbing_boundary_) {
+      mpm_scheme_->absorbing_boundary_properties();
+      this->nodal_absorbing_constraints();
+    }
 
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",

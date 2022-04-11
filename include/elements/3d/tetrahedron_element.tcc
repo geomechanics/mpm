@@ -290,14 +290,12 @@ inline Eigen::VectorXi
 template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::MatrixXi
     mpm::TetrahedronElement<Tdim, Tnfunctions>::inhedron_indices() const {
-  Eigen::Matrix<int, 6, Tdim, Eigen::RowMajor> indices;
+  Eigen::Matrix<int, 4, Tdim, Eigen::RowMajor> indices;
   // clang-format off
-  indices << 0, 1,
-             1, 2,
-             2, 3,
-             3, 0,
-             1, 3,
-             0, 2;
+  indices << 0, 1, 2,
+             0, 1, 3,
+             0, 2, 3,
+             1, 2, 3;
   //clang-format on
   return indices;
 }

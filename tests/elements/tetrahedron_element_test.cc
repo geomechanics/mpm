@@ -24,7 +24,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
     SECTION("Four noded tetrahedron element for coordinates(0, 0, 0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = time_t->shapefn(coords, Eigen::Vector3d::Zero(),
+      auto shapefn = tet->shapefn(coords, Eigen::Vector3d::Zero(),
                                   Eigen::Vector3d::Zero());
 
       // Check shape function
@@ -55,22 +55,23 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       REQUIRE(gradsf(1, 2) == Approx(0.0).epsilon(Tolerance));
       REQUIRE(gradsf(2, 2) == Approx(0.0).epsilon(Tolerance));
       REQUIRE(gradsf(3, 2) == Approx(1.0).epsilon(Tolerance));
-    } //LEDT COMPLETED ALL ABOVE
+    }
 
     // Coordinates is (1.0/3, 1.0/3, 1.0/3);
-    SECTION("Four noded tetrahedron element for coordinates
-      (1.0/3, 1.0/3, 1.0/3)") {
+    SECTION(
+        "Four noded tetrahedron element for coordinates (1.0/3, 1.0/3, "
+        "1.0/3)") {
       Eigen::Matrix<double, Dim, 1> coords;
-      coords << 1.0/3, 1.0/3, 1.0/3;
+      coords << 1.0 / 3, 1.0 / 3, 1.0 / 3;
       auto shapefn = tet->shapefn(coords, Eigen::Vector3d::Zero(),
                                   Eigen::Vector3d::Zero());
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(0.0).epsilon(Tolerance));
-      REQUIRE(shapefn(1) == Approx(1.0/3).epsilon(Tolerance));
-      REQUIRE(shapefn(2) == Approx(1.0/3).epsilon(Tolerance));
-      REQUIRE(shapefn(3) == Approx(1.0/3).epsilon(Tolerance));
+      REQUIRE(shapefn(1) == Approx(1.0 / 3).epsilon(Tolerance));
+      REQUIRE(shapefn(2) == Approx(1.0 / 3).epsilon(Tolerance));
+      REQUIRE(shapefn(3) == Approx(1.0 / 3).epsilon(Tolerance));
 
       // Check gradient of shape functions
       auto gradsf = tet->grad_shapefn(coords, Eigen::Vector3d::Zero(),
@@ -93,8 +94,6 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       REQUIRE(gradsf(2, 2) == Approx(0.0).epsilon(Tolerance));
       REQUIRE(gradsf(3, 2) == Approx(1.0).epsilon(Tolerance));
     }
-
-    //LEDT REMOVED ONE SET HERE
 
     // Coordinates is (0, 0, 0)
     SECTION(
@@ -152,8 +151,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
     }
 
     // Check Jacobian
-    SECTION(
-        "Four noded tetrahedron Jacobian for local coordinates(0,0,0)") {
+    SECTION("Four noded tetrahedron Jacobian for local coordinates(0,0,0)") {
       Eigen::Matrix<double, 4, Dim> coords;
       // clang-format off
       coords << 0., 0., 0.,
@@ -163,7 +161,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // clang-format on
 
       Eigen::Matrix<double, Dim, 1> xi;
-      xi << 1.0/3, 1.0/3, 1.0/3;
+      xi << 1.0 / 3, 1.0 / 3, 1.0 / 3;
 
       // Jacobian result
       Eigen::Matrix<double, Dim, Dim> jacobian;
@@ -278,7 +276,6 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // Check gradient of shape functions
       auto gradsf = tet->grad_shapefn(xi, Eigen::Vector3d::Zero(),
                                       Eigen::Vector3d::Zero());
-      gradsf *= 2.;
 
       // Check dN/dx
       auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
@@ -336,7 +333,6 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // Check gradient of shape functions
       auto gradsf = tet->grad_shapefn(xi, Eigen::Vector3d::Zero(),
                                       Eigen::Vector3d::Zero());
-      gradsf *= 2.;
 
       // Check dN/dx
       auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
@@ -377,7 +373,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
     // Coordinates is (1.0/3, 1.0/3, 1.0/3)
     SECTION("Four noded tetrahedron B-matrix cell xi(1.0/3, 1.0/3, 1.0/3)") {
       Eigen::Matrix<double, Dim, 1> xi;
-      xi << 1.0/3, 1.0/3, 1.0/3;
+      xi << 1.0 / 3, 1.0 / 3, 1.0 / 3;
 
       Eigen::Matrix<double, 4, Dim> coords;
       // clang-format off
@@ -394,7 +390,6 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // Check gradient of shape functions
       auto gradsf = tet->grad_shapefn(xi, Eigen::Vector3d::Zero(),
                                       Eigen::Vector3d::Zero());
-      gradsf *= 2.;
 
       // Check dN/dx
       auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
@@ -434,7 +429,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
 
     SECTION("Four noded tetrahedron B-matrix with deformation gradient") {
       Eigen::Matrix<double, Dim, 1> xi;
-      xi << 1.0/3, 1.0/3, 1.0/3;
+      xi << 1.0 / 3, 1.0 / 3, 1.0 / 3;
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
@@ -454,7 +449,6 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
 
       // Check gradient of shape functions
       auto gradsf = tet->grad_shapefn(xi, psize, defgrad);
-      gradsf *= 2.;
 
       // Check dN/dx
       auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
@@ -492,56 +486,41 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       }
     }
 
-    //LEDT TODO BELOW
-    SECTION("Eight noded hexahedron B-matrix and Jacobian failure") {
+    SECTION("Four noded tetrahedron B-matrix and Jacobian failure") {
       Eigen::Matrix<double, Dim, 1> xi;
       xi << 0., 0., 0.;
 
-      Eigen::Matrix<double, 7, Dim> coords;
+      Eigen::Matrix<double, 3, Dim> coords;
       // clang-format off
       coords << 0., 0., 0.,
                 1., 0., 0.,
-                1., 1., 0.,
-                0., 1., 0.,
-                0., 0., 1.,
-                1., 0., 1.,
-                1., 1., 1.;
+                0., 1., 0.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
+      auto bmatrix = tet->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
                                   Eigen::Vector3d::Zero());
-      auto jacobian = hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
+      auto jacobian = tet->jacobian(xi, coords, Eigen::Vector3d::Zero(),
                                     Eigen::Vector3d::Zero());
     }
 
     // Ni Nj matrix of a cell
-    SECTION("Eight noded hexahedron ni-nj-matrix") {
+    SECTION("Four noded tetrahedron ni-nj-matrix") {
       std::vector<Eigen::Matrix<double, Dim, 1>> xi_s;
 
       Eigen::Matrix<double, Dim, 1> xi;
-      const double one_by_sqrt3 = std::fabs(1 / std::sqrt(3));
-      xi << -one_by_sqrt3, -one_by_sqrt3, -one_by_sqrt3;
+      xi << 0.58541020, 0.13819660, 0.13819660;
       xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, -one_by_sqrt3, -one_by_sqrt3;
+      xi << 0.13819660, 0.58541020, 0.13819660;
       xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, one_by_sqrt3, -one_by_sqrt3;
+      xi << 0.13819660, 0.13819660, 0.58541020;
       xi_s.emplace_back(xi);
-      xi << -one_by_sqrt3, one_by_sqrt3, -one_by_sqrt3;
-      xi_s.emplace_back(xi);
-
-      xi << -one_by_sqrt3, -one_by_sqrt3, one_by_sqrt3;
-      xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, -one_by_sqrt3, one_by_sqrt3;
-      xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, one_by_sqrt3, one_by_sqrt3;
-      xi_s.emplace_back(xi);
-      xi << -one_by_sqrt3, one_by_sqrt3, one_by_sqrt3;
+      xi << 0.13819660, 0.13819660, 0.13819660;
       xi_s.emplace_back(xi);
 
-      REQUIRE(xi_s.size() == 8);
+      REQUIRE(xi_s.size() == 4);
 
       // Get Ni Nj matrix
-      const auto ni_nj_matrix = hex->ni_nj_matrix(xi_s);
+      const auto ni_nj_matrix = tet->ni_nj_matrix(xi_s);
 
       // Check size of ni-nj-matrix
       REQUIRE(ni_nj_matrix.rows() == nfunctions);
@@ -551,30 +530,12 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       REQUIRE(ni_nj_matrix.sum() ==
               Approx(1. * xi_s.size()).epsilon(Tolerance));
 
-      Eigen::Matrix<double, 8, 8> mass;
+      Eigen::Matrix<double, 4, 4> mass;
       // clang-format off
-      mass << 0.29629629629629640, 0.14814814814814810, 0.07407407407407404,
-              0.14814814814814810, 0.14814814814814810, 0.07407407407407404,
-              0.03703703703703701, 0.07407407407407404, 0.14814814814814810,
-              0.29629629629629640, 0.14814814814814810, 0.07407407407407404,
-              0.07407407407407404, 0.14814814814814810, 0.07407407407407403,
-              0.03703703703703701, 0.07407407407407404, 0.14814814814814810,
-              0.29629629629629640, 0.14814814814814810, 0.03703703703703701,
-              0.07407407407407404, 0.14814814814814810, 0.07407407407407404,
-              0.14814814814814810, 0.07407407407407404, 0.14814814814814810,
-              0.29629629629629640, 0.07407407407407404, 0.03703703703703701,
-              0.07407407407407404, 0.14814814814814810, 0.14814814814814810,
-              0.07407407407407404, 0.03703703703703701, 0.07407407407407404,
-              0.29629629629629630, 0.14814814814814810, 0.07407407407407404,
-              0.14814814814814810, 0.07407407407407404, 0.14814814814814810,
-              0.07407407407407404, 0.03703703703703701, 0.14814814814814810,
-              0.29629629629629630, 0.14814814814814810, 0.07407407407407404,
-              0.03703703703703701, 0.07407407407407403, 0.14814814814814810,
-              0.07407407407407404, 0.07407407407407404, 0.14814814814814810,
-              0.29629629629629630, 0.14814814814814810, 0.07407407407407404,
-              0.03703703703703701, 0.07407407407407404, 0.14814814814814810,
-              0.14814814814814810, 0.07407407407407404, 0.14814814814814810,
-              0.2962962962962963;
+      mass << 0.4, 0.2, 0.2, 0.2,
+              0.2, 0.4, 0.2, 0.2,
+              0.2, 0.2, 0.4, 0.2,
+              0.2, 0.2, 0.2, 0.4;
       // clang-format on
 
       // auxiliary matrices for checking its multiplication by scalar
@@ -601,49 +562,35 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
                   Approx(scalar * mass(i, j)).epsilon(Tolerance));
         }
       }
-    } //LEDT TODO ABOVE
+    }
 
-    // Laplace matrix of a cell //LEDT TODO BELOW LAPLACE
-    SECTION("Eight noded hexahedron laplace-matrix") {
+    // Laplace matrix of a cell
+    SECTION("Four noded tetrahedron laplace-matrix") {
       std::vector<Eigen::Matrix<double, Dim, 1>> xi_s;
 
       Eigen::Matrix<double, Dim, 1> xi;
-      const double one_by_sqrt3 = std::fabs(1 / std::sqrt(3));
-      xi << -one_by_sqrt3, -one_by_sqrt3, -one_by_sqrt3;
+      xi << 0.58541020, 0.13819660, 0.13819660;
       xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, -one_by_sqrt3, -one_by_sqrt3;
+      xi << 0.13819660, 0.58541020, 0.13819660;
       xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, one_by_sqrt3, -one_by_sqrt3;
+      xi << 0.13819660, 0.13819660, 0.58541020;
       xi_s.emplace_back(xi);
-      xi << -one_by_sqrt3, one_by_sqrt3, -one_by_sqrt3;
-      xi_s.emplace_back(xi);
-
-      xi << -one_by_sqrt3, -one_by_sqrt3, one_by_sqrt3;
-      xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, -one_by_sqrt3, one_by_sqrt3;
-      xi_s.emplace_back(xi);
-      xi << one_by_sqrt3, one_by_sqrt3, one_by_sqrt3;
-      xi_s.emplace_back(xi);
-      xi << -one_by_sqrt3, one_by_sqrt3, one_by_sqrt3;
+      xi << 0.13819660, 0.13819660, 0.13819660;
       xi_s.emplace_back(xi);
 
-      REQUIRE(xi_s.size() == 8);
+      REQUIRE(xi_s.size() == 4);
 
       // Nodal coordinates
-      Eigen::Matrix<double, 8, Dim> coords;
+      Eigen::Matrix<double, 4, Dim> coords;
       // clang-format off
-      coords << 2., 1., 0.5,
-                4., 2., 1.0,
-                2., 4., 1.0,
-                1., 3., 0.5,
-                2., 1., 1.5,
-                4., 2., 2.0,
-                2., 4., 2.0,
-                1., 3., 1.5;
+      coords << 1., 1., 1.,
+                1., 0., 0.,
+                0., 1., 0.,
+                0., 0., 1.;
       // clang-format on
 
       // Get laplace matrix
-      const auto laplace_matrix = hex->laplace_matrix(xi_s, coords);
+      const auto laplace_matrix = tet->laplace_matrix(xi_s, coords);
 
       // Check size of laplace-matrix
       REQUIRE(laplace_matrix.rows() == nfunctions);
@@ -652,36 +599,18 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // Sum should be equal to 0.
       REQUIRE(laplace_matrix.sum() == Approx(0.).epsilon(Tolerance));
 
-      Eigen::Matrix<double, 8, 8> laplace;
+      Eigen::Matrix<double, 4, 4> laplace;
       // clang-format off
-      laplace <<  0.9643677583341226,  0.261044778874057,  -0.1901695368724208,
-                  0.2334579956379644, -0.6204508598313142, -0.2200815520760039,
-                 -0.1638493372007791, -0.264319246865626,   0.261044778874057,
-                  1.242773383095871,   0.4330321922069018,  0.1222723413095025,
-                 -0.7574835440234503, -0.726073928639958,  -0.26533034028844,
-                 -0.3102348825344837, -0.1901695368724208,  0.4330321922069018,
-                  2.27268250189131,    0.3331516005618761, -0.6905145911387602,
-                 -0.7630346561745743, -0.4913341040024276, -0.9038134064719052,
-                  0.2334579956379644,  0.1222723413095025,  0.3331516005618761,
-                  1.134597613242935,  -0.6628500090327518, -0.2316871676231324,
-                 -0.2307894607206865, -0.6981529133757072, -0.6204508598313142,
-                 -0.7574835440234503, -0.6905145911387602, -0.6628500090327518,
-                  1.887162135673954,   0.4504916955937011, -0.185224986473325,
-                  0.5788701592319462, -0.2200815520760039, -0.726073928639958,
-                 -0.7630346561745743, -0.2316871676231324,  0.4504916955937011,
-                  1.186264235677633,   0.1769044815337366,  0.1272168917085984,
-                 -0.1638493372007791, -0.26533034028844, -  0.4913341040024276,
-                 -0.2307894607206865, -0.185224986473325,   0.1769044815337366,
-                  1.095314415432314,   0.0643093317196072, -0.264319246865626,
-                 -0.3102348825344837, -0.9038134064719052, -0.6981529133757072,
-                  0.5788701592319462,  0.1272168917085984,  0.0643093317196072,
-                  1.40612406658757;
+      laplace <<   3., -1., -1., -1.,
+                  -1.,  3., -1., -1.,
+                  -1., -1.,  3., -1.,
+                  -1., -1., -1.,  3.;
       // clang-format on
       for (unsigned i = 0; i < nfunctions; ++i)
         for (unsigned j = 0; j < nfunctions; ++j)
           REQUIRE(laplace_matrix(i, j) ==
                   Approx(laplace(i, j)).epsilon(Tolerance));
-    } //LEDT TODO ABOVE LAPLACE //LEDT COMPLETED ALL BELOW
+    }
 
     SECTION("Four noded tetrahedron coordinates of unit cell") {
       const unsigned nfunctions = 4;
@@ -739,28 +668,26 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       REQUIRE(indices(3) == 3);
     }
 
-    SECTION("Four noded tetrhedron element for inhedron indices") {
-      // Check for inhedron indices //LEDT DELETE OR MODIFY IF REQ'D
+    SECTION("Four noded tetrahedron element for inhedron indices") {
+      // Check for inhedron indices
       Eigen::MatrixXi indices = tet->inhedron_indices();
-      REQUIRE(indices.rows() == 6);
-      REQUIRE(indices.cols() == 2);
+      REQUIRE(indices.rows() == 4);
+      REQUIRE(indices.cols() == 3);
       REQUIRE(indices(0, 0) == 0);
       REQUIRE(indices(0, 1) == 1);
+      REQUIRE(indices(0, 2) == 2);
 
-      REQUIRE(indices(1, 0) == 1);
-      REQUIRE(indices(1, 1) == 2);
+      REQUIRE(indices(1, 0) == 0);
+      REQUIRE(indices(1, 1) == 1);
+      REQUIRE(indices(1, 2) == 3);
 
-      REQUIRE(indices(2, 0) == 2);
-      REQUIRE(indices(2, 1) == 3);
+      REQUIRE(indices(2, 0) == 0);
+      REQUIRE(indices(2, 1) == 2);
+      REQUIRE(indices(2, 2) == 3);
 
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 0);
-
-      REQUIRE(indices(4, 0) == 1);
-      REQUIRE(indices(4, 1) == 3);
-
-      REQUIRE(indices(5, 0) == 0);
-      REQUIRE(indices(5, 1) == 2);
+      REQUIRE(indices(3, 0) == 1);
+      REQUIRE(indices(3, 1) == 2);
+      REQUIRE(indices(3, 2) == 3);
     }
 
     SECTION("Four noded tetrahedron shape function for face indices") {

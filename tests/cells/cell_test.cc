@@ -1057,7 +1057,7 @@ TEST_CASE("Cell is checked for 3D case", "[cell][3D]") {
         std::shared_ptr<mpm::Element<Dim>> tet_element =
             Factory<mpm::Element<Dim>>::instance()->create("ED3T4");
 
-        auto cell = std::make_shared<mpm::Cell<Dim>>(0, 3, tet_element, true);
+        auto cell = std::make_shared<mpm::Cell<Dim>>(0, 4, tet_element, true);
 
         REQUIRE(cell->add_node(0, node0) == true);
         REQUIRE(cell->add_node(1, node1) == true);
@@ -1071,11 +1071,11 @@ TEST_CASE("Cell is checked for 3D case", "[cell][3D]") {
 
         // Coordinates of a point in real cell
         Eigen::Vector3d point;
-        point << 1.0 / 3, 1.0 / 3, 1.0 / 3;
+        point << 2.0 / 3, 2.0 / 3, 2.0 / 3;
 
         // Coordinates of the point in an unit cell
         Eigen::Matrix<double, 3, 1> point_unit_cell;
-        point_unit_cell << 2.0 / 3, 2.0 / 3, 2.0 / 3;
+        point_unit_cell << 1.0 / 3, 1.0 / 3, 1.0 / 3;
 
         // Get local coordinates of the point
         auto local_point = cell->local_coordinates_point(point);

@@ -39,6 +39,9 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     coords << 0.75, 0.75;
     auto particle = std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
 
+    // Particle type
+    REQUIRE(particle->type() == "P2DBBAR");
+
     // Time-step
     const double dt = 0.1;
 
@@ -339,6 +342,9 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     coords << 1.5, 1.5, 1.5;
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
+
+    // Particle type
+    REQUIRE(particle->type() == "P3DBBAR");
 
     // Phase
     const unsigned phase = 0;

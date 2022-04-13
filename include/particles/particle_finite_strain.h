@@ -142,8 +142,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   using Particle<Tdim>::natural_size_;
   //! Size of particle
   using Particle<Tdim>::pack_size_;
-  //! Volumetric strain at centroid
-  using Particle<Tdim>::volumetric_strain_centroid_;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

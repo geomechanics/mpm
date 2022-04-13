@@ -264,11 +264,6 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     for (unsigned i = 0; i < strain.rows(); ++i)
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
 
-    // Check volumetric strain at centroid
-    double volumetric_strain = 0.2;
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            Approx(volumetric_strain).epsilon(Tolerance));
-
     // Check updated pressure
     const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
@@ -618,11 +613,6 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     // Check strains
     for (unsigned i = 0; i < strain.rows(); ++i)
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
-
-    // Check volumetric strain at centroid
-    double volumetric_strain = 0.5;
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            Approx(volumetric_strain).epsilon(Tolerance));
 
     // Check updated pressure
     REQUIRE(std::isnan(particle->pressure()) == true);

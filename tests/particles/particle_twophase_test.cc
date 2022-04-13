@@ -271,8 +271,6 @@ TEST_CASE("TwoPhase Particle is checked for 1D case",
     h5_particle.defgrad_21 = deformation_gradient(2, 1);
     h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
-    h5_particle.epsilon_v = strain.head(Dim).sum();
-
     h5_particle.status = true;
 
     h5_particle.cell_id = 1;
@@ -353,9 +351,6 @@ TEST_CASE("TwoPhase Particle is checked for 1D case",
       for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
         REQUIRE(pdef_grad(i, j) ==
                 Approx(deformation_gradient(i, j)).epsilon(Tolerance));
-
-    // Check particle volumetric strain centroid
-    REQUIRE(particle->volumetric_strain_centroid() == h5_particle.epsilon_v);
 
     // Check cell id
     REQUIRE(particle->cell_id() == h5_particle.cell_id);
@@ -454,8 +449,6 @@ TEST_CASE("TwoPhase Particle is checked for 1D case",
     REQUIRE(h5_particle.defgrad_22 ==
             Approx(pod_test->defgrad_22).epsilon(Tolerance));
 
-    REQUIRE(h5_particle.epsilon_v ==
-            Approx(pod_test->epsilon_v).epsilon(Tolerance));
     REQUIRE(h5_particle.status == pod_test->status);
     REQUIRE(h5_particle.cell_id == pod_test->cell_id);
     REQUIRE(h5_particle.material_id == pod_test->material_id);
@@ -1062,11 +1055,6 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
     for (unsigned i = 0; i < strain.rows(); ++i)
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
 
-    // Check volumetric strain at centroid
-    double volumetric_strain = 0.2;
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            Approx(volumetric_strain).epsilon(Tolerance));
-
     // Check updated pressure
     const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
@@ -1560,8 +1548,6 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
     h5_particle.defgrad_21 = deformation_gradient(2, 1);
     h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
-    h5_particle.epsilon_v = strain.head(Dim).sum();
-
     h5_particle.status = true;
 
     h5_particle.cell_id = 1;
@@ -1642,9 +1628,6 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
       for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
         REQUIRE(pdef_grad(i, j) ==
                 Approx(deformation_gradient(i, j)).epsilon(Tolerance));
-
-    // Check particle volumetric strain centroid
-    REQUIRE(particle->volumetric_strain_centroid() == h5_particle.epsilon_v);
 
     // Check cell id
     REQUIRE(particle->cell_id() == h5_particle.cell_id);
@@ -1743,8 +1726,6 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
     REQUIRE(h5_particle.defgrad_22 ==
             Approx(pod_test->defgrad_22).epsilon(Tolerance));
 
-    REQUIRE(h5_particle.epsilon_v ==
-            Approx(pod_test->epsilon_v).epsilon(Tolerance));
     REQUIRE(h5_particle.status == pod_test->status);
     REQUIRE(h5_particle.cell_id == pod_test->cell_id);
     REQUIRE(h5_particle.material_id == pod_test->material_id);
@@ -2557,11 +2538,6 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
     for (unsigned i = 0; i < strain.rows(); ++i)
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
 
-    // Check volumetric strain at centroid
-    double volumetric_strain = 0.5;
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            Approx(volumetric_strain).epsilon(Tolerance));
-
     // Check updated pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
@@ -2784,7 +2760,7 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
       REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
 
       // Check volumetric strain at centroid
-      volumetric_strain = 0.5;
+      double volumetric_strain = 0.5;
       REQUIRE(particle->dvolumetric_strain() ==
               Approx(volumetric_strain).epsilon(Tolerance));
 
@@ -3100,8 +3076,6 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
     h5_particle.defgrad_21 = deformation_gradient(2, 1);
     h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
-    h5_particle.epsilon_v = strain.head(Dim).sum();
-
     h5_particle.status = true;
 
     h5_particle.cell_id = 1;
@@ -3183,9 +3157,6 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
       for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
         REQUIRE(pdef_grad(i, j) ==
                 Approx(deformation_gradient(i, j)).epsilon(Tolerance));
-
-    // Check particle volumetric strain centroid
-    REQUIRE(particle->volumetric_strain_centroid() == h5_particle.epsilon_v);
 
     // Check cell id
     REQUIRE(particle->cell_id() == h5_particle.cell_id);
@@ -3284,8 +3255,6 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
     REQUIRE(h5_particle.defgrad_22 ==
             Approx(pod_test->defgrad_22).epsilon(Tolerance));
 
-    REQUIRE(h5_particle.epsilon_v ==
-            Approx(pod_test->epsilon_v).epsilon(Tolerance));
     REQUIRE(h5_particle.status == pod_test->status);
     REQUIRE(h5_particle.cell_id == pod_test->cell_id);
     REQUIRE(h5_particle.material_id == pod_test->material_id);

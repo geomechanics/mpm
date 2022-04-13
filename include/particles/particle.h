@@ -175,12 +175,6 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval dvolumetric strain at centroid
   double dvolumetric_strain() const override { return dvolumetric_strain_; }
 
-  //! Return volumetric strain of centroid
-  //! \retval volumetric strain at centroid
-  double volumetric_strain_centroid() const override {
-    return volumetric_strain_centroid_;
-  }
-
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient() const override {
     return deformation_gradient_;
@@ -532,8 +526,6 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> strain_;
   //! dvolumetric strain
   double dvolumetric_strain_{0.};
-  //! Volumetric strain at centroid
-  double volumetric_strain_centroid_{0.};
   //! Strain rate
   Eigen::Matrix<double, 6, 1> strain_rate_;
   //! dstrains

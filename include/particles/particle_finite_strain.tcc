@@ -223,9 +223,6 @@ void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain() noexcept {
   this->dvolumetric_strain_ =
       (this->deformation_gradient_increment_.determinant() - 1.0);
 
-  // Update volumetric strain at particle position (not at centroid)
-  this->volumetric_strain_centroid_ += this->dvolumetric_strain_;
-
   // Reset deformation gradient increment
   this->deformation_gradient_increment_.setIdentity();
 }

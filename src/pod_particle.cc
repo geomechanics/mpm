@@ -43,7 +43,6 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODParticle, defgrad_20),
     HOFFSET(PODParticle, defgrad_21),
     HOFFSET(PODParticle, defgrad_22),
-    HOFFSET(PODParticle, epsilon_v),
     HOFFSET(PODParticle, status),
     HOFFSET(PODParticle, cell_id),
     HOFFSET(PODParticle, material_id),
@@ -113,7 +112,6 @@ const size_t dst_sizes[NFIELDS] = {
     sizeof(particle.defgrad_20),
     sizeof(particle.defgrad_21),
     sizeof(particle.defgrad_22),
-    sizeof(particle.epsilon_v),
     sizeof(particle.status),
     sizeof(particle.cell_id),
     sizeof(particle.material_id),
@@ -182,7 +180,6 @@ const char* field_names[NFIELDS] = {
     "defgrad_20",
     "defgrad_21",
     "defgrad_22",
-    "epsilon_v",
     "status",
     "cell_id",
     "material_id",
@@ -221,13 +218,12 @@ const hid_t field_type[NFIELDS] = {
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_HBOOL,  H5T_NATIVE_LLONG,  H5T_NATIVE_UINT,
-    H5T_NATIVE_UINT,   H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_HBOOL,  H5T_NATIVE_LLONG,  H5T_NATIVE_UINT,   H5T_NATIVE_UINT,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE};
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE};
 }  // namespace particle
 }  // namespace pod
 }  // namespace mpm

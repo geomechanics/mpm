@@ -38,8 +38,6 @@ typedef struct PODParticle {
   double defgrad_00, defgrad_01, defgrad_02;
   double defgrad_10, defgrad_11, defgrad_12;
   double defgrad_20, defgrad_21, defgrad_22;
-  // Volumetric strain centroid
-  double epsilon_v;
   // Index
   mpm::Index cell_id;
   // Status
@@ -56,7 +54,7 @@ typedef struct PODParticle {
 
 namespace pod {
 namespace particle {
-const hsize_t NFIELDS = 65;
+const hsize_t NFIELDS = 64;
 
 const size_t dst_size = sizeof(PODParticle);
 

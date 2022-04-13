@@ -107,9 +107,6 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->deformation_gradient_(2, 1) = particle.defgrad_21;
   this->deformation_gradient_(2, 2) = particle.defgrad_22;
 
-  // Volumetric strain
-  this->volumetric_strain_centroid_ = particle.epsilon_v;
-
   // Status
   this->status_ = particle.status;
 
@@ -248,8 +245,6 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   particle_data->defgrad_21 = defgrad(2, 1);
   particle_data->defgrad_22 = defgrad(2, 2);
 
-  particle_data->epsilon_v = this->volumetric_strain_centroid_;
-
   particle_data->status = this->status();
 
   particle_data->cell_id = this->cell_id();
@@ -292,7 +287,6 @@ void mpm::Particle<Tdim>::initialise() {
   acceleration_.setZero();
   normal_.setZero();
   volume_ = std::numeric_limits<double>::max();
-  volumetric_strain_centroid_ = 0.;
   deformation_gradient_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
@@ -751,7 +745,6 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
-  volumetric_strain_centroid_ += dvolumetric_strain_;
 }
 
 // Compute stress
@@ -1151,10 +1144,6 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
   MPI_Pack(deformation_gradient_.data(), 9, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
 
-  // epsv
-  MPI_Pack(&volumetric_strain_centroid_, 1, MPI_DOUBLE, data_ptr, data.size(),
-           &position, MPI_COMM_WORLD);
-
   // Cell id
   MPI_Pack(&cell_id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -1251,9 +1240,6 @@ void mpm::Particle<Tdim>::deserialize(
   MPI_Unpack(data_ptr, data.size(), &position, deformation_gradient_.data(), 9,
              MPI_DOUBLE, MPI_COMM_WORLD);
 
-  // epsv
-  MPI_Unpack(data_ptr, data.size(), &position, &volumetric_strain_centroid_, 1,
-             MPI_DOUBLE, MPI_COMM_WORLD);
   // cell id
   MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,
              MPI_UNSIGNED_LONG_LONG, MPI_COMM_WORLD);

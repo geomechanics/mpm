@@ -349,9 +349,6 @@ void mpm::Particle<Tdim>::update_stress_strain() noexcept {
   // Update total strain
   this->strain_.noalias() += this->dstrain_;
 
-  // Update volumetric strain at particle position (not at centroid)
-  this->volumetric_strain_centroid_ += this->dvolumetric_strain_;
-
   // Reset strain increment
   this->dstrain_.setZero();
   this->dvolumetric_strain_ = 0.;

@@ -123,8 +123,6 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     h5_particle.defgrad_21 = deformation_gradient(2, 1);
     h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
-    h5_particle.epsilon_v = strain.head(Dim).sum();
-
     h5_particle.status = true;
 
     h5_particle.cell_id = 1;
@@ -231,10 +229,6 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
       for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
         REQUIRE(pdef_grad(i, j) ==
                 Approx(deformation_gradient(i, j)).epsilon(Tolerance));
-
-    // Check particle volumetric strain centroid
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            rparticle->volumetric_strain_centroid());
 
     // Check cell id
     REQUIRE(particle->cell_id() == rparticle->cell_id());

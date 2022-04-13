@@ -44,7 +44,6 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODParticleTwoPhase, defgrad_20),
     HOFFSET(PODParticleTwoPhase, defgrad_21),
     HOFFSET(PODParticleTwoPhase, defgrad_22),
-    HOFFSET(PODParticleTwoPhase, epsilon_v),
     HOFFSET(PODParticleTwoPhase, status),
     HOFFSET(PODParticleTwoPhase, cell_id),
     HOFFSET(PODParticleTwoPhase, material_id),
@@ -129,7 +128,6 @@ const size_t dst_sizes[NFIELDS] = {
     sizeof(particle.defgrad_20),
     sizeof(particle.defgrad_21),
     sizeof(particle.defgrad_22),
-    sizeof(particle.epsilon_v),
     sizeof(particle.status),
     sizeof(particle.cell_id),
     sizeof(particle.material_id),
@@ -213,7 +211,6 @@ const char* field_names[NFIELDS] = {
     "defgrad_20",
     "defgrad_21",
     "defgrad_22",
-    "epsilon_v",
     "status",
     "cell_id",
     "material_id",
@@ -266,16 +263,16 @@ const hid_t field_type[NFIELDS] = {
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_HBOOL,  H5T_NATIVE_LLONG,  H5T_NATIVE_UINT,
-    H5T_NATIVE_UINT,   H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_HBOOL,  H5T_NATIVE_LLONG,  H5T_NATIVE_UINT,   H5T_NATIVE_UINT,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_UINT,
-    H5T_NATIVE_UINT,   H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE};
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_UINT,   H5T_NATIVE_UINT,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE};
 }  // namespace particletwophase
 }  // namespace pod
 }  // namespace mpm

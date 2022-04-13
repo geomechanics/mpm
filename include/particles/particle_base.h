@@ -235,9 +235,6 @@ class ParticleBase {
   //! Strain rate
   virtual Eigen::Matrix<double, 6, 1> strain_rate() const = 0;
 
-  //! Volumetric strain of centroid
-  virtual double volumetric_strain_centroid() const = 0;
-
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
 

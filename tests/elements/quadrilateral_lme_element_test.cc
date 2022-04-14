@@ -9,7 +9,7 @@
 TEST_CASE("Quadrilateral lme elements are checked",
           "[quad][element][2D][lme]") {
   const unsigned Dim = 2;
-  const double Tolerance = 1.E-6;
+  const double Tolerance = 1.E-8;
 
   Eigen::Vector2d zero = Eigen::Vector2d::Zero();
   const Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
@@ -54,9 +54,10 @@ TEST_CASE("Quadrilateral lme elements are checked",
     }
 
     // Coordinates is (1,1)
-    SECTION("2D BSpline element for coordinates(1,1) before upgrade") {
+    SECTION("2D LME element for coordinates(1,1) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 1., 1.;
+      zero.setZero();
       auto shapefn = quad->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
@@ -84,14 +85,14 @@ TEST_CASE("Quadrilateral lme elements are checked",
     }
 
     // Initialising upgrade properties
-    SECTION("2D BSpline element regular element - nnodes = 16") {
+    SECTION("2D LME element regular element - nnodes = 16") {
       Eigen::Matrix<double, 16, Dim> nodal_coords;
       nodal_coords << -1., -1., 1., -1., 1., 1., -1., 1., -3., -3., -1., -3.,
           1., -3., 3., -3., -3., -1., 3., -1., -3., 1., 3., 1., -3., 3., -1.,
           3., 1., 3., 3., 3.;
 
-      SECTION("2D BSpline element regular element no support") {
-        double gamma = 20.0;
+      SECTION("2D LME element regular element no support") {
+        double gamma = 20;
         double h = 2.0;
 
         // Calculate beta
@@ -106,7 +107,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
             beta, r, anisotropy, nodal_coords));
 
         // Coordinates is (0,0) after upgrade
-        SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
+        SECTION("2D LME element for coordinates(0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
           auto shapefn = quad->shapefn(coords, zero, zero_matrix);
@@ -142,6 +143,76 @@ TEST_CASE("Quadrilateral lme elements are checked",
           gradsf_ans << -0.25, -0.25, 0.25, -0.25, 0.25, 0.25, -0.25, 0.25, 0,
               0, -0, 0, 0, 0, 0, 0, 0, -0, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0,
               0, 0;
+
+          for (unsigned i = 0; i < gradsf.rows(); ++i)
+            for (unsigned j = 0; j < gradsf.cols(); ++j)
+              REQUIRE(gradsf(i, j) ==
+                      Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check the B-matrix assembly
+          auto bmatrix = quad->bmatrix(coords, nodal_coords, zero, zero_matrix);
+
+          // Check size of B-matrix
+          REQUIRE(bmatrix.size() == 16);
+
+          for (unsigned i = 0; i < 16; ++i) {
+            // clang-format off
+            REQUIRE(bmatrix.at(i)(0, 0) == Approx(gradsf(i, 0)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(0, 1) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(1, 0) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(1, 1) == Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(2, 0) == Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(2, 1) == Approx(gradsf(i, 0)).epsilon(Tolerance));
+            // clang-format on
+          }
+        }
+
+        SECTION("2D LME element for coordinates(0.2, 0.2)") {
+          Eigen::Matrix<double, Dim, 1> coords;
+          coords << 0.2, 0.2;
+          zero.setZero();
+          auto shapefn = quad->shapefn(coords, zero, zero_matrix);
+
+          // Check shape function
+          REQUIRE(shapefn.size() == 16);
+          REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
+
+          Eigen::Matrix<double, 16, 1> shapefn_ans;
+          shapefn_ans << 1.599999999995444788e-01, 2.399999999998857214e-01,
+              3.600000000006839951e-01, 2.399999999998857214e-01,
+              0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00;
+
+          for (unsigned i = 0; i < 16; ++i)
+            REQUIRE(shapefn(i) == Approx(shapefn_ans(i)).epsilon(Tolerance));
+
+          // Check gradient of shape functions
+          zero.setZero();
+          auto gradsf = quad->grad_shapefn(coords, zero, zero_matrix);
+          REQUIRE(gradsf.rows() == 16);
+          REQUIRE(gradsf.cols() == Dim);
+
+          Eigen::Matrix<double, 16, Dim> gradsf_ans;
+          gradsf_ans << -1.999999999995252797e-01, -1.999999999995252797e-01,
+              2.000000000000001499e-01, -2.999999999999998779e-01,
+              3.000000000007120304e-01, 3.000000000007120304e-01,
+              -2.999999999999998779e-01, 2.000000000000001499e-01,
+              -0.000000000000000000e+00, -0.000000000000000000e+00,
+              -0.000000000000000000e+00, -0.000000000000000000e+00,
+              0.000000000000000000e+00, -0.000000000000000000e+00,
+              0.000000000000000000e+00, -0.000000000000000000e+00,
+              -0.000000000000000000e+00, -0.000000000000000000e+00,
+              0.000000000000000000e+00, -0.000000000000000000e+00,
+              -0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00,
+              -0.000000000000000000e+00, 0.000000000000000000e+00,
+              -0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00,
+              0.000000000000000000e+00, 0.000000000000000000e+00;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -209,6 +280,7 @@ TEST_CASE("Quadrilateral lme elements are checked",
           def_gradient(0, 1) = 0.5;
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 0.0, 0.0;
+          zero.setZero();
           auto shapefn = quad->shapefn(coords, zero, def_gradient);
 
           // Check shape function

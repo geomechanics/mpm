@@ -79,12 +79,25 @@ class AssemblerBase {
   }
 
   //! Create a pair between nodes and index in Matrix / Vector
+  //! \param[in] nactive_node Number of active node in the current process
+  //! \param[in] nglobal_active_node Number of active node in the all processes
   bool assign_global_node_indices(unsigned nactive_node,
                                   unsigned nglobal_active_node);
 
-  //! Null-space treatment of a sparse matrix
+  //! Null-space treatment of a sparse matrix given a coefficient matrix
+  //! \param[in] coefficient_matrix Coefficient matrix of the linear systems of
+  //! equations
+  //! \param[in] nblock Number of DOF per node
   void apply_null_space_treatment(
       Eigen::SparseMatrix<double>& coefficient_matrix, unsigned nblock = 1);
+
+  //! Null-space treatment of a sparse matrix given a triplet list
+  //! \param[in] coefficient_tripletList Tripletlist of to construct the sparse
+  //! coefficient matrix
+  //! \param[in] nblock Number of DOF per node
+  void apply_null_space_treatment(
+      std::vector<Eigen::Triplet<double>>& coefficient_tripletList,
+      unsigned nblock = 1);
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

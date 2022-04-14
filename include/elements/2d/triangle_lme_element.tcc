@@ -91,15 +91,14 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
       const unsigned max_it = 10;
       while (!convergence) {
         //! Compute matrix J
-        Eigen::Matrix2d J = Eigen::Matrix2d::Zero();
+        Eigen::Matrix2d J = -r * r.transpose();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          J.noalias() += p(n) * (rel_coordinates.col(n)) *
-                         (rel_coordinates.col(n)).transpose();
+          J.noalias() += p(n) * ((rel_coordinates.col(n)) *
+                                 (rel_coordinates.col(n)).transpose());
         }
-        J.noalias() += -r * r.transpose();
 
         //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
-        for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
+        J.diagonal().array() += r.norm();
 
         //! Compute Delta lambda
         const auto& dlambda = J.inverse() * (-r);
@@ -228,15 +227,14 @@ inline Eigen::MatrixXd mpm::TriangleLMEElement<Tdim>::grad_shapefn(
     }
 
     //! Compute matrix J
-    Eigen::Matrix2d J = Eigen::Matrix2d::Zero();
+    Eigen::Matrix2d J = -r * r.transpose();
     for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-      J.noalias() += p(n) * (rel_coordinates.col(n)) *
-                     (rel_coordinates.col(n)).transpose();
+      J.noalias() += p(n) * ((rel_coordinates.col(n)) *
+                             (rel_coordinates.col(n)).transpose());
     }
-    J.noalias() += -r * r.transpose();
 
     //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
-    for (unsigned i = 0; i < Tdim; i++) J.diagonal()[i] += r.norm();
+    J.diagonal().array() += r.norm();
 
     //! Begin Newton-Raphson iteration
     const double tolerance = 1.e-12;
@@ -273,12 +271,14 @@ inline Eigen::MatrixXd mpm::TriangleLMEElement<Tdim>::grad_shapefn(
         }
 
         //! Compute matrix J
-        J.setZero();
+        J = -r * r.transpose();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          J.noalias() += p(n) * (rel_coordinates.col(n)) *
-                         (rel_coordinates.col(n)).transpose();
+          J.noalias() += p(n) * ((rel_coordinates.col(n)) *
+                                 (rel_coordinates.col(n)).transpose());
         }
-        J.noalias() += -r * r.transpose();
+
+        //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+        J.diagonal().array() += r.norm();
 
         //! Check convergence
         if (r.norm() <= tolerance || it == max_it) convergence = true;

@@ -49,6 +49,104 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
       REQUIRE(gradsf(2, 1) == Approx(1.0).epsilon(Tolerance));
     }
 
+    // Check Jacobian
+    SECTION(
+        "Three noded triangle Jacobian for local coordinates(0.333,0.333)") {
+      Eigen::Matrix<double, 3, Dim> coords;
+      // clang-format off
+      coords << 2., 1.,
+                4., 2.,
+                2., 4.;
+      // clang-format on
+
+      Eigen::Matrix<double, Dim, 1> xi;
+      xi << 0.333, 0.333;
+
+      Eigen::Matrix<double, Dim, Dim> jacobian;
+      // clang-format off
+      jacobian << 2.0, 1.0,
+                  0.0, 3.0;
+      // clang-format on
+
+      // Get Jacobian
+      auto jac = tri->jacobian(xi, coords, zero, zero_matrix);
+
+      // Check size of jacobian
+      REQUIRE(jac.size() == jacobian.size());
+
+      // Check Jacobian
+      for (unsigned i = 0; i < Dim; ++i)
+        for (unsigned j = 0; j < Dim; ++j)
+          REQUIRE(jac(i, j) == Approx(jacobian(i, j)).epsilon(Tolerance));
+    }
+
+    // Check local Jacobian
+    SECTION(
+        "Three noded Triangle local Jacobian for local "
+        "coordinates(0.333,0.333)") {
+      Eigen::Matrix<double, 3, Dim> coords;
+      // clang-format off
+      coords << 2., 1.,
+                4., 2.,
+                2., 4.;
+      // clang-format on
+
+      Eigen::Matrix<double, Dim, 1> xi;
+      xi << 0.333, 0.333;
+
+      Eigen::Matrix<double, Dim, Dim> jacobian;
+      // clang-format off
+      jacobian << 2.0, 1.0,
+                  0.0, 3.0;
+      // clang-format on
+
+      // Get Jacobian
+      auto jac = tri->jacobian_local(xi, coords, zero, zero_matrix);
+
+      // Check size of jacobian
+      REQUIRE(jac.size() == jacobian.size());
+
+      // Check Jacobian
+      for (unsigned i = 0; i < Dim; ++i)
+        for (unsigned j = 0; j < Dim; ++j)
+          REQUIRE(jac(i, j) == Approx(jacobian(i, j)).epsilon(Tolerance));
+    }
+
+    // Check Jacobian
+    SECTION("Three noded triangle Jacobian with deformation gradient") {
+      Eigen::Matrix<double, 3, Dim> coords;
+      // clang-format off
+      coords << 2., 1.,
+                4., 2.,
+                2., 4.;
+      // clang-format on
+
+      Eigen::Matrix<double, Dim, 1> psize;
+      psize.setZero();
+      Eigen::Matrix<double, Dim, Dim> defgrad;
+      defgrad.setZero();
+
+      Eigen::Matrix<double, Dim, 1> xi;
+      xi << 0.333, 0.333;
+
+      Eigen::Matrix<double, Dim, Dim> jacobian;
+      // clang-format off
+      jacobian << 2.0, 1.0,
+                  0.0, 3.0;
+      // clang-format on
+
+      // Get Jacobian
+      auto jac = tri->jacobian(xi, coords, psize, defgrad);
+
+      // Check size of jacobian
+      REQUIRE(jac.size() == jacobian.size());
+
+      // Check Jacobian
+      for (unsigned i = 0; i < Dim; ++i)
+        for (unsigned j = 0; j < Dim; ++j)
+          REQUIRE(jac(i, j) == Approx(jacobian(i, j)).epsilon(Tolerance));
+    }
+
     // Initialising upgrade properties
     SECTION("2D triangle LME element regular element - nnodes = 14") {
       Eigen::Matrix<double, 14, Dim> nodal_coords;

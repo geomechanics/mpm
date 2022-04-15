@@ -89,6 +89,7 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
       unsigned it = 1;
       const unsigned max_it = 10;
       while (!convergence) {
+
         //! Compute matrix J
         Eigen::Matrix3d J = -r * r.transpose();
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {

@@ -1698,7 +1698,7 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                                  .template get<double>();
 
         // Support tolerance
-        double tol0 = 1.e-10;
+        double tol0 = 1.e-6;
         if (mesh_props["nonlocal_mesh_properties"].contains(
                 "support_tolerance"))
           tol0 = mesh_props["nonlocal_mesh_properties"]["support_tolerance"]

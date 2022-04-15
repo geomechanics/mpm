@@ -45,7 +45,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assemble_stiffness_matrix() {
               for (unsigned l = 0; l < Tdim; ++l) {
                 if (std::abs(cell_stiffness(Tdim * i + k, Tdim * j + l)) >
                     std::numeric_limits<double>::epsilon())
-                  tripletList.push_back(Eigen::Triplet<double>(
+                  tripletList.emplace_back(Eigen::Triplet<double>(
                       nactive_node * k + global_node_indices_.at(cid)(i),
                       nactive_node * l + global_node_indices_.at(cid)(j),
                       cell_stiffness(Tdim * i + k, Tdim * j + l)));
@@ -57,11 +57,11 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assemble_stiffness_matrix() {
       }
     }
 
+    // Apply null-space treatment
+    this->apply_null_space_treatment(tripletList, Tdim);
+
     // Fast assembly from triplets
     stiffness_matrix_.setFromTriplets(tripletList.begin(), tripletList.end());
-
-    // Apply null-space treatment
-    this->apply_null_space_treatment(stiffness_matrix_, Tdim);
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

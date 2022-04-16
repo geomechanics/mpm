@@ -503,6 +503,7 @@ TEST_CASE("Graph Partitioning in 2D", "[mpi][graph][2D]") {
       if (mpi_size == 4) {
         // Initialize MPI
         MPI_Comm comm;
+        MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 
         auto graph = std::make_shared<mpm::Graph<Dim>>(mesh->cells());
 
@@ -792,6 +793,7 @@ TEST_CASE("Graph Partitioning in 3D", "[mpi][graph][3D]") {
       if (mpi_size == 4) {
         // Initialize MPI
         MPI_Comm comm;
+        MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 
         auto graph = std::make_shared<mpm::Graph<Dim>>(mesh->cells());
 

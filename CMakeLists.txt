@@ -263,6 +263,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/nodes/node_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_finite_strain_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_cell_crossing_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_bbar_test.cc

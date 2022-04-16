@@ -250,7 +250,6 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
       REQUIRE_NOTHROW(node0->update_external_force(false, Nphase, force));
       REQUIRE_NOTHROW(node1->update_external_force(false, Nphase, force));
 
-      const unsigned Direction = 0;
       // Check external force
       for (unsigned i = 0; i < Dim; ++i) {
         REQUIRE(node0->external_force(Nphase)(i) ==
@@ -949,7 +948,6 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
               REQUIRE(mesh->assign_particles_cells(particles_cells) == false);
             }
 
-            const unsigned phase = 0;
             // Particles coordinates
             REQUIRE(mesh->particle_coordinates().size() == mesh->nparticles());
             // Particle stresses

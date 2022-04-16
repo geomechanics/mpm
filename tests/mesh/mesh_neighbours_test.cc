@@ -21,10 +21,6 @@ TEST_CASE("Mesh cell neighbours 2D", "[MeshCell][2D][mpi]") {
   const unsigned Dof = 2;
   // Number of phases
   const unsigned Nphases = 1;
-  // Number of nodes per cell
-  const unsigned Nnodes = 4;
-  // Tolerance
-  const double Tolerance = 1.E-7;
 
   SECTION("Mesh cell neighbours 2D") {
     // Number of nodes in cell
@@ -586,8 +582,6 @@ TEST_CASE("Mesh cell neighbours 3D", "[MeshCell][3D][mpi]") {
   const unsigned Nphases = 1;
   // Number of nodes per cell
   const unsigned Nnodes = 8;
-  // Tolerance
-  const double Tolerance = 1.E-9;
 
   // 8-noded hexahedron element
   std::shared_ptr<mpm::Element<Dim>> element =

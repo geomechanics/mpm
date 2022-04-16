@@ -267,7 +267,6 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
             Approx(volumetric_strain).epsilon(Tolerance));
 
     // Check updated pressure
-    const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Update volume strain rate
@@ -323,8 +322,6 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
   const unsigned Nnodes = 8;
   // Number of phases
   const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
 

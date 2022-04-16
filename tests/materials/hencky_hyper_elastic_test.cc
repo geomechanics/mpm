@@ -199,6 +199,30 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
       for (unsigned j = 0; j < de.cols(); ++j)
         REQUIRE(de(i, j) == Approx(de_check(i, j)).epsilon(Tolerance));
   }
+
+  SECTION("HenckyHyperElastic check stresses fail") {
+    unsigned id = 0;
+    auto material =
+        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
+            "HenckyHyperElastic2D", std::move(id), jmaterial);
+    REQUIRE(material->id() == 0);
+
+    // Initialise stress and strain
+    mpm::Material<Dim>::Vector6d stress;
+    stress.setZero();
+    mpm::Material<Dim>::Vector6d updated_stress;
+    stress.setZero();
+    mpm::Material<Dim>::Vector6d dstrain;
+    stress.setZero();
+
+    // Compute updated stress
+    mpm::dense_map state_vars = material->initialise_state_variables();
+    REQUIRE_THROWS(
+        material->compute_stress(stress, dstrain, particle.get(), &state_vars));
+
+    REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_vars));
+  }
 }
 
 //! Check HenckyHyperElastic class in 3D
@@ -380,7 +404,7 @@ TEST_CASE("HenckyHyperElastic is checked in 3D",
                    5623031.9388214136,     12831746.737720303,     5623031.9388214136,                      0,                      0,                      0,
                    5623031.9388214136,     5623031.9388214136,     12831746.737720303,                      0,                      0,                      0,
                                     0,                      0,                      0,     3604357.3994494444,                      0,                      0,
-                                    0,                      0,                      0,                      0,     3604357.3994494444,                      0, 
+                                    0,                      0,                      0,                      0,     3604357.3994494444,                      0,
                                     0,                      0,                      0,                      0,                      0,     3604357.3994494444;
     // clang-format on
     // Check cell stiffness matrix

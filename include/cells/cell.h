@@ -344,12 +344,14 @@ class Cell {
   };
 
   //! Assign interaction element type
+  //! \ingroup XMPM
   //! \param[in] the interaction type
   void assign_interaction_type(unsigned dis_id, mpm::InteractionType type) {
     this->discontinuity_element_[dis_id]->assign_interaction_type(type);
   }
 
   //! Return interaction element type
+  //! \ingroup XMPM
   //! \retval the interaction type
   unsigned interaction_type(unsigned dis_id) {
     if (discontinuity_element_[dis_id] == nullptr)
@@ -358,6 +360,7 @@ class Cell {
   }
 
   //! Return the maximum displacement
+  //! \ingroup XMPM
   //! \param[in] the number of the discontinuity
   //! \retval the maximum displacement
   double max_dudx(unsigned dis_id) {
@@ -365,6 +368,7 @@ class Cell {
   }
 
   //! Assign the maximum displacement
+  //! \ingroup XMPM
   //! \param[in] max_dudx the maximum displacement
   //! \param[in] the number of the discontinuity
   void assign_max_dudx(double max_dudx, unsigned dis_id) {
@@ -372,10 +376,12 @@ class Cell {
   }
 
   //! Return the discontinuity id which can propagates in this cell
+  //! \ingroup XMPM
   //! \retval discontinuity id
   unsigned dis_id() { return dis_id_; }
 
   //! Assign the discontinuity id which can propagates in this cell
+  //! \ingroup XMPM
   //! \param[in] dis_id discontinuity id
   void assign_dis_id(unsigned dis_id) { dis_id_ = dis_id; }
 

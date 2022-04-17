@@ -550,6 +550,14 @@ class Node : public NodeBase<Tdim> {
   }
   /**@}*/
 
+  //! Update fluid mass at the nodes
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] mass Mass
+  void update_fluid_mass(bool update, double mass) noexcept override;
+
+  //! Return fluid mass at a given node
+  double mass_fluid() noexcept { return mass_fluid_; }
+
  protected:
   //! Mutex
   SpinMutex node_mutex_;
@@ -655,6 +663,9 @@ class Node : public NodeBase<Tdim> {
   //! Node type vector in each direction
   std::vector<unsigned> nonlocal_node_type_;
   /**@}*/
+
+  //！ mass of the fluid : to apply the pressure boundary
+  double mass_fluid_;
 };  // Node class
 }  // namespace mpm
 

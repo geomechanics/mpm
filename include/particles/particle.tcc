@@ -1248,3 +1248,42 @@ void mpm::Particle<Tdim>::deserialize(
 
 #endif
 }
+
+//! Minus the mass of the virtual fluid
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::minus_virtual_fluid_mass(double fluid_density) {
+
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->update_fluid_mass(true, -fluid_density * volume_ * shapefn_[i]);
+  }
+}
+
+//! Minus the internal force of the virtual fluid
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
+    double fluid_density, double gravity, const VectorDim& gravity_dirc,
+    double zero_height) {
+  auto const tolerance = std::numeric_limits<double>::epsilon();
+
+  double depth = -(coordinates_.dot(gravity_dirc) - zero_height);
+  // above the zero height
+  if (depth < 0) return;
+
+  double pressure = fluid_density * gravity * depth;
+
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    double mass_solid = nodes_[i]->mass(mpm::NodePhase::NSolid);
+    if (mass_solid < tolerance) continue;
+    double mass_fluid = nodes_[i]->mass_fluid();
+
+    double fraction_solid = mass_solid / (mass_solid + mass_fluid);
+    fraction_solid = 1;
+    VectorDim force;
+    for (unsigned j = 0; j < Tdim; j++)
+      force[j] = dn_dx_(i, j) * (-pressure) * this->volume_;
+    force[1] += fluid_density * this->volume_ * 10 * shapefn_[i];
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid,
+                                     force * fraction_solid);
+  }
+}

@@ -467,7 +467,7 @@ void mpm::ParticleXMPM<Tdim>::compute_updated_position(
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Nodal mass and momentum
-    double nodal_mass = nodes_[i]->mass(phase);
+    double nodal_mass = nodes_[i]->mass(phase);  // + nodes_[i]->mass_fluid();
     auto nodal_momentum = nodes_[i]->momentum(phase);
     const auto& nodal_mass_enrich = nodes_[i]->mass_enrich();
     const auto& nodal_momentum_enrich = nodes_[i]->momentum_enrich();

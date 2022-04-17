@@ -652,14 +652,20 @@ class Mesh {
   void determine_enriched_node_by_mass_h(unsigned dis_id);
 
   //! Deal with the interaction between discontinuities
+  //! \ingroup XMPM
   void interaction_discontinuity();
 
   //! Adjust particle levelset values due to the interaction between
+  //! \ingroup XMPM
   //! discontinuities
   void adjust_particle_levelset_interaction();
 
-  // Return all the discontinuity points
+  //! Return all the discontinuity points
+  //! \ingroup XMPM
   const mpm::Vector<mpm::PointBase<Tdim>> discontinuity_points();
+
+  //! Apply pressure boundary condition at free surface
+  void apply_pressure_boundary_free_surface();
 
   /**@}*/
 

@@ -1391,3 +1391,97 @@ const mpm::Vector<mpm::PointBase<Tdim>>
 
   return points;
 }
+
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface() {
+
+  // parameters: the boundary filled with water
+  double boundary[6] = {0, 1, 0, 1, 0, 1};
+  double zero_height = 1;
+  double fluid_density = 1000;
+  auto const tolerance = std::numeric_limits<double>::epsilon();
+  double gravity = 10;
+  VectorDim gravity_dirc{0, 1, 0};
+  gravity_dirc.normalize();
+  // the cell located at the vicinity of the interface
+  std::set<mpm::Index> boundary_cell_list;
+
+  // the node located at the vicinity of the interface
+  std::set<mpm::Index> boundary_node_list;
+
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); citr++) {
+    // loop the void cell
+    if ((*citr)->nparticles() != 0) continue;
+    // the cell is in the region or not
+    auto const cell_center = (*citr)->centroid();
+    bool flag_outside = false;
+    for (unsigned dim = 0; dim < Tdim; dim++)
+      if (cell_center[dim] < boundary[2 * dim] ||
+          cell_center[dim] > boundary[2 * dim + 1])
+        flag_outside = true;
+
+    if (flag_outside) continue;
+
+    // find non-void cell connected with void cell
+    for (auto cell_neigh : (*citr)->neighbours()) {
+      if (map_cells_[cell_neigh]->nparticles() == 0) continue;
+      boundary_cell_list.insert((*citr)->id());
+      boundary_cell_list.insert(map_cells_[cell_neigh]->id());
+      for (auto node : map_cells_[cell_neigh]->nodes())
+        boundary_node_list.insert(node->id());
+    }
+  }
+
+  unsigned num_nodes = 8;
+  if (Tdim == 2) num_nodes = 4;
+  for (auto cell : boundary_cell_list) {
+    auto nodes = map_cells_[cell]->nodes();
+
+    for (unsigned i = 0; i < nodes.size(); i++) {
+      // modify the nodal mass
+      if (nodes[i]->mass(mpm::NodePhase::NSolid) < tolerance) continue;
+      nodes[i]->update_fluid_mass(
+          true, 1. / num_nodes * fluid_density * map_cells_[cell]->volume());
+    }
+
+    for (auto particle : map_cells_[cell]->particles())
+      // modify the nodal mass
+      map_particles_[particle]->minus_virtual_fluid_mass(fluid_density);
+  }
+
+  for (auto cell : boundary_cell_list) {
+    auto nodes = map_cells_[cell]->nodes();
+
+    for (unsigned i = 0; i < nodes.size(); i++) {
+      // modify the nodal mass
+      double mass_solid = nodes[i]->mass(mpm::NodePhase::NSolid);
+
+      if (mass_solid < tolerance) continue;
+
+      double mass_fluid = nodes[i]->mass_fluid();
+      double fraction_solid = mass_solid / (mass_solid + mass_fluid);
+      fraction_solid = 1;
+      // modify the nodal force
+      auto centroid = map_cells_[cell]->centroid();
+      auto const dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
+
+      double depth = -(centroid.dot(gravity_dirc) - zero_height);
+      // above the zero height
+      if (depth < 0) continue;
+
+      double pressure = fluid_density * gravity * depth;
+      VectorDim force;
+      for (unsigned j = 0; j < Tdim; j++)
+        force[j] =
+            -dn_dx_centroid(i, j) * (-pressure) * map_cells_[cell]->volume();
+      force[1] += -fluid_density * map_cells_[cell]->volume() * 10 / num_nodes;
+      nodes[i]->update_internal_force(true, mpm::ParticlePhase::Solid,
+                                      force * fraction_solid);
+    }
+
+    for (auto particle : map_cells_[cell]->particles())
+      // modify the nodal force
+      map_particles_[particle]->minus_virtual_fluid_internal_force(
+          fluid_density, gravity, gravity_dirc, zero_height);
+  }
+}

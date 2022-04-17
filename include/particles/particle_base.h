@@ -483,6 +483,37 @@ class ParticleBase {
   /**@}*/
 
   /**
+   * \defgroup Pressure Boundary Functions
+   */
+  /**@{*/
+  //! Minus the mass of the virtual fluid
+  //! \param[in] fluid_density the density of the fluid
+  virtual void minus_virtual_fluid_mass(double fluid_density) {
+    throw std::runtime_error(
+        "Calling the base class function (minus_virtual_fluid_mass) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Minus the internal force of the virtual fluid
+  //! \param[in] fluid_density the density of the fluid
+  //! \param[in] gravity
+  //! \param[in] gravity_dirc the direction of the equipotential energy surface
+  //! \param[in] zero_height the position of the 0 potential energy surface
+  virtual void minus_virtual_fluid_internal_force(double fluid_density,
+                                                  double gravity,
+                                                  const VectorDim& gravity_dirc,
+                                                  double zero_height) {
+    throw std::runtime_error(
+        "Calling the base class function (minus_virtual_fluid_internal_force) "
+        "in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  /**@}*/
+
+  /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/

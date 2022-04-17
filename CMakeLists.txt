@@ -249,6 +249,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles_unitcell.cc
     ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/linear_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/modified_cam_clay_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/mohr_coulomb_test.cc
@@ -265,6 +266,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/nodes/node_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_finite_strain_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_cell_crossing_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_bbar_test.cc
@@ -277,6 +280,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_absorbing_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_musl_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_musl_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usf_test.cc
@@ -287,6 +292,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usl_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usl_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_finite_strain_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_test.cc

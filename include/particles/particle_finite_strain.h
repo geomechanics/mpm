@@ -54,6 +54,11 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
     return strain;
   }
 
+  //! Return deformation gradient increment of the particle
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment() const {
+    return deformation_gradient_increment_;
+  }
+
   //! Update volume based on deformation gradient increment
   //! Note: Volume is updated in compute_strain() and
   //! compute_strain_volume_newmark() for particle with finite strain

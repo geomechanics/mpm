@@ -33,12 +33,6 @@ TEST_CASE("Implicit Cell is checked for 2D case with B-bar method",
 
   // Check cell stiffness matrix calculation
   SECTION("Check cell stiffness matrix calculation") {
-    // Time-step
-    const double dt = 0.1;
-
-    // Parameters of Newmark scheme
-    const double newmark_beta = 0.25;
-
     // Shape function
     std::shared_ptr<mpm::Element<Dim>> element =
         std::make_shared<mpm::QuadrilateralElement<Dim, 4>>();
@@ -240,12 +234,6 @@ TEST_CASE("Implicit Cell is checked for 3D case with B-bar method",
 
   // Check cell stiffness matrix calculation
   SECTION("Check cell stiffness matrix calculation") {
-    // Time-step
-    const double dt = 0.1;
-
-    // Parameters of Newmark scheme
-    const double newmark_beta = 0.25;
-
     // Assign hexahedron shape function
     std::shared_ptr<mpm::Element<Dim>> element =
         std::make_shared<mpm::HexahedronElement<Dim, 8>>();

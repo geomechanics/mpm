@@ -1963,7 +1963,8 @@ bool mpm::Mesh<Tdim>::generate_particles(const std::shared_ptr<mpm::IO>& io,
           "Particle generator type is not properly specified");
 
   } catch (std::exception& exception) {
-    console_->error("{}: #{} Generating particle failed", __FILE__, __LINE__);
+    console_->error("{}: #{} Generating particle failed! {}\n", __FILE__,
+                    __LINE__, exception.what());
     status = false;
   }
   return status;

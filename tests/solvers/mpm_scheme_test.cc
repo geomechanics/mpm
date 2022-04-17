@@ -37,8 +37,6 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
   const unsigned Nphases = 1;
   // Number of nodes per cell
   const unsigned Nnodes = 8;
-  // Tolerance
-  const double Tolerance = 1.E-9;
 
   // Assign material
   unsigned mid = 0;

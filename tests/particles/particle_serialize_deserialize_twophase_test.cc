@@ -3,6 +3,7 @@
 #include "catch.hpp"
 
 #include "data_types.h"
+#include "logger.h"
 #include "material.h"
 #include "particle.h"
 #include "particle_twophase.h"
@@ -13,12 +14,10 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
           "[particle][3D][serialize][2Phase]") {
   // Dimension
   const unsigned Dim = 3;
-  // Dimension
-  const unsigned Dof = 3;
-  // Number of phases
-  const unsigned Nphases = 2;
-  // Phase
-  const unsigned phase = 0;
+
+  // Logger
+  std::unique_ptr<spdlog::logger> console_ = std::make_unique<spdlog::logger>(
+      "particle_serialize_deserialize_twophase_test", mpm::stdout_sink);
 
   // Check initialise particle from POD file
   SECTION("Check initialise particle POD") {
@@ -280,6 +279,11 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
         REQUIRE_NOTHROW(rparticle->deserialize(buffer, materials));
       }
       auto serialize_end = std::chrono::steady_clock::now();
+
+      console_->info("Performance benchmarks: {} ms",
+                     std::chrono::duration_cast<std::chrono::milliseconds>(
+                         serialize_end - serialize_start)
+                         .count());
     }
   }
 }

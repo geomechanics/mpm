@@ -17,12 +17,6 @@
 TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
   // Dimension
   const unsigned Dim = 1;
-  // Dimension
-  const unsigned Dof = 1;
-  // Number of phases
-  const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Json property
   Json jfunctionproperties;
   jfunctionproperties["id"] = 0;
@@ -1008,7 +1002,6 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
             Approx(volumetric_strain).epsilon(Tolerance));
 
     // Check updated pressure
-    const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Update volume strain rate
@@ -1763,8 +1756,6 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
   const unsigned Nnodes = 8;
   // Number of phases
   const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
   // Json property

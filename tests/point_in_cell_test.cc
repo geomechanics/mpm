@@ -20,8 +20,6 @@ TEST_CASE("Point in cell 2D", "[PointInCell][2D][quad]") {
   const unsigned Dof = 2;
   // Number of phases
   const unsigned Nphases = 1;
-  // Number of nodes per cell
-  const unsigned Nnodes = 4;
   // Tolerance
   const double Tolerance = 1.E-7;
 
@@ -535,8 +533,6 @@ TEST_CASE("Point in triangular cell 2D", "[PointInCell][2D][tri]") {
   const unsigned Dof = 2;
   // Number of phases
   const unsigned Nphases = 1;
-  // Number of nodes per cell
-  const unsigned Nnodes = 3;
   // Tolerance
   const double Tolerance = 1.E-7;
 

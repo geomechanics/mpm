@@ -337,7 +337,6 @@ TEST_CASE("Implicit Particle is checked for 2D case",
               Approx(previous_stress(i)).epsilon(Tolerance));
 
     // Check updated pressure
-    const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Check volume
@@ -422,8 +421,6 @@ TEST_CASE("Implicit Particle is checked for 3D case",
   const unsigned Nnodes = 8;
   // Number of phases
   const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
 

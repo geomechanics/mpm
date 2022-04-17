@@ -471,10 +471,10 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
                 1., 1.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                   Eigen::Vector2d::Zero());
-      auto jacobian = quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                                     Eigen::Vector2d::Zero());
+      quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
+                    Eigen::Vector2d::Zero());
+      quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
+                     Eigen::Vector2d::Zero());
     }
 
     // Ni Nj matrix of a cell
@@ -1231,10 +1231,10 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
                 1., 1.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                   Eigen::Vector2d::Zero());
-      auto jacobian = quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                                     Eigen::Vector2d::Zero());
+      quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
+                    Eigen::Vector2d::Zero());
+      quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
+                     Eigen::Vector2d::Zero());
     }
 
     // Ni Nj matrix of a cell
@@ -2205,10 +2205,10 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
                 1., 1.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                   Eigen::Vector2d::Zero());
-      auto jacobian = quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                                     Eigen::Vector2d::Zero());
+      quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
+                    Eigen::Vector2d::Zero());
+      quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
+                     Eigen::Vector2d::Zero());
     }
 
     SECTION("Nine noded quadrilateral coordinates of unit cell") {

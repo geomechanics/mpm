@@ -316,7 +316,7 @@ TEST_CASE("LinearElastic is checked in 3D", "[material][linear_elastic][3D]") {
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
     mpm::Material<Dim>::Vector6d updated_stress;
-    stress.setZero();
+    updated_stress.setZero();
 
     // Initialise deformation gradient
     Eigen::Matrix<double, 3, 3> deformation_gradient;

@@ -226,6 +226,7 @@ bool write_json_unitcell_finite_strain(unsigned dim,
 // Write JSON Configuration file for implicit
 bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
                                   const std::string& mpm_scheme, bool nonlinear,
+                                  bool quasi_static,
                                   const std::string& file_name,
                                   const std::string& linear_solver_type) {
   // Make json object with input files
@@ -313,6 +314,7 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
         {"mpm_scheme", mpm_scheme},
         {"scheme_settings",
          {{"nonlinear", nonlinear},
+          {"quasi_static", quasi_static},
           {"beta", 0.25},
           {"gamma", 0.50},
           {"max_iteration", 20},
@@ -344,7 +346,7 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
 // Write JSON Configuration file for implicit finite strain
 bool write_json_unitcell_implicit_finite_strain(
     unsigned dim, const std::string& analysis, const std::string& mpm_scheme,
-    bool nonlinear, const std::string& file_name,
+    bool nonlinear, bool quasi_static, const std::string& file_name,
     const std::string& linear_solver_type) {
   // Make json object with input files
   // 2D
@@ -431,6 +433,7 @@ bool write_json_unitcell_implicit_finite_strain(
         {"mpm_scheme", mpm_scheme},
         {"scheme_settings",
          {{"nonlinear", nonlinear},
+          {"quasi_static", quasi_static},
           {"beta", 0.25},
           {"gamma", 0.50},
           {"max_iteration", 20},
@@ -790,6 +793,10 @@ bool write_mesh_2d_unitcell() {
   file_constraints.open("velocity-constraints-unitcell.txt");
   file_constraints << 0 << "\t" << 0 << "\t" << 0 << "\n";
 
+  // Dump mesh displacement constraints
+  file_constraints.open("displacement-constraints-unitcell.txt");
+  file_constraints << 0 << "\t" << 0 << "\t" << 0 << "\n";
+
   // Dump mesh pressure constraints
   file_constraints.open("pore-pressure-constraints-unitcell.txt");
   file_constraints << 4 << "\t" << 0 << "\n";
@@ -957,10 +964,20 @@ bool write_mesh_3d_unitcell() {
   // Dump mesh velocity constraints
   std::ofstream file_constraints;
   file_constraints.open("velocity-constraints-unitcell.txt");
-  file_constraints << 0 << "\t" << 3 << "\t" << 0 << "\n";
-  file_constraints << 1 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints << 0 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 1 << "\t" << 2 << "\t" << 0 << "\n";
   file_constraints << 2 << "\t" << 3 << "\t" << 0 << "\n";
   file_constraints << 3 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints.close();
+
+  // Dump mesh displacement constraints
+  file_constraints.open("displacement-constraints-unitcell.txt");
+  file_constraints << 0 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 1 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 2 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 3 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 8 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 9 << "\t" << 2 << "\t" << 0 << "\n";
   file_constraints.close();
 
   // Dump mesh pressure constraints

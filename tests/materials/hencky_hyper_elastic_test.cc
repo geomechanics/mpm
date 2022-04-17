@@ -211,9 +211,9 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
     mpm::Material<Dim>::Vector6d updated_stress;
-    stress.setZero();
+    updated_stress.setZero();
     mpm::Material<Dim>::Vector6d dstrain;
-    stress.setZero();
+    dstrain.setZero();
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();

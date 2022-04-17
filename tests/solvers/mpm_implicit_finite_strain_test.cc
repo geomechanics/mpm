@@ -20,8 +20,9 @@ TEST_CASE("MPM 2D Implicit Finite Strain implementation is checked",
   const std::string lin_solver_type = "IterativeEigen";
   bool resume = false;
   bool nonlinear = true;
+  bool quasi_static = true;
   REQUIRE(mpm_test::write_json_implicit_finite_strain(
-              2, resume, analysis, mpm_scheme, nonlinear, fname,
+              2, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
               lin_solver_type) == true);
 
   // Write JSON Entity Sets file
@@ -79,8 +80,9 @@ TEST_CASE("MPM 2D Implicit Finite Strain implementation is checked",
     const std::string lin_solver_type = "IterativeEigen";
     bool resume = true;
     bool nonlinear = true;
+    bool quasi_static = true;
     REQUIRE(mpm_test::write_json_implicit_finite_strain(
-                2, resume, analysis, mpm_scheme, nonlinear, fname,
+                2, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
                 lin_solver_type) == true);
 
     // Create an IO object
@@ -118,8 +120,9 @@ TEST_CASE("MPM 3D Implicit Finite Strain implementation is checked",
   const std::string lin_solver_type = "IterativeEigen";
   const bool resume = false;
   bool nonlinear = true;
+  bool quasi_static = false;
   REQUIRE(mpm_test::write_json_implicit_finite_strain(
-              3, resume, analysis, mpm_scheme, nonlinear, fname,
+              3, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
               lin_solver_type) == true);
 
   // Write JSON Entity Sets file
@@ -175,8 +178,9 @@ TEST_CASE("MPM 3D Implicit Finite Strain implementation is checked",
     const std::string lin_solver_type = "IterativeEigen";
     bool resume = true;
     bool nonlinear = true;
+    bool quasi_static = false;
     REQUIRE(mpm_test::write_json_implicit_finite_strain(
-                3, resume, analysis, mpm_scheme, nonlinear, fname,
+                3, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
                 lin_solver_type) == true);
 
     // Create an IO object

@@ -20,9 +20,10 @@ TEST_CASE(
   const std::string mpm_scheme = "newmark";
   const std::string lin_solver_type = "IterativeEigen";
   bool nonlinear = true;
+  bool quasi_static = false;
   REQUIRE(mpm_test::write_json_unitcell_implicit_finite_strain(
-              2, analysis, mpm_scheme, nonlinear, fname, lin_solver_type) ==
-          true);
+              2, analysis, mpm_scheme, nonlinear, quasi_static, fname,
+              lin_solver_type) == true);
 
   // Write Mesh
   REQUIRE(mpm_test::write_mesh_2d_unitcell() == true);
@@ -81,9 +82,10 @@ TEST_CASE(
   const std::string mpm_scheme = "newmark";
   const std::string lin_solver_type = "IterativeEigen";
   bool nonlinear = true;
+  bool quasi_static = false;
   REQUIRE(mpm_test::write_json_unitcell_implicit_finite_strain(
-              3, analysis, mpm_scheme, nonlinear, fname, lin_solver_type) ==
-          true);
+              3, analysis, mpm_scheme, nonlinear, quasi_static, fname,
+              lin_solver_type) == true);
 
   // Write Mesh
   REQUIRE(mpm_test::write_mesh_3d_unitcell() == true);

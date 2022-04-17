@@ -356,7 +356,7 @@ bool write_json_finite_strain(unsigned dim, bool resume,
 // Write JSON Configuration file for implicit
 bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& mpm_scheme, bool nonlinear,
-                         const std::string& file_name,
+                         bool quasi_static, const std::string& file_name,
                          const std::string& linear_solver_type) {
   // Make json object with input files
   // 2D
@@ -448,6 +448,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
         {"mpm_scheme", mpm_scheme},
         {"scheme_settings",
          {{"nonlinear", nonlinear},
+          {"quasi_static", quasi_static},
           {"beta", 0.25},
           {"gamma", 0.50},
           {"max_iteration", 20},
@@ -495,7 +496,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
 bool write_json_implicit_finite_strain(unsigned dim, bool resume,
                                        const std::string& analysis,
                                        const std::string& mpm_scheme,
-                                       bool nonlinear,
+                                       bool nonlinear, bool quasi_static,
                                        const std::string& file_name,
                                        const std::string& linear_solver_type) {
   // Make json object with input files
@@ -588,6 +589,7 @@ bool write_json_implicit_finite_strain(unsigned dim, bool resume,
         {"mpm_scheme", mpm_scheme},
         {"scheme_settings",
          {{"nonlinear", nonlinear},
+          {"quasi_static", quasi_static},
           {"beta", 0.25},
           {"gamma", 0.50},
           {"max_iteration", 20},
@@ -1033,12 +1035,14 @@ bool write_mesh_2d() {
   file_constraints.open("velocity-constraints.txt");
   file_constraints << 0 << "\t" << 1 << "\t" << 0 << "\n";
   file_constraints << 1 << "\t" << 1 << "\t" << 0 << "\n";
+  file_constraints << 4 << "\t" << 1 << "\t" << 0 << "\n";
   file_constraints.close();
 
   // Dump mesh displacement constraints
   file_constraints.open("displacement-constraints.txt");
   file_constraints << 0 << "\t" << 1 << "\t" << 0 << "\n";
   file_constraints << 1 << "\t" << 1 << "\t" << 0 << "\n";
+  file_constraints << 4 << "\t" << 1 << "\t" << 0 << "\n";
   file_constraints.close();
 
   return true;
@@ -1180,18 +1184,22 @@ bool write_mesh_3d() {
   // Dump mesh velocity constraints
   std::ofstream file_constraints;
   file_constraints.open("velocity-constraints.txt");
-  file_constraints << 0 << "\t" << 3 << "\t" << 0 << "\n";
-  file_constraints << 1 << "\t" << 3 << "\t" << 0 << "\n";
-  file_constraints << 2 << "\t" << 3 << "\t" << 0 << "\n";
-  file_constraints << 3 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints << 0 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 1 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 2 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 3 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 8 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 9 << "\t" << 2 << "\t" << 0 << "\n";
   file_constraints.close();
 
   // Dump mesh displacement constraints
   file_constraints.open("displacement-constraints.txt");
-  file_constraints << 0 << "\t" << 3 << "\t" << 0 << "\n";
-  file_constraints << 1 << "\t" << 3 << "\t" << 0 << "\n";
-  file_constraints << 2 << "\t" << 3 << "\t" << 0 << "\n";
-  file_constraints << 3 << "\t" << 3 << "\t" << 0 << "\n";
+  file_constraints << 0 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 1 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 2 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 3 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 8 << "\t" << 2 << "\t" << 0 << "\n";
+  file_constraints << 9 << "\t" << 2 << "\t" << 0 << "\n";
   file_constraints.close();
 
   return true;

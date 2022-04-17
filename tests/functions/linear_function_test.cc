@@ -47,13 +47,9 @@ TEST_CASE("Linear function is checked", "[linearfn]") {
 
   SECTION("Check correct linear function initialisation") {
     bool status = true;
-    try {
-      std::shared_ptr<mpm::FunctionBase> linearfn =
-          std::make_shared<mpm::LinearFunction>(id, jfunctionproperties);
-    } catch (std::exception& exception) {
-      console_->error("Exception caught: {}", exception.what());
-      status = false;
-    }
+    REQUIRE_NOTHROW(
+        std::make_shared<mpm::LinearFunction>(id, jfunctionproperties));
+
     REQUIRE(status == true);
   }
 

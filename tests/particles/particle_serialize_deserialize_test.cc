@@ -24,7 +24,7 @@ TEST_CASE("Particle is checked for serialization and deserialization",
 
   // Logger
   std::unique_ptr<spdlog::logger> console_ = std::make_unique<spdlog::logger>(
-      "particle_serialize_deserialize_twophase_test", mpm::stdout_sink);
+      "particle_serialize_deserialize_test", mpm::stdout_sink);
 
   // Check initialise particle from POD file
   SECTION("Check initialise particle POD") {

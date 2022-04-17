@@ -719,6 +719,15 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
         // Number of particles
         REQUIRE(mesh->nparticles() == 8);
       }
+
+      SECTION("Generate point fail") {
+        // Gauss point generation
+        Json jgen;
+        jgen["type"] = "fail";
+
+        // Generate
+        REQUIRE(mesh->generate_particles(io, jgen) == false);
+      }
     }
 
     // Particle 1

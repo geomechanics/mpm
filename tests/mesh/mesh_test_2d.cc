@@ -648,6 +648,15 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
         // Number of particles
         REQUIRE(mesh->nparticles() == 4);
       }
+
+      SECTION("Generate point fail") {
+        // Gauss point generation
+        Json jgen;
+        jgen["type"] = "fail";
+
+        // Generate
+        REQUIRE(mesh->generate_particles(io, jgen) == false);
+      }
     }
 
     // Particle 1

@@ -387,6 +387,10 @@ class Particle : public ParticleBase<Tdim> {
   inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
                                            bool quasi_static) override;
 
+  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  inline bool map_material_stiffness_matrix_to_cell() override;
+
   //! Reduce constitutive relations matrix depending on the dimension
   //! \ingroup Implicit
   //! \param[in] dmatrix Constitutive relations matrix in 3D
@@ -397,6 +401,12 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute B matrix of a particle, based on local coordinates
   inline Eigen::MatrixXd compute_bmatrix() noexcept override;
+
+  //! Map mass matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
 
   //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
@@ -476,16 +486,6 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval deformaton gradient increment at particle inside a cell
   inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
-
-  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
-  //! \ingroup Implicit
-  virtual inline bool map_material_stiffness_matrix_to_cell();
-
-  //! Map mass matrix to cell (used in equilibrium equation LHS)
-  //! \ingroup Implicit
-  //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
-  virtual inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
   /**@}*/
 
   //! particle id

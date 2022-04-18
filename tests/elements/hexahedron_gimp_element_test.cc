@@ -601,7 +601,7 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5, 0.5;
       // Deformation gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       hex->shapefn(coords, psize, defgrad);
@@ -758,10 +758,8 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
                 1., 1., 1.;
       // clang-format on
       // Get B-Matrix
-      hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                   Eigen::Vector3d::Zero());
-      hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                    Eigen::Vector3d::Zero());
+      hex->bmatrix(xi, coords, zero, zero_matrix);
+      hex->jacobian(xi, coords, zero, zero_matrix);
     }
 
     SECTION("Center cell gimp element length") {

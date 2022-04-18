@@ -422,9 +422,6 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       // Size of particle (x,y)
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5;
-      // Deformarion gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
-      defgrad.setZero();
 
       quad->shapefn(coords, psize, defgrad);
       quad->grad_shapefn(coords, psize, defgrad);
@@ -604,10 +601,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
                 1., 1.;
       // clang-format on
       // Get B-Matrix
-      quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                    Eigen::Vector2d::Zero());
-      quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                     Eigen::Vector2d::Zero());
+      quad->bmatrix(xi, coords, zero, defgrad);
+      quad->jacobian(xi, coords, zero, defgrad);
     }
 
     SECTION("Center cell gimp element length") {

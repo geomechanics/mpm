@@ -456,10 +456,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
                 2., 4.;
       // clang-format on
       // Get B-Matrix
-      tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                   Eigen::Vector2d::Zero());
-      tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                    Eigen::Vector2d::Zero());
+      tri->bmatrix(xi, coords, zero, zero_matrix);
+      tri->jacobian(xi, coords, zero, zero_matrix);
     }
 
     // Ni Nj matrix of a cell
@@ -1160,10 +1158,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
                 2.0, 2.5;
       // clang-format on
       // Get B-Matrix
-      tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                   Eigen::Vector2d::Zero());
-      tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                    Eigen::Vector2d::Zero());
+      tri->bmatrix(xi, coords, zero, zero_matrix);
+      tri->jacobian(xi, coords, zero, zero_matrix);
     }
 
     // Ni Nj matrix of a cell

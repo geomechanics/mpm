@@ -1,6 +1,6 @@
 version: 2.0
 jobs:
-  gcc:
+  gcc_unit:
     docker:
       - image: quay.io/cbgeo/mpm
     resource_class: large
@@ -8,7 +8,7 @@ jobs:
       - checkout
       # GCC
       - run:
-          name: GCC build + MPI
+          name: GCC build + unit testing + MPI
           command: |
             mkdir -p build
             [ "$(ls -A build)" ] && rm -rf build/*
@@ -21,8 +21,30 @@ jobs:
             export PETSC_DIR=/home/cbgeo/petsc/
             cmake -GNinja -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DKAHIP_ROOT=/home/cbgeo/KaHIP/ -DPARTIO_ROOT=/home/cbgeo/partio/ ..
             ninja -j2
-            ctest -VV
+            ctest -VV -R mpmtest_unit
             mpirun -n 4 ./mpmtest [mpi]
+  gcc_small:
+    docker:
+      - image: quay.io/cbgeo/mpm
+    resource_class: large
+    steps:
+      - checkout
+      # GCC
+      - run:
+          name: GCC build + small testing
+          command: |
+            mkdir -p build
+            [ "$(ls -A build)" ] && rm -rf build/*
+            cd build
+            source /etc/profile.d/modules.sh
+            export MODULEPATH=$MODULEPATH:/usr/share/modulefiles
+            module load mpi/openmpi-x86_64
+            export CXX_COMPILER=mpicxx
+            export PETSC_ARCH=arch-linux2-c-opt
+            export PETSC_DIR=/home/cbgeo/petsc/
+            cmake -GNinja -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DKAHIP_ROOT=/home/cbgeo/KaHIP/ -DPARTIO_ROOT=/home/cbgeo/partio/ ..
+            ninja -j2
+            ctest -VV -R mpmtest_small
   clang:
     docker:
       - image: quay.io/cbgeo/mpm
@@ -138,7 +160,8 @@ workflows:
     version: 2
     build:
         jobs:
-            - gcc
+            - gcc_unit
+            - gcc_small
             - clang
             - cppcheck
             - codecov

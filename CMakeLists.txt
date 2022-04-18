@@ -274,6 +274,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
   )
   SET(test_src_small
     ${mpm_SOURCE_DIR}/tests/test_main.cc
@@ -300,7 +301,6 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_unitcell_test.cc
-    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
   )
   add_executable(mpmtest_unit ${mpm_src} ${test_src_unit})
   add_executable(mpmtest_small ${mpm_src} ${test_src_small})

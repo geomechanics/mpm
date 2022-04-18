@@ -25,8 +25,6 @@ TEST_CASE("Particle cell crossing is checked for 2D case",
   const unsigned Phase = 0;
   // Number of nodes per cell
   const unsigned Nnodes = 4;
-  // Tolerance
-  const double Tolerance = 1.E-7;
   // Time step
   const double dt = 0.0004;
 
@@ -229,8 +227,6 @@ TEST_CASE("Particle cell crossing is checked for 3D case",
   const unsigned Phase = 0;
   // Number of nodes per cell
   const unsigned Nnodes = 8;
-  // Tolerance
-  const double Tolerance = 1.E-7;
   // Time step
   const double dt = 0.0004;
 

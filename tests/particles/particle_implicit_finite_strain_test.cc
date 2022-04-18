@@ -42,13 +42,6 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 2D case",
     auto particle =
         std::make_shared<mpm::ParticleFiniteStrain<Dim>>(id, coords);
 
-    // Time-step
-    const double dt = 0.1;
-
-    // Parameters of Newmark scheme
-    const double newmark_beta = 0.25;
-    const double newmark_gamma = 0.50;
-
     // Check particle coordinates
     auto coordinates = particle->coordinates();
     for (unsigned i = 0; i < coordinates.size(); ++i)
@@ -349,8 +342,6 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 3D case",
   const unsigned Nnodes = 8;
   // Number of phases
   const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
 
@@ -368,11 +359,6 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 3D case",
 
     // Phase
     const unsigned phase = 0;
-    // Time-step
-    const double dt = 0.1;
-    // Parameters of Newmark scheme
-    const double newmark_beta = 0.25;
-    const double newmark_gamma = 0.50;
 
     // Check particle coordinates
     auto coordinates = particle->coordinates();

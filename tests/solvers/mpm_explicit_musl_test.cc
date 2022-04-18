@@ -75,7 +75,7 @@ TEST_CASE("MPM 2D Explicit MUSL implementation is checked",
     const std::string fname = "mpm-explicit-musl";
     const std::string analysis = "MPMExplicit2D";
     const std::string mpm_scheme = "musl";
-    bool resume = true;
+    const bool resume = true;
     REQUIRE(mpm_test::write_json(2, resume, analysis, mpm_scheme, fname) ==
             true);
 
@@ -161,7 +161,7 @@ TEST_CASE("MPM 3D Explicit MUSL implementation is checked",
     const std::string fname = "mpm-explicit-musl";
     const std::string analysis = "MPMExplicit3D";
     const std::string mpm_scheme = "musl";
-    bool resume = true;
+    const bool resume = true;
     REQUIRE(mpm_test::write_json(3, resume, analysis, mpm_scheme, fname) ==
             true);
 

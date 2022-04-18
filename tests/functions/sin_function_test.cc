@@ -5,6 +5,7 @@
 
 #include "catch.hpp"
 #include "json.hpp"
+#include "logger.h"
 
 #include "function_base.h"
 #include "sin_function.h"

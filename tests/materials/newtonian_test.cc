@@ -93,11 +93,9 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
 
     // Coordinates of nodes for the cell
     mpm::Index cell_id = 0;
-    mpm::Index mesh_id = 0;
     const unsigned Dof = 2;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 4;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, -2;
@@ -188,11 +186,9 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
 
     // Coordinates of nodes for the cell
     mpm::Index cell_id = 0;
-    mpm::Index mesh_id = 0;
     const unsigned Dof = 2;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 4;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, -2;
@@ -384,7 +380,6 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
     const unsigned Dof = 3;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 8;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, 2, -2;
@@ -496,7 +491,6 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
     const unsigned Dof = 3;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 8;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, 2, -2;

@@ -456,8 +456,10 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
                 2., 4.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
-      auto jacobian = tri->jacobian(xi, coords, zero, zero_matrix);
+      tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
+                   Eigen::Vector2d::Zero());
+      tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
+                    Eigen::Vector2d::Zero());
     }
 
     // Ni Nj matrix of a cell
@@ -1158,8 +1160,10 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
                 2.0, 2.5;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
-      auto jacobian = tri->jacobian(xi, coords, zero, zero_matrix);
+      tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
+                   Eigen::Vector2d::Zero());
+      tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
+                    Eigen::Vector2d::Zero());
     }
 
     // Ni Nj matrix of a cell
@@ -1235,7 +1239,6 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       std::vector<Eigen::Matrix<double, Dim, 1>> xi_s;
 
       Eigen::Matrix<double, Dim, 1> xi;
-      const double one_by_sqrt3 = std::fabs(1 / std::sqrt(3));
       xi << 1.0 / 6, 1.0 / 6;
       xi_s.emplace_back(xi);
       xi << 2.0 / 3, 1.0 / 6;

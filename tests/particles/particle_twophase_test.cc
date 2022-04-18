@@ -19,10 +19,6 @@ TEST_CASE("TwoPhase Particle is checked for 1D case",
           "[particle][1D][2Phase]") {
   // Dimension
   const unsigned Dim = 1;
-  // Dimension
-  const unsigned Dof = 1;
-  // Number of phases
-  const unsigned Nphases = 2;
   // Json property
   Json jfunctionproperties;
   jfunctionproperties["id"] = 0;
@@ -1056,7 +1052,6 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
 
     // Check updated pressure
-    const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Update volume strain rate

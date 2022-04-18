@@ -80,6 +80,7 @@ inline Eigen::VectorXd
       shapefn(n) = sni(0) * sni(1);  // See: Pruijn, N.S., 2016. Eq(4.30)
     }
   } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     return shapefn;
   }
   return shapefn;

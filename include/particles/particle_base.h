@@ -377,23 +377,12 @@ class ParticleBase {
                                                    double dt,
                                                    bool quasi_static) = 0;
 
-  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
-  //! \ingroup Implicit
-  virtual inline bool map_material_stiffness_matrix_to_cell() = 0;
-
   //! Reduce constitutive relations matrix depending on the dimension
   virtual inline Eigen::MatrixXd reduce_dmatrix(
       const Eigen::MatrixXd& dmatrix) = 0;
 
   //! Compute B matrix
   virtual inline Eigen::MatrixXd compute_bmatrix() = 0;
-
-  //! Map mass matrix to cell (used in equilibrium equation LHS)
-  //! \ingroup Implicit
-  //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
-  virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
-                                              double dt) = 0;
 
   //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit

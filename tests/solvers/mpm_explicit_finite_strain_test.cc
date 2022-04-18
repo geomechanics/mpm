@@ -76,7 +76,7 @@ TEST_CASE("MPM 2D Explicit Finite Strain implementation is checked",
     const std::string analysis = "MPMExplicit2D";
     const std::string mpm_scheme = "usf";
     bool resume = true;
-    REQUIRE(mpm_test::write_json_finite_strain(2, true, analysis, mpm_scheme,
+    REQUIRE(mpm_test::write_json_finite_strain(2, resume, analysis, mpm_scheme,
                                                fname) == true);
 
     // Create an IO object

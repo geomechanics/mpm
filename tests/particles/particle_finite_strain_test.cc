@@ -329,8 +329,6 @@ TEST_CASE("ParticleFiniteStrain is checked for 3D case",
   const unsigned Nnodes = 8;
   // Number of phases
   const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
 

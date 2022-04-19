@@ -2,6 +2,7 @@
 #define MPM_LME_HEX_ELEMENT_H_
 
 #include "hexahedron_element.h"
+
 namespace mpm {
 
 //! Hexahedron LME element class derived from Hexahedron

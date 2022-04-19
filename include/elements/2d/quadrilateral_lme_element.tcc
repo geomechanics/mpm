@@ -137,7 +137,6 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
               svd.singularValues()(0);
           if (rcond < 1E-8)
             console_->warn("The LME Hessian matrix is singular!");
-
           convergence = true;
         }
         it++;

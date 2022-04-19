@@ -465,6 +465,27 @@ TEST_CASE("Quadrilateral lme elements are checked",
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
         }
+
+        // Exced maximum number of interations
+        SECTION(
+            "2D ALME element for coordinates(0.1, 0.1) with extreme "
+            "deformation") {
+          def_gradient(0, 1) = 20.0;
+          Eigen::Matrix<double, Dim, 1> coords;
+          coords << 0.5, 0.5;
+
+          // Compute shape function
+          zero.setZero();
+          auto shapefn = quad->shapefn(coords, zero, def_gradient);
+
+          // Check shape function
+          REQUIRE(shapefn.size() == 100);
+          REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
+
+          // Compute gradient of shape functions
+          zero.setZero();
+          auto gradsf = quad->grad_shapefn(coords, zero, def_gradient);
+        }
       }
     }
   }

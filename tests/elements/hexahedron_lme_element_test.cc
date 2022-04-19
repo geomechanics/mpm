@@ -129,72 +129,16 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
     // Initialising upgrade properties
     SECTION("3D ALME element regular element - nnodes = 64") {
       Eigen::Matrix<double, 64, Dim> nodal_coords;
-      // clang-format off
-      nodal_coords <<-1,  1, -1,
-                      1,  1, -1,
-                      1,  1,  1,
-                      -1,  1,  1,
-                      -1, -1, -1,
-                      1, -1, -1,
-                      1, -1,  1,
-                      -1, -1,  1,
-                      -3,  3, -3,
-                      -1,  3, -3,
-                      1,  3, -3,
-                      3,  3, -3,
-                      -3,  3, -1,
-                      -1,  3, -1,
-                      1,  3, -1,
-                      3,  3, -1,
-                      -3,  3,  1,
-                      -1,  3,  1,
-                      1,  3,  1,
-                      3,  3,  1,
-                      -3,  3,  3,
-                      -1,  3,  3,
-                      1,  3,  3,
-                      3,  3,  3,
-                      -3,  1, -3,
-                      -1,  1, -3,
-                      1,  1, -3,
-                      3,  1, -3,
-                      -3,  1, -1,
-                      3,  1, -1,
-                      -3,  1,  1,
-                      3,  1,  1,
-                      -3,  1,  3,
-                      -1,  1,  3,
-                      1,  1,  3,
-                      3,  1,  3,
-                      -3, -1, -3,
-                      -1, -1, -3,
-                      1, -1, -3,
-                      3, -1, -3,
-                      -3, -1, -1,
-                      3, -1, -1,
-                      -3, -1,  1,
-                      3, -1,  1,
-                      -3, -1,  3,
-                      -1, -1,  3,
-                      1, -1,  3,
-                      3, -1,  3,
-                      -3, -3, -3,
-                      -1, -3, -3,
-                      1, -3, -3,
-                      3, -3, -3,
-                      -3, -3, -1,
-                      -1, -3, -1,
-                      1, -3, -1,
-                      3, -3, -1,
-                      -3, -3,  1,
-                      -1, -3,  1,
-                      1, -3,  1,
-                      3, -3,  1,
-                      -3, -3,  3,
-                      -1, -3,  3,
-                      1, -3,  3,
-                      3, -3,  3;
-      // clang-format on
+      nodal_coords << -1, 1, -1, 1, 1, -1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, -1,
+          -1, 1, -1, 1, -1, -1, 1, -3, 3, -3, -1, 3, -3, 1, 3, -3, 3, 3, -3, -3,
+          3, -1, -1, 3, -1, 1, 3, -1, 3, 3, -1, -3, 3, 1, -1, 3, 1, 1, 3, 1, 3,
+          3, 1, -3, 3, 3, -1, 3, 3, 1, 3, 3, 3, 3, 3, -3, 1, -3, -1, 1, -3, 1,
+          1, -3, 3, 1, -3, -3, 1, -1, 3, 1, -1, -3, 1, 1, 3, 1, 1, -3, 1, 3, -1,
+          1, 3, 1, 1, 3, 3, 1, 3, -3, -1, -3, -1, -1, -3, 1, -1, -3, 3, -1, -3,
+          -3, -1, -1, 3, -1, -1, -3, -1, 1, 3, -1, 1, -3, -1, 3, -1, -1, 3, 1,
+          -1, 3, 3, -1, 3, -3, -3, -3, -1, -3, -3, 1, -3, -3, 3, -3, -3, -3, -3,
+          -1, -1, -3, -1, 1, -3, -1, 3, -3, -1, -3, -3, 1, -1, -3, 1, 1, -3, 1,
+          3, -3, 1, -3, -3, 3, -1, -3, 3, 1, -3, 3, 3, -3, 3;
 
       SECTION("3D ALME element regular element no support") {
         double gamma = 20.0;
@@ -484,6 +428,120 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
           REQUIRE(gradsf(63, 0) == Approx(0).epsilon(Tolerance));
           REQUIRE(gradsf(63, 1) == Approx(0).epsilon(Tolerance));
           REQUIRE(gradsf(63, 2) == Approx(0).epsilon(Tolerance));
+        }
+
+        // Check Jacobian
+        SECTION("64-noded hexrilateral Jacobian with deformation gradient") {
+          Eigen::Matrix<double, 64, Dim> coords;
+          coords << -1., 1., -1, 1., 1., -1, 1., 1., 1, -1., 1., 1, -1., -1.,
+              -1, 1., -1., -1, 1., -1., 1, -1., -1., 1, -3., 3, -3, -1., 3, -3,
+              1., 3, -3, 3., 3, -3, -3., 3, -1, -1., 3, -1, 1., 3, -1, 3., 3,
+              -1, -3., 3, 1, -1., 3, 1, 1., 3, 1, 3., 3, 1, -3., 3, 3, -1., 3,
+              3, 1., 3, 3, 3., 3, 3, -3., 1., -3, -1., 1., -3, 1., 1., -3, 3.,
+              1., -3, -3., 1., -1, 3., 1., -1, -3., 1., 1, 3., 1., 1, -3., 1.,
+              3, -1., 1., 3, 1., 1., 3, 3., 1., 3, -3., -1., -3, -1., -1., -3,
+              1., -1., -3, 3., -1., -3, -3., -1., -1, 3., -1., -1, -3., -1., 1,
+              3., -1., 1, -3., -1., 3, -1., -1., 3, 1., -1., 3, 3., -1., 3, -3.,
+              -3., -3, -1., -3., -3, 1., -3., -3, 3., -3., -3, -3., -3., -1,
+              -1., -3., -1, 1., -3., -1, 3., -3., -1, -3., -3., 1, -1., -3., 1,
+              1., -3., 1, 3., -3., 1, -3., -3., 3, -1., -3., 3, 1., -3., 3, 3.,
+              -3., 3;
+
+          Eigen::Matrix<double, Dim, 1> psize;
+          psize.setZero();
+          Eigen::Matrix<double, Dim, Dim> defgrad;
+          defgrad.setZero();
+
+          Eigen::Matrix<double, Dim, 1> xi;
+          xi << 0., 0., 0.;
+
+          Eigen::Matrix<double, Dim, Dim> jacobian;
+          // clang-format off
+          jacobian << 1., 0., 0.,
+                      0., 1., 0.,
+                      0., 0., 1;
+          // clang-format on
+
+          // Get Jacobian
+          auto jac = hex->jacobian(xi, coords, psize, defgrad);
+
+          // Check size of jacobian
+          REQUIRE(jac.size() == jacobian.size());
+
+          // Check Jacobian
+          for (unsigned i = 0; i < Dim; ++i)
+            for (unsigned j = 0; j < Dim; ++j)
+              REQUIRE(jac(i, j) == Approx(jacobian(i, j)).epsilon(Tolerance));
+        }
+
+        // Coordinates is (0, 0, 0)
+        SECTION("64 noded hexahedron B-matrix cell for coordinates(0, 0, 0)") {
+          Eigen::Matrix<double, Dim, 1> xi;
+          xi << 0.0, 0.0, 0.0;
+
+          Eigen::Matrix<double, 64, Dim> coords;
+          coords << -1., 1., -1, 1., 1., -1, 1., 1., 1, -1., 1., 1, -1., -1.,
+              -1, 1., -1., -1, 1., -1., 1, -1., -1., 1, -3., 3, -3, -1., 3, -3,
+              1., 3, -3, 3., 3, -3, -3., 3, -1, -1., 3, -1, 1., 3, -1, 3., 3,
+              -1, -3., 3, 1, -1., 3, 1, 1., 3, 1, 3., 3, 1, -3., 3, 3, -1., 3,
+              3, 1., 3, 3, 3., 3, 3, -3., 1., -3, -1., 1., -3, 1., 1., -3, 3.,
+              1., -3, -3., 1., -1, 3., 1., -1, -3., 1., 1, 3., 1., 1, -3., 1.,
+              3, -1., 1., 3, 1., 1., 3, 3., 1., 3, -3., -1., -3, -1., -1., -3,
+              1., -1., -3, 3., -1., -3, -3., -1., -1, 3., -1., -1, -3., -1., 1,
+              3., -1., 1, -3., -1., 3, -1., -1., 3, 1., -1., 3, 3., -1., 3, -3.,
+              -3., -3, -1., -3., -3, 1., -3., -3, 3., -3., -3, -3., -3., -1,
+              -1., -3., -1, 1., -3., -1, 3., -3., -1, -3., -3., 1, -1., -3., 1,
+              1., -3., 1, 3., -3., 1, -3., -3., 3, -1., -3., 3, 1., -3., 3, 3.,
+              -3., 3;
+
+          // Get B-Matrix
+          auto bmatrix = hex->bmatrix(xi, coords, zero, zero_matrix);
+
+          // Check gradient of shape functions
+          auto gradsf = hex->grad_shapefn(xi, zero, zero_matrix);
+
+          // Check dN/dx
+          auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
+          REQUIRE(dn_dx.rows() == 64);
+          REQUIRE(dn_dx.cols() == Dim);
+          for (unsigned i = 0; i < 8; ++i) {
+            REQUIRE(dn_dx(i, 0) == Approx(gradsf(i, 0)).epsilon(Tolerance));
+            REQUIRE(dn_dx(i, 1) == Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(dn_dx(i, 2) == Approx(gradsf(i, 2)).epsilon(Tolerance));
+          }
+
+          // Check size of B-matrix
+          REQUIRE(bmatrix.size() == 64);
+
+          for (unsigned i = 0; i < 64; ++i) {
+            REQUIRE(bmatrix.at(i)(0, 0) ==
+                    Approx(gradsf(i, 0)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(0, 1) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(0, 2) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(1, 0) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(1, 1) ==
+                    Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(1, 2) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(2, 0) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(2, 1) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(2, 2) ==
+                    Approx(gradsf(i, 2)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(3, 0) ==
+                    Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(3, 1) ==
+                    Approx(gradsf(i, 0)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(3, 2) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(4, 0) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(4, 1) ==
+                    Approx(gradsf(i, 2)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(4, 2) ==
+                    Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(5, 0) ==
+                    Approx(gradsf(i, 2)).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(5, 1) == Approx(0.).epsilon(Tolerance));
+            REQUIRE(bmatrix.at(i)(5, 2) ==
+                    Approx(gradsf(i, 0)).epsilon(Tolerance));
+          }
         }
       }
 
@@ -836,8 +894,6 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
               8.113353954493729512e-04, 8.113353954493729512e-04,
               6.793228094586798577e-03, 4.120301117788124565e-03;
 
-          ;
-
           for (unsigned i = 0; i < 216; ++i)
             REQUIRE(shapefn(i) == Approx(shapefn_ans(i)).epsilon(Tolerance));
 
@@ -1177,6 +1233,28 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+        }
+
+        // Exced maximum number of interations
+        SECTION(
+            "3D ALME element for coordinates(0.1, 0.1, 0.1) with extreme "
+            "deformation") {
+          def_gradient(0, 1) = 0.0;
+          def_gradient(0, 2) = 10;
+          Eigen::Matrix<double, Dim, 1> coords;
+          coords << 0.1, 0.1, 0.1;
+
+          // Compute shape function
+          zero.setZero();
+          auto shapefn = hex->shapefn(coords, zero, def_gradient);
+
+          // Check shape function
+          REQUIRE(shapefn.size() == 216);
+          REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
+
+          // Compute gradient of shape functions
+          zero.setZero();
+          auto gradsf = hex->grad_shapefn(coords, zero, def_gradient);
         }
       }
     }

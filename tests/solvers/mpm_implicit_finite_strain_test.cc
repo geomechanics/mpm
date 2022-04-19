@@ -4,19 +4,26 @@
 #include "json.hpp"
 using Json = nlohmann::json;
 
-#include "mpm_explicit.h"
+#include "mpm_implicit.h"
 #include "write_mesh_particles.h"
 
-// Check MPM Explicit
-TEST_CASE("MPM 2D Explicit implementation is checked",
-          "[MPM][2D][Explicit][USF][1Phase]") {
+// Check MPM Implicit Finite Strain
+TEST_CASE("MPM 2D Implicit Finite Strain implementation is checked",
+          "[MPM][2D][Implicit][1Phase][FiniteStrain]") {
   // Dimension
   const unsigned Dim = 2;
 
   // Write JSON file
-  const std::string fname = "mpm-explicit-usf";
-  const std::string analysis = "MPMExplicit2D";
-  const std::string mpm_scheme = "usf";
+  const std::string fname = "mpm-implicit-finite-strain";
+  const std::string analysis = "MPMImplicit2D";
+  const std::string mpm_scheme = "newmark";
+  const std::string lin_solver_type = "IterativeEigen";
+  const bool resume = false;
+  bool nonlinear = true;
+  bool quasi_static = true;
+  REQUIRE(mpm_test::write_json_implicit_finite_strain(
+              2, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
+              lin_solver_type) == true);
 
   // Write JSON Entity Sets file
   REQUIRE(mpm_test::write_entity_set() == true);
@@ -32,18 +39,14 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
   // clang-format off
   char* argv[] = {(char*)"./mpm",
                   (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"mpm-explicit-usf-2d.json"};
+                  (char*)"-i",  (char*)"mpm-implicit-finite-strain-2d.json"};
   // clang-format on
 
   SECTION("Check initialisation") {
-    const bool resume = false;
-    REQUIRE(mpm_test::write_json(2, resume, analysis, mpm_scheme, fname) ==
-            true);
-
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Run Implicit MPM
+    auto mpm = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
 
     // Initialise materials
     REQUIRE_NOTHROW(mpm->initialise_materials());
@@ -51,7 +54,6 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     REQUIRE_NOTHROW(mpm->initialise_mesh());
     // Initialise particles
     REQUIRE_NOTHROW(mpm->initialise_particles());
-
     // Initialise external loading
     REQUIRE_NOTHROW(mpm->initialise_loads());
 
@@ -62,8 +64,8 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
   SECTION("Check solver") {
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Run Implicit MPM
+    auto mpm = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
     // Solve
     REQUIRE(mpm->solve() == true);
     // Test check point restart
@@ -72,15 +74,21 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
 
   SECTION("Check resume") {
     // Write JSON file
-    const std::string fname = "mpm-explicit-usf";
-    const std::string analysis = "MPMExplicit2D";
-    const std::string mpm_scheme = "usf";
-    REQUIRE(mpm_test::write_json(2, true, analysis, mpm_scheme, fname) == true);
+    const std::string fname = "mpm-implicit-finite-strain";
+    const std::string analysis = "MPMImplicit2D";
+    const std::string mpm_scheme = "newmark";
+    const std::string lin_solver_type = "IterativeEigen";
+    const bool resume = true;
+    bool nonlinear = true;
+    bool quasi_static = true;
+    REQUIRE(mpm_test::write_json_implicit_finite_strain(
+                2, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
+                lin_solver_type) == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Run Implicit MPM
+    auto mpm = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
 
     // Initialise materials
     REQUIRE_NOTHROW(mpm->initialise_materials());
@@ -90,34 +98,32 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     // Test check point restart
     REQUIRE(mpm->checkpoint_resume() == true);
     {
-      // Solve
+      // Create an IO object
       auto io = std::make_unique<mpm::IO>(argc, argv);
-      // Run explicit MPM
-      auto mpm_resume = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      // Run Implicit MPM
+      auto mpm_resume = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
       REQUIRE(mpm_resume->solve() == true);
     }
   }
-
-  SECTION("Check pressure smoothing") {
-    // Create an IO object
-    auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
-    // Pressure smoothing
-    REQUIRE_NOTHROW(mpm->pressure_smoothing(0));
-  }
 }
 
-// Check MPM Explicit
-TEST_CASE("MPM 3D Explicit implementation is checked",
-          "[MPM][3D][Explicit][USF][1Phase]") {
+// Check MPM Implicit Finite Strain
+TEST_CASE("MPM 3D Implicit Finite Strain implementation is checked",
+          "[MPM][3D][Implicit][1Phase][FiniteStrain]") {
   // Dimension
   const unsigned Dim = 3;
 
   // Write JSON file
-  const std::string fname = "mpm-explicit-usf";
-  const std::string analysis = "MPMExplicit3D";
-  const std::string mpm_scheme = "usf";
+  const std::string fname = "mpm-implicit-finite-strain";
+  const std::string analysis = "MPMImplicit3D";
+  const std::string mpm_scheme = "newmark";
+  const std::string lin_solver_type = "IterativeEigen";
+  const bool resume = false;
+  bool nonlinear = true;
+  bool quasi_static = false;
+  REQUIRE(mpm_test::write_json_implicit_finite_strain(
+              3, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
+              lin_solver_type) == true);
 
   // Write JSON Entity Sets file
   REQUIRE(mpm_test::write_entity_set() == true);
@@ -133,18 +139,14 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
   // clang-format off
   char* argv[] = {(char*)"./mpm",
                   (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"mpm-explicit-usf-3d.json"};
+                  (char*)"-i",  (char*)"mpm-implicit-finite-strain-3d.json"};
   // clang-format on
 
   SECTION("Check initialisation") {
-    const bool resume = false;
-    REQUIRE(mpm_test::write_json(3, resume, analysis, mpm_scheme, fname) ==
-            true);
-
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Run Implicit MPM
+    auto mpm = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
 
     // Initialise materials
     REQUIRE_NOTHROW(mpm->initialise_materials());
@@ -160,8 +162,8 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
   SECTION("Check solver") {
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Run Implicit MPM
+    auto mpm = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
     // Solve
     REQUIRE(mpm->solve() == true);
     // Test check point restart
@@ -170,39 +172,35 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
 
   SECTION("Check resume") {
     // Write JSON file
-    const std::string fname = "mpm-explicit-usf";
-    const std::string analysis = "MPMExplicit3D";
-    const std::string mpm_scheme = "usf";
+    const std::string fname = "mpm-implicit-finite-strain";
+    const std::string analysis = "MPMImplicit3D";
+    const std::string mpm_scheme = "newmark";
+    const std::string lin_solver_type = "IterativeEigen";
     const bool resume = true;
-    REQUIRE(mpm_test::write_json(3, resume, analysis, mpm_scheme, fname) ==
-            true);
+    bool nonlinear = true;
+    bool quasi_static = false;
+    REQUIRE(mpm_test::write_json_implicit_finite_strain(
+                3, resume, analysis, mpm_scheme, nonlinear, quasi_static, fname,
+                lin_solver_type) == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+    // Run Implicit MPM
+    auto mpm = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
 
     // Initialise materials
     REQUIRE_NOTHROW(mpm->initialise_materials());
     // Initialise mesh
     REQUIRE_NOTHROW(mpm->initialise_mesh());
+
     // Test check point restart
     REQUIRE(mpm->checkpoint_resume() == true);
     {
       // Solve
       auto io = std::make_unique<mpm::IO>(argc, argv);
-      // Run explicit MPM
-      auto mpm_resume = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      // Run Implicit MPM
+      auto mpm_resume = std::make_unique<mpm::MPMImplicit<Dim>>(std::move(io));
       REQUIRE(mpm_resume->solve() == true);
     }
-  }
-
-  SECTION("Check pressure smoothing") {
-    // Create an IO object
-    auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit MPM
-    auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
-    // Pressure smoothing
-    REQUIRE_NOTHROW(mpm->pressure_smoothing(0));
   }
 }

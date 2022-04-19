@@ -240,6 +240,16 @@ class Cell {
       const Eigen::MatrixXd& bmatrix, const Eigen::MatrixXd& dmatrix,
       double pvolume, double multiplier = 1.0) noexcept;
 
+  //! Compute local geometric stiffness matrix (Used in equilibrium equation)
+  //! \ingroup Implicit
+  //! \param[in] geometric_stiffness local geometric stiffness matrix
+  //! contribution from material point
+  //! \param[in] pvolume particle volume
+  //! \param[in] multiplier multiplier
+  void compute_local_geometric_stiffness_matrix(
+      const Eigen::MatrixXd& geometric_stiffness, double pvolume,
+      double multiplier = 1.0) noexcept;
+
   //! Compute local mass matrix (Used in equilibrium equation)
   //! \ingroup Implicit
   //! \param[in] shapefn shape function

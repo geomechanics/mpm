@@ -73,7 +73,14 @@ class Material {
   //! \param[in] state_vars History-dependent state variables
   virtual void initialise(mpm::dense_map* state_vars){};
 
+  /**
+   * \defgroup InfinitesimalStrain Functions for infinitesimal strain
+   * formulation
+   */
+  /**@{*/
+
   //! Compute stress
+  //! \ingroup InfinitesimalStrain
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
@@ -82,9 +89,16 @@ class Material {
   virtual Vector6d compute_stress(const Vector6d& stress,
                                   const Vector6d& dstrain,
                                   const ParticleBase<Tdim>* ptr,
-                                  mpm::dense_map* state_vars) = 0;
+                                  mpm::dense_map* state_vars) {
+    auto error = Vector6d::Zero();
+    throw std::runtime_error(
+        "Calling the base class function (compute_stress) "
+        "in Material:: illegal operation!");
+    return error;
+  };
 
   //! Compute consistent tangent matrix
+  //! \ingroup InfinitesimalStrain
   //! \param[in] stress Updated stress
   //! \param[in] prev_stress Stress at the current step
   //! \param[in] dstrain Strain
@@ -101,6 +115,54 @@ class Material {
         "in Material:: illegal operation!");
     return error;
   };
+  /**@}*/
+
+  /**
+   * \defgroup FiniteStrain Functions for finite strain formulation
+   */
+  /**@{*/
+  //! Compute stress
+  //! \ingroup FiniteStrain
+  //! \param[in] stress Stress
+  //! \param[in] deformation_gradient Deformation gradient at the current step
+  //! \param[in] deformation_gradient_increment Deformation gradient increment
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval updated_stress Updated value of stress
+  virtual Vector6d compute_stress(
+      const Vector6d& stress,
+      const Eigen::Matrix<double, 3, 3>& deformation_gradient,
+      const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
+      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+    auto error = Vector6d::Zero();
+    throw std::runtime_error(
+        "Calling the base class function (compute_stress) "
+        "in Material:: illegal operation!");
+    return error;
+  };
+
+  //! Compute consistent tangent matrix
+  //! \ingroup FiniteStrain
+  //! \param[in] stress Updated stress
+  //! \param[in] prev_stress Stress at the current step
+  //! \param[in] deformation_gradient Deformation gradient at the current step
+  //! \param[in] deformation_gradient_increment Deformation gradient increment
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval dmatrix Constitutive relations mattrix
+  virtual Matrix6x6 compute_consistent_tangent_matrix(
+      const Vector6d& stress, const Vector6d& prev_stress,
+      const Eigen::Matrix<double, 3, 3>& deformation_gradient,
+      const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
+      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+    auto error = Matrix6x6::Zero();
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_consistent_tangent_matrix) "
+        "in Material:: illegal operation!");
+    return error;
+  };
+  /**@}*/
 
  protected:
   //! material id

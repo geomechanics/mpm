@@ -9,12 +9,13 @@
 #include "linear_function.h"
 #include "material.h"
 #include "node.h"
-#include "particle_bbar.h"
+#include "particle_finite_strain.h"
 #include "pod_particle.h"
 #include "quadrilateral_element.h"
 
-//! \brief Check particle bbar class for 2D case
-TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
+//! \brief Check ParticleFiniteStrain class for 2D case
+TEST_CASE("ParticleFiniteStrain is checked for 2D case",
+          "[particle][2D][FiniteStrain]") {
   // Dimension
   const unsigned Dim = 2;
   // Degree of freedom
@@ -37,10 +38,11 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     // Add particle
     mpm::Index id = 0;
     coords << 0.75, 0.75;
-    auto particle = std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
+    auto particle =
+        std::make_shared<mpm::ParticleFiniteStrain<Dim>>(id, coords);
 
     // Particle type
-    REQUIRE(particle->type() == "P2DBBAR");
+    REQUIRE(particle->type() == "P2DFS");
 
     // Time-step
     const double dt = 0.1;
@@ -141,7 +143,7 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
 
     auto material =
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
-            "LinearElastic2D", std::move(mid), jmaterial);
+            "HenckyHyperElastic2D", std::move(mid), jmaterial);
 
     // Check compute mass before material and volume
     // TODO Assert: REQUIRE(particle->compute_mass() == false);
@@ -201,10 +203,10 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     // Values of nodal momentum
     Eigen::Matrix<double, 4, 2> nodal_momentum;
     // clang-format off
-    nodal_momentum << 0., 562.5,
-                      0., 187.5,
-                      0., 62.5,
-                      0., 187.5;
+      nodal_momentum << 0., 562.5,
+                        0., 187.5,
+                        0., 62.5,
+                        0., 187.5;
     // clang-format on
     // Check nodal momentum
     for (unsigned i = 0; i < nodal_momentum.rows(); ++i)
@@ -215,10 +217,10 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     // Values of nodal velocity
     Eigen::Matrix<double, 4, 2> nodal_velocity;
     // clang-format off
-    nodal_velocity << 0., 1.,
-                      0., 1.,
-                      0., 1.,
-                      0., 1.;
+      nodal_velocity << 0., 1.,
+                        0., 1.,
+                        0., 1.,
+                        0., 1.;
     // clang-format on
     // Check nodal velocity
     for (unsigned i = 0; i < nodal_velocity.rows(); ++i)
@@ -228,10 +230,10 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
 
     // Set momentum to get non-zero strain
     // clang-format off
-    nodal_momentum << 0., 562.5 * 1.,
-                      0., 187.5 * 2.,
-                      0.,  62.5 * 3.,
-                      0., 187.5 * 4.;
+      nodal_momentum << 0., 562.5 * 1.,
+                        0., 187.5 * 2.,
+                        0.,  62.5 * 3.,
+                        0., 187.5 * 4.;
     // clang-format on
     for (unsigned i = 0; i < nodes.size(); ++i)
       REQUIRE_NOTHROW(
@@ -239,10 +241,10 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
 
     // nodal velocity
     // clang-format off
-    nodal_velocity << 0., 1.,
-                      0., 2.,
-                      0., 3.,
-                      0., 4.;
+      nodal_velocity << 0., 1.,
+                        0., 2.,
+                        0., 3.,
+                        0., 4.;
     // clang-format on
     // Compute nodal velocity
     for (const auto& node : nodes) node->compute_velocity();
@@ -257,33 +259,39 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
 
     // Compute strain
     particle->compute_strain(dt);
-    // Strain
-    Eigen::Matrix<double, 6, 1> strain;
-    strain << -0.025, 0.225, 0., 0.050, 0., 0.;
-    // Check strains
-    for (unsigned i = 0; i < strain.rows(); ++i)
-      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
+    // Deformation gradient increment
+    Eigen::Matrix<double, 3, 3> deformation_gradient_increment;
+
+    // clang-format off
+      deformation_gradient_increment <<    1.0,     0., 0.,
+                                          0.05,   1.25, 0.,
+                                            0.,     0., 1.;
+    // clang-format on
+
+    // Check deformation gradient increment
+    for (unsigned i = 0; i < deformation_gradient_increment.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient_increment.cols(); ++j)
+        REQUIRE(
+            particle->deformation_gradient_increment()(i, j) ==
+            Approx(deformation_gradient_increment(i, j)).epsilon(Tolerance));
 
     // Check updated pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Update volume strain rate
-    REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
-    particle->compute_strain(dt);
-    REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
+    // Update updated volume
+    REQUIRE(particle->volume() == Approx(1.25).epsilon(Tolerance));
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress());
 
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
-    stress <<  961538.4615384613,
-              2884615.3846153845,
-              1153846.1538461535,
-                192307.692307692,
-                    0.0000000000,
-                    0.0000000000;
+      stress << 1027068.9206402331,
+                2405908.7918860661,
+                1029893.3137578896,
+                122021.22754387908,
+                      0.0000000000,
+                      0.0000000000;
     // clang-format on
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
@@ -292,10 +300,10 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     // Internal force
     Eigen::Matrix<double, 4, 2> internal_force;
     // clang-format off
-    internal_force <<  384615.3846153844,  1826923.0769230768,
-                      -192307.6923076921,  1057692.3076923077,
-                      -769230.7692307691,          -1250000.0,
-                       576923.0769230768, -1634615.3846153845;
+      internal_force <<   861817.6111380842,  1895947.5145724588,
+                        -739796.38359420502,  509961.27731360722,
+                        -287272.53704602807, -631982.50485748635,
+                         165251.30950214894, -1773926.2870285797;
     // clang-format on
 
     // Map particle internal force
@@ -310,8 +318,9 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
   }
 }
 
-//! \brief Check particle bbar class for 3D case
-TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
+//! \brief Check ParticleFiniteStrain class for 3D case
+TEST_CASE("ParticleFiniteStrain is checked for 3D case",
+          "[particle][3D][FiniteStrain]") {
   // Dimension
   const unsigned Dim = 3;
   // Dimension
@@ -332,11 +341,11 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     // Add particle
     mpm::Index id = 0;
     coords << 1.5, 1.5, 1.5;
-    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
-        std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
+    auto particle =
+        std::make_shared<mpm::ParticleFiniteStrain<Dim>>(id, coords);
 
     // Particle type
-    REQUIRE(particle->type() == "P3DBBAR");
+    REQUIRE(particle->type() == "P3DFS");
 
     // Phase
     const unsigned phase = 0;
@@ -468,7 +477,7 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
 
     auto material =
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
-            "LinearElastic3D", std::move(mid), jmaterial);
+            "HenckyHyperElastic3D", std::move(mid), jmaterial);
 
     // Check compute mass before material and volume
     // TODO Assert: REQUIRE(particle->compute_mass() == false);
@@ -600,37 +609,41 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     // Check pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Compute strain
+    // Compute deformation gradient increment
     particle->compute_strain(dt);
-    // Strain
-    Eigen::Matrix<double, 6, 1> strain;
-    strain << 0.0083333333, 0.0833333333, 0.4083333333, -0.02500, 0.35000,
-        -0.05000;
+    // Deformation gradient increment
+    Eigen::Matrix<double, 3, 3> deformation_gradient_increment;
+    // clang-format off
+    deformation_gradient_increment <<     1.,     0.,     0.,
+                                      -0.025,  1.075,  0.200,
+                                      -0.050,  0.150,  1.400;
+    // clang-format on
 
-    // Check strains
-    for (unsigned i = 0; i < strain.rows(); ++i)
-      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
+    // Check deformation gradient increment
+    for (unsigned i = 0; i < deformation_gradient_increment.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient_increment.cols(); ++j)
+        REQUIRE(
+            particle->deformation_gradient_increment()(i, j) ==
+            Approx(deformation_gradient_increment(i, j)).epsilon(Tolerance));
 
     // Check updated pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Update volume strain rate
-    REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
-    particle->compute_strain(dt);
-    REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
+    // Check updated volume
+    REQUIRE(particle->volume() == Approx(11.8).epsilon(Tolerance));
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress());
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
-    stress << 2948717.9487179490,
-              3525641.0256410260,
-              6025641.0256410269,
-               -96153.8461538463,
-              1346153.8461538465,
-              -192307.6923076927;
+    stress << 1517827.6913974094,
+              1855975.5651400965,
+              3213620.2992554507,
+              -44953.742519449908,
+              761509.28187618568,
+              -85213.534390812507;
     // clang-format on
+
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
@@ -638,14 +651,14 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     // Internal force
     Eigen::Matrix<double, 8, 3> internal_force;
     // clang-format off
-    internal_force <<  3790064.1025641034,   4318910.256410257,   4919871.7948717959,
-                      -4078525.6410256424,   4719551.282051282,   6618589.7435897458,
-                      -3613782.0512820524,  -584935.8974358966,   7483974.3589743618,
-                       3133012.8205128210, -3068910.2564102570,   5080128.2051282059,
-                       3229166.6666666670,  3277243.5897435895,  -3766025.6410256415,
-                      -3325320.5128205139,  1786858.9743589731,  -2387820.5128205139,
-                       -777243.5897435879, -5536858.9743589740, -10945512.8205128238,
-                       1642628.2051282048, -4911858.9743589750,  -7003205.1282051317;
+    internal_force <<  346915.10362178675,    643132.776124208,   972479.01168520586,
+                      -477082.38053204917,  1974352.0708920739,   3002650.5694464301,
+                      -1296385.9140377976,  355129.51725593302,   6723423.8627107339,
+                         1085699.05338481,   73422.76323252765,   2155927.7531794319,
+                       1125958.8452561726,  1167889.0464964383,  -296183.26419983286,
+                      -1175606.5384237098,  3638528.3670476656,  -632909.18942706077,
+                      -3122235.9325960809, -5788194.9851178732,  -8752311.1051668543,
+                       3512737.7633268684, -2064259.5559309737,  -3173077.6382280551;
     // clang-format on
 
     // Map particle internal force

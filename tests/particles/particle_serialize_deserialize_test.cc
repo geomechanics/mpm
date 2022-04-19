@@ -102,7 +102,17 @@ TEST_CASE("Particle is checked for serialization and deserialization",
     h5_particle.gamma_yz = strain[4];
     h5_particle.gamma_xz = strain[5];
 
-    h5_particle.epsilon_v = strain.head(Dim).sum();
+    Eigen::Matrix<double, 3, 3> deformation_gradient =
+        Eigen::Matrix<double, 3, 3>::Identity();
+    h5_particle.defgrad_00 = deformation_gradient(0, 0);
+    h5_particle.defgrad_01 = deformation_gradient(0, 1);
+    h5_particle.defgrad_02 = deformation_gradient(0, 2);
+    h5_particle.defgrad_10 = deformation_gradient(1, 0);
+    h5_particle.defgrad_11 = deformation_gradient(1, 1);
+    h5_particle.defgrad_12 = deformation_gradient(1, 2);
+    h5_particle.defgrad_20 = deformation_gradient(2, 0);
+    h5_particle.defgrad_21 = deformation_gradient(2, 1);
+    h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
     h5_particle.status = true;
 
@@ -184,9 +194,14 @@ TEST_CASE("Particle is checked for serialization and deserialization",
     for (unsigned i = 0; i < strain.size(); ++i)
       REQUIRE(pstrain(i) == Approx(strain(i)).epsilon(Tolerance));
 
-    // Check particle volumetric strain centroid
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            rparticle->volumetric_strain_centroid());
+    // Check deformation gradient
+    auto pdef_grad = rparticle->deformation_gradient();
+    REQUIRE(pdef_grad.rows() == deformation_gradient.rows());
+    REQUIRE(pdef_grad.cols() == deformation_gradient.cols());
+    for (unsigned i = 0; i < deformation_gradient.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
+        REQUIRE(pdef_grad(i, j) ==
+                Approx(deformation_gradient(i, j)).epsilon(Tolerance));
 
     // Check cell id
     REQUIRE(particle->cell_id() == rparticle->cell_id());

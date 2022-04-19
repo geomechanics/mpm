@@ -10,11 +10,13 @@
 #include "material.h"
 #include "node.h"
 #include "particle_bbar.h"
+#include "particle_finite_strain.h"
 #include "pod_particle.h"
 #include "quadrilateral_element.h"
 
-//! \brief Check particle bbar class for 2D case
-TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
+//! \brief Check ParticleFiniteStrain class for 2D case
+TEST_CASE("Implicit ParticleFiniteStrain is checked for 2D case",
+          "[particle][2D][Implicit][FiniteStrain]") {
   // Dimension
   const unsigned Dim = 2;
   // Degree of freedom
@@ -37,13 +39,8 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     // Add particle
     mpm::Index id = 0;
     coords << 0.75, 0.75;
-    auto particle = std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
-
-    // Particle type
-    REQUIRE(particle->type() == "P2DBBAR");
-
-    // Time-step
-    const double dt = 0.1;
+    auto particle =
+        std::make_shared<mpm::ParticleFiniteStrain<Dim>>(id, coords);
 
     // Check particle coordinates
     auto coordinates = particle->coordinates();
@@ -83,6 +80,14 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     nodes.emplace_back(node1);
     nodes.emplace_back(node2);
     nodes.emplace_back(node3);
+
+    // Assign active id
+    unsigned int active_id = 0;
+    for (const auto& node : nodes) {
+      node->initialise_implicit();
+      node->assign_active_id(active_id);
+      active_id++;
+    }
 
     // Initialise cell properties
     cell->initialise();
@@ -141,7 +146,7 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
 
     auto material =
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
-            "LinearElastic2D", std::move(mid), jmaterial);
+            "HenckyHyperElastic2D", std::move(mid), jmaterial);
 
     // Check compute mass before material and volume
     // TODO Assert: REQUIRE(particle->compute_mass() == false);
@@ -174,7 +179,7 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     REQUIRE(particle->compute_reference_location() == true);
     REQUIRE_NOTHROW(particle->compute_shapefn());
 
-    // Check velocity
+    // Check velocity and acceleration
     Eigen::VectorXd velocity;
     velocity.resize(Dim);
     for (unsigned i = 0; i < velocity.size(); ++i) velocity(i) = i;
@@ -182,8 +187,15 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     for (unsigned i = 0; i < velocity.size(); ++i)
       REQUIRE(particle->velocity()(i) == Approx(i).epsilon(Tolerance));
 
+    Eigen::VectorXd acceleration;
+    acceleration.resize(Dim);
+    for (unsigned i = 0; i < acceleration.size(); ++i) acceleration(i) = i;
+    REQUIRE(particle->assign_acceleration(acceleration) == true);
+    for (unsigned i = 0; i < acceleration.size(); ++i)
+      REQUIRE(particle->acceleration()(i) == Approx(i).epsilon(Tolerance));
+
     REQUIRE_NOTHROW(particle->compute_mass());
-    REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
+    REQUIRE_NOTHROW(particle->map_mass_momentum_inertia_to_nodes());
 
     // TODO Assert: REQUIRE(particle->map_pressure_to_nodes() == false);
     REQUIRE(particle->compute_pressure_smoothing() == false);
@@ -194,9 +206,6 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     for (unsigned i = 0; i < nodes.size(); ++i)
       REQUIRE(nodes.at(i)->mass(phase) ==
               Approx(nodal_mass.at(i)).epsilon(Tolerance));
-
-    // Compute nodal velocity
-    for (const auto& node : nodes) node->compute_velocity();
 
     // Values of nodal momentum
     Eigen::Matrix<double, 4, 2> nodal_momentum;
@@ -212,13 +221,30 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
         REQUIRE(nodes.at(i)->momentum(phase)(j) ==
                 Approx(nodal_momentum(i, j)).epsilon(Tolerance));
 
+    // Values of nodal inertia
+    Eigen::Matrix<double, 4, 2> nodal_inertia;
+    // clang-format off
+    nodal_inertia << 0., 562.5,
+                     0., 187.5,
+                     0., 62.5,
+                     0., 187.5;
+    // clang-format on
+    // Check nodal inertia
+    for (unsigned i = 0; i < nodal_inertia.rows(); ++i)
+      for (unsigned j = 0; j < nodal_inertia.cols(); ++j)
+        REQUIRE(nodes.at(i)->inertia(phase)(j) ==
+                Approx(nodal_inertia(i, j)).epsilon(Tolerance));
+
+    // Compute nodal velocity and acceleration
+    for (const auto& node : nodes) node->compute_velocity_acceleration();
+
     // Values of nodal velocity
     Eigen::Matrix<double, 4, 2> nodal_velocity;
     // clang-format off
-    nodal_velocity << 0., 1.,
-                      0., 1.,
-                      0., 1.,
-                      0., 1.;
+      nodal_velocity << 0., 1.,
+                        0., 1.,
+                        0., 1.,
+                        0., 1.;
     // clang-format on
     // Check nodal velocity
     for (unsigned i = 0; i < nodal_velocity.rows(); ++i)
@@ -226,92 +252,88 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
         REQUIRE(nodes.at(i)->velocity(phase)(j) ==
                 Approx(nodal_velocity(i, j)).epsilon(Tolerance));
 
-    // Set momentum to get non-zero strain
+    // Values of nodal acceleration
+    Eigen::Matrix<double, 4, 2> nodal_acceleration;
     // clang-format off
-    nodal_momentum << 0., 562.5 * 1.,
-                      0., 187.5 * 2.,
-                      0.,  62.5 * 3.,
-                      0., 187.5 * 4.;
+      nodal_acceleration << 0., 1.,
+                            0., 1.,
+                            0., 1.,
+                            0., 1.;
     // clang-format on
-    for (unsigned i = 0; i < nodes.size(); ++i)
-      REQUIRE_NOTHROW(
-          nodes.at(i)->update_momentum(false, phase, nodal_momentum.row(i)));
+    // Check nodal acceleration
+    for (unsigned i = 0; i < nodal_acceleration.rows(); ++i)
+      for (unsigned j = 0; j < nodal_acceleration.cols(); ++j)
+        REQUIRE(nodes.at(i)->acceleration(phase)(j) ==
+                Approx(nodal_acceleration(i, j)).epsilon(Tolerance));
 
-    // nodal velocity
+    // Set nodal displacement to get non-zero strain
+    // nodal displacement
     // clang-format off
-    nodal_velocity << 0., 1.,
-                      0., 2.,
-                      0., 3.,
-                      0., 4.;
+      Eigen::VectorXd nodal_displacement;
+      nodal_displacement.resize(4 * 2);
+      nodal_displacement << 0., 0.,
+                            0., 0.,
+                            0.1, 0.2,
+                            0.3, 0.4;
     // clang-format on
-    // Compute nodal velocity
-    for (const auto& node : nodes) node->compute_velocity();
-    // Check nodal velocity
-    for (unsigned i = 0; i < nodal_velocity.rows(); ++i)
-      for (unsigned j = 0; j < nodal_velocity.cols(); ++j)
-        REQUIRE(nodes.at(i)->velocity(phase)(j) ==
-                Approx(nodal_velocity(i, j)).epsilon(Tolerance));
+    // Assign nodal displacement
+    for (const auto& node : nodes)
+      node->update_displacement_increment(nodal_displacement, phase, 4);
+    // Check nodal displacement
+    for (unsigned i = 0; i < Nnodes; ++i)
+      for (unsigned j = 0; j < 2; ++j)
+        REQUIRE(nodes.at(i)->displacement(phase)(j) ==
+                Approx(nodal_displacement(Nnodes * j + i)).epsilon(Tolerance));
 
     // Check pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Compute strain
-    particle->compute_strain(dt);
-    // Strain
-    Eigen::Matrix<double, 6, 1> strain;
-    strain << -0.025, 0.225, 0., 0.050, 0., 0.;
-    // Check strains
-    for (unsigned i = 0; i < strain.rows(); ++i)
-      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
-
-    // Check updated pressure
-    REQUIRE(std::isnan(particle->pressure()) == true);
-
-    // Update volume strain rate
-    REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
-    particle->compute_strain(dt);
-    REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
+    // Compute strain increment
+    particle->compute_strain_volume_newmark();
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
-
+    REQUIRE_NOTHROW(particle->compute_stress_newmark());
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
-    stress <<  961538.4615384613,
-              2884615.3846153845,
-              1153846.1538461535,
-                192307.692307692,
-                    0.0000000000,
-                    0.0000000000;
+    stress << 1027068.9206402331,
+              2405908.7918860661,
+              1029893.3137578896,
+              122021.22754387908,
+                               0,
+                               0;
     // clang-format on
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
-    // Internal force
-    Eigen::Matrix<double, 4, 2> internal_force;
+    // Update stress and strain
+    particle->update_stress_strain();
+
+    // Deformation gradient
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
     // clang-format off
-    internal_force <<  384615.3846153844,  1826923.0769230768,
-                      -192307.6923076921,  1057692.3076923077,
-                      -769230.7692307691,          -1250000.0,
-                       576923.0769230768, -1634615.3846153845;
+    deformation_gradient <<   1.,   0., 0.,
+                            0.05, 1.25, 0.,
+                              0.,   0., 1.;
     // clang-format on
 
-    // Map particle internal force
-    particle->assign_volume(1.0);
-    particle->map_internal_force();
+    // Check deformation gradient increment
+    for (unsigned i = 0; i < deformation_gradient.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
+        REQUIRE(particle->deformation_gradient()(i, j) ==
+                Approx(deformation_gradient(i, j)).epsilon(Tolerance));
 
-    // Check nodal internal force
-    for (unsigned i = 0; i < internal_force.rows(); ++i)
-      for (unsigned j = 0; j < internal_force.cols(); ++j)
-        REQUIRE(nodes[i]->internal_force(phase)[j] ==
-                Approx(internal_force(i, j)).epsilon(Tolerance));
+    // Check updated pressure
+    REQUIRE(std::isnan(particle->pressure()) == true);
+
+    // Check updated volume
+    REQUIRE(particle->volume() == Approx(1.25).epsilon(Tolerance));
   }
 }
 
-//! \brief Check particle bbar class for 3D case
-TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
+//! \brief Check ParticleFiniteStrain class for 3D case
+TEST_CASE("Implicit ParticleFiniteStrain is checked for 3D case",
+          "[particle][3D][Implicit][FiniteStrain]") {
   // Dimension
   const unsigned Dim = 3;
   // Dimension
@@ -332,16 +354,11 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     // Add particle
     mpm::Index id = 0;
     coords << 1.5, 1.5, 1.5;
-    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
-        std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
-
-    // Particle type
-    REQUIRE(particle->type() == "P3DBBAR");
+    auto particle =
+        std::make_shared<mpm::ParticleFiniteStrain<Dim>>(id, coords);
 
     // Phase
     const unsigned phase = 0;
-    // Time-step
-    const double dt = 0.1;
 
     // Check particle coordinates
     auto coordinates = particle->coordinates();
@@ -407,6 +424,14 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     cell->add_node(7, node7);
     REQUIRE(cell->nnodes() == 8);
 
+    // Assign active id
+    unsigned int active_id = 0;
+    for (const auto& node : nodes) {
+      node->initialise_implicit();
+      node->assign_active_id(active_id);
+      active_id++;
+    }
+
     // Initialise cell properties
     cell->initialise();
 
@@ -468,7 +493,7 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
 
     auto material =
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
-            "LinearElastic3D", std::move(mid), jmaterial);
+            "HenckyHyperElastic3D", std::move(mid), jmaterial);
 
     // Check compute mass before material and volume
     // TODO Assert: REQUIRE(particle->compute_mass() == false);
@@ -501,7 +526,7 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     REQUIRE(particle->compute_reference_location() == true);
     REQUIRE_NOTHROW(particle->compute_shapefn());
 
-    // Check velocity
+    // Check velocity and acceleration
     Eigen::VectorXd velocity;
     velocity.resize(Dim);
     for (unsigned i = 0; i < velocity.size(); ++i) velocity(i) = i;
@@ -509,8 +534,15 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     for (unsigned i = 0; i < velocity.size(); ++i)
       REQUIRE(particle->velocity()(i) == Approx(i).epsilon(Tolerance));
 
+    Eigen::VectorXd acceleration;
+    acceleration.resize(Dim);
+    for (unsigned i = 0; i < acceleration.size(); ++i) acceleration(i) = i;
+    REQUIRE(particle->assign_acceleration(acceleration) == true);
+    for (unsigned i = 0; i < acceleration.size(); ++i)
+      REQUIRE(particle->acceleration()(i) == Approx(i).epsilon(Tolerance));
+
     REQUIRE_NOTHROW(particle->compute_mass());
-    REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
+    REQUIRE_NOTHROW(particle->map_mass_momentum_inertia_to_nodes());
 
     // TODO Assert: REQUIRE(particle->map_pressure_to_nodes() == false);
     REQUIRE(particle->compute_pressure_smoothing() == false);
@@ -523,8 +555,8 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
       REQUIRE(nodes.at(i)->mass(phase) ==
               Approx(nodal_mass.at(i)).epsilon(Tolerance));
 
-    // Compute nodal velocity
-    for (const auto& node : nodes) node->compute_velocity();
+    // Compute nodal velocity and acceleration
+    for (const auto& node : nodes) node->compute_velocity_acceleration();
 
     // Values of nodal momentum
     Eigen::Matrix<double, 8, 3> nodal_momentum;
@@ -563,99 +595,108 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
         REQUIRE(nodes.at(i)->velocity(phase)(j) ==
                 Approx(nodal_velocity(i, j)).epsilon(Tolerance));
 
-    // Set momentum to get non-zero strain
+    // Values of nodal inertia
+    Eigen::Matrix<double, 8, 3> nodal_inertia;
     // clang-format off
-    nodal_momentum << 0.,  125. * 1.,  250. * 1.,
-                      0.,  375. * 2.,  750. * 2.,
-                      0., 1125. * 3., 2250. * 3.,
-                      0.,  375. * 4.,  750. * 4.,
-                      0.,  375. * 5.,  750. * 5.,
-                      0., 1125. * 6., 2250. * 6.,
-                      0., 3375. * 7., 6750. * 7.,
-                      0., 1125. * 8., 2250. * 8.;
+    nodal_inertia << 0.,  125.,  250.,
+                      0.,  375.,  750.,
+                      0., 1125., 2250.,
+                      0.,  375.,  750.,
+                      0.,  375.,  750.,
+                      0., 1125., 2250.,
+                      0., 3375., 6750.,
+                      0., 1125., 2250.;
     // clang-format on
-    for (unsigned i = 0; i < nodes.size(); ++i)
-      REQUIRE_NOTHROW(
-          nodes.at(i)->update_momentum(false, phase, nodal_momentum.row(i)));
 
-    // nodal velocity
+    // Check nodal inertia
+    for (unsigned i = 0; i < nodal_inertia.rows(); ++i)
+      for (unsigned j = 0; j < nodal_inertia.cols(); ++j)
+        REQUIRE(nodes.at(i)->inertia(phase)[j] ==
+                Approx(nodal_inertia(i, j)).epsilon(Tolerance));
+
+    // Values of nodal acceleration
+    Eigen::Matrix<double, 8, 3> nodal_acceleration;
     // clang-format off
-    nodal_velocity << 0., 1.,  2.,
-                      0., 2.,  4.,
-                      0., 3.,  6.,
-                      0., 4.,  8.,
-                      0., 5., 10.,
-                      0., 6., 12.,
-                      0., 7., 14.,
-                      0., 8., 16.;
+    nodal_acceleration << 0., 1., 2.,
+                          0., 1., 2.,
+                          0., 1., 2.,
+                          0., 1., 2.,
+                          0., 1., 2.,
+                          0., 1., 2.,
+                          0., 1., 2.,
+                          0., 1., 2.;
     // clang-format on
-    // Compute nodal velocity
-    for (const auto& node : nodes) node->compute_velocity();
-    // Check nodal velocity
-    for (unsigned i = 0; i < nodal_velocity.rows(); ++i)
-      for (unsigned j = 0; j < nodal_velocity.cols(); ++j)
-        REQUIRE(nodes.at(i)->velocity(phase)(j) ==
-                Approx(nodal_velocity(i, j)).epsilon(Tolerance));
+    // Check nodal acceleration
+    for (unsigned i = 0; i < nodal_acceleration.rows(); ++i)
+      for (unsigned j = 0; j < nodal_acceleration.cols(); ++j)
+        REQUIRE(nodes.at(i)->acceleration(phase)(j) ==
+                Approx(nodal_acceleration(i, j)).epsilon(Tolerance));
+
+    // Set nodal displacement to get non-zero strain
+    // nodal displacement
+    // clang-format off
+    Eigen::VectorXd nodal_displacement;
+    nodal_displacement.resize(8 * 3);
+    nodal_displacement << 0., 0., 0.,
+                          0., 0., 0.,
+                          0., 0.,
+                          0.1, 0.2, 0.3,
+                          0.4, 0.5, 0.6,
+                          0.7, 0.8,
+                          0.2, 0.4, 0.6,
+                          0.8, 1.0, 1.2,
+                          1.4, 1.6;
+    // clang-format on
+    // Compute nodal displacement
+    for (const auto& node : nodes)
+      node->update_displacement_increment(nodal_displacement, phase, 8);
+    // Check nodal displacement
+    for (unsigned i = 0; i < Nnodes; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(nodes.at(i)->displacement(phase)(j) ==
+                Approx(nodal_displacement(Nnodes * j + i)).epsilon(Tolerance));
 
     // Check pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Compute strain
-    particle->compute_strain(dt);
-    // Strain
-    Eigen::Matrix<double, 6, 1> strain;
-    strain << 0.0083333333, 0.0833333333, 0.4083333333, -0.02500, 0.35000,
-        -0.05000;
-
-    // Check strains
-    for (unsigned i = 0; i < strain.rows(); ++i)
-      REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
-
-    // Check updated pressure
-    REQUIRE(std::isnan(particle->pressure()) == true);
-
-    // Update volume strain rate
-    REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
-    particle->compute_strain(dt);
-    REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
+    // Compute strain increment
+    particle->compute_strain_volume_newmark();
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
+    REQUIRE_NOTHROW(particle->compute_stress_newmark());
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
-    stress << 2948717.9487179490,
-              3525641.0256410260,
-              6025641.0256410269,
-               -96153.8461538463,
-              1346153.8461538465,
-              -192307.6923076927;
+    stress <<   1517827.6913974155,
+                1855975.5651401044,
+                3213620.2992554531,
+               -44953.742519450374,
+                761509.28187618684,
+               -85213.534390811867;
     // clang-format on
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
-    // Internal force
-    Eigen::Matrix<double, 8, 3> internal_force;
+    // Update stress and strain
+    particle->update_stress_strain();
+
+    // Deformation gradient
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
     // clang-format off
-    internal_force <<  3790064.1025641034,   4318910.256410257,   4919871.7948717959,
-                      -4078525.6410256424,   4719551.282051282,   6618589.7435897458,
-                      -3613782.0512820524,  -584935.8974358966,   7483974.3589743618,
-                       3133012.8205128210, -3068910.2564102570,   5080128.2051282059,
-                       3229166.6666666670,  3277243.5897435895,  -3766025.6410256415,
-                      -3325320.5128205139,  1786858.9743589731,  -2387820.5128205139,
-                       -777243.5897435879, -5536858.9743589740, -10945512.8205128238,
-                       1642628.2051282048, -4911858.9743589750,  -7003205.1282051317;
+    deformation_gradient <<     1.,    0.,   0.,
+                            -0.025, 1.075,   .2,
+                             -0.05,  0.15,  1.4;
     // clang-format on
+    // Check deformation gradient increment
+    for (unsigned i = 0; i < deformation_gradient.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
+        REQUIRE(particle->deformation_gradient()(i, j) ==
+                Approx(deformation_gradient(i, j)).epsilon(Tolerance));
 
-    // Map particle internal force
-    particle->assign_volume(8.0);
-    particle->map_internal_force();
+    // Check updated pressure
+    REQUIRE(std::isnan(particle->pressure()) == true);
 
-    // Check nodal internal force
-    for (unsigned i = 0; i < internal_force.rows(); ++i)
-      for (unsigned j = 0; j < internal_force.cols(); ++j)
-        REQUIRE(nodes[i]->internal_force(phase)[j] ==
-                Approx(internal_force(i, j)).epsilon(Tolerance));
+    // Check updated volume
+    REQUIRE(particle->volume() == Approx(11.8).epsilon(Tolerance));
   }
 }

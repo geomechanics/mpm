@@ -317,8 +317,10 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
+    REQUIRE_NOTHROW(
+        mpm_scheme->compute_forces(gravity, phase, step, false, false));
+    REQUIRE_NOTHROW(
+        mpm_scheme->compute_forces(gravity, phase, step, true, false));
 
     // Particle kinematics
     REQUIRE_NOTHROW(

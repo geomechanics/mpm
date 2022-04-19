@@ -160,6 +160,9 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/linear_solvers/linear_solvers
   ${mpm_SOURCE_DIR}/include/loads_bcs/
   ${mpm_SOURCE_DIR}/include/materials/
+  ${mpm_SOURCE_DIR}/include/materials/finite_strain
+  ${mpm_SOURCE_DIR}/include/materials/infinitesimal_strain
+  ${mpm_SOURCE_DIR}/include/materials/strain_rate
   ${mpm_SOURCE_DIR}/include/mesh/
   ${mpm_SOURCE_DIR}/include/nodes/
   ${mpm_SOURCE_DIR}/include/particles/
@@ -209,7 +212,7 @@ target_link_libraries(mpm git)
 
 # Unit test
 if(MPM_BUILD_TESTING)
-  SET(test_src
+  SET(test_src_unit
     ${mpm_SOURCE_DIR}/tests/test_main.cc
     ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_test.cc
@@ -230,6 +233,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/elements/triangle_element_test.cc
     ${mpm_SOURCE_DIR}/tests/elements/triangle_quadrature_test.cc
     ${mpm_SOURCE_DIR}/tests/functions/linear_function_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/material_utility_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/math_utility_test.cc
     ${mpm_SOURCE_DIR}/tests/functions/sin_function_test.cc
     ${mpm_SOURCE_DIR}/tests/functions/radial_basis_function_test.cc
     ${mpm_SOURCE_DIR}/tests/graph_test.cc
@@ -237,16 +242,14 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/io/io_mesh_ascii_test.cc
     ${mpm_SOURCE_DIR}/tests/io/io_test.cc
     ${mpm_SOURCE_DIR}/tests/io/vtk_writer_test.cc
-    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles.cc
-    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles_unitcell.cc
     ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/linear_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/modified_cam_clay_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/mohr_coulomb_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/newtonian_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/norsand_test.cc
-    ${mpm_SOURCE_DIR}/tests/materials/material_utility_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_free_surface_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_neighbours_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_2d.cc
@@ -258,6 +261,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/nodes/node_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/nodes/node_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_finite_strain_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_cell_crossing_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_bbar_test.cc
@@ -269,7 +274,15 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
+  )
+  SET(test_src_small
+    ${mpm_SOURCE_DIR}/tests/test_main.cc
+    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles.cc
+    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles_unitcell.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_absorbing_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_musl_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_musl_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usf_test.cc
@@ -280,16 +293,20 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usl_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usl_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_finite_strain_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_unitcell_test.cc
-    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
   )
-  add_executable(mpmtest ${mpm_src} ${test_src})
-  add_test(NAME mpmtest COMMAND $<TARGET_FILE:mpmtest>)
+  add_executable(mpmtest_unit ${mpm_src} ${test_src_unit})
+  add_executable(mpmtest_small ${mpm_src} ${test_src_small})
+  add_executable(mpmtest ${mpm_src} ${test_src_unit} ${test_src_small})
+  add_test(NAME mpmtest_unit COMMAND $<TARGET_FILE:mpmtest_unit>)
+  add_test(NAME mpmtest_small COMMAND $<TARGET_FILE:mpmtest_small>)
   enable_testing()
 
 endif()
@@ -297,6 +314,6 @@ endif()
 # Coverage
 find_package(codecov)
 if(ENABLE_COVERAGE)
-  add_executable(mpmtest_coverage ${mpm_src} ${test_src})
+  add_executable(mpmtest_coverage ${mpm_src} ${test_src_unit} ${test_src_small})
   add_coverage(mpmtest_coverage)
 endif()

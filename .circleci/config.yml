@@ -188,7 +188,8 @@ workflows:
             - gcc_small
             - clang
             - cppcheck
-            - codecov
+            - codecov_unit
+            - codecov_small
     nightly:
         jobs:
             - benchmarks

@@ -212,7 +212,7 @@ target_link_libraries(mpm git)
 
 # Unit test
 if(MPM_BUILD_TESTING)
-  SET(test_src
+  SET(test_src_unit
     ${mpm_SOURCE_DIR}/tests/test_main.cc
     ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_bbar_test.cc
     ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_test.cc
@@ -245,8 +245,6 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/io/io_mesh_ascii_test.cc
     ${mpm_SOURCE_DIR}/tests/io/io_test.cc
     ${mpm_SOURCE_DIR}/tests/io/vtk_writer_test.cc
-    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles.cc
-    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles_unitcell.cc
     ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
@@ -279,6 +277,12 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
+  )
+  SET(test_src_small
+    ${mpm_SOURCE_DIR}/tests/test_main.cc
+    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles.cc
+    ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles_unitcell.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_absorbing_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_unitcell_test.cc
@@ -300,10 +304,12 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_unitcell_test.cc
-    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
   )
-  add_executable(mpmtest ${mpm_src} ${test_src})
-  add_test(NAME mpmtest COMMAND $<TARGET_FILE:mpmtest>)
+  add_executable(mpmtest_unit ${mpm_src} ${test_src_unit})
+  add_executable(mpmtest_small ${mpm_src} ${test_src_small})
+  add_executable(mpmtest ${mpm_src} ${test_src_unit} ${test_src_small})
+  add_test(NAME mpmtest_unit COMMAND $<TARGET_FILE:mpmtest_unit>)
+  add_test(NAME mpmtest_small COMMAND $<TARGET_FILE:mpmtest_small>)
   enable_testing()
 
 endif()
@@ -311,6 +317,6 @@ endif()
 # Coverage
 find_package(codecov)
 if(ENABLE_COVERAGE)
-  add_executable(mpmtest_coverage ${mpm_src} ${test_src})
+  add_executable(mpmtest_coverage ${mpm_src} ${test_src_unit} ${test_src_small})
   add_coverage(mpmtest_coverage)
 endif()

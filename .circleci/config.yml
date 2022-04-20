@@ -20,9 +20,9 @@ jobs:
             export PETSC_ARCH=arch-linux2-c-opt
             export PETSC_DIR=/home/cbgeo/petsc/
             cmake -GNinja -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DKAHIP_ROOT=/home/cbgeo/KaHIP/ -DPARTIO_ROOT=/home/cbgeo/partio/ ..
-            ninja -j2
+            ninja -j2 mpmtest_unit
             ctest -VV -R mpmtest_unit
-            mpirun -n 4 ./mpmtest [mpi]
+            mpirun -n 4 ./mpmtest_unit [mpi]
   gcc_small:
     docker:
       - image: quay.io/cbgeo/mpm
@@ -43,7 +43,7 @@ jobs:
             export PETSC_ARCH=arch-linux2-c-opt
             export PETSC_DIR=/home/cbgeo/petsc/
             cmake -GNinja -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DKAHIP_ROOT=/home/cbgeo/KaHIP/ -DPARTIO_ROOT=/home/cbgeo/partio/ ..
-            ninja -j2
+            ninja -j2 mpmtest_small
             ctest -VV -R mpmtest_small
   clang:
     docker:

@@ -172,7 +172,7 @@ class TetrahedronElement : public Element<Tdim> {
       const Eigen::MatrixXd& nodal_coordinates) const override;
 
   //! Return if natural coordinates can be evaluates
-  bool isvalid_natural_coordinates_analytical() const override { return false; }
+  bool isvalid_natural_coordinates_analytical() const override { return true; }
 
   //! Compute Natural coordinates of a point (analytical)
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell

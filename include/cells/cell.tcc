@@ -480,15 +480,15 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
 
     // Tetrahedron
     if (indices.size() == 4) {
-      // Node numbering (k) convetion used herein has 0,0,0 node first
-      //
+      // Node numbering (k) convetion: 0,0,0 node first; CW looking from outside
+      //       3
       //       *
       //      /|\
       //     / | \
       //    /  |  \
-      //   *. -|- .*
+      // 2 *. -|- .* 1
       //      `*´
-      //
+      //       0
 
       // Assemble Ainv
       // 1. Temporary variables for node coordinants (xk, yk, zk)

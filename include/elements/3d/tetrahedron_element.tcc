@@ -1,12 +1,12 @@
 // 4-node (Linear) Tetrahedron Element
-//!
+//!       3
 //!       *
 //!      /|\
 //!     / | \
 //!    /  |  \
-//!   *. -|- .*
+//! 2 *. -|- .* 1
 //!      `*´
-//!
+//!       0
 
 //! Return shape function of a 4-noded tetrahedron, with particle size and
 //! deformation gradient
@@ -346,7 +346,6 @@ inline double mpm::TetrahedronElement<Tdim, Tnfunctions>::compute_volume(
                    x1 * y3 * z4 + x1 * y4 * z3 + x3 * y1 * z4 - x3 * y4 * z1 -
                    x4 * y1 * z3 + x4 * y3 * z1 + x2 * y3 * z4 - x2 * y4 * z3 -
                    x3 * y2 * z4 + x3 * y4 * z2 + x4 * y2 * z3 - x4 * y3 * z2);
-
   return volume;
 }
 

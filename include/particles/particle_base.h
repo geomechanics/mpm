@@ -235,11 +235,11 @@ class ParticleBase {
   //! Strain rate
   virtual Eigen::Matrix<double, 6, 1> strain_rate() const = 0;
 
-  //! Volumetric strain of centroid
-  virtual double volumetric_strain_centroid() const = 0;
-
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
+
+  //! Deformation gradient
+  virtual Eigen::Matrix<double, 3, 3> deformation_gradient() const = 0;
 
   //! Initial stress
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;
@@ -367,9 +367,15 @@ class ParticleBase {
   //! \ingroup Implicit
   virtual VectorDim acceleration() const = 0;
 
-  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+  //! Map mass and material stiffness matrix to cell (used in equilibrium
+  //! equation LHS)
   //! \ingroup Implicit
-  virtual inline bool map_material_stiffness_matrix_to_cell() = 0;
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] quasi_static Boolean of quasi-static analysis
+  virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                                   double dt,
+                                                   bool quasi_static) = 0;
 
   //! Reduce constitutive relations matrix depending on the dimension
   virtual inline Eigen::MatrixXd reduce_dmatrix(
@@ -378,16 +384,9 @@ class ParticleBase {
   //! Compute B matrix
   virtual inline Eigen::MatrixXd compute_bmatrix() = 0;
 
-  //! Map mass matrix to cell (used in equilibrium equation LHS)
+  //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
-  //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
-  virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
-                                              double dt) = 0;
-
-  //! Compute strain using nodal displacement
-  //! \ingroup Implicit
-  virtual void compute_strain_newmark() = 0;
+  virtual void compute_strain_volume_newmark() = 0;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit

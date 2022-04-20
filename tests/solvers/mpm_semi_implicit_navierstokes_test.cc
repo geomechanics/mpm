@@ -19,7 +19,7 @@ TEST_CASE("MPM 2D Semi-implicit Navier Stokes implementation is checked",
   const std::string mpm_scheme = "usf";
   const std::string fsd_type = "density";
   const std::string lin_solver_type = "IterativeEigen";
-  bool resume = false;
+  const bool resume = false;
   REQUIRE(mpm_test::write_json_navierstokes(2, resume, analysis, mpm_scheme,
                                             fname, fsd_type,
                                             lin_solver_type) == true);
@@ -80,7 +80,7 @@ TEST_CASE("MPM 2D Semi-implicit Navier Stokes implementation is checked",
     const std::string mpm_scheme = "usf";
     const std::string fsd_type = "density";
     const std::string lin_solver_type = "IterativeEigen";
-    bool resume = true;
+    const bool resume = true;
     REQUIRE(mpm_test::write_json_navierstokes(2, resume, analysis, mpm_scheme,
                                               fname, fsd_type,
                                               lin_solver_type) == true);
@@ -191,7 +191,7 @@ TEST_CASE("MPM 3D Semi-implicit Navier Stokes implementation is checked",
     const std::string mpm_scheme = "usf";
     const std::string fsd_type = "density";
     const std::string lin_solver_type = "IterativeEigen";
-    bool resume = true;
+    const bool resume = true;
     REQUIRE(mpm_test::write_json_navierstokes(3, resume, analysis, mpm_scheme,
                                               fname, fsd_type,
                                               lin_solver_type) == true);

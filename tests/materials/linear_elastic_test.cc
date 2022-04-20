@@ -305,6 +305,38 @@ TEST_CASE("LinearElastic is checked in 3D", "[material][linear_elastic][3D]") {
     REQUIRE(stress(5) == Approx(1.15384615384615e+02).epsilon(Tolerance));
   }
 
+  SECTION("LinearElastic check stresses fail") {
+    unsigned id = 0;
+    auto material =
+        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
+            "LinearElastic3D", std::move(id), jmaterial);
+    REQUIRE(material->id() == 0);
+
+    // Initialise stress and strain
+    mpm::Material<Dim>::Vector6d stress;
+    stress.setZero();
+    mpm::Material<Dim>::Vector6d updated_stress;
+    updated_stress.setZero();
+
+    // Initialise deformation gradient
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
+    deformation_gradient.setIdentity();
+
+    // Initialise deformation gradient increment
+    Eigen::Matrix<double, 3, 3> deformation_gradient_increment;
+    deformation_gradient_increment.setIdentity();
+
+    // Compute updated stress
+    mpm::dense_map state_vars = material->initialise_state_variables();
+    REQUIRE_THROWS(material->compute_stress(stress, deformation_gradient,
+                                            deformation_gradient_increment,
+                                            particle.get(), &state_vars));
+
+    REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
+        updated_stress, stress, deformation_gradient,
+        deformation_gradient_increment, particle.get(), &state_vars));
+  }
+
   SECTION("LinearElastic check properties earthquake") {
     unsigned id = 0;
 

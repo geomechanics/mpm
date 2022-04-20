@@ -620,7 +620,6 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
   }
 
   SECTION("Test nglobal particles") {
-    mpm::Index pid = 0;
     auto cell = std::make_shared<mpm::Cell<Dim>>(0, Nnodes, element);
     REQUIRE(cell->nglobal_particles() == 0);
     cell->nglobal_particles(5);
@@ -1749,7 +1748,6 @@ TEST_CASE("Cell is checked for 3D case", "[cell][3D]") {
   }
 
   SECTION("Test nglobal particles") {
-    mpm::Index pid = 0;
     auto cell = std::make_shared<mpm::Cell<Dim>>(0, Nnodes, element);
     REQUIRE(cell->nglobal_particles() == 0);
     cell->nglobal_particles(5);

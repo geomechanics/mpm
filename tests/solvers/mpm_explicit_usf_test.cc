@@ -36,7 +36,7 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
   // clang-format on
 
   SECTION("Check initialisation") {
-    bool resume = false;
+    const bool resume = false;
     REQUIRE(mpm_test::write_json(2, resume, analysis, mpm_scheme, fname) ==
             true);
 
@@ -75,7 +75,6 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     const std::string fname = "mpm-explicit-usf";
     const std::string analysis = "MPMExplicit2D";
     const std::string mpm_scheme = "usf";
-    bool resume = true;
     REQUIRE(mpm_test::write_json(2, true, analysis, mpm_scheme, fname) == true);
 
     // Create an IO object
@@ -174,7 +173,7 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
     const std::string fname = "mpm-explicit-usf";
     const std::string analysis = "MPMExplicit3D";
     const std::string mpm_scheme = "usf";
-    bool resume = true;
+    const bool resume = true;
     REQUIRE(mpm_test::write_json(3, resume, analysis, mpm_scheme, fname) ==
             true);
 

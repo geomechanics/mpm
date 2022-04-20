@@ -273,8 +273,6 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::stress_;
   //! Solid skeleton strains
   using Particle<Tdim>::strain_;
-  //! Volumetric strain at centroid
-  using Particle<Tdim>::volumetric_strain_centroid_;
   //! Soil skeleton strain rate
   using Particle<Tdim>::strain_rate_;
   //! Set traction
@@ -287,6 +285,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::particle_velocity_constraints_;
   //! Size of particle
   using Particle<Tdim>::pack_size_;
+  //! Size of particle
+  using Particle<Tdim>::deformation_gradient_;
 
   //! Liquid mass
   double liquid_mass_;

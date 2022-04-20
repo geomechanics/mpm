@@ -638,10 +638,10 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
                 1., 1., 1.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
-      auto jacobian = hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                                    Eigen::Vector3d::Zero());
+      hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
+                   Eigen::Vector3d::Zero());
+      hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
+                    Eigen::Vector3d::Zero());
     }
 
     // Ni Nj matrix of a cell
@@ -1869,10 +1869,10 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
                 1., 1., 1.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
-      auto jacobian = hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                                    Eigen::Vector3d::Zero());
+      hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
+                   Eigen::Vector3d::Zero());
+      hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
+                    Eigen::Vector3d::Zero());
     }
 
     // Ni Nj matrix of a cell

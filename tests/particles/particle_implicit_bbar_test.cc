@@ -40,13 +40,6 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
     coords << 0.75, 0.75;
     auto particle = std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
 
-    // Time-step
-    const double dt = 0.1;
-
-    // Parameters of Newmark scheme
-    const double newmark_beta = 0.25;
-    const double newmark_gamma = 0.50;
-
     // Check particle coordinates
     auto coordinates = particle->coordinates();
     for (unsigned i = 0; i < coordinates.size(); ++i)
@@ -99,19 +92,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
 
     // Add cell to particle
     REQUIRE(cell->status() == false);
-    // Check compute shape functions of a particle
-    // TODO Assert: REQUIRE_NOTHROW(particle->compute_shapefn());
-    // Compute reference location should throw
     REQUIRE(particle->compute_reference_location() == false);
-    // Compute updated particle location should fail
-    // TODO Assert:
-    // REQUIRE_NOTHROW(particle->compute_updated_position(dt) == false);
-    // Compute updated particle location from nodal velocity should fail
-    // TODO Assert: REQUIRE_NOTHROW(particle->compute_updated_position(dt,
-    // true)); Compute volume
-    // TODO Assert: REQUIRE(particle->compute_volume() == false);
-    // Update volume should fail
-    // TODO Assert: REQUIRE(particle->update_volume() == false);
 
     REQUIRE(particle->assign_cell(cell) == true);
     REQUIRE(cell->status() == true);
@@ -294,7 +275,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_newmark();
+    particle->compute_strain_volume_newmark();
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress_newmark());
@@ -337,11 +318,11 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
               Approx(previous_stress(i)).epsilon(Tolerance));
 
     // Check updated pressure
-    const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Check volume
-    REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
+    // Since dvolumetric_strain_ is reset, volume is not expected to change
     REQUIRE_NOTHROW(particle->update_volume());
     REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
   }
@@ -358,8 +339,6 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
   const unsigned Nnodes = 8;
   // Number of phases
   const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
 
@@ -377,11 +356,6 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
 
     // Phase
     const unsigned phase = 0;
-    // Time-step
-    const double dt = 0.1;
-    // Parameters of Newmark scheme
-    const double newmark_beta = 0.25;
-    const double newmark_gamma = 0.50;
 
     // Check particle coordinates
     auto coordinates = particle->coordinates();
@@ -463,20 +437,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
 
     // Add cell to particle
     REQUIRE(cell->status() == false);
-    // Check compute shape functions of a particle
-    // TODO Assert: REQUIRE(particle->compute_shapefn() == false);
-    // Compute reference location should throw
     REQUIRE(particle->compute_reference_location() == false);
-    // Compute updated particle location should fail
-    // TODO Assert: REQUIRE(particle->compute_updated_position(dt) == false);
-    // Compute updated particle location from nodal velocity should fail
-    // TODO Assert: REQUIRE_NOTHROW(particle->compute_updated_position(dt,
-    // true));
-
-    // Compute volume
-    // TODO Assert: REQUIRE(particle->compute_volume() == false);
-    // Update volume should fail
-    // TODO Assert: REQUIRE(particle->update_volume() == false);
 
     REQUIRE(particle->assign_cell(cell) == true);
     REQUIRE(cell->status() == true);
@@ -683,7 +644,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_newmark();
+    particle->compute_strain_volume_newmark();
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress_newmark());
@@ -717,7 +678,8 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Update volume
-    REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
+    // Since dvolumetric_strain_ is reset, volume is not expected to change
     REQUIRE_NOTHROW(particle->update_volume());
     REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
   }

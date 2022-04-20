@@ -22,10 +22,6 @@ class MPMExplicit : public MPMBase<Tdim> {
   //! Solve
   bool solve() override;
 
-  //! Compute stress strain
-  //! \param[in] phase Phase to smooth pressure
-  void compute_stress_strain(unsigned phase);
-
  protected:
   // Generate a unique id for the analysis
   using mpm::MPMBase<Tdim>::uuid_;

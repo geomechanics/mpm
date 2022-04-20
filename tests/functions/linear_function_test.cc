@@ -5,6 +5,7 @@
 
 #include "catch.hpp"
 #include "json.hpp"
+#include "logger.h"
 
 #include "function_base.h"
 #include "linear_function.h"
@@ -20,6 +21,10 @@ TEST_CASE("Linear function is checked", "[linearfn]") {
   std::vector<double> x_values{{0.0, 0.5, 1.0, 1.5}};
   std::vector<double> fx_values{{0.0, 1.0, 1.0, 0.0}};
 
+  // Logger
+  std::unique_ptr<spdlog::logger> console_ = std::make_unique<spdlog::logger>(
+      "linear_function_test", mpm::stdout_sink);
+
   // Json property
   Json jfunctionproperties;
   jfunctionproperties["id"] = id;
@@ -34,6 +39,7 @@ TEST_CASE("Linear function is checked", "[linearfn]") {
       std::shared_ptr<mpm::FunctionBase> linearfn =
           std::make_shared<mpm::LinearFunction>(id, jfunctionproperties);
     } catch (std::exception& exception) {
+      console_->error("Exception caught: {}", exception.what());
       status = false;
     }
     REQUIRE(status == false);
@@ -41,12 +47,9 @@ TEST_CASE("Linear function is checked", "[linearfn]") {
 
   SECTION("Check correct linear function initialisation") {
     bool status = true;
-    try {
-      std::shared_ptr<mpm::FunctionBase> linearfn =
-          std::make_shared<mpm::LinearFunction>(id, jfunctionproperties);
-    } catch (std::exception& exception) {
-      status = false;
-    }
+    REQUIRE_NOTHROW(
+        std::make_shared<mpm::LinearFunction>(id, jfunctionproperties));
+
     REQUIRE(status == true);
   }
 

@@ -111,9 +111,15 @@ std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points() {
     const auto point = nodal_coords * sf;
     const auto xi = this->transform_real_to_unit_cell(point);
     bool status = true;
+
     // Check if point is within the cell
+    double min_xi = -1.;
+    double max_xi = 1.;
+    if ((Tdim == 2 && indices.size() == 3) or
+        (Tdim == 3 && indices.size() == 4))
+      min_xi = 0.;
     for (unsigned i = 0; i < xi.size(); ++i)
-      if (xi(i) < -1. || xi(i) > 1. || std::isnan(xi(i))) status = false;
+      if (xi(i) < min_xi || xi(i) > max_xi || std::isnan(xi(i))) status = false;
 
     if (status)
       points.emplace_back(point);
@@ -335,18 +341,18 @@ inline bool mpm::Cell<Tdim>::is_point_in_cell(
     (*xi) = this->transform_real_to_unit_cell(point);
 
   // Check if the transformed coordinate is within the unit cell:
-  // between 0 and 1-xi(1-i) if the element is a triangle, and between
-  // -1 and 1 if otherwise. Also, check if the transformed coordinate lies
-  // exactly on cell edge.
+  // between 0 and 1-xi(1-i) if the element is a triangle or a tetrahedron, and
+  // between -1 and 1 if otherwise. Also, check if the transformed coordinate
+  // lies exactly on cell edge.
   const double tolerance = std::numeric_limits<double>::epsilon();
-  if (this->element_->corner_indices().size() == 3) {
+  if ((this->element_->corner_indices().size() == 3 && Tdim == 2) or
+      (this->element_->corner_indices().size() == 4 && Tdim == 3)) {
     for (unsigned i = 0; i < (*xi).size(); ++i) {
       if ((*xi)(i) < 0. || (*xi)(i) > 1. - (*xi)(1 - i) || std::isnan((*xi)(i)))
         status = false;
       else {
         if ((*xi)(i) < tolerance) (*xi)(i) = tolerance;
-        if ((*xi)(i) > 1. - (*xi)(1 - i) - tolerance)
-          (*xi)(i) = 1. - (*xi)(1 - i) - tolerance;
+        if ((*xi)(i) > 1. - tolerance) (*xi)(i) = 1. - tolerance;
       }
     }
   } else {
@@ -601,8 +607,9 @@ inline Eigen::Matrix<double, Tdim, 1>
   // Get indices of corner nodes
   Eigen::VectorXi indices = element_->corner_indices();
 
-  // Analytical solution for 2D linear triangle element
-  if (Tdim == 2 && indices.size() == 3) {
+  // Analytical solution for 2D linear triangle and 3D tetrahedral elements
+  if ((Tdim == 2 && indices.size() == 3) or
+      (Tdim == 3 && indices.size() == 4)) {
     if (element_->isvalid_natural_coordinates_analytical())
       return element_->natural_coordinates_analytical(point,
                                                       this->nodal_coordinates_);

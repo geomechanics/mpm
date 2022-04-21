@@ -1372,7 +1372,8 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::update_deformation_gradient(const std::string& type,
                                                       double dt) noexcept {
   // Compute deformation gradient increment
-  Eigen::Matrix<double, 3, 3> def_grad_increment;
+  Eigen::Matrix<double, 3, 3> def_grad_increment =
+      Eigen::Matrix<double, 3, 3>::Identity();
   if (type == "displacement")
     def_grad_increment = this->compute_deformation_gradient_increment(
         this->dn_dx_, mpm::ParticlePhase::SinglePhase);

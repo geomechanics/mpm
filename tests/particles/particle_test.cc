@@ -841,6 +841,12 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     coords << 0.5, 1.5;
     std::shared_ptr<mpm::NodeBase<Dim>> node3 =
         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(3, coords);
+
+    node0->initialise_implicit();
+    node1->initialise_implicit();
+    node2->initialise_implicit();
+    node3->initialise_implicit();
+
     cell->add_node(0, node0);
     cell->add_node(1, node1);
     cell->add_node(2, node2);
@@ -995,6 +1001,29 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
         REQUIRE(nodes.at(i)->velocity(phase)(j) ==
                 Approx(nodal_velocity(i, j)).epsilon(Tolerance));
 
+    // Deformation gradient as identity
+    Eigen::Matrix<double, 3, 3> def_grad;
+    // clang-format off
+    def_grad << 1., 0., 0.,
+                0., 1., 0.,
+                0., 0., 1.;
+    // clang-format on
+    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    auto deformation_grad = particle->deformation_gradient();
+
+    for (unsigned i = 0; i < 3; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(deformation_grad(i, j) ==
+                Approx(def_grad(i, j)).epsilon(Tolerance));
+
+    REQUIRE_NOTHROW(particle->update_deformation_gradient("displacement", 0.1));
+    deformation_grad = particle->deformation_gradient();
+
+    for (unsigned i = 0; i < 3; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(deformation_grad(i, j) ==
+                Approx(def_grad(i, j)).epsilon(Tolerance));
+
     // Set momentum to get non-zero strain
     // clang-format off
     nodal_momentum << 0., 562.5 * 1.,
@@ -1020,6 +1049,20 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
       for (unsigned j = 0; j < nodal_velocity.cols(); ++j)
         REQUIRE(nodes.at(i)->velocity(phase)(j) ==
                 Approx(nodal_velocity(i, j)).epsilon(Tolerance));
+
+    // Deformation gradient update
+    // clang-format off
+    def_grad << 1.,  0., 0.,
+              0.05,1.25, 0.,
+                0.,  0., 1.;
+    // clang-format on
+    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    deformation_grad = particle->deformation_gradient();
+
+    for (unsigned i = 0; i < 3; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(deformation_grad(i, j) ==
+                Approx(def_grad(i, j)).epsilon(Tolerance));
 
     // Check pressure
     REQUIRE(std::isnan(particle->pressure()) == true);
@@ -2228,6 +2271,15 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     std::shared_ptr<mpm::NodeBase<Dim>> node7 =
         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(7, coords);
 
+    node0->initialise_implicit();
+    node1->initialise_implicit();
+    node2->initialise_implicit();
+    node3->initialise_implicit();
+    node4->initialise_implicit();
+    node5->initialise_implicit();
+    node6->initialise_implicit();
+    node7->initialise_implicit();
+
     std::vector<std::shared_ptr<mpm::NodeBase<Dim>>> nodes;
     nodes.emplace_back(node0);
     nodes.emplace_back(node1);
@@ -2404,6 +2456,29 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
         REQUIRE(nodes.at(i)->velocity(phase)(j) ==
                 Approx(nodal_velocity(i, j)).epsilon(Tolerance));
 
+    // Deformation gradient as identity
+    Eigen::Matrix<double, 3, 3> def_grad;
+    // clang-format off
+    def_grad << 1., 0., 0.,
+                0., 1., 0.,
+                0., 0., 1.;
+    // clang-format on
+    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    auto deformation_grad = particle->deformation_gradient();
+
+    for (unsigned i = 0; i < 3; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(deformation_grad(i, j) ==
+                Approx(def_grad(i, j)).epsilon(Tolerance));
+
+    REQUIRE_NOTHROW(particle->update_deformation_gradient("displacement", 0.1));
+    deformation_grad = particle->deformation_gradient();
+
+    for (unsigned i = 0; i < 3; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(deformation_grad(i, j) ==
+                Approx(def_grad(i, j)).epsilon(Tolerance));
+
     // Set momentum to get non-zero strain
     // clang-format off
     nodal_momentum << 0.,  125. * 1.,  250. * 1.,
@@ -2437,6 +2512,19 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
       for (unsigned j = 0; j < nodal_velocity.cols(); ++j)
         REQUIRE(nodes.at(i)->velocity(phase)(j) ==
                 Approx(nodal_velocity(i, j)).epsilon(Tolerance));
+
+    // clang-format off
+    def_grad <<     1.,    0.,  0.,
+                -0.025, 1.075, 0.2,
+                 -0.05,  0.15, 1.4;
+    // clang-format on
+    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    deformation_grad = particle->deformation_gradient();
+
+    for (unsigned i = 0; i < 3; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(deformation_grad(i, j) ==
+                Approx(def_grad(i, j)).epsilon(Tolerance));
 
     // Check pressure
     REQUIRE(std::isnan(particle->pressure()) == true);

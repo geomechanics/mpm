@@ -2485,6 +2485,8 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       Eigen::MatrixXd error;
       REQUIRE_THROWS(hex->initialise_bspline_connectivity_properties(
           error, std::vector<std::vector<unsigned>>()));
+      REQUIRE_THROWS(
+          hex->initialise_lme_connectivity_properties(0.0, 0.0, true, error));
     }
   }
 }

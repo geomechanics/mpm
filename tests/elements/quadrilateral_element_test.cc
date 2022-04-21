@@ -2261,6 +2261,8 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       Eigen::MatrixXd error;
       REQUIRE_THROWS(quad->initialise_bspline_connectivity_properties(
           error, std::vector<std::vector<unsigned>>()));
+      REQUIRE_THROWS(
+          quad->initialise_lme_connectivity_properties(0.0, 0.0, true, error));
     }
   }
 }

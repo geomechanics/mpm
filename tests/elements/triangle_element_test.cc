@@ -1378,6 +1378,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       Eigen::MatrixXd error;
       REQUIRE_THROWS(tri->initialise_bspline_connectivity_properties(
           error, std::vector<std::vector<unsigned>>()));
+      REQUIRE_THROWS(
+          tri->initialise_lme_connectivity_properties(0.0, 0.0, true, error));
     }
   }
 }

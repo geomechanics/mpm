@@ -21,6 +21,8 @@ TEST_CASE("Mesh cell neighbours 2D", "[MeshCell][2D][mpi]") {
   const unsigned Dof = 2;
   // Number of phases
   const unsigned Nphases = 1;
+  // Tolerance
+  const double Tolerance = 1.E-9;
 
   SECTION("Mesh cell neighbours 2D") {
     // Number of nodes in cell
@@ -324,6 +326,11 @@ TEST_CASE("Mesh cell neighbours 2D", "[MeshCell][2D][mpi]") {
         REQUIRE(particles.size() == 0);
       }
 
+      SECTION("Compute average cell size") {
+        REQUIRE(mesh->compute_average_cell_size() ==
+                Approx(2.).epsilon(Tolerance));
+      }
+
       SECTION("Find particle neighbours") {
         // Get number of MPI ranks
         int mpi_size, mpi_rank;
@@ -582,6 +589,8 @@ TEST_CASE("Mesh cell neighbours 3D", "[MeshCell][3D][mpi]") {
   const unsigned Nphases = 1;
   // Number of nodes per cell
   const unsigned Nnodes = 8;
+  // Tolerance
+  const double Tolerance = 1.E-9;
 
   // 8-noded hexahedron element
   std::shared_ptr<mpm::Element<Dim>> element =
@@ -1031,6 +1040,11 @@ TEST_CASE("Mesh cell neighbours 3D", "[MeshCell][3D][mpi]") {
 
         // Should find all particles in mesh
         REQUIRE(particles.size() == 0);
+      }
+
+      SECTION("Compute average cell size") {
+        REQUIRE(mesh->compute_average_cell_size() ==
+                Approx(2.).epsilon(Tolerance));
       }
 
       SECTION("Find particle neighbours") {

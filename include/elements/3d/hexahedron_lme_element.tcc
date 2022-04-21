@@ -131,7 +131,6 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
         if (r.norm() < tolerance) {
           convergence = true;
         } else if (it == max_it) {
-
           //! Check condition number
           Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
           const double rcond =

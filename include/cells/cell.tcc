@@ -348,7 +348,7 @@ inline bool mpm::Cell<Tdim>::is_point_in_cell(
   if ((this->element_->corner_indices().size() == 3 && Tdim == 2) or
       (this->element_->corner_indices().size() == 4 && Tdim == 3)) {
     for (unsigned i = 0; i < (*xi).size(); ++i) {
-      if ((*xi)(i) < 0. || (*xi)(i) > 1. - (*xi)(1 - i) || std::isnan((*xi)(i)))
+      if ((*xi)(i) < 0. || (*xi)(i) > 1. || std::isnan((*xi)(i)))
         status = false;
       else {
         if ((*xi)(i) < tolerance) (*xi)(i) = tolerance;

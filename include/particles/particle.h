@@ -180,6 +180,13 @@ class Particle : public ParticleBase<Tdim> {
     return deformation_gradient_;
   }
 
+  //! Compute deformation gradient
+  //! \param[in] type Type of interpolation variables: "displacement" or
+  //! "velocity"
+  //! \param[in] dt Analysis time step
+  void update_deformation_gradient(const std::string& type,
+                                   double dt) noexcept override;
+
   //! Initial stress
   //! \param[in] stress Initial sress
   void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) override {
@@ -517,9 +524,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Volume
   double volume_{0.};
   //! Size of particle
-  Eigen::Matrix<double, 1, Tdim> size_;
+  Eigen::Matrix<double, Tdim, 1> size_;
   //! Size of particle in natural coordinates
-  Eigen::Matrix<double, 1, Tdim> natural_size_;
+  Eigen::Matrix<double, Tdim, 1> natural_size_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
   //! Strains

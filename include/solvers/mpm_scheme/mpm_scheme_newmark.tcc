@@ -160,12 +160,18 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     bool velocity_update, unsigned phase, const std::string& damping_type,
-    double damping_factor) {
+    double damping_factor, bool update_defgrad) {
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
                 std::placeholders::_1, dt_));
+
+  // Iterate over each particle to update deformation gradient
+  if (update_defgrad)
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
+                  std::placeholders::_1, "displacement", dt_));
 }
 
 // Update particle stress, strain and volume

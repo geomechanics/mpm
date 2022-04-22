@@ -11,6 +11,10 @@ TEST_CASE("Quadrilateral gimp elements are checked",
   const unsigned Dim = 2;
   const double Tolerance = 1.E-7;
 
+  Eigen::Vector2d zero = Eigen::Vector2d::Zero();
+  Eigen::Matrix<double, Dim, Dim> defgrad;
+  defgrad.setZero();
+
   //! Check for center element nodes
   SECTION("16 Node Quadrilateral GIMP Element") {
     const unsigned nfunctions = 16;
@@ -33,7 +37,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
       // Deformation gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = quad->shapefn(coords, psize, defgrad);
@@ -109,7 +113,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
       // Deformation gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = quad->shapefn(coords, psize, defgrad);
@@ -187,7 +191,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
       // Deformation gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = quad->shapefn(coords, psize, defgrad);
@@ -265,7 +269,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5;
       // Deformarion gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = quad->shapefn(coords, psize, defgrad);
@@ -343,7 +347,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5;
       // Deformarion gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = quad->shapefn(coords, psize, defgrad);
@@ -418,9 +422,6 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       // Size of particle (x,y)
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5;
-      // Deformarion gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
-      defgrad.setZero();
 
       quad->shapefn(coords, psize, defgrad);
       quad->grad_shapefn(coords, psize, defgrad);
@@ -430,8 +431,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
     SECTION("Four noded local sf quadrilateral element for coordinates(0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = quad->shapefn_local(coords, Eigen::Vector2d::Zero(),
-                                         Eigen::Vector2d::Zero());
+      auto shapefn = quad->shapefn_local(coords, zero, defgrad);
 
       // Check shape function
       REQUIRE(shapefn.size() == 4);
@@ -467,7 +467,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       Eigen::Matrix<double, Dim, 1> xi;
@@ -513,8 +513,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       // clang-format on
 
       // Get Jacobian
-      auto jac = quad->jacobian_local(xi, coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto jac = quad->jacobian_local(xi, coords, zero, defgrad);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -555,7 +554,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       // Get B-Matrix
@@ -566,8 +565,7 @@ TEST_CASE("Quadrilateral gimp elements are checked",
       gradsf *= 2;
 
       // Check dN/dx
-      auto dn_dx = quad->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                               Eigen::Vector2d::Zero());
+      auto dn_dx = quad->dn_dx(xi, coords, zero, defgrad);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -603,10 +601,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
                 1., 1.;
       // clang-format on
       // Get B-Matrix
-      quad->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                    Eigen::Vector2d::Zero());
-      quad->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                     Eigen::Vector2d::Zero());
+      quad->bmatrix(xi, coords, zero, defgrad);
+      quad->jacobian(xi, coords, zero, defgrad);
     }
 
     SECTION("Center cell gimp element length") {

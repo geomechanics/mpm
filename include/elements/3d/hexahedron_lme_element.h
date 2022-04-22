@@ -1,19 +1,17 @@
-#ifndef MPM_GIMP_HEX_ELEMENT_H_
-#define MPM_GIMP_HEX_ELEMENT_H_
+#ifndef MPM_LME_HEX_ELEMENT_H_
+#define MPM_LME_HEX_ELEMENT_H_
 
 #include "hexahedron_element.h"
 
 namespace mpm {
 
-//! Hexahedron GIMP element class derived from Hexahedron
-//! \brief Hexahedron GIMP element
-//! \details 64-noded Hexahedron GIMP element, see online document for
-//! details \n
+//! Hexahedron LME element class derived from Hexahedron
+//! \brief Hexahedron LME element
+//! \details Hexahedron LME element with adaptive number of nodes \n
 
 //! \tparam Tdim Dimension
-//! \tparam Tnfunctions Number of functions
-template <unsigned Tdim, unsigned Tnfunctions>
-class HexahedronGIMPElement : public HexahedronElement<3, 8> {
+template <unsigned Tdim>
+class HexahedronLMEElement : public HexahedronElement<3, 8> {
 
  public:
   //! Define a vector of size dimension
@@ -23,14 +21,11 @@ class HexahedronGIMPElement : public HexahedronElement<3, 8> {
   using MatrixDim = Eigen::Matrix<double, Tdim, Tdim>;
 
   //! constructor with number of shape functions
-  HexahedronGIMPElement() : HexahedronElement<3, 8>() {
-    static_assert(Tdim == 3, "Invalid dimension for a GIMP element");
-    static_assert((Tnfunctions == 64),
-                  "Specified number of shape functions is not defined");
+  HexahedronLMEElement() : HexahedronElement<3, 8>() {
+    static_assert(Tdim == 3, "Invalid dimension for a BSpline element");
 
     //! Logger
-    std::string logger = "hex_gimp::<" + std::to_string(Tdim) + ", " +
-                         std::to_string(Tnfunctions) + ">";
+    std::string logger = "hex_LME::<" + std::to_string(Tdim) + ">";
     console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
   }
 
@@ -59,6 +54,17 @@ class HexahedronGIMPElement : public HexahedronElement<3, 8> {
   Eigen::VectorXd shapefn_local(
       const VectorDim& xi, VectorDim& particle_size,
       const MatrixDim& deformation_gradient) const override;
+
+  //! Return the dN/dx at a given local coord
+  //! \param[in] xi given local coordinates
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  //! \param[in] particle_size Particle size
+  //! \param[in] deformation_gradient Deformation gradient
+  Eigen::MatrixXd dn_dx(const VectorDim& xi,
+                        const Eigen::MatrixXd& nodal_coordinates,
+                        VectorDim& particle_size,
+                        const MatrixDim& deformation_gradient) const override;
+
   //! Compute Jacobian
   //! \param[in] xi given local coordinates
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
@@ -82,6 +88,7 @@ class HexahedronGIMPElement : public HexahedronElement<3, 8> {
       const Eigen::MatrixXd& nodal_coordinates,
       Eigen::Matrix<double, 3, 1>& particle_size,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient) const override;
+
   //! Evaluate the B matrix at given local coordinates for a real cell
   //! \param[in] xi given local coordinates
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
@@ -95,21 +102,41 @@ class HexahedronGIMPElement : public HexahedronElement<3, 8> {
 
   //! Return the type of shape function
   mpm::ShapefnType shapefn_type() const override {
-    return mpm::ShapefnType::GIMP;
+    return (anisotropy_) ? mpm::ShapefnType::ALME : mpm::ShapefnType::LME;
   }
 
   //! Return number of shape functions
-  unsigned nfunctions() const override { return Tnfunctions; }
+  unsigned nfunctions() const override { return nconnectivity_; }
 
- private:
-  //! Return natural nodal coordinates
-  Eigen::MatrixXd natural_nodal_coordinates() const;
+  //! Assign nodal connectivity property for LME elements
+  //! \param[in] beta Coldness function of the system in the range of [0,inf)
+  //! \param[in] radius Support radius of the kernel
+  //! \param[in] anisotropy Shape function anisotropy (F^{-T}F^{-1})
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  void initialise_lme_connectivity_properties(
+      double beta, double radius, bool anisotropy,
+      const Eigen::MatrixXd& nodal_coordinates) override;
+
+  //! Return the degree of shape function
+  mpm::ElementDegree degree() const override {
+    return mpm::ElementDegree::Infinity;
+  };
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  //! Number of connectivity
+  unsigned nconnectivity_{8};
+  //! Beta parameter with range of [0,inf)
+  double beta_;
+  //! Support radius
+  double support_radius_;
+  //! Anisotropy parameter
+  bool anisotropy_{false};
+  //! Nodal coordinates vector (n_connectivity_ x Tdim)
+  Eigen::MatrixXd nodal_coordinates_;
 };
 
 }  // namespace mpm
-#include "hexahedron_gimp_element.tcc"
+#include "hexahedron_lme_element.tcc"
 
-#endif  // MPM_GIMP_HEX_ELEMENT_H_
+#endif  // MPM_LME_HEX_ELEMENT_H_

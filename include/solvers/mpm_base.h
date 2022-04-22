@@ -273,6 +273,8 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
+  //! Boolean to update deformation gradient
+  bool update_defgrad_{false};
 
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM

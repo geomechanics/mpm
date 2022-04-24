@@ -345,26 +345,20 @@ inline bool mpm::Cell<Tdim>::is_point_in_cell(
   // between -1 and 1 if otherwise. Also, check if the transformed coordinate
   // lies exactly on cell edge.
   const double tolerance = std::numeric_limits<double>::epsilon();
-  if ((this->element_->corner_indices().size() == 3 && Tdim == 2) or
-      (this->element_->corner_indices().size() == 4 && Tdim == 3)) {
-    for (unsigned i = 0; i < (*xi).size(); ++i) {
-      if ((*xi)(i) < 0. || (*xi)(i) > 1. || std::isnan((*xi)(i)))
-        status = false;
-      else {
-        if ((*xi)(i) < tolerance) (*xi)(i) = tolerance;
-        if ((*xi)(i) > 1. - tolerance) (*xi)(i) = 1. - tolerance;
-      }
-    }
-  } else {
-    for (unsigned i = 0; i < (*xi).size(); ++i) {
-      if ((*xi)(i) < -1. || (*xi)(i) > 1. || std::isnan((*xi)(i)))
-        status = false;
-      else {
-        if ((*xi)(i) < -1. + tolerance) (*xi)(i) = -1. + tolerance;
-        if ((*xi)(i) > 1. - tolerance) (*xi)(i) = 1. - tolerance;
-      }
+  double min_xi = -1.;
+  double max_xi = 1.;
+  if ((Tdim == 2 && this->element_->corner_indices().size() == 3) or
+      (Tdim == 3 && this->element_->corner_indices().size() == 4))
+    min_xi = 0.;
+  for (unsigned i = 0; i < (*xi).size(); ++i) {
+    if ((*xi)(i) < min_xi || (*xi)(i) > max_xi || std::isnan((*xi)(i)))
+      status = false;
+    else {
+      if ((*xi)(i) < min_xi + tolerance) (*xi)(i) = min_xi + tolerance;
+      if ((*xi)(i) > max_xi - tolerance) (*xi)(i) = max_xi - tolerance;
     }
   }
+
   return status;
 }
 

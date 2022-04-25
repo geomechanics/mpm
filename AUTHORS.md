@@ -2,6 +2,8 @@
 
 * Bodhinanda Chandra, UC Berkeley, USA. [bchandra@berkeley.edu](bchandra@berkeley.edu)
 * Joel Given, UC Berkeley, USA. [joelgiven@berkeley.edu](joelgiven@berkeley.edu)
+* Lauren Talbot, UC Berkeley, USA. [LDTalbot](https://github.com/LDTalbot)
+* Miguel Molinos, Universidad Politécnica de Madrid, SP. [m.molinos@alumnos.upm.es](m.molinos@alumnos.upm.es)
 * Ryota Hashimoto, UC Berkeley, USA and Hiroshima University, JP. [r.hashimoto@berkeley.edu](r.hashimoto@berkeley.edu)
 * Yong Liang, UC Berkeley, USA. [yliang_sn@berkeley.edu](yliang_sn@berkeley.edu)
 

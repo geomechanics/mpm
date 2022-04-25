@@ -13,14 +13,14 @@ namespace mpm {
 //! Shape function, gradient shape function, B-matrix, indices \n
 //! 4-node (Linear) Tetrahedron Element \n
 //! <pre>
-//!
+//!       3
 //!       *
 //!      /|\
 //!     / | \
 //!    /  |  \
-//!   *. -|- .*
+//! 2 *. -|- .* 1
 //!      `*´
-//!
+//!       0
 //! </pre>
 //!
 //! \tparam Tdim Dimension

@@ -491,7 +491,8 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
 
     // Tetrahedron
     if (indices.size() == 4) {
-      // Node numbering (k) convetion: 0,0,0 node first; CW looking from outside
+      // Node numbering (k) convention: 0,0,0 node first; CW looking from
+      // outside
       //       3
       //       *
       //      /|\

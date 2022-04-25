@@ -31,8 +31,8 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::VectorXd
     mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::shapefn(
         const Eigen::Matrix<double, Tdim, 1>& xi,
-        const Eigen::Matrix<double, Tdim, 1>& particle_size,
-        const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
+        Eigen::Matrix<double, Tdim, 1>& particle_size,
+        const Eigen::Matrix<double, Tdim, Tdim>& deformation_gradient) const {
 
   //! length of element in local coordinate
   const double element_length = 2.;
@@ -80,6 +80,7 @@ inline Eigen::VectorXd
       shapefn(n) = sni(0) * sni(1);  // See: Pruijn, N.S., 2016. Eq(4.30)
     }
   } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     return shapefn;
   }
   return shapefn;
@@ -91,8 +92,8 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::MatrixXd
     mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::grad_shapefn(
         const Eigen::Matrix<double, Tdim, 1>& xi,
-        const Eigen::Matrix<double, Tdim, 1>& particle_size,
-        const Eigen::Matrix<double, Tdim, 1>& deformation_gradient) const {
+        Eigen::Matrix<double, Tdim, 1>& particle_size,
+        const Eigen::Matrix<double, Tdim, Tdim>& deformation_gradient) const {
 
   //! length of element in local coordinate
   const double element_length = 2.;
@@ -164,8 +165,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline std::vector<Eigen::MatrixXd>
     mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::bmatrix(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
 
   // Get gradient shape functions
   Eigen::MatrixXd grad_sf =
@@ -212,8 +212,8 @@ inline std::vector<Eigen::MatrixXd>
 template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::VectorXd
     mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::shapefn_local(
-        const VectorDim& xi, const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        const VectorDim& xi, VectorDim& particle_size,
+        const MatrixDim& deformation_gradient) const {
   return mpm::QuadrilateralElement<Tdim, 4>::shapefn(xi, particle_size,
                                                      deformation_gradient);
 }
@@ -223,8 +223,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::jacobian(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
 
   // Get gradient shape functions
   const Eigen::MatrixXd grad_shapefn =
@@ -251,8 +250,7 @@ template <unsigned Tdim, unsigned Tnfunctions>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::QuadrilateralGIMPElement<Tdim, Tnfunctions>::jacobian_local(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-        const VectorDim& particle_size,
-        const VectorDim& deformation_gradient) const {
+        VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
   // Jacobian dx_i/dxi_j
   return mpm::QuadrilateralElement<2, 4>::jacobian(
       xi, nodal_coordinates, particle_size, deformation_gradient);

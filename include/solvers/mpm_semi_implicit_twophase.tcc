@@ -69,9 +69,12 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     pore_pressure_smoothing_ =
         analysis_["pore_pressure_smoothing"].template get<bool>();
 
-  // Projection method parameter (beta)
-  if (analysis_.find("semi_implicit") != analysis_.end())
-    beta_ = analysis_["semi_implicit"]["beta"].template get<double>();
+  // Read settings for two-phase analysis
+  if (analysis_.contains("scheme_settings")) {
+    // Parameter to determine full and incremental projection
+    if (analysis_["scheme_settings"].contains("beta"))
+      beta_ = analysis_["scheme_settings"]["beta"].template get<double>();
+  }
 
   // Initialise material
   this->initialise_materials();
@@ -454,7 +457,8 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::initialise_matrix() {
 
       if (solver_type != "KrylovPETSC" && mpi_size > 1) {
         console_->warn(
-            "The linear solver in MPI setting is automatically set to default: "
+            "The linear solver in MPI setting is automatically set to "
+            "default: "
             "\'KrylovPETSC\'. Only \'KrylovPETSC\' solver is supported for "
             "MPI.");
         solver_type = "KrylovPETSC";

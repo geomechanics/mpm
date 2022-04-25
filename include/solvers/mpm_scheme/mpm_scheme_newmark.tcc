@@ -88,9 +88,11 @@ template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
     unsigned phase, bool pressure_smoothing) {
 
-  // Iterate over each particle to calculate strain using nodal displacement
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_strain_newmark, std::placeholders::_1));
+  // Iterate over each particle to calculate strain and volume using nodal
+  // displacement
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_strain_volume_newmark,
+                std::placeholders::_1));
 
   // Pressure smoothing
   if (pressure_smoothing) this->pressure_smoothing(phase);
@@ -116,7 +118,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::postcompute_stress_strain(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-    unsigned step, bool concentrated_nodal_forces) {
+    unsigned step, bool concentrated_nodal_forces, bool quasi_static) {
   // Spawn a task for external force
 #pragma omp parallel sections
   {
@@ -128,8 +130,10 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
                     std::placeholders::_1, gravity));
 
       // Iterate over each particle to compute nodal inertial force
-      mesh_->iterate_over_particles(std::bind(
-          &mpm::ParticleBase<Tdim>::map_inertial_force, std::placeholders::_1));
+      if (!quasi_static)
+        mesh_->iterate_over_particles(
+            std::bind(&mpm::ParticleBase<Tdim>::map_inertial_force,
+                      std::placeholders::_1));
 
       // Apply particle traction and map to nodes
       mesh_->apply_traction_on_particles(step * dt_);
@@ -156,12 +160,18 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     bool velocity_update, unsigned phase, const std::string& damping_type,
-    double damping_factor) {
+    double damping_factor, bool update_defgrad) {
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
                 std::placeholders::_1, dt_));
+
+  // Iterate over each particle to update deformation gradient
+  if (update_defgrad)
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
+                  std::placeholders::_1, "displacement", dt_));
 }
 
 // Update particle stress, strain and volume
@@ -171,10 +181,6 @@ inline void
   // Iterate over each particle to update particle stress and strain
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
-
-  // Iterate over each particle to update particle volume
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));
 }
 
 //! Postcompute nodal kinematics - map mass and momentum to nodes

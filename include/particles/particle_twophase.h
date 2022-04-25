@@ -170,7 +170,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! ----------------------------------------------------------------
 
   //! Assigning beta parameter to particle
-  //! \param[in] pressure parameter determining type of projection
+  //! \param[in] parameter parameter determining type of projection
   void assign_projection_parameter(double parameter) override {
     this->projection_param_ = parameter;
   };
@@ -221,6 +221,9 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map two phase mixture internal force
   virtual void map_mixture_internal_force() noexcept;
 
+  //! Map liquid advection force
+  virtual void map_liquid_advection_force() noexcept;
+
   //! Compute updated velocity of the particle based on nodal velocity
   //! \param[in] dt Analysis time step
   //! \retval status Compute status
@@ -270,8 +273,6 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::stress_;
   //! Solid skeleton strains
   using Particle<Tdim>::strain_;
-  //! Volumetric strain at centroid
-  using Particle<Tdim>::volumetric_strain_centroid_;
   //! Soil skeleton strain rate
   using Particle<Tdim>::strain_rate_;
   //! Set traction
@@ -284,6 +285,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::particle_velocity_constraints_;
   //! Size of particle
   using Particle<Tdim>::pack_size_;
+  //! Size of particle
+  using Particle<Tdim>::deformation_gradient_;
 
   //! Liquid mass
   double liquid_mass_;

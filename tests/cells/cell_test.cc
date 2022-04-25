@@ -586,7 +586,6 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
   }
 
   SECTION("Test nglobal particles") {
-    mpm::Index pid = 0;
     auto cell = std::make_shared<mpm::Cell<Dim>>(0, Nnodes, element);
     REQUIRE(cell->nglobal_particles() == 0);
     cell->nglobal_particles(5);
@@ -600,6 +599,10 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     // Quadratic B-Spline shape functions
     std::shared_ptr<mpm::Element<Dim>> bspline_element =
         Factory<mpm::Element<Dim>>::instance()->create("ED2Q4P2B");
+
+    // Local Maximum Entropy shape functions
+    std::shared_ptr<mpm::Element<Dim>> lme_element =
+        Factory<mpm::Element<Dim>>::instance()->create("ED2Q4L");
 
     // Additional nodes
     coords << 0., 0.;
@@ -693,37 +696,75 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     REQUIRE(cell->initialise() == true);
 
     // nonlocal functions - test fail
+    // Empty map
+    tsl::robin_map<std::string, double> nonlocal_properties;
     REQUIRE(cell->upgrade_status(4) == false);
-    REQUIRE(cell->initialiase_nonlocal() == false);
+    REQUIRE(cell->initialiase_nonlocal(nonlocal_properties) == false);
     REQUIRE_THROWS(cell->assign_nonlocal_elementptr(bspline_element));
 
-    // nonlocal functions - test successful
-    auto nonlocal_cell =
+    // nonlocal functions - test successful bspline
+    // BSPLINE
+    auto bspline_cell =
         std::make_shared<mpm::Cell<Dim>>(1, Nnodes, bspline_element, true);
 
-    REQUIRE(nonlocal_cell->add_node(0, node0) == true);
-    REQUIRE(nonlocal_cell->add_node(1, node1) == true);
-    REQUIRE(nonlocal_cell->add_node(2, node2) == true);
-    REQUIRE(nonlocal_cell->add_node(3, node3) == true);
-    REQUIRE(nonlocal_cell->nnodes() == 4);
-    REQUIRE(nonlocal_cell->upgrade_status(16) == true);
-    REQUIRE_NOTHROW(nonlocal_cell->assign_nonlocal_elementptr(bspline_element));
+    REQUIRE(bspline_cell->add_node(0, node0) == true);
+    REQUIRE(bspline_cell->add_node(1, node1) == true);
+    REQUIRE(bspline_cell->add_node(2, node2) == true);
+    REQUIRE(bspline_cell->add_node(3, node3) == true);
+    REQUIRE(bspline_cell->nnodes() == 4);
+    REQUIRE(bspline_cell->upgrade_status(16) == true);
+    REQUIRE_NOTHROW(bspline_cell->assign_nonlocal_elementptr(bspline_element));
 
-    REQUIRE(nonlocal_cell->add_node(4, node4) == true);
-    REQUIRE(nonlocal_cell->add_node(5, node5) == true);
-    REQUIRE(nonlocal_cell->add_node(6, node6) == true);
-    REQUIRE(nonlocal_cell->add_node(7, node7) == true);
-    REQUIRE(nonlocal_cell->add_node(8, node8) == true);
-    REQUIRE(nonlocal_cell->add_node(9, node9) == true);
-    REQUIRE(nonlocal_cell->add_node(10, node10) == true);
-    REQUIRE(nonlocal_cell->add_node(11, node11) == true);
-    REQUIRE(nonlocal_cell->add_node(12, node12) == true);
-    REQUIRE(nonlocal_cell->add_node(13, node13) == true);
-    REQUIRE(nonlocal_cell->add_node(14, node14) == true);
-    REQUIRE(nonlocal_cell->add_node(15, node15) == true);
-    REQUIRE(nonlocal_cell->nnodes() == 16);
+    REQUIRE(bspline_cell->add_node(4, node4) == true);
+    REQUIRE(bspline_cell->add_node(5, node5) == true);
+    REQUIRE(bspline_cell->add_node(6, node6) == true);
+    REQUIRE(bspline_cell->add_node(7, node7) == true);
+    REQUIRE(bspline_cell->add_node(8, node8) == true);
+    REQUIRE(bspline_cell->add_node(9, node9) == true);
+    REQUIRE(bspline_cell->add_node(10, node10) == true);
+    REQUIRE(bspline_cell->add_node(11, node11) == true);
+    REQUIRE(bspline_cell->add_node(12, node12) == true);
+    REQUIRE(bspline_cell->add_node(13, node13) == true);
+    REQUIRE(bspline_cell->add_node(14, node14) == true);
+    REQUIRE(bspline_cell->add_node(15, node15) == true);
+    REQUIRE(bspline_cell->nnodes() == 16);
 
-    REQUIRE(nonlocal_cell->initialiase_nonlocal() == true);
+    REQUIRE(bspline_cell->initialiase_nonlocal(nonlocal_properties) == true);
+
+    // LME
+    auto lme_cell =
+        std::make_shared<mpm::Cell<Dim>>(1, Nnodes, lme_element, true);
+
+    REQUIRE(lme_cell->add_node(0, node0) == true);
+    REQUIRE(lme_cell->add_node(1, node1) == true);
+    REQUIRE(lme_cell->add_node(2, node2) == true);
+    REQUIRE(lme_cell->add_node(3, node3) == true);
+    REQUIRE(lme_cell->nnodes() == 4);
+    REQUIRE(lme_cell->upgrade_status(16) == true);
+    REQUIRE_NOTHROW(lme_cell->assign_nonlocal_elementptr(lme_element));
+
+    REQUIRE(lme_cell->add_node(4, node4) == true);
+    REQUIRE(lme_cell->add_node(5, node5) == true);
+    REQUIRE(lme_cell->add_node(6, node6) == true);
+    REQUIRE(lme_cell->add_node(7, node7) == true);
+    REQUIRE(lme_cell->add_node(8, node8) == true);
+    REQUIRE(lme_cell->add_node(9, node9) == true);
+    REQUIRE(lme_cell->add_node(10, node10) == true);
+    REQUIRE(lme_cell->add_node(11, node11) == true);
+    REQUIRE(lme_cell->add_node(12, node12) == true);
+    REQUIRE(lme_cell->add_node(13, node13) == true);
+    REQUIRE(lme_cell->add_node(14, node14) == true);
+    REQUIRE(lme_cell->add_node(15, node15) == true);
+    REQUIRE(lme_cell->nnodes() == 16);
+
+    const double beta = 2.5 / (2 * 2);
+    const double r = std::sqrt(-std::log(1e-6) / 2.5) * 2;
+    nonlocal_properties.insert(
+        std::pair<std::string, bool>("anisotropy", true));
+    nonlocal_properties.insert(std::pair<std::string, double>("beta", beta));
+    nonlocal_properties.insert(
+        std::pair<std::string, double>("support_radius", r));
+    REQUIRE(lme_cell->initialiase_nonlocal(nonlocal_properties) == true);
   }
 }
 
@@ -1681,7 +1722,6 @@ TEST_CASE("Cell is checked for 3D case", "[cell][3D]") {
   }
 
   SECTION("Test nglobal particles") {
-    mpm::Index pid = 0;
     auto cell = std::make_shared<mpm::Cell<Dim>>(0, Nnodes, element);
     REQUIRE(cell->nglobal_particles() == 0);
     cell->nglobal_particles(5);

@@ -5,6 +5,7 @@
 
 #include "catch.hpp"
 #include "json.hpp"
+#include "logger.h"
 
 #include "function_base.h"
 #include "sin_function.h"
@@ -19,6 +20,10 @@ TEST_CASE("Sin function is checked", "[sinfn]") {
   unsigned id = 0;
   std::vector<double> range{{0.0, 3.0}};
 
+  // Logger
+  std::unique_ptr<spdlog::logger> console_ =
+      std::make_unique<spdlog::logger>("sin_function_test", mpm::stdout_sink);
+
   // Json property
   Json jfunctionproperties;
   jfunctionproperties["id"] = 0;
@@ -29,6 +34,7 @@ TEST_CASE("Sin function is checked", "[sinfn]") {
       std::shared_ptr<mpm::FunctionBase> sinfn =
           std::make_shared<mpm::SinFunction>(id, jfunctionproperties);
     } catch (std::exception& exception) {
+      console_->error("Exception caught: {}", exception.what());
       status = false;
     }
     REQUIRE(status == false);
@@ -36,16 +42,14 @@ TEST_CASE("Sin function is checked", "[sinfn]") {
 
   SECTION("Check correct sin function initialisation") {
     bool status = true;
-    try {
-      // Initialize
-      jfunctionproperties["x0"] = 0.0;
-      jfunctionproperties["a"] = 2.0;
-      jfunctionproperties["xrange"] = range;
-      std::shared_ptr<mpm::FunctionBase> sinfn =
-          std::make_shared<mpm::SinFunction>(id, jfunctionproperties);
-    } catch (std::exception& exception) {
-      status = false;
-    }
+
+    // Initialize
+    jfunctionproperties["x0"] = 0.0;
+    jfunctionproperties["a"] = 2.0;
+    jfunctionproperties["xrange"] = range;
+    REQUIRE_NOTHROW(
+        std::make_shared<mpm::SinFunction>(id, jfunctionproperties));
+
     REQUIRE(status == true);
   }
 

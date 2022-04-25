@@ -8,6 +8,9 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+// CSV-parser
+#include "csv/csv.h"
+
 // MPI
 #ifdef USE_MPI
 #include "mpi.h"
@@ -92,6 +95,9 @@ class MPMBase : public MPM {
 
   //! Particle velocity constraints
   void particle_velocity_constraints();
+
+  //! Apply Absorbing Constraints
+  void nodal_absorbing_constraints();
 
  protected:
   //! Initialise implicit solver
@@ -187,6 +193,12 @@ class MPMBase : public MPM {
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] mesh_io Mesh IO handle
   void nodal_pressure_constraints(
+      const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+
+  //! Nodal absorbing constraints
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void nodal_absorbing_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
   //! Cell entity sets
@@ -299,6 +311,10 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! VTK point variables
   tsl::robin_map<mpm::VariableType, std::vector<std::string>> vtk_point_vars_;
+  //! Absorbing Boundary Variables
+  bool absorbing_boundary_{false};
+  //! Boolean to update deformation gradient
+  bool update_defgrad_{false};
 
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM

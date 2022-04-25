@@ -25,6 +25,7 @@
 #include "json.hpp"
 using Json = nlohmann::json;
 
+#include "absorbing_constraint.h"
 #include "cell.h"
 #include "factory.h"
 #include "friction_constraint.h"
@@ -178,6 +179,9 @@ class Mesh {
 
   //! Number of cells in mesh rank
   mpm::Index ncells_rank(bool active_cells = false);
+
+  //! Compute average cell size
+  double compute_average_cell_size() const;
 
   //! Iterate over cells
   //! \tparam Toper Callable object typically a baseclass functor
@@ -607,8 +611,11 @@ class Mesh {
   //! \ingroup Nonlocal
   //! \param[in] cell_type string indicating the cell type
   //! \param[in] cell_neighbourhood size of nonlocal cell neighbourhood
-  bool upgrade_cells_to_nonlocal(const std::string& cell_type,
-                                 unsigned cell_neighbourhood);
+  //! \param[in] nonlocal_properties A map of selected nonlocal element
+  //! properties
+  bool upgrade_cells_to_nonlocal(
+      const std::string& cell_type, unsigned cell_neighbourhood,
+      const tsl::robin_map<std::string, double>& nonlocal_properties);
 
   //! Return node neighbours id set given a size of cell neighbourhood via in a
   //! recursion strategy

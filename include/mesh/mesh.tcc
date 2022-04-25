@@ -287,6 +287,17 @@ void mpm::Mesh<Tdim>::find_cell_neighbours() {
   }
 }
 
+//! Compute average cell size
+template <unsigned Tdim>
+double mpm::Mesh<Tdim>::compute_average_cell_size() const {
+  double mesh_size = 0.0;
+#pragma omp parallel for schedule(runtime) reduction(+ : mesh_size)
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr)
+    mesh_size += (*citr)->mean_length();
+  mesh_size *= 1. / cells_.size();
+  return mesh_size;
+}
+
 //! Find global number of particles across MPI ranks / cell
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::find_nglobal_particles_cells() {
@@ -1963,7 +1974,8 @@ bool mpm::Mesh<Tdim>::generate_particles(const std::shared_ptr<mpm::IO>& io,
           "Particle generator type is not properly specified");
 
   } catch (std::exception& exception) {
-    console_->error("{}: #{} Generating particle failed", __FILE__, __LINE__);
+    console_->error("{}: #{} Generating particle failed! {}\n", __FILE__,
+                    __LINE__, exception.what());
     status = false;
   }
   return status;
@@ -2134,6 +2146,10 @@ void mpm::Mesh<Tdim>::create_nodal_properties() {
                                        materials_.size());
     nodal_properties_->create_property("normal_unit_vectors", nrows,
                                        materials_.size());
+    nodal_properties_->create_property("wave_velocities", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("density", nodes_.size(),
+                                       materials_.size());
 
     // Iterate over all nodes to initialise the property handle in each node
     // and assign its node id as the prop id in the nodal property data pool
@@ -2153,10 +2169,11 @@ void mpm::Mesh<Tdim>::initialise_nodal_properties() {
 
 //! Upgrade cells to nonlocal cells
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
-                                                unsigned cell_neighbourhood) {
+bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(
+    const std::string& cell_type, unsigned cell_neighbourhood,
+    const tsl::robin_map<std::string, double>& nonlocal_properties) {
   bool status = true;
-  if (cell_type.back() != 'B') {
+  if (!(cell_type.back() == 'B' || cell_type.back() == 'L')) {
     throw std::runtime_error(
         "Unable to upgrade cell to a nonlocal for cell type: " + cell_type);
     status = false;
@@ -2201,7 +2218,7 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
 
         if ((*citr)->nnodes() == new_nnodes) {
           // Reinitialise cell
-          (*citr)->initialiase_nonlocal();
+          (*citr)->initialiase_nonlocal(nonlocal_properties);
         }
       }
     }

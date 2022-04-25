@@ -20,11 +20,16 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
   double relative_residual_tolerance = 1.0e-6;
   if (stress_update_ == "newmark") {
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(mesh_, dt_);
-    // Read boolean of nonlinear analysis
     if (analysis_.contains("scheme_settings")) {
+      // Read boolean of nonlinear analysis
       if (analysis_["scheme_settings"].contains("nonlinear"))
         nonlinear_ =
             analysis_["scheme_settings"].at("nonlinear").template get<bool>();
+      // Read boolean of quasi-static analysis
+      if (analysis_["scheme_settings"].contains("quasi_static"))
+        quasi_static_ = analysis_["scheme_settings"]
+                            .at("quasi_static")
+                            .template get<bool>();
       // Read parameters of Newmark scheme
       if (analysis_["scheme_settings"].contains("beta"))
         newmark_beta_ =
@@ -381,19 +386,16 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
   bool status = true;
   try {
     // Compute local cell stiffness matrices
-    mesh_->iterate_over_particles(std::bind(
-        &mpm::ParticleBase<Tdim>::map_material_stiffness_matrix_to_cell,
-        std::placeholders::_1));
     mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::map_mass_matrix_to_cell,
-                  std::placeholders::_1, newmark_beta_, dt_));
+        std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
+                  std::placeholders::_1, newmark_beta_, dt_, quasi_static_));
 
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();
 
     // Compute local residual force
     mpm_scheme_->compute_forces(gravity_, phase_, step_,
-                                set_node_concentrated_force_);
+                                set_node_concentrated_force_, quasi_static_);
 
     // Assemble global residual force RHS vector
     assembler_->assemble_residual_force_right();
@@ -508,7 +510,7 @@ template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
   // Particle kinematics and volume
   mpm_scheme_->compute_particle_kinematics(velocity_update_, phase_, "Cundall",
-                                           damping_factor_);
+                                           damping_factor_, update_defgrad_);
 
   // Particle stress, strain and volume
   mpm_scheme_->update_particle_stress_strain_volume();

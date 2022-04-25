@@ -116,8 +116,6 @@ TEST_CASE("Particle vector is checked for 2D case", "[particlevector][2D]") {
 TEST_CASE("Particle vector is checked for 3D case", "[particlevector][3D]") {
   // Dimension
   const unsigned Dim = 3;
-  // Phases
-  const unsigned Nphases = 1;
   // Tolerance
   const double Tolerance = 1.E-7;
 

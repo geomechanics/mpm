@@ -10,6 +10,9 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
   const unsigned Dim = 2;
   const double Tolerance = 1.E-7;
 
+  Eigen::Vector2d zero = Eigen::Vector2d::Zero();
+  const Eigen::Matrix2d zero_matrix = Eigen::Matrix2d::Zero();
+
   //! Check for 3 noded element
   SECTION("Triangle element with three nodes") {
     const unsigned nfunctions = 3;
@@ -24,8 +27,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Three noded triangle element for coordinates(0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = tri->shapefn(coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -35,8 +37,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(shapefn(2) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -52,8 +53,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Three noded triangle element for coordinates(0.333, 0.333)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 0.333, 0.333;
-      auto shapefn = tri->shapefn(coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -63,8 +63,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(shapefn(2) == Approx(0.333).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -80,8 +79,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Three noded triangle element for coordinates(0.5,0.4)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 0.5, 0.4;
-      auto shapefn = tri->shapefn(coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -91,8 +89,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(shapefn(2) == Approx(0.4).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -109,8 +106,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Three noded local sf triangle element for coordinates(0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = tri->shapefn_local(coords, Eigen::Vector2d::Zero(),
-                                        Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn_local(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -126,7 +122,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       coords.setZero();
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
       auto shapefn = tri->shapefn(coords, psize, defgrad);
 
@@ -170,8 +166,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                               Eigen::Vector2d::Zero());
+      auto jac = tri->jacobian(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -203,8 +198,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = tri->jacobian_local(xi, coords, Eigen::Vector2d::Zero(),
-                                     Eigen::Vector2d::Zero());
+      auto jac = tri->jacobian_local(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -226,7 +220,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       Eigen::Matrix<double, Dim, 1> xi;
@@ -271,17 +265,14 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(xi, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -323,17 +314,14 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(xi, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -375,17 +363,14 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(xi, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -428,7 +413,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       // Get B-Matrix
@@ -439,8 +424,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -472,10 +456,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
                 2., 4.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
-      auto jacobian = tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                                    Eigen::Vector2d::Zero());
+      tri->bmatrix(xi, coords, zero, zero_matrix);
+      tri->jacobian(xi, coords, zero, zero_matrix);
     }
 
     // Ni Nj matrix of a cell
@@ -679,8 +661,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Six noded triangle element for coordinates(0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = tri->shapefn(coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -693,8 +674,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(shapefn(5) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -717,8 +697,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Six noded triangle element for coordinates(0.5,0.5)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 0.5, 0.5;
-      auto shapefn = tri->shapefn(coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -731,8 +710,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(shapefn(5) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -755,8 +733,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Six noded triangle element for coordinates(0.2, 0.4)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 0.2, 0.4;
-      auto shapefn = tri->shapefn(coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -769,8 +746,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(shapefn(5) == Approx(0.64).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(coords, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -793,8 +769,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
     SECTION("Six noded local sf triangle element for coordinates(0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = tri->shapefn_local(coords, Eigen::Vector2d::Zero(),
-                                        Eigen::Vector2d::Zero());
+      auto shapefn = tri->shapefn_local(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -813,7 +788,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       coords.setZero();
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
       auto shapefn = tri->shapefn(coords, psize, defgrad);
 
@@ -870,8 +845,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                               Eigen::Vector2d::Zero());
+      auto jac = tri->jacobian(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -907,8 +881,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = tri->jacobian_local(xi, coords, Eigen::Vector2d::Zero(),
-                                     Eigen::Vector2d::Zero());
+      auto jac = tri->jacobian_local(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -933,7 +906,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       Eigen::Matrix<double, Dim, 1> xi;
@@ -982,17 +955,14 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(xi, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -1037,17 +1007,14 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(xi, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -1092,17 +1059,14 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
+      auto bmatrix = tri->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tri->grad_shapefn(xi, Eigen::Vector2d::Zero(),
-                                      Eigen::Vector2d::Zero());
+      auto gradsf = tri->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -1148,8 +1112,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5;
-      Eigen::Matrix<double, Dim, 1> defgrad;
-      defgrad << 0.5, 0.5;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
+      defgrad << 0.5, 0.5, 0.5, 0.5;
 
       // Get B-Matrix
       auto bmatrix = tri->bmatrix(xi, coords, psize, defgrad);
@@ -1159,8 +1123,7 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       gradsf *= ((jacobian.inverse()).transpose());
 
       // Check dN/dx
-      auto dn_dx = tri->dn_dx(xi, coords, Eigen::Vector2d::Zero(),
-                              Eigen::Vector2d::Zero());
+      auto dn_dx = tri->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -1195,10 +1158,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
                 2.0, 2.5;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = tri->bmatrix(xi, coords, Eigen::Vector2d::Zero(),
-                                  Eigen::Vector2d::Zero());
-      auto jacobian = tri->jacobian(xi, coords, Eigen::Vector2d::Zero(),
-                                    Eigen::Vector2d::Zero());
+      tri->bmatrix(xi, coords, zero, zero_matrix);
+      tri->jacobian(xi, coords, zero, zero_matrix);
     }
 
     // Ni Nj matrix of a cell
@@ -1274,7 +1235,6 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       std::vector<Eigen::Matrix<double, Dim, 1>> xi_s;
 
       Eigen::Matrix<double, Dim, 1> xi;
-      const double one_by_sqrt3 = std::fabs(1 / std::sqrt(3));
       xi << 1.0 / 6, 1.0 / 6;
       xi_s.emplace_back(xi);
       xi << 2.0 / 3, 1.0 / 6;
@@ -1418,6 +1378,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       Eigen::MatrixXd error;
       REQUIRE_THROWS(tri->initialise_bspline_connectivity_properties(
           error, std::vector<std::vector<unsigned>>()));
+      REQUIRE_THROWS(
+          tri->initialise_lme_connectivity_properties(0.0, 0.0, true, error));
     }
   }
 }

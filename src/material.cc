@@ -1,5 +1,6 @@
 #include "material.h"
 #include "bingham.h"
+#include "hencky_hyper_elastic.h"
 #include "linear_elastic.h"
 #include "modified_cam_clay.h"
 #include "mohr_coulomb.h"
@@ -55,3 +56,13 @@ static Register<mpm::Material<2>, mpm::NorSand<2>, unsigned, const Json&>
 // Norsand 3D
 static Register<mpm::Material<3>, mpm::NorSand<3>, unsigned, const Json&>
     nor_sand_3d("NorSand3D");
+
+// Hencky Hyper Elastic 2D
+static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,
+                const Json&>
+    hencky_hyper_elastic_2d("HenckyHyperElastic2D");
+
+// Hencky Hyper Elastic 3D
+static Register<mpm::Material<3>, mpm::HenckyHyperElastic<3>, unsigned,
+                const Json&>
+    hencky_hyper_elastic_3d("HenckyHyperElastic3D");

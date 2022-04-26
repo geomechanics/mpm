@@ -3,17 +3,23 @@
 #include "hexahedron_bspline_element.h"
 #include "hexahedron_element.h"
 #include "hexahedron_gimp_element.h"
+#include "hexahedron_lme_element.h"
 #include "quadrilateral_bspline_element.h"
 #include "quadrilateral_element.h"
 #include "quadrilateral_gimp_element.h"
+#include "quadrilateral_lme_element.h"
 #include "tetrahedron_element.h"
 #include "triangle_element.h"
+#include "triangle_lme_element.h"
 
 // Triangle 3-noded element
 static Register<mpm::Element<2>, mpm::TriangleElement<2, 3>> tri3("ED2T3");
 
 // Triangle 6-noded element
 static Register<mpm::Element<2>, mpm::TriangleElement<2, 6>> tri6("ED2T6");
+
+// Triangle LME element
+static Register<mpm::Element<2>, mpm::TriangleLMEElement<2>> tri_lme("ED2T3L");
 
 // Quadrilateral 4-noded element
 static Register<mpm::Element<2>, mpm::QuadrilateralElement<2, 4>> quad4(
@@ -35,6 +41,10 @@ static Register<mpm::Element<2>, mpm::QuadrilateralGIMPElement<2, 16>>
 static Register<mpm::Element<2>, mpm::QuadrilateralBSplineElement<2, 2>>
     quad_bspline4_p2("ED2Q4P2B");
 
+// Quadrilateral LME element
+static Register<mpm::Element<2>, mpm::QuadrilateralLMEElement<2>> quad_lme(
+    "ED2Q4L");
+
 // Tetrahedron 4-noded element
 static Register<mpm::Element<3>, mpm::TetrahedronElement<3, 4>> tet4("ED3T4");
 
@@ -51,3 +61,7 @@ static Register<mpm::Element<3>, mpm::HexahedronGIMPElement<3, 64>> hex_gimp64(
 // Hexahedron BSpline element of second order polynomial
 static Register<mpm::Element<3>, mpm::HexahedronBSplineElement<3, 2>>
     hex_bspline8_p2("ED3H8P2B");
+
+// Hexahedron LME element
+static Register<mpm::Element<3>, mpm::HexahedronLMEElement<3>> hex_lme(
+    "ED3H8L");

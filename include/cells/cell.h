@@ -430,7 +430,10 @@ class Cell {
   //! \ingroup Nonlocal
   //! \brief Assign a specific connectivity properties to the assigned nonlocal
   //! elements
-  bool initialiase_nonlocal();
+  //! \param[in] nonlocal_properties A map of selected nonlocal element
+  //! properties
+  bool initialiase_nonlocal(
+      const tsl::robin_map<std::string, double>& nonlocal_properties);
 
   /**@}*/
 

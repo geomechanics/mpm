@@ -346,8 +346,12 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
       REQUIRE(node6->nonlocal_node_type() == n6);
       REQUIRE(node7->nonlocal_node_type() == n7);
 
-      REQUIRE_THROWS(mesh->upgrade_cells_to_nonlocal("ED3H8", 0));
-      REQUIRE(mesh->upgrade_cells_to_nonlocal("ED3H8P2B", 1) == true);
+      // Empty map
+      tsl::robin_map<std::string, double> nonlocal_properties;
+      REQUIRE_THROWS(
+          mesh->upgrade_cells_to_nonlocal("ED3H8", 0, nonlocal_properties));
+      REQUIRE(mesh->upgrade_cells_to_nonlocal("ED3H8P2B", 1,
+                                              nonlocal_properties) == true);
     }
   }
 

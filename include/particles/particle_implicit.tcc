@@ -395,10 +395,10 @@ inline Eigen::Matrix<double, 3, 3>
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     const auto& displacement = nodes_[i]->displacement(phase);
-    deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
-    deformation_gradient_increment(0, 1) += dn_dx(i, 1) * displacement[0];
-    deformation_gradient_increment(1, 0) += dn_dx(i, 0) * displacement[1];
-    deformation_gradient_increment(1, 1) += dn_dx(i, 1) * displacement[1];
+    deformation_gradient_increment(0, 0) += displacement[0] * dn_dx(i, 0);
+    deformation_gradient_increment(0, 1) += displacement[0] * dn_dx(i, 1);
+    deformation_gradient_increment(1, 0) += displacement[1] * dn_dx(i, 0);
+    deformation_gradient_increment(1, 1) += displacement[1] * dn_dx(i, 1);
   }
 
   for (unsigned i = 0; i < 2; ++i) {
@@ -425,15 +425,15 @@ inline Eigen::Matrix<double, 3, 3>
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     const auto& displacement = nodes_[i]->displacement(phase);
-    deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
-    deformation_gradient_increment(0, 1) += dn_dx(i, 1) * displacement[0];
-    deformation_gradient_increment(0, 2) += dn_dx(i, 2) * displacement[0];
-    deformation_gradient_increment(1, 0) += dn_dx(i, 0) * displacement[1];
-    deformation_gradient_increment(1, 1) += dn_dx(i, 1) * displacement[1];
-    deformation_gradient_increment(1, 2) += dn_dx(i, 2) * displacement[1];
-    deformation_gradient_increment(2, 0) += dn_dx(i, 0) * displacement[2];
-    deformation_gradient_increment(2, 1) += dn_dx(i, 1) * displacement[2];
-    deformation_gradient_increment(2, 2) += dn_dx(i, 2) * displacement[2];
+    deformation_gradient_increment(0, 0) += displacement[0] * dn_dx(i, 0);
+    deformation_gradient_increment(0, 1) += displacement[0] * dn_dx(i, 1);
+    deformation_gradient_increment(0, 2) += displacement[0] * dn_dx(i, 2);
+    deformation_gradient_increment(1, 0) += displacement[1] * dn_dx(i, 0);
+    deformation_gradient_increment(1, 1) += displacement[1] * dn_dx(i, 1);
+    deformation_gradient_increment(1, 2) += displacement[1] * dn_dx(i, 2);
+    deformation_gradient_increment(2, 0) += displacement[2] * dn_dx(i, 0);
+    deformation_gradient_increment(2, 1) += displacement[2] * dn_dx(i, 1);
+    deformation_gradient_increment(2, 2) += displacement[2] * dn_dx(i, 2);
   }
 
   for (unsigned i = 0; i < 3; ++i) {

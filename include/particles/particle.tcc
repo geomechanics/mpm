@@ -499,15 +499,16 @@ void mpm::Particle<Tdim>::compute_shapefn() noexcept {
   // Get element ptr of a cell
   const auto element = cell_->element_ptr();
 
-  // Zero matrix
-  Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
+  // Deformation Gradient
+  const Eigen::Matrix<double, Tdim, Tdim> def_grad =
+      this->deformation_gradient_.block(0, 0, Tdim, Tdim);
 
   // Compute shape function of the particle
-  shapefn_ = element->shapefn(this->xi_, this->natural_size_, zero);
+  shapefn_ = element->shapefn(this->xi_, this->natural_size_, def_grad);
 
   // Compute dN/dx
   dn_dx_ = element->dn_dx(this->xi_, cell_->nodal_coordinates(),
-                          this->natural_size_, zero);
+                          this->natural_size_, def_grad);
 }
 
 // Assign volume to the particle
@@ -1371,4 +1372,23 @@ inline Eigen::Matrix<double, 3, 3>
     }
   }
   return deformation_gradient_rate;
+}
+
+//! Compute deformation gradient
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::update_deformation_gradient(const std::string& type,
+                                                      double dt) noexcept {
+  // Compute deformation gradient increment
+  Eigen::Matrix<double, 3, 3> def_grad_increment =
+      Eigen::Matrix<double, 3, 3>::Identity();
+  if (type == "displacement")
+    def_grad_increment = this->compute_deformation_gradient_increment(
+        this->dn_dx_, mpm::ParticlePhase::SinglePhase);
+  else if (type == "velocity")
+    def_grad_increment = this->compute_deformation_gradient_increment(
+        this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
+
+  // Update deformation gradient
+  this->deformation_gradient_ =
+      def_grad_increment * this->deformation_gradient_;
 }

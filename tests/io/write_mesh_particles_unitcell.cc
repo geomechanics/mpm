@@ -234,7 +234,7 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
   std::string dimension = "2d";
   auto particle_type = "P2D";
   auto node_type = "N2D";
-  auto cell_type = "ED2Q4";
+  auto cell_type = "ED2Q4L";
   auto io_type = "Ascii2D";
   auto assembler_type = "EigenImplicit2D";
   std::string material = "LinearElastic2D";
@@ -249,7 +249,7 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
     dimension = "3d";
     particle_type = "P3D";
     node_type = "N3D";
-    cell_type = "ED3H8";
+    cell_type = "ED3H8L";
     assembler_type = "EigenImplicit3D";
     io_type = "Ascii3D";
     material = "LinearElastic3D";
@@ -269,6 +269,8 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
          {{"displacement_constraints",
            {{"file", "displacement-constraints-unitcell.txt"}}}}},
         {"cell_type", cell_type},
+        {"nonlocal_mesh_properties",
+         {{"type", "LME"}, {"gamma", 3}, {"anisotropy", true}}},
         {"particle_stresses",
          {{"type", "isotropic"}, {"value", initial_stress}}}}},
       {"particles",

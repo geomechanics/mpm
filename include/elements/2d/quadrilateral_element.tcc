@@ -849,7 +849,8 @@ void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
 template <unsigned Tdim, unsigned Tnfunctions>
 void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
     initialise_lme_connectivity_properties(
-        double beta, double radius, bool anisotropy, const Eigen::MatrixXd& nodal_coordinates) {
+        double beta, double radius, bool anisotropy,
+        const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
       "Function to initialise lme connectivity is not implemented for "
       "Quad<Tdim, Tnfunctions> ");

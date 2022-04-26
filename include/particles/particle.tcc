@@ -397,7 +397,7 @@ bool mpm::Particle<Tdim>::assign_cell_xi(
       // Assign the reference location of particle
       bool xi_nan = false;
 
-      // Check if point is within the cell
+      // Check if point is within the parametric bound
       double min_xi = -1.;
       double max_xi = 1.;
       if ((Tdim == 2 && nodes_.size() == 3) or

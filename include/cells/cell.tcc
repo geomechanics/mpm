@@ -113,13 +113,18 @@ std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points() {
     bool status = true;
 
     // Check if point is within the cell
-    double min_xi = -1.;
-    double max_xi = 1.;
     if ((Tdim == 2 && indices.size() == 3) or
-        (Tdim == 3 && indices.size() == 4))
-      min_xi = 0.;
-    for (unsigned i = 0; i < xi.size(); ++i)
-      if (xi(i) < min_xi || xi(i) > max_xi || std::isnan(xi(i))) status = false;
+        (Tdim == 3 && indices.size() == 4)) {
+      if (xi.sum() > 1.)
+        status = false;
+      else {
+        for (unsigned i = 0; i < xi.size(); ++i)
+          if (xi(i) < 0. || std::isnan(xi(i))) status = false;
+      }
+    } else {
+      for (unsigned i = 0; i < xi.size(); ++i)
+        if (xi(i) < -1. || xi(i) > 1. || std::isnan(xi(i))) status = false;
+    }
 
     if (status)
       points.emplace_back(point);

@@ -61,7 +61,7 @@ Eigen::Matrix<double, 6, 1> mpm::FiniteElastoPlastic<Tdim>::compute_stress(
   // Principal values of left Cauchy-Green tensor
   Matrix3x3 directors = Matrix3x3::Zero();
   const Vector3d principal_trial_left_cauchy_green =
-      mpm::materials::principal_tensor(trial_left_cauchy_green, directors);
+      mpm::math::principal_tensor(trial_left_cauchy_green, directors);
 
   // Principal values of trial Hencky (logarithmic) strain
   Vector3d principal_elastic_hencky_strain =

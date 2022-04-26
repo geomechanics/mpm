@@ -6,7 +6,6 @@
 #include "Eigen/Dense"
 
 #include "material.h"
-#include "math_utility.h"
 
 namespace mpm {
 

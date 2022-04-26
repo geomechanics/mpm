@@ -82,13 +82,8 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
       directors * principal_cauchy_stress * directors.transpose();
 
   // Convert to Voigt notation
-  Eigen::Matrix<double, 6, 1> cauchy_stress_vector;
-  cauchy_stress_vector(0) = cauchy_stress(0, 0);
-  cauchy_stress_vector(1) = cauchy_stress(1, 1);
-  cauchy_stress_vector(2) = cauchy_stress(2, 2);
-  cauchy_stress_vector(3) = cauchy_stress(0, 1);
-  cauchy_stress_vector(4) = cauchy_stress(1, 2);
-  cauchy_stress_vector(5) = cauchy_stress(2, 0);
+  const Eigen::Matrix<double, 6, 1> cauchy_stress_vector =
+      mpm::math::voigt_form(cauchy_stress);
 
   return cauchy_stress_vector;
 }

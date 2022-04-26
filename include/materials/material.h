@@ -10,6 +10,7 @@
 #include "logger.h"
 #include "map.h"
 #include "material_utility.h"
+#include "math_utility.h"
 #include "particle.h"
 #include "particle_base.h"
 

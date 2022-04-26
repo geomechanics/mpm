@@ -92,8 +92,6 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   using Particle<Tdim>::strain_;
   //! dvolumetric strain
   using Particle<Tdim>::dvolumetric_strain_;
-  //! Volumetric strain at centroid
-  using Particle<Tdim>::volumetric_strain_centroid_;
   //! Strain rate
   using Particle<Tdim>::strain_rate_;
   //! dstrains

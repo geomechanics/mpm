@@ -9,10 +9,22 @@ bool write_json_unitcell(unsigned dim, const std::string& analysis,
                          const std::string& mpm_scheme,
                          const std::string& file_name);
 
+// Write JSON Configuration file for finite strain
+bool write_json_unitcell_finite_strain(unsigned dim,
+                                       const std::string& analysis,
+                                       const std::string& mpm_scheme,
+                                       const std::string& file_name);
+
 // Write JSON Configuration file for implicit
 bool write_json_unitcell_implicit(
     unsigned dim, const std::string& analysis, const std::string& mpm_scheme,
-    bool nonlinear, const std::string& file_name,
+    bool nonlinear, bool quasi_static, const std::string& file_name,
+    const std::string& linear_solver_type = "none");
+
+// Write JSON Configuration file for implicit finite strain
+bool write_json_unitcell_implicit_finite_strain(
+    unsigned dim, const std::string& analysis, const std::string& mpm_scheme,
+    bool nonlinear, bool quasi_static, const std::string& file_name,
     const std::string& linear_solver_type = "none");
 
 // Write JSON Configuration file for navier stokes

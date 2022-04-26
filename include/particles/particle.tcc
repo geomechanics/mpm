@@ -96,8 +96,16 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->strain_[4] = particle.gamma_yz;
   this->strain_[5] = particle.gamma_xz;
 
-  // Volumetric strain
-  this->volumetric_strain_centroid_ = particle.epsilon_v;
+  // Deformation gradient
+  this->deformation_gradient_(0, 0) = particle.defgrad_00;
+  this->deformation_gradient_(0, 1) = particle.defgrad_01;
+  this->deformation_gradient_(0, 2) = particle.defgrad_02;
+  this->deformation_gradient_(1, 0) = particle.defgrad_10;
+  this->deformation_gradient_(1, 1) = particle.defgrad_11;
+  this->deformation_gradient_(1, 2) = particle.defgrad_12;
+  this->deformation_gradient_(2, 0) = particle.defgrad_20;
+  this->deformation_gradient_(2, 1) = particle.defgrad_21;
+  this->deformation_gradient_(2, 2) = particle.defgrad_22;
 
   // Status
   this->status_ = particle.status;
@@ -182,6 +190,8 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
 
   Eigen::Matrix<double, 6, 1> strain = this->strain_;
 
+  Eigen::Matrix<double, 3, 3> defgrad = this->deformation_gradient_;
+
   particle_data->id = this->id();
   particle_data->mass = this->mass();
   particle_data->volume = this->volume();
@@ -225,7 +235,15 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   particle_data->gamma_yz = strain[4];
   particle_data->gamma_xz = strain[5];
 
-  particle_data->epsilon_v = this->volumetric_strain_centroid_;
+  particle_data->defgrad_00 = defgrad(0, 0);
+  particle_data->defgrad_01 = defgrad(0, 1);
+  particle_data->defgrad_02 = defgrad(0, 2);
+  particle_data->defgrad_10 = defgrad(1, 0);
+  particle_data->defgrad_11 = defgrad(1, 1);
+  particle_data->defgrad_12 = defgrad(1, 2);
+  particle_data->defgrad_20 = defgrad(2, 0);
+  particle_data->defgrad_21 = defgrad(2, 1);
+  particle_data->defgrad_22 = defgrad(2, 2);
 
   particle_data->status = this->status();
 
@@ -269,7 +287,6 @@ void mpm::Particle<Tdim>::initialise() {
   acceleration_.setZero();
   normal_.setZero();
   volume_ = std::numeric_limits<double>::max();
-  volumetric_strain_centroid_ = 0.;
   deformation_gradient_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
@@ -475,15 +492,16 @@ void mpm::Particle<Tdim>::compute_shapefn() noexcept {
   // Get element ptr of a cell
   const auto element = cell_->element_ptr();
 
-  // Zero matrix
-  Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
+  // Deformation Gradient
+  const Eigen::Matrix<double, Tdim, Tdim> def_grad =
+      this->deformation_gradient_.block(0, 0, Tdim, Tdim);
 
   // Compute shape function of the particle
-  shapefn_ = element->shapefn(this->xi_, this->natural_size_, zero);
+  shapefn_ = element->shapefn(this->xi_, this->natural_size_, def_grad);
 
   // Compute dN/dx
   dn_dx_ = element->dn_dx(this->xi_, cell_->nodal_coordinates(),
-                          this->natural_size_, zero);
+                          this->natural_size_, def_grad);
 }
 
 // Assign volume to the particle
@@ -625,6 +643,33 @@ void mpm::Particle<
   }
 }
 
+//! Map linear elastic wave velocities to nodes
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_wave_velocities_to_nodes() noexcept {
+  // Unit 1x1 Eigen matrix to store scalar quantities
+  Eigen::Matrix<double, 1, 1> density;
+
+  // 2x1 Eigen matrix to store pressure and shear wave velocities
+  Eigen::Matrix<double, 2, 1> wave_velocities;
+  const double pwave =
+      (this->material())
+          ->template property<double>(std::string("pwave_velocity"));
+  const double swave =
+      (this->material())
+          ->template property<double>(std::string("swave_velocity"));
+
+  // Map pressure wave, shear wave and density to node with shapefunc and mass
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    wave_velocities(0) = pwave * mass_ * shapefn_[i];
+    wave_velocities(1) = swave * mass_ * shapefn_[i];
+    density(0) = this->mass_density_ * mass_ * shapefn_[i];
+    nodes_[i]->update_property(true, "wave_velocities", wave_velocities,
+                               this->material_id(), 2);
+    nodes_[i]->update_property(true, "density", density, this->material_id(),
+                               1);
+  }
+}
+
 // Compute strain rate of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_rate(
@@ -700,7 +745,6 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
-  volumetric_strain_centroid_ += dvolumetric_strain_;
 }
 
 // Compute stress
@@ -1006,6 +1050,10 @@ int mpm::Particle<Tdim>::compute_pack_size() const {
   MPI_Pack_size(6 * 2, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
+  // Deformation gradient
+  MPI_Pack_size(9, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+
   // epsv
   MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
@@ -1092,9 +1140,8 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
   // Strain
   MPI_Pack(strain_.data(), 6, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
-
-  // epsv
-  MPI_Pack(&volumetric_strain_centroid_, 1, MPI_DOUBLE, data_ptr, data.size(),
+  // Deformation Gradient
+  MPI_Pack(deformation_gradient_.data(), 9, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
 
   // Cell id
@@ -1189,10 +1236,10 @@ void mpm::Particle<Tdim>::deserialize(
   // Strain
   MPI_Unpack(data_ptr, data.size(), &position, strain_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);
-
-  // epsv
-  MPI_Unpack(data_ptr, data.size(), &position, &volumetric_strain_centroid_, 1,
+  // Deformation gradient
+  MPI_Unpack(data_ptr, data.size(), &position, deformation_gradient_.data(), 9,
              MPI_DOUBLE, MPI_COMM_WORLD);
+
   // cell id
   MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,
              MPI_UNSIGNED_LONG_LONG, MPI_COMM_WORLD);
@@ -1235,4 +1282,106 @@ void mpm::Particle<Tdim>::deserialize(
   }
 
 #endif
+}
+
+// Compute deformation gradient increment using nodal velocity
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::Particle<1>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
+  // Define deformation gradient rate
+  Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
+      Eigen::Matrix<double, 3, 3>::Identity();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity = nodes_[i]->velocity(phase);
+    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
+  }
+
+  if (std::fabs(deformation_gradient_rate(0, 0) - 1.) < 1.E-15)
+    deformation_gradient_rate(0, 0) = 1.;
+  return deformation_gradient_rate;
+}
+
+// Compute deformation gradient increment using nodal velocity
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::Particle<2>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
+  // Define deformation gradient rate
+  Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
+      Eigen::Matrix<double, 3, 3>::Identity();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity = nodes_[i]->velocity(phase);
+    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
+    deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
+    deformation_gradient_rate(1, 0) += dn_dx(i, 0) * velocity[1] * dt;
+    deformation_gradient_rate(1, 1) += dn_dx(i, 1) * velocity[1] * dt;
+  }
+
+  for (unsigned i = 0; i < 2; ++i) {
+    for (unsigned j = 0; i < 2; ++i) {
+      if (i != j && std::fabs(deformation_gradient_rate(i, j)) < 1.E-15)
+        deformation_gradient_rate(i, j) = 0.;
+      if (i == j && std::fabs(deformation_gradient_rate(i, j) - 1.) < 1.E-15)
+        deformation_gradient_rate(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_rate;
+}
+
+// Compute deformation gradient increment using nodal velocity
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::Particle<3>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
+  // Define deformation gradient rate
+  Eigen::Matrix<double, 3, 3> deformation_gradient_rate =
+      Eigen::Matrix<double, 3, 3>::Identity();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity = nodes_[i]->velocity(phase);
+    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
+    deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
+    deformation_gradient_rate(0, 2) += dn_dx(i, 2) * velocity[0] * dt;
+    deformation_gradient_rate(1, 0) += dn_dx(i, 0) * velocity[1] * dt;
+    deformation_gradient_rate(1, 1) += dn_dx(i, 1) * velocity[1] * dt;
+    deformation_gradient_rate(1, 2) += dn_dx(i, 2) * velocity[1] * dt;
+    deformation_gradient_rate(2, 0) += dn_dx(i, 0) * velocity[2] * dt;
+    deformation_gradient_rate(2, 1) += dn_dx(i, 1) * velocity[2] * dt;
+    deformation_gradient_rate(2, 2) += dn_dx(i, 2) * velocity[2] * dt;
+  }
+
+  for (unsigned i = 0; i < 3; ++i) {
+    for (unsigned j = 0; i < 3; ++i) {
+      if (i != j && std::fabs(deformation_gradient_rate(i, j)) < 1.E-15)
+        deformation_gradient_rate(i, j) = 0.;
+      if (i == j && std::fabs(deformation_gradient_rate(i, j) - 1.) < 1.E-15)
+        deformation_gradient_rate(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_rate;
+}
+
+//! Compute deformation gradient
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::update_deformation_gradient(const std::string& type,
+                                                      double dt) noexcept {
+  // Compute deformation gradient increment
+  Eigen::Matrix<double, 3, 3> def_grad_increment =
+      Eigen::Matrix<double, 3, 3>::Identity();
+  if (type == "displacement")
+    def_grad_increment = this->compute_deformation_gradient_increment(
+        this->dn_dx_, mpm::ParticlePhase::SinglePhase);
+  else if (type == "velocity")
+    def_grad_increment = this->compute_deformation_gradient_increment(
+        this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
+
+  // Update deformation gradient
+  this->deformation_gradient_ =
+      def_grad_increment * this->deformation_gradient_;
 }

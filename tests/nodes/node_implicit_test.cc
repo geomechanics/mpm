@@ -253,8 +253,6 @@ TEST_CASE("Implicit Node is checked for 2D case", "[node][2D][Implicit]") {
   }
 
   SECTION("Check momentum, inertia, velocity and acceleration") {
-    // Time step
-    const double dt = 0.1;
     // Initialization
     node->initialise_implicit();
 
@@ -422,8 +420,6 @@ TEST_CASE("Implicit Node is checked for 3D case", "[node][3D][Implicit]") {
   }
 
   SECTION("Check momentum, inertia, velocity and acceleration") {
-    // Time step
-    const double dt = 0.1;
     // Initialization
     node->initialise_implicit();
 

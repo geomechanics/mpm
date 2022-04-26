@@ -34,12 +34,11 @@ bool mpm::HenckyHyperElastic<Tdim>::compute_elastic_tensor() {
 
   // clang-format off
   // compute elasticityTensor
-  de_(0,0)=a1;    de_(0,1)=a2;    de_(0,2)=a2;    de_(0,3)=0;    de_(0,4)=0;    de_(0,5)=0;
-  de_(1,0)=a2;    de_(1,1)=a1;    de_(1,2)=a2;    de_(1,3)=0;    de_(1,4)=0;    de_(1,5)=0;
-  de_(2,0)=a2;    de_(2,1)=a2;    de_(2,2)=a1;    de_(2,3)=0;    de_(2,4)=0;    de_(2,5)=0;
-  de_(3,0)= 0;    de_(3,1)= 0;    de_(3,2)= 0;    de_(3,3)=mu_;  de_(3,4)=0;    de_(3,5)=0;
-  de_(4,0)= 0;    de_(4,1)= 0;    de_(4,2)= 0;    de_(4,3)=0;    de_(4,4)=mu_;  de_(4,5)=0;
-  de_(5,0)= 0;    de_(5,1)= 0;    de_(5,2)= 0;    de_(5,3)=0;    de_(5,4)=0;    de_(5,5)=mu_;
+  de_ = Eigen::Matrix<double, 6, 6>::Zero();
+  de_(0,0)=a1;    de_(0,1)=a2;    de_(0,2)=a2;
+  de_(1,0)=a2;    de_(1,1)=a1;    de_(1,2)=a2;
+  de_(2,0)=a2;    de_(2,1)=a2;    de_(2,2)=a1;
+  de_(3,3)=mu_;   de_(4,4)=mu_;   de_(5,5)=mu_;
   // clang-format on
   return true;
 }
@@ -64,7 +63,7 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
   // Principal values of left Cauchy-Green strain
   Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
   const Eigen::Matrix<double, 3, 1> principal_left_cauchy_green_strain =
-      mpm::materials::principal_tensor(left_cauchy_green_tensor, directors);
+      mpm::math::principal_tensor(left_cauchy_green_tensor, directors);
 
   // Principal values of Hencky (logarithmic) strain
   const Eigen::Matrix<double, 3, 1> principal_hencky_strain =
@@ -72,7 +71,7 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
 
   // Principal values of Kirchhoff stress
   const Eigen::Matrix<double, 3, 1> principal_kirchhoff_stress =
-      de_.block<3, 3>(0, 0) * principal_hencky_strain;
+      de_.block(0, 0, 3, 3) * principal_hencky_strain;
 
   // Principal values of Cauchy stress
   const Eigen::Matrix<double, 3, 3> principal_cauchy_stress =

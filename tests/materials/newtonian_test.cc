@@ -93,11 +93,9 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
 
     // Coordinates of nodes for the cell
     mpm::Index cell_id = 0;
-    mpm::Index mesh_id = 0;
     const unsigned Dof = 2;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 4;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, -2;
@@ -188,11 +186,9 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
 
     // Coordinates of nodes for the cell
     mpm::Index cell_id = 0;
-    mpm::Index mesh_id = 0;
     const unsigned Dof = 2;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 4;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, -2;
@@ -259,6 +255,44 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
 
     // Check pressure value
     REQUIRE(state_vars.at("pressure") == Approx(0.000e+00).epsilon(Tolerance));
+  }
+
+  SECTION("Newtonian check stresses fail") {
+    unsigned id = 0;
+    auto material =
+        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
+            "Newtonian2D", std::move(id), jmaterial);
+    REQUIRE(material->id() == 0);
+
+    // Add particle
+    mpm::Index pid = 0;
+    Eigen::Matrix<double, Dim, 1> coords;
+    coords << 0.5, 0.5;
+    auto particle = std::make_shared<mpm::Particle<Dim>>(pid, coords);
+
+    // Initialise stress and strain
+    mpm::Material<Dim>::Vector6d stress;
+    stress.setZero();
+    mpm::Material<Dim>::Vector6d updated_stress;
+    updated_stress.setZero();
+
+    // Initialise deformation gradient
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
+    deformation_gradient.setIdentity();
+
+    // Initialise deformation gradient increment
+    Eigen::Matrix<double, 3, 3> deformation_gradient_increment;
+    deformation_gradient_increment.setIdentity();
+
+    // Compute updated stress
+    mpm::dense_map state_vars = material->initialise_state_variables();
+    REQUIRE_THROWS(material->compute_stress(stress, deformation_gradient,
+                                            deformation_gradient_increment,
+                                            particle.get(), &state_vars));
+
+    REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
+        updated_stress, stress, deformation_gradient,
+        deformation_gradient_increment, particle.get(), &state_vars));
   }
 }
 
@@ -346,7 +380,6 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
     const unsigned Dof = 3;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 8;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, 2, -2;
@@ -458,7 +491,6 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
     const unsigned Dof = 3;
     const unsigned Nphases = 1;
     const unsigned Nnodes = 8;
-    const unsigned phase = 0;
     const double dt = 1;
 
     coords << -2, 2, -2;

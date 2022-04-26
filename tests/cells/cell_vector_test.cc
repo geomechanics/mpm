@@ -23,9 +23,6 @@ TEST_CASE("Cell vector is checked for 2D case", "[cellvector][2D]") {
   // Number of phases
   const unsigned Nphases = 1;
 
-  // Tolerance
-  const double Tolerance = 1.E-7;
-
   // Element
   std::shared_ptr<mpm::Element<Dim>> element =
       std::make_shared<mpm::QuadrilateralElement<Dim, 4>>();
@@ -158,9 +155,6 @@ TEST_CASE("Cell vector is checked for 3D case", "[cellvector][3D]") {
   const unsigned Nphases = 1;
   // Number of nodes per cell
   const unsigned Nnodes = 8;
-
-  // Tolerance
-  const double Tolerance = 1.E-7;
 
   // Element
   std::shared_ptr<mpm::Element<Dim>> element =

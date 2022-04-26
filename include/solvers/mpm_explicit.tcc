@@ -19,25 +19,6 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
     contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
 }
 
-//! MPM Explicit compute stress strain
-template <unsigned Tdim>
-void mpm::MPMExplicit<Tdim>::compute_stress_strain(unsigned phase) {
-  // Iterate over each particle to calculate strain
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_strain, std::placeholders::_1, dt_));
-
-  // Iterate over each particle to update particle volume
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));
-
-  // Pressure smoothing
-  if (pressure_smoothing_) this->pressure_smoothing(phase);
-
-  // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
-}
-
 //! MPM Explicit solver
 template <unsigned Tdim>
 bool mpm::MPMExplicit<Tdim>::solve() {
@@ -118,7 +99,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   }
 
   // Create nodal properties
-  if (interface_) mesh_->create_nodal_properties();
+  if (interface_ or absorbing_boundary_) mesh_->create_nodal_properties();
 
   // Initialise loading conditions
   this->initialise_loads();
@@ -162,9 +143,15 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
 
+    // Apply Absorbing Constraint
+    if (absorbing_boundary_) {
+      mpm_scheme_->absorbing_boundary_properties();
+      this->nodal_absorbing_constraints();
+    }
+
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
-                                             damping_factor_);
+                                             damping_factor_, update_defgrad_);
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->postcompute_nodal_kinematics(phase);

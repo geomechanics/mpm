@@ -22,10 +22,6 @@ class MPMExplicit : public MPMBase<Tdim> {
   //! Solve
   bool solve() override;
 
-  //! Compute stress strain
-  //! \param[in] phase Phase to smooth pressure
-  void compute_stress_strain(unsigned phase);
-
  protected:
   // Generate a unique id for the analysis
   using mpm::MPMBase<Tdim>::uuid_;
@@ -75,6 +71,12 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::damping_factor_;
   //! Locate particles
   using mpm::MPMBase<Tdim>::locate_particles_;
+  //! Constraints Pointer
+  using mpm::MPMBase<Tdim>::constraints_;
+  //! Absorbing Boundary
+  using mpm::MPMBase<Tdim>::absorbing_boundary_;
+  //! Update deformation gradient
+  using mpm::MPMBase<Tdim>::update_defgrad_;
 
  private:
   //! Pressure smoothing

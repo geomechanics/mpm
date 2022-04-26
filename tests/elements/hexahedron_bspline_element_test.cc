@@ -11,6 +11,9 @@ TEST_CASE("Hexahedron bspline elements are checked",
   const unsigned Dim = 3;
   const double Tolerance = 1.E-6;
 
+  Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  const Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
+
   //! Check for center element nodes
   SECTION("Quadratic Hexahedron BSpline Element") {
     const unsigned npolynomials = 2;
@@ -27,8 +30,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
       // Coordinate location of point (x,y)
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 8);
@@ -43,8 +45,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
       REQUIRE(shapefn(7) == Approx(0.125).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 8);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -81,8 +82,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
         "3D BSpline element for coordinate (-1., -1., -1.) before upgrade") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << -1., -1., -1.;
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
       // Check shape function
       REQUIRE(shapefn.size() == 8);
 
@@ -96,8 +96,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
       REQUIRE(shapefn(7) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == 8);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -220,8 +219,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 64);
@@ -293,8 +291,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(63) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 64);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -497,8 +494,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
             "3D BSpline element for coordinates(0.5,-0.5,0.5) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 0.5, -0.5, 0.5;
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 64);
@@ -570,8 +566,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(63) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 64);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -610,8 +605,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
             "Eight noded local sf hexahedron element for coordinates(0,0,0)") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = hex->shapefn_local(coords, Eigen::Vector3d::Zero(),
-                                            Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn_local(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 8);
@@ -645,7 +639,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
           Eigen::Matrix<double, Dim, 1> psize;
           psize.setZero();
-          Eigen::Matrix<double, Dim, 1> defgrad;
+          Eigen::Matrix<double, Dim, Dim> defgrad;
           defgrad.setZero();
 
           Eigen::Matrix<double, Dim, 1> xi;
@@ -691,16 +685,13 @@ TEST_CASE("Hexahedron bspline elements are checked",
               -3., 3;
 
           // Get B-Matrix
-          auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto bmatrix = hex->bmatrix(xi, coords, zero, zero_matrix);
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(xi, zero, zero_matrix);
 
           // Check dN/dx
-          auto dn_dx = hex->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+          auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
           REQUIRE(dn_dx.rows() == 64);
           REQUIRE(dn_dx.cols() == Dim);
           for (unsigned i = 0; i < 64; ++i) {
@@ -817,8 +808,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 48);
@@ -874,8 +864,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(47) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 48);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -903,8 +892,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
             "3D BSpline element for coordinates(0.5,-0.5,0.5) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 0.5, -0.5, 0.5;
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 48);
@@ -960,8 +948,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(47) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 48);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -1049,8 +1036,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 36);
@@ -1094,8 +1080,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(35) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 36);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -1121,8 +1106,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
             "3D BSpline element for coordinates(0.5,-0.5,0.5) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 0.5, -0.5, 0.5;
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 36);
@@ -1166,8 +1150,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(35) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 36);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -1240,8 +1223,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords.setZero();
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 27);
@@ -1276,8 +1258,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(26) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 27);
           REQUIRE(gradsf.cols() == Dim);
 
@@ -1302,8 +1283,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
             "upgrade") {
           Eigen::Matrix<double, Dim, 1> coords;
           coords << 0.5, -0.5, 0.5;
-          auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+          auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
           // Check shape function
           REQUIRE(shapefn.size() == 27);
@@ -1338,8 +1318,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(26) == Approx(0).epsilon(Tolerance));
 
           // Check gradient of shape functions
-          auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                          Eigen::Vector3d::Zero());
+          auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 27);
           REQUIRE(gradsf.cols() == Dim);
 

@@ -184,12 +184,10 @@ Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elastic_tensor(
   // compute elastic stiffness matrix
   // clang-format off
   Matrix6x6 de = Matrix6x6::Zero();
-  de(0,0)=a1;    de(0,1)=a2;    de(0,2)=a2;    de(0,3)=0;    de(0,4)=0;    de(0,5)=0;
-  de(1,0)=a2;    de(1,1)=a1;    de(1,2)=a2;    de(1,3)=0;    de(1,4)=0;    de(1,5)=0;
-  de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;    de(2,3)=0;    de(2,4)=0;    de(2,5)=0;
-  de(3,0)= 0;    de(3,1)= 0;    de(3,2)= 0;    de(3,3)=G;    de(3,4)=0;    de(3,5)=0;
-  de(4,0)= 0;    de(4,1)= 0;    de(4,2)= 0;    de(4,3)=0;    de(4,4)=G;    de(4,5)=0;
-  de(5,0)= 0;    de(5,1)= 0;    de(5,2)= 0;    de(5,3)=0;    de(5,4)=0;    de(5,5)=G;
+  de(0,0)=a1;    de(0,1)=a2;    de(0,2)=a2;
+  de(1,0)=a2;    de(1,1)=a1;    de(1,2)=a2;
+  de(2,0)=a2;    de(2,1)=a2;    de(2,2)=a1;
+  de(3,3)=G;     de(4,4)=G;     de(5,5)=G;
   // clang-format on
 
   return de;

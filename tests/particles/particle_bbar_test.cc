@@ -39,6 +39,9 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     coords << 0.75, 0.75;
     auto particle = std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
 
+    // Particle type
+    REQUIRE(particle->type() == "P2DBBAR");
+
     // Time-step
     const double dt = 0.1;
 
@@ -261,13 +264,7 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     for (unsigned i = 0; i < strain.rows(); ++i)
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
 
-    // Check volumetric strain at centroid
-    double volumetric_strain = 0.2;
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            Approx(volumetric_strain).epsilon(Tolerance));
-
     // Check updated pressure
-    const double K = 8333333.333333333;
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Update volume strain rate
@@ -323,8 +320,6 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
   const unsigned Nnodes = 8;
   // Number of phases
   const unsigned Nphases = 1;
-  // Phase
-  const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
 
@@ -339,6 +334,9 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     coords << 1.5, 1.5, 1.5;
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
+
+    // Particle type
+    REQUIRE(particle->type() == "P3DBBAR");
 
     // Phase
     const unsigned phase = 0;
@@ -612,11 +610,6 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     // Check strains
     for (unsigned i = 0; i < strain.rows(); ++i)
       REQUIRE(particle->strain()(i) == Approx(strain(i)).epsilon(Tolerance));
-
-    // Check volumetric strain at centroid
-    double volumetric_strain = 0.5;
-    REQUIRE(particle->volumetric_strain_centroid() ==
-            Approx(volumetric_strain).epsilon(Tolerance));
 
     // Check updated pressure
     REQUIRE(std::isnan(particle->pressure()) == true);

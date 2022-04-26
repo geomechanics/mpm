@@ -287,6 +287,17 @@ void mpm::Mesh<Tdim>::find_cell_neighbours() {
   }
 }
 
+//! Compute average cell size
+template <unsigned Tdim>
+double mpm::Mesh<Tdim>::compute_average_cell_size() const {
+  double mesh_size = 0.0;
+#pragma omp parallel for schedule(runtime) reduction(+ : mesh_size)
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr)
+    mesh_size += (*citr)->mean_length();
+  mesh_size *= 1. / cells_.size();
+  return mesh_size;
+}
+
 //! Find global number of particles across MPI ranks / cell
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::find_nglobal_particles_cells() {
@@ -1573,46 +1584,6 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_twophase(
   return true;
 }
 
-//! Write particles to HDF5 for finite strain particle
-template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::write_particles_hdf5_finite_strain(
-    const std::string& filename) {
-  const unsigned nparticles = this->nparticles();
-
-  std::vector<PODParticleFiniteStrain> particle_data;
-  particle_data.reserve(nparticles);
-
-  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-    auto pod =
-        std::static_pointer_cast<mpm::PODParticleFiniteStrain>((*pitr)->pod());
-    particle_data.emplace_back(*pod);
-  }
-
-  // Calculate the size and the offsets of our struct members in memory
-  const hsize_t NRECORDS = nparticles;
-  const hsize_t NFIELDS = mpm::pod::particlefinitestrain::NFIELDS;
-
-  hid_t file_id;
-  hsize_t chunk_size = 10000;
-  int* fill_data = NULL;
-  int compress = 0;
-
-  // Create a new file using default properties.
-  file_id =
-      H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-  // make a table
-  H5TBmake_table("Table Title", file_id, "table", NFIELDS, NRECORDS,
-                 mpm::pod::particlefinitestrain::dst_size,
-                 mpm::pod::particlefinitestrain::field_names,
-                 mpm::pod::particlefinitestrain::dst_offset,
-                 mpm::pod::particlefinitestrain::field_type, chunk_size,
-                 fill_data, compress, particle_data.data());
-
-  H5Fclose(file_id);
-  return true;
-}
-
 //! Read HDF5 particles with type name
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
@@ -1623,8 +1594,6 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
     status = this->read_particles_hdf5(filename, particle_type);
   else if (type_name == "twophase_particles")
     status = this->read_particles_hdf5_twophase(filename, particle_type);
-  else if (type_name == "particles_finite_strain")
-    status = this->read_particles_hdf5_finite_strain(filename, particle_type);
   return status;
 }
 
@@ -1720,65 +1689,6 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5_twophase(
     std::vector<std::shared_ptr<mpm::Material<Tdim>>> materials;
     materials.emplace_back(materials_.at(pod_particle.material_id));
     materials.emplace_back(materials_.at(pod_particle.liquid_material_id));
-    // Particle id
-    mpm::Index pid = pod_particle.id;
-    // Initialise coordinates
-    Eigen::Matrix<double, Tdim, 1> coords;
-    coords.setZero();
-
-    // Create particle
-    auto particle =
-        Factory<mpm::ParticleBase<Tdim>, mpm::Index,
-                const Eigen::Matrix<double, Tdim, 1>&>::instance()
-            ->create(particle_type, static_cast<mpm::Index>(pid), coords);
-
-    // Initialise particle with HDF5 data
-    particle->initialise_particle(pod_particle, materials);
-
-    // Add particle to mesh and check
-    bool insert_status = this->add_particle(particle, false);
-
-    // If insertion is successful
-    if (!insert_status)
-      throw std::runtime_error("Addition of particle to mesh failed!");
-  }
-  // close the file
-  H5Fclose(file_id);
-  return true;
-}
-
-//! Read HDF5 particles for singlephase particle with finite strain
-template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::read_particles_hdf5_finite_strain(
-    const std::string& filename, const std::string& particle_type) {
-
-  // Create a new file using default properties.
-  hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-  // Throw an error if file can't be found
-  if (file_id < 0) throw std::runtime_error("HDF5 particle file is not found");
-
-  // Calculate the size and the offsets of our struct members in memory
-  hsize_t nrecords = 0;
-  hsize_t nfields = 0;
-  H5TBget_table_info(file_id, "table", &nfields, &nrecords);
-
-  if (nfields != mpm::pod::particlefinitestrain::NFIELDS)
-    throw std::runtime_error("HDF5 table has incorrect number of fields");
-
-  std::vector<PODParticleFiniteStrain> dst_buf;
-  dst_buf.reserve(nrecords);
-  // Read the table
-  H5TBread_table(file_id, "table", mpm::pod::particlefinitestrain::dst_size,
-                 mpm::pod::particlefinitestrain::dst_offset,
-                 mpm::pod::particlefinitestrain::dst_sizes, dst_buf.data());
-
-  // Iterate over all HDF5 particles
-  for (unsigned i = 0; i < nrecords; ++i) {
-    PODParticleFiniteStrain pod_particle = dst_buf[i];
-    // Get particle's material from list of materials
-    std::vector<std::shared_ptr<mpm::Material<Tdim>>> materials;
-    materials.emplace_back(materials_.at(pod_particle.material_id));
-
     // Particle id
     mpm::Index pid = pod_particle.id;
     // Initialise coordinates
@@ -2064,7 +1974,8 @@ bool mpm::Mesh<Tdim>::generate_particles(const std::shared_ptr<mpm::IO>& io,
           "Particle generator type is not properly specified");
 
   } catch (std::exception& exception) {
-    console_->error("{}: #{} Generating particle failed", __FILE__, __LINE__);
+    console_->error("{}: #{} Generating particle failed! {}\n", __FILE__,
+                    __LINE__, exception.what());
     status = false;
   }
   return status;
@@ -2235,6 +2146,10 @@ void mpm::Mesh<Tdim>::create_nodal_properties() {
                                        materials_.size());
     nodal_properties_->create_property("normal_unit_vectors", nrows,
                                        materials_.size());
+    nodal_properties_->create_property("wave_velocities", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("density", nodes_.size(),
+                                       materials_.size());
 
     // Iterate over all nodes to initialise the property handle in each node
     // and assign its node id as the prop id in the nodal property data pool
@@ -2254,10 +2169,11 @@ void mpm::Mesh<Tdim>::initialise_nodal_properties() {
 
 //! Upgrade cells to nonlocal cells
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
-                                                unsigned cell_neighbourhood) {
+bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(
+    const std::string& cell_type, unsigned cell_neighbourhood,
+    const tsl::robin_map<std::string, double>& nonlocal_properties) {
   bool status = true;
-  if (cell_type.back() != 'B') {
+  if (!(cell_type.back() == 'B' || cell_type.back() == 'L')) {
     throw std::runtime_error(
         "Unable to upgrade cell to a nonlocal for cell type: " + cell_type);
     status = false;
@@ -2302,7 +2218,7 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
 
         if ((*citr)->nnodes() == new_nnodes) {
           // Reinitialise cell
-          (*citr)->initialiase_nonlocal();
+          (*citr)->initialiase_nonlocal(nonlocal_properties);
         }
       }
     }

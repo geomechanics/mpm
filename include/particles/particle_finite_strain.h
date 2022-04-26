@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "logger.h"
+#include "math_utility.h"
 #include "particle.h"
 
 namespace mpm {
@@ -44,40 +45,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Delete assignment operator
   ParticleFiniteStrain& operator=(const ParticleFiniteStrain<Tdim>&) = delete;
 
-  //! Initialise particle from POD data
-  //! \param[in] particle POD data of particle
-  //! \retval status Status of reading POD particle
-  bool initialise_particle(PODParticle& particle) override;
-
-  //! Initialise particle POD data and material
-  //! \param[in] particle POD data of particle
-  //! \param[in] materials Material associated with the particle arranged in a
-  //! vector
-  //! \retval status Status of reading POD particle
-  bool initialise_particle(
-      PODParticle& particle,
-      const std::vector<std::shared_ptr<Material<Tdim>>>& materials) override;
-
-  //! Initialise properties
-  void initialise() override;
-
-  //! Return particle data as POD
-  //! \retval particle POD of the particle
-  std::shared_ptr<void> pod() const override;
-
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
-
-  //! Serialize
-  //! \retval buffer Serialized buffer data
-  std::vector<uint8_t> serialize() override;
-
-  //! Deserialize
-  //! \param[in] buffer Serialized buffer data
-  //! \param[in] material Particle material pointers
-  void deserialize(
-      const std::vector<uint8_t>& buffer,
-      std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) override;
 
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override {
@@ -85,9 +54,21 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
     return strain;
   }
 
+  //! Return deformation gradient increment of the particle
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment() const {
+    return deformation_gradient_increment_;
+  }
+
   //! Update volume based on deformation gradient increment
-  //! Note: Volume is updated in compute_strain_newmark() every N-R iteration
+  //! Note: Volume is updated in compute_strain() and
+  //! compute_strain_volume_newmark() for particle with finite strain
   void update_volume() noexcept override{};
+
+  //! Compute deformation gradient
+  //! Note: Deformation gradient is updated in update_stress_strain() and
+  //! compute stress() for particle with finite strain
+  void update_deformation_gradient(const std::string& type,
+                                   double dt) noexcept override{};
 
   //! Compute deformation gradient increment using nodal velocity
   void compute_strain(double dt) noexcept override;
@@ -104,9 +85,18 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \ingroup Implicit
   void initialise_constitutive_law() noexcept override;
 
-  //! Compute strain using nodal displacement
+  //! Map mass, material and geometric stiffness matrix to cell
+  //! (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  void compute_strain_newmark() noexcept override;
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] quasi_static Boolean of quasi-static analysis
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
+                                           bool quasi_static) override;
+
+  //! Compute deformation gradient and volume using nodal displacement
+  //! \ingroup Implicit
+  void compute_strain_volume_newmark() noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
@@ -118,33 +108,12 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   /**@}*/
 
  protected:
+  //! Map geometric stiffness matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  inline bool map_geometric_stiffness_matrix_to_cell();
+
   //! Compute Hencky strain using deformation gradient
   inline Eigen::Matrix<double, 6, 1> compute_hencky_strain() const;
-
-  //! Compute deformation gradient increment using nodal velocity
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \param[in] dt time increment
-  //! \retval deformaton gradient increment at particle inside a cell
-  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase, const double dt) noexcept;
-
-  //! Compute pack size
-  //! \retval pack size of serialized object
-  int compute_pack_size() const override;
-
-  /**
-   * \defgroup Implicit Functions dealing with implicit MPM
-   */
-  /**@{*/
-  //! Compute deformation gradient increment using nodal displacement
-  //! \ingroup Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval deformaton gradient increment at particle inside a cell
-  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
-  /**@}*/
 
  protected:
   //! particle id
@@ -185,8 +154,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   using Particle<Tdim>::natural_size_;
   //! Size of particle
   using Particle<Tdim>::pack_size_;
-  //! Volumetric strain at centroid
-  using Particle<Tdim>::volumetric_strain_centroid_;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
@@ -206,7 +173,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
   //! Deformation gradient increment
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_;
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_{
+      Eigen::Matrix<double, 3, 3>::Identity()};
   /**@}*/
 
 };  // ParticleFiniteStrain class

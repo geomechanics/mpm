@@ -10,6 +10,9 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
   const unsigned Dim = 3;
   const double Tolerance = 1.E-7;
 
+  Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  const Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
+
   //! Check for 4 noded element
   SECTION("Tetrahedron element with four nodes") {
     const unsigned nfunctions = 4;
@@ -24,8 +27,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
     SECTION("Four noded tetrahedron element for coordinates(0, 0, 0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = tet->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = tet->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -36,8 +38,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       REQUIRE(shapefn(3) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tet->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = tet->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -63,8 +64,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
         "1.0/3)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 1.0 / 3, 1.0 / 3, 1.0 / 3;
-      auto shapefn = tet->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = tet->shapefn(coords, zero, zero_matrix);
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
 
@@ -74,8 +74,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       REQUIRE(shapefn(3) == Approx(1.0 / 3).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = tet->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = tet->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -100,8 +99,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
         "Four noded local sf tetrahedron element for coordinates(0, 0, 0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = tet->shapefn_local(coords, Eigen::Vector3d::Zero(),
-                                        Eigen::Vector3d::Zero());
+      auto shapefn = tet->shapefn_local(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -117,7 +115,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       coords.setZero();
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
       auto shapefn = tet->shapefn(coords, psize, defgrad);
 
@@ -172,8 +170,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = tet->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                               Eigen::Vector3d::Zero());
+      auto jac = tet->jacobian(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -207,8 +204,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = tet->jacobian_local(xi, coords, Eigen::Vector3d::Zero(),
-                                     Eigen::Vector3d::Zero());
+      auto jac = tet->jacobian_local(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -233,7 +229,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       xi << 0., 0., 0.;
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       // Jacobian result
@@ -270,16 +266,13 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tet->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = tet->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tet->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = tet->grad_shapefn(xi, zero, zero_matrix);
 
       // Check dN/dx
-      auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = tet->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -327,16 +320,13 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tet->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = tet->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tet->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = tet->grad_shapefn(xi, zero, zero_matrix);
 
       // Check dN/dx
-      auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = tet->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -384,16 +374,13 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = tet->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = tet->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = tet->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = tet->grad_shapefn(xi, zero, zero_matrix);
 
       // Check dN/dx
-      auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = tet->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -433,7 +420,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       Eigen::Matrix<double, 4, Dim> coords;
@@ -451,8 +438,7 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       auto gradsf = tet->grad_shapefn(xi, psize, defgrad);
 
       // Check dN/dx
-      auto dn_dx = tet->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = tet->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -497,10 +483,8 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
                 0., 1., 0.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = tet->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
-      auto jacobian = tet->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                                    Eigen::Vector3d::Zero());
+      auto bmatrix = tet->bmatrix(xi, coords, zero, zero_matrix);
+      auto jacobian = tet->jacobian(xi, coords, zero, zero_matrix);
     }
 
     // Ni Nj matrix of a cell

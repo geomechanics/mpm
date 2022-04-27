@@ -421,7 +421,7 @@ void mpm::TetrahedronElement<Tdim, Tnfunctions>::
         const std::vector<std::vector<unsigned>>& nodal_properties) {
   throw std::runtime_error(
       "Function to initialise bspline connectivity is not implemented for "
-      "Hex<Tdim, Tnfunctions> ");
+      "Tet<Tdim, Tnfunctions> ");
 }
 
 //! Assign nodal connectivity property for LME elements
@@ -432,5 +432,5 @@ void mpm::TetrahedronElement<Tdim, Tnfunctions>::
         const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
       "Function to initialise lme connectivity is not implemented for "
-      "Hex<Tdim, Tnfunctions> ");
+      "Tet<Tdim, Tnfunctions> ");
 }

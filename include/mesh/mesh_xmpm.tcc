@@ -1393,16 +1393,31 @@ const mpm::Vector<mpm::PointBase<Tdim>>
 }
 
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface() {
+void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface(int step) {
 
   // parameters: the boundary filled with water
-  double boundary[6] = {0, 1, 0, 1, 0, 1};
-  double zero_height = 1;
-  double fluid_density = 1000;
+  // TODO:input
+  // for cylinder
+  double boundary[6] = {-3, 3, -3, 3, -1, 1};
+  double traction[3] = {1, 1, 1};
+  double math = step / 5000.0;
+  if (step > 5000) math = 1;
+  for (int i = 0; i < 3; i++) traction[i] = -traction[i] * math * 1000000;
+  double gradient_traction[3] = {0, 0, 0};
+  // for sigma_xx
+  // double boundary[6] = {0, 0.7, 0, 0.7, -1, 1};
+  // double traction[3] = {10000000, 0, 0};
+  // double math = step / 1000.0;
+  // if (step > 1000) math = 1;
+  // for (int i = 0; i < 3; i++) traction[i] = -traction[i] * math;
+  // double gradient_traction[3] = {0, 0, 0};
+  // for sphere
+  // double boundary[6] = {0, 1, 0, 1, 0, 1};
+  // double traction[3] = {1, 1, 1};
+  // double gradient_traction[3] = {0, 0, 0};
+
   auto const tolerance = std::numeric_limits<double>::epsilon();
-  double gravity = 10;
-  VectorDim gravity_dirc{0, 1, 0};
-  gravity_dirc.normalize();
+
   // the cell located at the vicinity of the interface
   std::set<mpm::Index> boundary_cell_list;
 
@@ -1432,22 +1447,20 @@ void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface() {
     }
   }
 
-  unsigned num_nodes = 8;
-  if (Tdim == 2) num_nodes = 4;
-  for (auto cell : boundary_cell_list) {
-    auto nodes = map_cells_[cell]->nodes();
+  // for (auto cell : boundary_cell_list) {
+  //   auto nodes = map_cells_[cell]->nodes();
 
-    for (unsigned i = 0; i < nodes.size(); i++) {
-      // modify the nodal mass
-      if (nodes[i]->mass(mpm::NodePhase::NSolid) < tolerance) continue;
-      nodes[i]->update_fluid_mass(
-          true, 1. / num_nodes * fluid_density * map_cells_[cell]->volume());
-    }
+  //   for (unsigned i = 0; i < nodes.size(); i++) {
+  //     // modify the nodal mass
+  //     if (nodes[i]->mass(mpm::NodePhase::NSolid) < tolerance) continue;
+  //     nodes[i]->update_fluid_mass(
+  //         true, 1. / num_nodes * fluid_density * map_cells_[cell]->volume());
+  //   }
 
-    for (auto particle : map_cells_[cell]->particles())
-      // modify the nodal mass
-      map_particles_[particle]->minus_virtual_fluid_mass(fluid_density);
-  }
+  //   for (auto particle : map_cells_[cell]->particles())
+  //     // modify the nodal mass
+  //     map_particles_[particle]->minus_virtual_fluid_mass(fluid_density);
+  // }
 
   for (auto cell : boundary_cell_list) {
     auto nodes = map_cells_[cell]->nodes();
@@ -1458,30 +1471,24 @@ void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface() {
 
       if (mass_solid < tolerance) continue;
 
-      double mass_fluid = nodes[i]->mass_fluid();
-      double fraction_solid = mass_solid / (mass_solid + mass_fluid);
-      fraction_solid = 1;
       // modify the nodal force
       auto centroid = map_cells_[cell]->centroid();
       auto const dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
 
-      double depth = -(centroid.dot(gravity_dirc) - zero_height);
-      // above the zero height
-      if (depth < 0) continue;
-
-      double pressure = fluid_density * gravity * depth;
       VectorDim force;
       for (unsigned j = 0; j < Tdim; j++)
         force[j] =
-            -dn_dx_centroid(i, j) * (-pressure) * map_cells_[cell]->volume();
-      force[1] += -fluid_density * map_cells_[cell]->volume() * 10 / num_nodes;
-      nodes[i]->update_internal_force(true, mpm::ParticlePhase::Solid,
-                                      force * fraction_solid);
+            -dn_dx_centroid(i, j) * traction[j] * map_cells_[cell]->volume();
+      for (unsigned j = 0; j < Tdim; j++)
+        force[j] += gradient_traction[j] * map_cells_[cell]->volume() /
+                    map_cells_[cell]->nodes().size();
+
+      nodes[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
     }
 
     for (auto particle : map_cells_[cell]->particles())
       // modify the nodal force
       map_particles_[particle]->minus_virtual_fluid_internal_force(
-          fluid_density, gravity, gravity_dirc, zero_height);
+          traction, gradient_traction, step);
   }
 }

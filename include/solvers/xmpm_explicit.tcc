@@ -160,7 +160,7 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_forces(gravity_, phase, step_,
                                 set_node_concentrated_force_);
 
-    mesh_->apply_pressure_boundary_free_surface();
+    mesh_->apply_pressure_boundary_free_surface(step_);
 
     // the post-process for the discontinuity propagation
     mesh_->postprocess_discontinuity();

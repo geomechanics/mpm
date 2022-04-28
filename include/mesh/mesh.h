@@ -665,7 +665,7 @@ class Mesh {
   const mpm::Vector<mpm::PointBase<Tdim>> discontinuity_points();
 
   //! Apply pressure boundary condition at free surface
-  void apply_pressure_boundary_free_surface();
+  void apply_pressure_boundary_free_surface(int step);
 
   /**@}*/
 

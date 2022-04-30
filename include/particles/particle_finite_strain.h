@@ -48,6 +48,9 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DFS" : "P3DFS"; }
 
+  //! Compute shape functions of a particle, based on local coordinates
+  void compute_shapefn() noexcept override;
+
   //! Return strain of the particle
   Eigen::Matrix<double, 6, 1> strain() const override {
     const auto& strain = this->compute_hencky_strain();
@@ -142,6 +145,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   using Particle<Tdim>::mass_density_;
   //! Stresses
   using Particle<Tdim>::stress_;
+  //! Stresses at the previous time step
+  using Particle<Tdim>::previous_stress_;
   //! Velocity
   using Particle<Tdim>::velocity_;
   //! Acceleration
@@ -159,14 +164,6 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   std::unique_ptr<spdlog::logger> console_;
 
   /**
-   * \defgroup ImplicitVariables Variables dealing with implicit MPM
-   */
-  /**@{*/
-  //! Stresses at the last time step
-  Eigen::Matrix<double, 6, 1> previous_stress_;
-  /**@}*/
-
-  /**
    * \defgroup FiniteStrainVariables Variables for finite strain formulation
    */
   /**@{*/
@@ -175,6 +172,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment_{
       Eigen::Matrix<double, 3, 3>::Identity()};
+  //! Shape function gradient at the reference configuration
+  Eigen::MatrixXd reference_dn_dx_;
   /**@}*/
 
 };  // ParticleFiniteStrain class

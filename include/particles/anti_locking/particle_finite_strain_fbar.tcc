@@ -40,7 +40,8 @@ void mpm::ParticleFiniteStrainFbar<Tdim>::compute_strain(double dt) noexcept {
       deformation_gradient_increment_centroid.determinant();
 
   // incremental F-bar matrix
-  deformation_gradient_increment_ *= pow(deltaJ_centroid / deltaJ, 1.0 / 3.0);
+  deformation_gradient_increment_.block(0, 0, Tdim, Tdim) *=
+      std::pow(deltaJ_centroid / deltaJ, 1.0 / Tdim);
 
   // Update volume and mass density
   deltaJ = this->deformation_gradient_increment_.determinant();

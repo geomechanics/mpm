@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "absorbing_constraint.h"
+#include "acceleration_constraint.h"
 #include "displacement_constraint.h"
 #include "friction_constraint.h"
 #include "logger.h"
@@ -24,6 +25,21 @@ class Constraints {
     console_ =
         std::make_unique<spdlog::logger>("Constraints", mpm::stdout_sink);
   }
+
+  //! Assign nodal acceleration constraints
+  //! \param[in] setid Node set id
+  //! \param[in] acceleration_constraints Accelerartion constraint at node, dir,
+  //! acceleration
+  bool assign_nodal_acceleration_constraint(
+      int set_id,
+      const std::shared_ptr<mpm::AccelerationConstraint>& constraint);
+
+  //! Assign acceleartion constraints to nodes
+  //! \param[in] acceleration_constraints Constraint at node, dir, and
+  //! acceleration
+  bool assign_nodal_acceleration_constraints(
+      const std::vector<std::tuple<mpm::Index, unsigned, double>>&
+          acceleration_constraints);
 
   //! Assign nodal velocity constraints
   //! \param[in] setid Node set id

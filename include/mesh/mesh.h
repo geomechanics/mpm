@@ -26,6 +26,7 @@
 using Json = nlohmann::json;
 
 #include "absorbing_constraint.h"
+#include "acceleration_constraint.h"
 #include "cell.h"
 #include "factory.h"
 #include "friction_constraint.h"
@@ -113,6 +114,12 @@ class Mesh {
   //! \tparam Toper Callable object typically a baseclass functor
   template <typename Toper>
   void iterate_over_nodes(Toper oper);
+
+  //! Iterate over node set
+  //! \tparam Toper Callable object typically a baseclass functor
+  //! \param[in] set_id particle set id
+  template <typename Toper>
+  void iterate_over_node_set(int set_id, Toper oper);
 
   //! Iterate over nodes with predicate
   //! \tparam Toper Callable object typically a baseclass functor
@@ -327,8 +334,20 @@ class Mesh {
   //! \param[in] current_time Current time
   void apply_traction_on_particles(double current_time);
 
-  //! Create particle velocity constraints tractions
+  //! Create nodal acceleration constraints
   //! \param[in] setid Node set id
+  //! \param[in] constraint Acceleration constraint
+  bool create_nodal_acceleration_constraint(
+      int set_id,
+      const std::shared_ptr<mpm::AccelerationConstraint>& constraint);
+
+  //! Update nodal acceleration constraints
+  //! \param[in] current_time Current time
+  void update_nodal_acceleration_constraints(double current_time);
+
+  //! Create particle velocity constraints
+  //! \param[in] setid Node set id
+  //! \param[in] constraint Velocity constraint
   bool create_particle_velocity_constraint(
       int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint);
 
@@ -696,6 +715,9 @@ class Mesh {
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Loading (Particle tractions)
   std::vector<std::shared_ptr<mpm::Traction>> particle_tractions_;
+  //! Nodal acceleration constraints
+  std::vector<std::shared_ptr<mpm::AccelerationConstraint>>
+      nodal_acceleration_constraints_;
   //! Particle velocity constraints
   std::vector<std::shared_ptr<mpm::VelocityConstraint>>
       particle_velocity_constraints_;

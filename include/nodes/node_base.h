@@ -223,6 +223,23 @@ class NodeBase {
   //! Apply velocity constraints
   virtual void apply_velocity_constraints() = 0;
 
+  //! Assign acceleration constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of acceleration constraint
+  //! \param[in] acceleration Applied acceleration constraint
+  virtual bool assign_acceleration_constraint(unsigned dir,
+                                              double acceleration) = 0;
+
+  //! Update acceleration constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of acceleration constraint
+  //! \param[in] acceleration Applied acceleration constraint
+  virtual bool update_acceleration_constraint(unsigned dir,
+                                              double acceleration) = 0;
+
+  //! Apply acceleration constraints
+  virtual void apply_acceleration_constraints() = 0;
+
   //! Assign friction constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of friction constraint

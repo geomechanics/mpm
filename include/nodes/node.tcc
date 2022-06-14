@@ -663,9 +663,9 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::apply_absorbing_constraint(
 
       // Extract material properties and displacements
       double pwave_v = this->property_handle_->property(
-          "wave_velocities", prop_id_, *mat_id, Tdim)(0);
+          "wave_velocities", prop_id_, *mat_id, 2)(0);
       double swave_v = this->property_handle_->property(
-          "wave_velocities", prop_id_, *mat_id, Tdim)(1);
+          "wave_velocities", prop_id_, *mat_id, 2)(1);
       double density =
           this->property_handle_->property("density", prop_id_, *mat_id)(0);
       Eigen::Matrix<double, Tdim, 1> material_displacement =

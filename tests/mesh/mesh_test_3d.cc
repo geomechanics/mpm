@@ -332,6 +332,13 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
       REQUIRE(mesh->create_nodal_acceleration_constraint(
                   set_id, acceleration_constraint) == true);
 
+      set_id = -1;
+      // Add acceleration constraint to mesh
+      acceleration_constraint = std::make_shared<mpm::AccelerationConstraint>(
+          set_id, mfunction, dir, constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == true);
+
       // When constraints fail: invalid direction
       dir = 3;
       // Add acceleration constraint to mesh
@@ -347,6 +354,16 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
           set_id, mfunction, dir, constraint);
       REQUIRE(mesh->create_nodal_acceleration_constraint(
                   set_id, acceleration_constraint) == false);
+
+      // Vector of particle coordinates
+      std::vector<std::tuple<mpm::Index, unsigned, double>>
+          acceleration_constraints;
+      //! Constraints object
+      auto constraints = std::make_shared<mpm::Constraints<Dim>>(mesh);
+      // Add acceleration constraint to node
+      acceleration_constraints.emplace_back(std::make_tuple(0, 0, 1.0));
+      REQUIRE(constraints->assign_nodal_acceleration_constraints(
+                  acceleration_constraints) == true);
 
       double current_time = 0.5;
       // Update acceleration constraint

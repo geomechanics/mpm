@@ -9,6 +9,12 @@ mpm::Mesh<Tdim>::Mesh(unsigned id, bool isoparametric)
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 
   particles_.clear();
+
+  //! hard code
+  angular_momentum_.setZero();
+  rf_.setZero();
+  f_.setZero();
+  vel_old_.setZero();
 }
 
 //! Create nodes from coordinates

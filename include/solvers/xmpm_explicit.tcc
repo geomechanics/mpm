@@ -124,6 +124,8 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
   // Main loop
   for (; step_ < nsteps_; ++step_) {
 
+    mesh_->compute_angular_momentum(step_);
+
     if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
 
 #ifdef USE_MPI

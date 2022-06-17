@@ -500,9 +500,9 @@ class ParticleBase {
   //! \param[in] gravity
   //! \param[in] gravity_dirc the direction of the equipotential energy surface
   //! \param[in] zero_height the position of the 0 potential energy surface
-  virtual void minus_virtual_fluid_internal_force(double traction[3],
-                                                  double gradient_traction[3],
-                                                  int step) {
+  virtual void minus_virtual_fluid_internal_force(
+      Eigen::Matrix<double, 6, 1>& traction, VectorDim& divergence_traction,
+      int step) {
     throw std::runtime_error(
         "Calling the base class function (minus_virtual_fluid_internal_force) "
         "in "

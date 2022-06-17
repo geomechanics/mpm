@@ -129,7 +129,7 @@ template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::initialise() {
 
   du_dx_.setZero();
-
+  this->scalar_properties_["material_id"] = [&]() { return material_id_[0]; };
   this->scalar_properties_["levelsetf"] = [&]() {
     if (levelset_phi_.size() < 1) return 0.;
     return levelset_phi_[0];

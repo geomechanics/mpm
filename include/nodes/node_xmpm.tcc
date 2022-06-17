@@ -68,8 +68,9 @@ bool mpm::NodeXMPM<Tdim, Tdof, Tnphases>::
 
   if (enrich_type_ == mpm::NodeEnrichType::regular) {
     if (mass_.col(phase)(0, 0) > tolerance) {
-      const auto unbalanced_force =
+      VectorDim unbalanced_force =
           this->external_force_.col(phase) + this->internal_force_.col(phase);
+      unbalanced_force[2] = 0;
       this->external_force_.col(phase) -=
           damping_factor * unbalanced_force.norm() *
           this->momentum_.col(phase).normalized();

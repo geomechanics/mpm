@@ -667,6 +667,9 @@ class Mesh {
   //! Apply pressure boundary condition at free surface
   void apply_pressure_boundary_free_surface(int step);
 
+  //! compute angular momentum
+  void compute_angular_momentum(int step);
+
   /**@}*/
 
   /**
@@ -871,6 +874,12 @@ class Mesh {
   unsigned nhalo_nodes_{0};
   //! Maximum number of halo nodes
   unsigned ncomms_{0};
+
+  //! hard code
+  VectorDim angular_momentum_;
+  VectorDim rf_;
+  VectorDim f_;
+  VectorDim vel_old_;
   /**
    * \defgroup XMPM Variables for XMPM
    */

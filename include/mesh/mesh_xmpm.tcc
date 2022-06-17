@@ -1397,24 +1397,28 @@ void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface(int step) {
 
   // parameters: the boundary filled with water
   // TODO:input
+  Eigen::Matrix<double, 6, 1> traction;
+  traction.setZero();
+  VectorDim divergence_traction;
+  divergence_traction.setZero();
   // for cylinder
-  double boundary[6] = {-3, 3, -3, 3, -1, 1};
-  double traction[3] = {1, 1, 1};
-  double math = step / 5000.0;
-  if (step > 5000) math = 1;
-  for (int i = 0; i < 3; i++) traction[i] = -traction[i] * math * 1000000;
-  double gradient_traction[3] = {0, 0, 0};
+  // double traction[3] = {1, 1, 1};
+  // double math = step / 5000.0;
+  // if (step > 5000) math = 1;
+  // for (int i = 0; i < 3; i++) traction[i] = -traction[i] * math *
+  // 1000000; double gradient_traction[3] = {0, 0, 0};
   // for sigma_xx
-  // double boundary[6] = {0, 0.7, 0, 0.7, -1, 1};
+  // double boundary[6] = {-1, 2, -1, 2, -1, 1};
   // double traction[3] = {10000000, 0, 0};
+  // Eigen::Matrix<double, 6, 1> traction;
   // double math = step / 1000.0;
   // if (step > 1000) math = 1;
   // for (int i = 0; i < 3; i++) traction[i] = -traction[i] * math;
   // double gradient_traction[3] = {0, 0, 0};
-  // for sphere
-  // double boundary[6] = {0, 1, 0, 1, 0, 1};
-  // double traction[3] = {1, 1, 1};
-  // double gradient_traction[3] = {0, 0, 0};
+  // for water pressure
+  double boundary[6] = {-100, 100, -100, 0.21, -100, 100};
+  // for constant pressure
+  // double boundary[6] = {-2, 2, -2, 2, -100, 100};
 
   auto const tolerance = std::numeric_limits<double>::epsilon();
 
@@ -1429,17 +1433,11 @@ void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface(int step) {
     if ((*citr)->nparticles() != 0) continue;
     // the cell is in the region or not
     auto const cell_center = (*citr)->centroid();
-    bool flag_outside = false;
-    for (unsigned dim = 0; dim < Tdim; dim++)
-      if (cell_center[dim] < boundary[2 * dim] ||
-          cell_center[dim] > boundary[2 * dim + 1])
-        flag_outside = true;
-
-    if (flag_outside) continue;
 
     // find non-void cell connected with void cell
     for (auto cell_neigh : (*citr)->neighbours()) {
       if (map_cells_[cell_neigh]->nparticles() == 0) continue;
+      auto const cell_center_neigh = map_cells_[cell_neigh]->centroid();
       boundary_cell_list.insert((*citr)->id());
       boundary_cell_list.insert(map_cells_[cell_neigh]->id());
       for (auto node : map_cells_[cell_neigh]->nodes())
@@ -1464,23 +1462,86 @@ void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface(int step) {
 
   for (auto cell : boundary_cell_list) {
     auto nodes = map_cells_[cell]->nodes();
+    // for sigma_xx
+    auto centroid = map_cells_[cell]->centroid();
+    // double x = centroid[0];
+    // double y = centroid[1];
+    // double s = 10000000;
+    // double math = step / 50000.0;
+    // if (step > 50000) math = 1;
+    // s = s * math;
+
+    // double r = std::sqrt(std::pow(x, 2) + std::pow(y, 2));
+    // double a = 1.0;
+    // double theta = std::atan(y / x);
+
+    // double sigmar =
+    //     s * 0.5 * (1 - a * a / r / r) +
+    //     s * 0.5 * (1 + 3 * a * a * a * a / r / r / r / r - 4 * a * a / r / r)
+    //     *
+    //         std::cos(2 * theta);
+    // double sigmat =
+    //     s * 0.5 * (1 + a * a / r / r) -
+    //     s * 0.5 * (1 + 3 * a * a * a * a / r / r / r / r) * std::cos(2 *
+    //     theta);
+    // double sigmart =
+    //     -s * 0.5 * (1 - 3 * a * a * a * a / r / r / r / r + 2 * a * a / r /
+    //     r) * std::sin(2 * theta);
+    // traction << sigmar * std::cos(theta) * std::cos(theta) +
+    //                 sigmat * std::sin(theta) * std::sin(theta) -
+    //                 sigmart * std::sin(2 * theta),
+    //     sigmar * std::sin(theta) * std::sin(theta) +
+    //         sigmat * std::cos(theta) * std::cos(theta) +
+    //         sigmart * std::sin(2 * theta),
+    //     0,
+    //     std::sin(theta) * std::cos(theta) * (sigmar - sigmat) +
+    //         sigmart * std::cos(2 * theta),
+    //     0, 0;
+    // for water
+    traction << 0, -1000 * 9.8 * (0.21 - centroid[1]), 0, 0, 0, 0;
+    divergence_traction << 0, -1000 * 9.8, 0;
+    // for constant pressure
+    // traction << 0, -30e6, 0, 0, 0, 0;
+    // divergence_traction << 0, 0, 0;
+
+    // double math = step / 1000.0;
+    // if (step > 1000) math = 1;
+    // traction = traction * math;
+
+    bool flag_outside = false;
+    for (unsigned dim = 0; dim < Tdim; dim++)
+      if (centroid[dim] < boundary[2 * dim] ||
+          centroid[dim] > boundary[2 * dim + 1])
+        flag_outside = true;
+
+    if (flag_outside) continue;
+
+    auto const dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
 
     for (unsigned i = 0; i < nodes.size(); i++) {
       // modify the nodal mass
       double mass_solid = nodes[i]->mass(mpm::NodePhase::NSolid);
 
       if (mass_solid < tolerance) continue;
-
       // modify the nodal force
-      auto centroid = map_cells_[cell]->centroid();
-      auto const dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
 
       VectorDim force;
+      force[0] = dn_dx_centroid(i, 0) * traction[0] +
+                 dn_dx_centroid(i, 1) * traction[3] +
+                 dn_dx_centroid(i, 2) * traction[5];
+
+      force[1] = dn_dx_centroid(i, 1) * traction[1] +
+                 dn_dx_centroid(i, 0) * traction[3] +
+                 dn_dx_centroid(i, 2) * traction[4];
+
+      force[2] = dn_dx_centroid(i, 2) * traction[2] +
+                 dn_dx_centroid(i, 1) * traction[4] +
+                 dn_dx_centroid(i, 0) * traction[5];
+
+      force *= -1. * map_cells_[cell]->volume();
+
       for (unsigned j = 0; j < Tdim; j++)
-        force[j] =
-            -dn_dx_centroid(i, j) * traction[j] * map_cells_[cell]->volume();
-      for (unsigned j = 0; j < Tdim; j++)
-        force[j] += gradient_traction[j] * map_cells_[cell]->volume() /
+        force[j] += divergence_traction[j] * map_cells_[cell]->volume() /
                     map_cells_[cell]->nodes().size();
 
       nodes[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
@@ -1489,6 +1550,65 @@ void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface(int step) {
     for (auto particle : map_cells_[cell]->particles())
       // modify the nodal force
       map_particles_[particle]->minus_virtual_fluid_internal_force(
-          traction, gradient_traction, step);
+          traction, divergence_traction, step);
   }
+}
+
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::compute_angular_momentum(int step) {
+
+  VectorDim angular_momentum;
+  VectorDim center_s;
+  VectorDim center_w;
+  center_s.setZero();
+  center_w.setZero();
+  double density_w = 1000;
+  double mass_w = 0;
+  double mass_s = 0;
+  VectorDim grav;
+  grav << 0, 9.8, 0;
+  double vol = 0;
+  VectorDim velocity_current;
+  velocity_current.setZero();
+  VectorDim vp;
+  vp.setZero();
+  for (int i = 0; i < particles_.size(); i++) {
+    center_s += particles_[i]->coordinates() * particles_[i]->mass();
+    center_w +=
+        particles_[i]->coordinates() * particles_[i]->volume() * density_w;
+    vol += particles_[i]->volume();
+    mass_s += particles_[i]->mass();
+    vp += particles_[i]->mass() * particles_[i]->velocity();
+  }
+  velocity_current = vp / mass_s;
+  mass_w = vol * density_w;
+  center_s /= mass_s;
+  center_w /= mass_w;
+  VectorDim angular_current;
+  angular_current.setZero();
+  for (int i = 0; i < particles_.size(); i++) {
+    VectorDim rp = particles_[i]->coordinates() - center_s;
+    angular_current +=
+        rp.cross(particles_[i]->velocity() * particles_[i]->mass());
+  }
+
+  VectorDim r = center_w - center_s;
+  VectorDim rf = r.cross(density_w * grav * vol);
+  double dt = 1e-5;
+  angular_momentum_ += (rf + rf_) * 0.5 * dt;
+  vel_old_ += (f_ + mass_s * grav - density_w * grav * vol) * 0.5 / mass_s * dt;
+  rf_ = rf;
+  f_ = mass_s * grav - density_w * grav * vol;
+  if (step == 0) angular_momentum_.setZero();
+  if (step == 0) vel_old_.setZero();
+  std::ofstream angular("angular.txt", std::ios::app);
+  angular << std::setw(16) << step * dt << std::setw(16) << vel_old_[0]
+          << std::setw(16) << vel_old_[1] << std::setw(16) << vel_old_[2]
+          << std::setw(16) << velocity_current[0] << std::setw(16)
+          << velocity_current[1] << std::setw(16) << velocity_current[2]
+          << std::setw(16) << angular_momentum_[0] << std::setw(16)
+          << angular_momentum_[1] << std::setw(16) << angular_momentum_[2]
+          << std::setw(16) << angular_current[0] << std::setw(16)
+          << angular_current[1] << std::setw(16) << angular_current[2]
+          << std::endl;
 }

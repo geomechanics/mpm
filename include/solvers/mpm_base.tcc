@@ -27,6 +27,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"mass", VariableType::Scalar},
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
+      {"material_id", VariableType::Scalar},
       // TODO: to do
       {"levelsetf", VariableType::Scalar},
       {"levelsets", VariableType::Scalar},

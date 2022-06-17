@@ -1262,18 +1262,73 @@ void mpm::Particle<Tdim>::minus_virtual_fluid_mass(double fluid_density) {
 //! Minus the internal force of the virtual fluid
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
-    double traction[3], double gradient_traction[3], int step) {
+    Eigen::Matrix<double, 6, 1>& traction, VectorDim& divergence_traction,
+    int step) {
   auto const tolerance = std::numeric_limits<double>::epsilon();
+  // for sigma_xx
+  // traction << 1000000, 0, 0, 0, 0, 0;
+  // divergence_traction << 0, 0, 0;
+  // for sigma_xx
+
+  // double x = coordinates_[0];
+  // double y = coordinates_[1];
+  // double s = 10000000;
+  // double math = step / 50000.0;
+  // if (step > 50000) math = 1;
+  // s = s * math;
+
+  // double r = std::sqrt(std::pow(x, 2) + std::pow(y, 2));
+  // double a = 1.0;
+  // double theta = std::atan(y / x);
+  // double sigmar =
+  //     s * 0.5 * (1 - a * a / r / r) +
+  //     s * 0.5 * (1 + 3 * a * a * a * a / r / r / r / r - 4 * a * a / r / r) *
+  //         std::cos(2 * theta);
+  // double sigmat =
+  //     s * 0.5 * (1 + a * a / r / r) -
+  //     s * 0.5 * (1 + 3 * a * a * a * a / r / r / r / r) * std::cos(2 *
+  //     theta);
+  // double sigmart = -s * 0.5 *
+  //                  (1 - 3 * a * a * a * a / r / r / r / r + 2 * a * a / r /
+  //                  r) * std::sin(2 * theta);
+  // traction << sigmar * std::cos(theta) * std::cos(theta) +
+  //                 sigmat * std::sin(theta) * std::sin(theta) -
+  //                 sigmart * std::sin(2 * theta),
+  //     sigmar * std::sin(theta) * std::sin(theta) +
+  //         sigmat * std::cos(theta) * std::cos(theta) +
+  //         sigmart * std::sin(2 * theta),
+  //     0,
+  //     std::sin(theta) * std::cos(theta) * (sigmar - sigmat) +
+  //         sigmart * std::cos(2 * theta),
+  //     0, 0;
+  // for water pressure
+  traction << 0, -1000 * 9.8 * (0.21 - coordinates_[1]), 0, 0, 0, 0;
+  divergence_traction << 0, -1000 * 9.8, 0;
+  // for constant pressure
+  // traction << 0, -30e6, 0, 0, 0, 0;
+  // divergence_traction << 0, 0, 0;
+  // double math = step / 1000.0;
+  // if (step > 1000) math = 1;
+  // traction = traction * math;
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     double mass_solid = nodes_[i]->mass(mpm::NodePhase::NSolid);
     if (mass_solid < tolerance) continue;
 
     VectorDim force;
+    force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3] +
+               dn_dx_(i, 2) * traction[5];
+
+    force[1] = dn_dx_(i, 1) * traction[1] + dn_dx_(i, 0) * traction[3] +
+               dn_dx_(i, 2) * traction[4];
+
+    force[2] = dn_dx_(i, 2) * traction[2] + dn_dx_(i, 1) * traction[4] +
+               dn_dx_(i, 0) * traction[5];
+
+    force *= this->volume_;
+
     for (unsigned j = 0; j < Tdim; j++)
-      force[j] = dn_dx_(i, j) * traction[j] * this->volume_;
-    for (unsigned j = 0; j < Tdim; j++)
-      force[j] += -gradient_traction[j] * this->volume_ * shapefn_[i];
+      force[j] += -divergence_traction[j] * this->volume_ * shapefn_[i];
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
 }

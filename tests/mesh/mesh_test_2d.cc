@@ -305,6 +305,52 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
       }
     }
 
+    // Test create nodal acceleration constraint
+    SECTION("Check create nodal acceleration constraint") {
+      unsigned Nphase = 0;
+      // Set external force to zero
+      Eigen::Matrix<double, Dim, 1> force;
+      force.setZero();
+      REQUIRE_NOTHROW(node0->update_external_force(false, Nphase, force));
+      REQUIRE_NOTHROW(node1->update_external_force(false, Nphase, force));
+
+      tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
+      node_sets[0] = std::vector<mpm::Index>{0, 1};
+
+      REQUIRE(mesh->create_node_sets(node_sets, true) == true);
+
+      int set_id = 0;
+      int dir = 0;
+      double constraint = 1.0;
+      // Add acceleration constraint to mesh
+      auto acceleration_constraint =
+          std::make_shared<mpm::AccelerationConstraint>(set_id, mfunction, dir,
+                                                        constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == true);
+
+      // When constraints fail: invalid direction
+      dir = 2;
+      // Add acceleration constraint to mesh
+      acceleration_constraint = std::make_shared<mpm::AccelerationConstraint>(
+          set_id, mfunction, dir, constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == false);
+
+      // When constraints fail: invalid node set
+      set_id = 1;
+      // Add acceleration constraint to mesh
+      acceleration_constraint = std::make_shared<mpm::AccelerationConstraint>(
+          set_id, mfunction, dir, constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == false);
+
+      double current_time = 0.5;
+      // Update acceleration constraint
+      REQUIRE_NOTHROW(
+          mesh->update_nodal_acceleration_constraints(current_time));
+    }
+
     // Test nonlocal mesh functions
     SECTION("Check nonlocal mesh functions") {
       tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;

@@ -310,13 +310,6 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
 
     // Test create nodal acceleration constraint
     SECTION("Check create nodal acceleration constraint") {
-      unsigned Nphase = 0;
-      // Set external force to zero
-      Eigen::Matrix<double, Dim, 1> force;
-      force.setZero();
-      REQUIRE_NOTHROW(node0->update_external_force(false, Nphase, force));
-      REQUIRE_NOTHROW(node1->update_external_force(false, Nphase, force));
-
       tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
       node_sets[0] = std::vector<mpm::Index>{0, 1};
 

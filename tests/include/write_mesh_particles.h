@@ -11,7 +11,6 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
 // Write JSON Configuration file for absorbing boundary
 bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,
-                          const std::string& mpm_scheme,
                           const std::string& file_name,
                           const std::string& position,
                           const double delta = 100.0);

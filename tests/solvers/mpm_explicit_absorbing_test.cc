@@ -40,8 +40,7 @@ TEST_CASE("MPM 2D Explicit Absorbing Boundary is checked",
 
   SECTION("Check initialisation") {
     const bool resume = false;
-    REQUIRE(mpm_test::write_json_absorbing(2, resume, analysis, mpm_scheme,
-                                           fname, "corner") == true);
+    REQUIRE(mpm_test::write_json_absorbing(2, resume, analysis, fname, "corner") == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
@@ -104,8 +103,7 @@ TEST_CASE("MPM 2D Explicit Absorbing Boundary is checked for failure",
 
   SECTION("Check initialisation bad position") {
     const bool resume = false;
-    REQUIRE(mpm_test::write_json_absorbing(2, resume, analysis, mpm_scheme,
-                                           fname, "other") == true);
+    REQUIRE(mpm_test::write_json_absorbing(2, resume, analysis, fname, "other") == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
@@ -129,8 +127,7 @@ TEST_CASE("MPM 2D Explicit Absorbing Boundary is checked for failure",
 
   SECTION("Check initialisation bad delta") {
     const bool resume = false;
-    REQUIRE(mpm_test::write_json_absorbing(2, resume, analysis, mpm_scheme,
-                                           fname, "other", 0.05) == true);
+    REQUIRE(mpm_test::write_json_absorbing(2, resume, analysis, fname, "other", 0.05) == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
@@ -177,8 +174,7 @@ TEST_CASE("MPM 3D Explicit Absorbing Boundary is checked",
 
   SECTION("Check initialisation") {
     const bool resume = false;
-    REQUIRE(mpm_test::write_json_absorbing(3, resume, analysis, mpm_scheme,
-                                           fname, "face") == true);
+    REQUIRE(mpm_test::write_json_absorbing(3, resume, analysis, fname, "face") == true);
 
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);

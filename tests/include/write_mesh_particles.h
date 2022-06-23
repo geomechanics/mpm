@@ -20,6 +20,10 @@ bool write_json_acceleration(unsigned dim, bool resume,
                              const std::string& analysis,
                              const std::string& file_name, const unsigned dir);
 
+// Write JSON Configuration file for absorbing boundary
+bool write_json_velocity(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& file_name, const unsigned dir);
+
 // Write JSON Configuration file for finite strain
 bool write_json_finite_strain(unsigned dim, bool resume,
                               const std::string& analysis,

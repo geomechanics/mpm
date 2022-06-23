@@ -81,7 +81,7 @@ TEST_CASE("MPM 3D Explicit Acceleration Constraint is checked",
   const unsigned Dim = 3;
 
   // Write JSON file
-  const std::string fname = "mpm-explicit-";
+  const std::string fname = "mpm-explicit-acceleration";
   const std::string analysis = "MPMExplicit3D";
 
   // Write JSON Entity Sets file
@@ -101,7 +101,7 @@ TEST_CASE("MPM 3D Explicit Acceleration Constraint is checked",
   // clang-format off
   char* argv[] = {(char*)"./mpm",
                   (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"mpm-explicit--3d.json"};
+                  (char*)"-i",  (char*)"mpm-explicit-acceleration-3d.json"};
   // clang-format on
 
   SECTION("Check initialisation") {

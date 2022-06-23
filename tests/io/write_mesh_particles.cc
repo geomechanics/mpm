@@ -40,12 +40,10 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
         {"isoparametric", false},
         {"node_type", node_type},
         {"boundary_conditions",
-         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -176,8 +174,7 @@ bool write_json_absorbing(unsigned dim, bool resume,
              {"position", position}}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -224,7 +221,6 @@ bool write_json_absorbing(unsigned dim, bool resume,
       {"post_processing",
        {{"path", "results/"},
         {"vtk", {"stresses", "strains", "velocities"}},
-        {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
         {"output_steps", 5}}}};
 
   // Dump JSON as an input file to be read
@@ -277,14 +273,13 @@ bool write_json_acceleration(unsigned dim, bool resume,
         {"node_type", node_type},
         {"boundary_conditions",
          {{"acceleration_constraints",
-           {{{"nset_id", 97},
+           {{{"nset_id", 1},
              {"dir", dir},
              {"math_function_id", 0},
              {"acceleration", 1}}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -300,8 +295,6 @@ bool write_json_acceleration(unsigned dim, bool resume,
             {"youngs_modulus", 1.0E+6},
             {"poisson_ratio", 0.0}},
        }},
-      {"material_sets",
-       {{{"material_id", 0}, {"phase_id", 0}, {"pset_id", 2}}}},
       {"external_loading_conditions",
        {{"gravity", gravity},
         {"particle_surface_traction",
@@ -313,8 +306,7 @@ bool write_json_acceleration(unsigned dim, bool resume,
        {{{"id", 0},
          {"type", "Linear"},
          {"xvalues", xvalues},
-         {"fxvalues", fxvalues}},
-        {{"id", 1}, {"type", "Linear"}, {"file", "math-function.csv"}}}},
+         {"fxvalues", fxvalues}}}},
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", 0.0},
@@ -326,12 +318,10 @@ bool write_json_acceleration(unsigned dim, bool resume,
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
           {"step", 5}}},
-        {"damping", {{"type", "Cundall"}, {"damping_factor", "zero-wrong"}}},
         {"nload_balance_steps", 1000}}},
       {"post_processing",
        {{"path", "results/"},
         {"vtk", {"stresses", "strains", "velocities"}},
-        {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
         {"output_steps", 5}}}};
 
   // Dump JSON as an input file to be read
@@ -384,12 +374,10 @@ bool write_json_finite_strain(unsigned dim, bool resume,
         {"isoparametric", false},
         {"node_type", node_type},
         {"boundary_conditions",
-         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -507,8 +495,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
          {{"type", "BSPLINE"},
           {"node_types", {{{"nset_id", 1}, {"dir", 0}, {"type", 1}}}}}}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -648,8 +635,7 @@ bool write_json_implicit_finite_strain(unsigned dim, bool resume,
          {{"type", "BSPLINE"},
           {"node_types", {{{"nset_id", 1}, {"dir", 0}, {"type", 1}}}}}}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -784,12 +770,10 @@ bool write_json_navierstokes(unsigned dim, bool resume,
         {"boundary_conditions",
          {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
           {"pressure_constraints",
-           {{{"phase_id", 0}, {"nset_id", 1}, {"pressure", 0.0}}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+           {{{"phase_id", 0}, {"nset_id", 1}, {"pressure", 0.0}}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -917,14 +901,12 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
         {"boundary_conditions",
          {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
           {"pressure_constraints",
-           {{{"phase_id", 1}, {"nset_id", 1}, {"pressure", 0.0}}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+           {{{"phase_id", 1}, {"nset_id", 1}, {"pressure", 0.0}}}}}},
         {"cell_type", cell_type},
         {"particles_pore_pressures",
          {{"type", "isotropic"}, {"values", 0.0}}}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -1164,27 +1146,27 @@ bool write_particles_2d() {
   particle << 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 1
-  particle << 0.25, 0.125;
+  particle << 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 2
-  particle << 0.25, 0.25;
+  particle << 0.375, 0.375;
   coordinates.emplace_back(particle);
   // Particle 3
-  particle << 0.125, 0.25;
+  particle << 0.125, 0.375;
   coordinates.emplace_back(particle);
 
   // Cell 1
   // Particle 4
-  particle << 0.675, 0.125;
+  particle << 0.625, 0.125;
   coordinates.emplace_back(particle);
   // Particle 5
-  particle << 0.85, 0.125;
+  particle << 0.875, 0.125;
   coordinates.emplace_back(particle);
   // Particle 6
-  particle << 0.85, 0.25;
+  particle << 0.875, 0.375;
   coordinates.emplace_back(particle);
   // Particle 7
-  particle << 0.675, 0.25;
+  particle << 0.625, 0.375;
   coordinates.emplace_back(particle);
 
   // Dump particles coordinates as an input file to be read
@@ -1320,51 +1302,51 @@ bool write_particles_3d() {
   particle << 0.125, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 1
-  particle << 0.25, 0.125, 0.125;
+  particle << 0.375, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 2
-  particle << 0.25, 0.25, 0.125;
+  particle << 0.375, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 3
-  particle << 0.125, 0.25, 0.125;
+  particle << 0.125, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 4
-  particle << 0.125, 0.125, 0.25;
+  particle << 0.125, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 5
-  particle << 0.25, 0.125, 0.25;
+  particle << 0.375, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 6
-  particle << 0.25, 0.25, 0.25;
+  particle << 0.375, 0.375, 0.375;
   coordinates.emplace_back(particle);
   // Particle 7
-  particle << 0.125, 0.25, 0.25;
+  particle << 0.125, 0.375, 0.375;
   coordinates.emplace_back(particle);
 
   // Cell 1
   // Particle 8
-  particle << 0.675, 0.125, 0.125;
+  particle << 0.625, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 9
-  particle << 0.85, 0.125, 0.125;
+  particle << 0.875, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 10
-  particle << 0.85, 0.25, 0.125;
+  particle << 0.875, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 11
-  particle << 0.675, 0.25, 0.125;
+  particle << 0.625, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 12
-  particle << 0.675, 0.125, 0.25;
+  particle << 0.675, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 13
-  particle << 0.85, 0.125, 0.25;
+  particle << 0.875, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 14
-  particle << 0.85, 0.25, 0.25;
+  particle << 0.875, 0.375, 0.375;
   coordinates.emplace_back(particle);
   // Particle 15
-  particle << 0.675, 0.25, 0.25;
+  particle << 0.675, 0.375, 0.375;
   coordinates.emplace_back(particle);
 
   // Dump particles coordinates as an input file to be read

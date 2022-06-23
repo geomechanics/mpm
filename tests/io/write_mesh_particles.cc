@@ -207,14 +207,121 @@ bool write_json_absorbing(unsigned dim, bool resume,
          {"type", "Linear"},
          {"xvalues", xvalues},
          {"fxvalues", fxvalues}},
-        {{"id", 1}, {"type", "Linear"}, {"file", "math_function.csv"}}}},
+        {{"id", 1}, {"type", "Linear"}, {"file", "math-function.csv"}}}},
       {"analysis",
        {{"type", analysis},
-        {"mpm_scheme", "update-stress-first-wrong"},
+        {"mpm_scheme", 0.0},
         {"locate_particles", true},
         {"dt", 0.001},
         {"uuid", file_name + "-" + dimension},
-        {"nsteps", 10},
+        {"nsteps", 5},
+        {"resume",
+         {{"resume", resume},
+          {"uuid", file_name + "-" + dimension},
+          {"step", 5}}},
+        {"damping", {{"type", "Cundall"}, {"damping_factor", "zero-wrong"}}},
+        {"nload_balance_steps", 1000}}},
+      {"post_processing",
+       {{"path", "results/"},
+        {"vtk", {"stresses", "strains", "velocities"}},
+        {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
+        {"output_steps", 5}}}};
+
+  // Dump JSON as an input file to be read
+  std::string fname = (file_name + "-" + dimension + ".json").c_str();
+  std::ofstream file;
+  file.open(fname, std::ios_base::out);
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
+// Write JSON Configuration file for acceleration constraint
+bool write_json_acceleration(unsigned dim, bool resume,
+                             const std::string& analysis,
+                             const std::string& file_name, const unsigned dir) {
+  // Make json object with input files
+  // 2D
+  std::string dimension = "2d";
+  auto particle_type = "P2D";
+  auto node_type = "N2D";
+  auto cell_type = "ED2Q4";
+  auto io_type = "Ascii2D";
+  std::string material = "LinearElastic2D";
+  std::vector<double> gravity{{0., 0.}};
+  unsigned material_id = 0;
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    particle_type = "P3D";
+    node_type = "N3D";
+    cell_type = "ED3H8";
+    io_type = "Ascii3D";
+    material = "LinearElastic3D";
+    gravity.clear();
+    gravity = {0., 0., 0.};
+  }
+
+  Json json_file = {
+      {"title", "Example JSON Input for MPM"},
+      {"mesh",
+       {{"mesh", "mesh-" + dimension + ".txt"},
+        {"entity_sets", "entity_sets_2.json"},
+        {"io_type", io_type},
+        {"check_duplicates", true},
+        {"isoparametric", false},
+        {"node_type", node_type},
+        {"boundary_conditions",
+         {{"acceleration_constraints",
+           {{{"nset_id", 97},
+             {"dir", dir},
+             {"math_function_id", 0},
+             {"acceleration", 1}}}}}},
+        {"cell_type", cell_type}}},
+      {"particles",
+       {{{"group_id", 0},
+         {"generator",
+          {{"type", "file"},
+           {"material_id", material_id},
+           {"pset_id", 0},
+           {"io_type", io_type},
+           {"particle_type", particle_type},
+           {"check_duplicates", true},
+           {"location", "particles-" + dimension + ".txt"}}}}}},
+      {"materials",
+       {
+           {{"id", 0},
+            {"type", material},
+            {"density", 1000.},
+            {"youngs_modulus", 1.0E+6},
+            {"poisson_ratio", 0.0}},
+       }},
+      {"material_sets",
+       {{{"material_id", 0}, {"phase_id", 0}, {"pset_id", 2}}}},
+      {"external_loading_conditions",
+       {{"gravity", gravity},
+        {"particle_surface_traction",
+         {{{"math_function_id", 0},
+           {"pset_id", -1},
+           {"dir", 1},
+           {"traction", 10.5}}}}}},
+      {"math_functions",
+       {{{"id", 0},
+         {"type", "Linear"},
+         {"xvalues", xvalues},
+         {"fxvalues", fxvalues}},
+        {{"id", 1}, {"type", "Linear"}, {"file", "math-function.csv"}}}},
+      {"analysis",
+       {{"type", analysis},
+        {"mpm_scheme", 0.0},
+        {"locate_particles", true},
+        {"dt", 0.001},
+        {"uuid", file_name + "-" + dimension},
+        {"nsteps", 5},
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
@@ -1289,7 +1396,7 @@ bool write_math_function() {
   file.open("math-function.csv");
   // Write math function file
   for (const auto& math_fn : math_function) {
-    file << std::get<0>(math_fn) << "\t";
+    file << std::get<0>(math_fn) << ",";
     file << std::get<1>(math_fn) << "\t";
 
     file << "\n";

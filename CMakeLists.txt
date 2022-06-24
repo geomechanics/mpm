@@ -285,6 +285,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/io/write_mesh_particles_unitcell.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_absorbing_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_acceleration_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_friction_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_velocity_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_musl_test.cc

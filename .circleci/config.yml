@@ -147,7 +147,7 @@ jobs:
             cmake -GNinja -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DKAHIP_ROOT=/home/cbgeo/KaHIP/ -DPARTIO_ROOT=/home/cbgeo/partio/ ..
             ninja -j2
             ctest -VV
-            mpirun -n 4 ./mpmtest [mpi]
+            mpirun -n 4 ./mpmtest_unit [mpi]
       # Benchmarks
       - run:
           name: Clone benchmarks

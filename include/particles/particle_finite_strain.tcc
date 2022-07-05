@@ -21,6 +21,13 @@ mpm::ParticleFiniteStrain<Tdim>::ParticleFiniteStrain(Index id,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
+// Compute shape functions and gradients
+template <unsigned Tdim>
+void mpm::ParticleFiniteStrain<Tdim>::compute_shapefn() noexcept {
+  mpm::Particle<Tdim>::compute_shapefn();
+  this->reference_dn_dx_ = this->dn_dx_;
+}
+
 // Compute stress
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::compute_stress() noexcept {
@@ -159,8 +166,14 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_strain_volume_newmark() noexcept {
 
   // Compute deformation gradient increment from previous time step
   this->deformation_gradient_increment_ =
-      this->compute_deformation_gradient_increment(this->dn_dx_,
+      this->compute_deformation_gradient_increment(this->reference_dn_dx_,
                                                    mpm::ParticlePhase::Solid);
+
+  // Update dn_dx to the intermediate/iterative configuration
+  const auto& def_grad_inc_inverse =
+      this->deformation_gradient_increment_.inverse().block(0, 0, Tdim, Tdim);
+  for (unsigned i = 0; i < dn_dx_.rows(); i++)
+    dn_dx_.row(i) = reference_dn_dx_.row(i) * def_grad_inc_inverse;
 
   // Update volume and mass density
   deltaJ = this->deformation_gradient_increment_.determinant();

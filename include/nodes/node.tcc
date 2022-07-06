@@ -567,6 +567,236 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_friction_constraints(double dt) {
   }
 }
 
+//! Assign cohesion constraint
+//! Constrain directions can take values between 0 and Dim * Nphases
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
+    unsigned dir, int sign_n, double cohesion, double h_min,
+    int nposition) {
+  bool status = true;
+  try {
+    //! Constrain directions can take values between 0 and Dim * Nphases
+    if (dir < Tdim) {
+      this->cohesion_constraint_ = std::make_tuple(
+          static_cast<unsigned>(dir), static_cast<int>(sign_n),
+          static_cast<double>(cohesion), static_cast<double>(h_min),
+          static_cast<int>(nposition));
+      this->cohesion_ = true;
+    } else
+      throw std::runtime_error("Constraint direction is out of bounds");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply cohesion constraints
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
+  if (cohesion_) {
+    auto sign = [](double value) {
+      return (value > 0.) ? 1. : -1.;
+    };  // LEDT TODO what is this ?
+
+    // Set cohesion constraint
+    // Direction value in the constraint (0, Dim)
+    const unsigned dir_n = std::get<0>(this->cohesion_constraint_);
+
+    // Normal direction of cohesion
+    const double sign_dir_n = sign(std::get<1>(this->cohesion_constraint_));
+
+    // Cohesion or undrained shear strength
+    const double su = std::get<2>(this->cohesion_constraint_);
+
+    // Cell height for area computation
+    const double h_min = std::get<3>(this->cohesion_constraint_);
+
+    // Location of node for area computation
+    const int nposition = std::get<4>(this->cohesion_constraint_);
+
+    const unsigned phase = 0;
+
+    // Acceleration and velocity
+    double acc_n, acc_t, vel_n, vel_t;
+
+    // Nodal area
+    double nodal_area_;
+
+    // Calculate area associated with node
+    try {
+      // LEDT TODO only works for quad/hex with equal side lengths
+      if (Tdim == 2) {  // STRUCTURED SQUARE QUADRILATERALS
+        // plane-strain: use unit length in 2D
+        switch (nposition) {
+          case 1: //Corner
+            nodal_area_ = 0.5 * h_min;
+            break;
+          case 2: //Edge
+            nodal_area_ = h_min;
+            break;
+          default:
+            throw std::runtime_error("Invalid cohesion boundary nposition");
+            break;
+        }
+      } else if (Tdim == 3) {  // STRUCTURED SQUARE HEXAHEDRONS
+        switch (nposition) {
+          case 1: //Corner
+            nodal_area_ = pow(0.5 * h_min, 2);
+            break;
+          case 2: //Edge
+            nodal_area_ = 2 * pow(0.5 * h_min, 2);
+            break;
+          case 3: //Face
+            nodal_area_ = 4 * pow(0.5 * h_min, 2);
+            break;
+          default:
+            throw std::runtime_error("Invalid cohesion boundary nposition");
+            break;
+        }
+      }
+    } catch (std::exception& exception) {
+      console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    }
+
+    if (Tdim == 2) {
+      // tangential direction to boundary
+      const unsigned dir_t = (Tdim - 1) - dir_n;
+
+      if (!generic_boundary_constraints_) {
+        // Cartesian case
+        // Normal and tangential acceleration
+        acc_n = this->acceleration_(dir_n, phase);
+        acc_t = this->acceleration_(dir_t, phase);
+        // Normal and tangential velocity
+        vel_n = this->velocity_(dir_n, phase);
+        vel_t = this->velocity_(dir_t, phase);
+      } else {
+        // General case, transform to local coordinate
+        // Compute inverse rotation matrix
+        const Eigen::Matrix<double, Tdim, Tdim> inverse_rotation_matrix =
+            rotation_matrix_.inverse();
+        // Transform to local coordinate
+        Eigen::Matrix<double, Tdim, Tnphases> local_acceleration =
+            inverse_rotation_matrix * this->acceleration_;
+        Eigen::Matrix<double, Tdim, Tnphases> local_velocity =
+            inverse_rotation_matrix * this->velocity_;
+        // Normal and tangential acceleration
+        acc_n = local_acceleration(dir_n, phase);
+        acc_t = local_acceleration(dir_t, phase);
+        // Normal and tangential velocity
+        vel_n = this->velocity_(dir_n, phase);
+        vel_t = this->velocity_(dir_t, phase);
+      }
+
+      if ((acc_n * sign_dir_n) > 0.0) {
+        if (vel_t != 0.0) {  // kinetic
+          const double vel_net = dt * acc_t + vel_t;
+          const double vel_cohesional = dt * mass_(phase) * su * nodal_area_;
+          if (std::abs(vel_net) <= vel_cohesional)
+            acc_t = -vel_t / dt;
+          else
+            acc_t -= sign(vel_net) * mass_(phase) * su * nodal_area_;
+        } else {  // static
+          if (std::abs(acc_t) <= mass_(phase) * su * nodal_area_)
+            acc_t = 0.0;
+          else
+            acc_t -= sign(acc_t) * mass_(phase) * su * nodal_area_;
+        }
+
+        if (!generic_boundary_constraints_) {
+          // Cartesian case
+          this->acceleration_(dir_t, phase) = acc_t;
+        } else {
+          // Local acceleration in terms of tangential and normal
+          Eigen::Matrix<double, Tdim, Tnphases> acc;
+          acc(dir_t, phase) = acc_t;
+          acc(dir_n, phase) = acc_n;
+
+          // General case, transform to global coordinate
+          this->acceleration_.col(phase) = rotation_matrix_ * acc.col(phase);
+        }
+      }
+    } else if (Tdim == 3) {  // LEDT TODO check 3D case
+      Eigen::Matrix<int, 3, 2> dir;
+      dir(0, 0) = 1;
+      dir(0, 1) = 2;  // tangential directions for dir_n = 0
+      dir(1, 0) = 0;
+      dir(1, 1) = 2;  // tangential directions for dir_n = 1
+      dir(2, 0) = 0;
+      dir(2, 1) = 1;  // tangential directions for dir_n = 2
+
+      const unsigned dir_t0 = dir(dir_n, 0);
+      const unsigned dir_t1 = dir(dir_n, 1);
+
+      Eigen::Matrix<double, Tdim, 1> acc, vel;
+      if (!generic_boundary_constraints_) {
+        // Cartesian case
+        acc = this->acceleration_.col(phase);
+        vel = this->velocity_.col(phase);
+      } else {
+        // General case, transform to local coordinate
+        // Compute inverse rotation matrix
+        const Eigen::Matrix<double, Tdim, Tdim> inverse_rotation_matrix =
+            rotation_matrix_.inverse();
+        // Transform to local coordinate
+        acc = inverse_rotation_matrix * this->acceleration_.col(phase);
+        vel = inverse_rotation_matrix * this->velocity_.col(phase);
+      }
+
+      const auto acc_n = acc(dir_n);
+      auto acc_t =
+          std::sqrt(acc(dir_t0) * acc(dir_t0) + acc(dir_t1) * acc(dir_t1));
+      const auto vel_t =
+          std::sqrt(vel(dir_t0) * vel(dir_t0) + vel(dir_t1) * vel(dir_t1));
+
+      if (acc_n * sign_dir_n > 0.0) {
+        // kinetic
+        if (vel_t != 0.0) {
+          Eigen::Matrix<double, 2, 1> vel_net;
+          // cohesion is applied opposite to the vel_net
+          vel_net(0) = vel(dir_t0) + acc(dir_t0) * dt;
+          vel_net(1) = vel(dir_t1) + acc(dir_t1) * dt;
+          const double vel_net_t =
+              sqrt(vel_net(0) * vel_net(0) + vel_net(1) * vel_net(1));
+          const double vel_cohesion = mass_(phase) * su * nodal_area_ * dt;
+
+          if (vel_net_t <= vel_cohesion) {
+            acc(dir_t0) = -vel(dir_t0) / dt;
+            acc(dir_t1) = -vel(dir_t1) / dt;
+          } else {
+            acc(dir_t0) -=
+                mass_(phase) * su * nodal_area_ * (vel_net(0) / vel_net_t);
+            acc(dir_t1) -=
+                mass_(phase) * su * nodal_area_ * (vel_net(1) / vel_net_t);
+          }
+        } else {                                           // static
+          if (acc_t <= mass_(phase) * su * nodal_area_) {  // since acc_t is
+                                                           // positive
+            acc(dir_t0) = 0;
+            acc(dir_t1) = 0;
+          } else {
+            acc_t -= mass_(phase) * su * nodal_area_;
+            acc(dir_t0) -=
+                mass_(phase) * su * nodal_area_ * (acc(dir_t0) / acc_t);
+            acc(dir_t1) -=
+                mass_(phase) * su * nodal_area_ * (acc(dir_t1) / acc_t);
+          }
+        }
+
+        if (!generic_boundary_constraints_) {
+          // Cartesian case
+          this->acceleration_.col(phase) = acc;
+        } else {
+          // General case, transform to global coordinate
+          this->acceleration_.col(phase) = rotation_matrix_ * acc;
+        }
+      }
+    }
+  }
+}
+
 // !Apply absorbing constraints
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::apply_absorbing_constraint(

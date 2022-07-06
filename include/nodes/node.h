@@ -234,6 +234,20 @@ class Node : public NodeBase<Tdim> {
   //! \param[in] dt Time-step
   void apply_friction_constraints(double dt) override;
 
+  //! Assign cohesion constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of cohesion constraint
+  //! \param[in] sign Sign of normal wrt coordinate system for cohesion
+  //! \param[in] cohesion Applied cohesion constraint
+  //! \param[in] h_min Characteristic length (cell height)
+  //! \param[in] nposition Nodal location, nposition, along boundary
+  bool assign_cohesion_constraint(unsigned dir, int sign, double cohesion,
+                                  double h_min, int nposition) override;
+
+  //! Apply cohesion constraints
+  //! \param[in] dt Time-step
+  void apply_cohesion_constraints(double dt) override;
+
   //! Apply absorbing constraint
   //! \param[in] dir Direction of p-wave propagation in model
   //! \param[in] delta Virtual viscous layer thickness
@@ -610,6 +624,9 @@ class Node : public NodeBase<Tdim> {
   //! Frictional constraints
   bool friction_{false};
   std::tuple<unsigned, int, double> friction_constraint_;
+  //! Cohesion constraints
+  bool cohesion_{false};
+  std::tuple<unsigned, int, double, double, int> cohesion_constraint_;
   //! Mathematical function for pressure
   std::map<unsigned, std::shared_ptr<FunctionBase>> pressure_function_;
   //! Concentrated force

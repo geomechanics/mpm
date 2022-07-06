@@ -118,7 +118,8 @@ class IOMesh {
 
   //! Read cohesion constraints file
   //! \param[in] cohesion_constraints_file file name with cohesion values
-  virtual std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
+  virtual std::vector<
+      std::tuple<mpm::Index, unsigned, int, double, double, int>>
       read_cohesion_constraints(
           const std::string& cohesion_constraints_file) = 0;
 

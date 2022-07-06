@@ -571,8 +571,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_friction_constraints(double dt) {
 //! Constrain directions can take values between 0 and Dim * Nphases
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
-    unsigned dir, int sign_n, double cohesion, double h_min,
-    int nposition) {
+    unsigned dir, int sign_n, double cohesion, double h_min, int nposition) {
   bool status = true;
   try {
     //! Constrain directions can take values between 0 and Dim * Nphases
@@ -630,10 +629,10 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
       if (Tdim == 2) {  // STRUCTURED SQUARE QUADRILATERALS
         // plane-strain: use unit length in 2D
         switch (nposition) {
-          case 1: //Corner
+          case 1:  // Corner
             nodal_area_ = 0.5 * h_min;
             break;
-          case 2: //Edge
+          case 2:  // Edge
             nodal_area_ = h_min;
             break;
           default:
@@ -642,13 +641,13 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
         }
       } else if (Tdim == 3) {  // STRUCTURED SQUARE HEXAHEDRONS
         switch (nposition) {
-          case 1: //Corner
+          case 1:  // Corner
             nodal_area_ = pow(0.5 * h_min, 2);
             break;
-          case 2: //Edge
+          case 2:  // Edge
             nodal_area_ = 2 * pow(0.5 * h_min, 2);
             break;
-          case 3: //Face
+          case 3:  // Face
             nodal_area_ = 4 * pow(0.5 * h_min, 2);
             break;
           default:

@@ -698,7 +698,8 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
         const std::string& cohesion_constraints_file) {
 
   // Nodal cohesion constraints
-  std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>> constraints;
+  std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
+      constraints;
   constraints.clear();
 
   // input file stream
@@ -726,7 +727,7 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
           // Cell height
           double h_min;
           // Node nposition
-          int nposition; //LEDT TODO not reading? use #s in input file?
+          int nposition;  // LEDT TODO not reading? use #s in input file?
           while (istream.good()) {
             // Read stream
             istream >> id >> dir >> sign >> cohesion >> h_min >> nposition;

@@ -17,8 +17,8 @@ class CohesionConstraint {
   //! \param[in] cohesion Constraint cohesion
   //! \param[in] h_min Characteristic length (cell height)
   //! \param[in] nposition Nodal location, nposition, along boundary
-  CohesionConstraint(int setid, unsigned dir, int sign_n, double cohesion, double h_min,
-                     int nposition = 0)
+  CohesionConstraint(int setid, unsigned dir, int sign_n, double cohesion,
+                     double h_min, int nposition = 0)
       : setid_{setid},
         dir_{dir},
         sign_n_{sign_n},

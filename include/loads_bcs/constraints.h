@@ -4,9 +4,9 @@
 #include <memory>
 
 #include "absorbing_constraint.h"
+#include "cohesion_constraint.h"
 #include "displacement_constraint.h"
 #include "friction_constraint.h"
-#include "cohesion_constraint.h"
 #include "logger.h"
 #include "mesh.h"
 #include "pressure_constraint.h"
@@ -53,16 +53,18 @@ class Constraints {
 
   //! Assign nodal cohesional constraints
   //! \param[in] setid Node set id
-  //! \param[in] cohesion_constraints Constraint at node, dir, sign, cohesion, h_min, nposition
+  //! \param[in] cohesion_constraints Constraint at node, dir, sign, cohesion,
+  //! h_min, nposition
   bool assign_nodal_cohesional_constraint(
       int nset_id,
       const std::shared_ptr<mpm::CohesionConstraint>& cconstraints);
 
   //! Assign cohesion constraints to nodes
-  //! \param[in] cohesion_constraints Constraint at node, dir, sign, cohesion, h_min, nposition
+  //! \param[in] cohesion_constraints Constraint at node, dir, sign, cohesion,
+  //! h_min, nposition
   bool assign_nodal_cohesion_constraints(
-      const std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>&
-          cohesion_constraints);
+      const std::vector<std::tuple<mpm::Index, unsigned, int, double, double,
+                                   int>>& cohesion_constraints);
 
   //! Assign nodal pressure constraints
   //! \param[in] mfunction Math function if defined

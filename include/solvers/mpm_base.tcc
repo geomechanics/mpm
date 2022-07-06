@@ -1104,7 +1104,7 @@ void mpm::MPMBase<Tdim>::nodal_cohesional_constraints(
             throw std::runtime_error(
                 "Cohesion constraints are not properly assigned");
 
-        } else { // Entity sets
+        } else {  // Entity sets
 
           // Set id
           int nset_id = constraints.at("nset_id").template get<int>();

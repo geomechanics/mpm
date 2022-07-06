@@ -179,7 +179,8 @@ bool mpm::Constraints<Tdim>::assign_nodal_cohesional_constraint(
     double h_min = cconstraint->h_min();
     int nposition = cconstraint->nposition();
     for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
-      if (!(*nitr)->assign_cohesion_constraint(dir, nsign_n, cohesion, h_min, nposition))
+      if (!(*nitr)->assign_cohesion_constraint(dir, nsign_n, cohesion, h_min,
+                                               nposition))
         throw std::runtime_error(
             "Failed to initialise cohesion constraint at node");
     }
@@ -193,8 +194,8 @@ bool mpm::Constraints<Tdim>::assign_nodal_cohesional_constraint(
 //! Assign cohesion constraints to nodes
 template <unsigned Tdim>
 bool mpm::Constraints<Tdim>::assign_nodal_cohesion_constraints(
-    const std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>&
-        cohesion_constraints) {
+    const std::vector<std::tuple<mpm::Index, unsigned, int, double, double,
+                                 int>>& cohesion_constraints) {
   bool status = true;
   try {
     for (const auto& cohesion_constraint : cohesion_constraints) {
@@ -212,7 +213,8 @@ bool mpm::Constraints<Tdim>::assign_nodal_cohesion_constraints(
       int nposition = std::get<5>(cohesion_constraint);
 
       // Apply constraint
-      if (!mesh_->node(nid)->assign_cohesion_constraint(dir, sign, cohesion, h_min, nposition))
+      if (!mesh_->node(nid)->assign_cohesion_constraint(dir, sign, cohesion,
+                                                        h_min, nposition))
         throw std::runtime_error(
             "Nodal cohesion constraints assignment failed");
     }

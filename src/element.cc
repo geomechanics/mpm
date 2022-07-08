@@ -8,6 +8,7 @@
 #include "quadrilateral_element.h"
 #include "quadrilateral_gimp_element.h"
 #include "quadrilateral_lme_element.h"
+#include "tetrahedron_element.h"
 #include "triangle_element.h"
 #include "triangle_lme_element.h"
 
@@ -43,6 +44,9 @@ static Register<mpm::Element<2>, mpm::QuadrilateralBSplineElement<2, 2>>
 // Quadrilateral LME element
 static Register<mpm::Element<2>, mpm::QuadrilateralLMEElement<2>> quad_lme(
     "ED2Q4L");
+
+// Tetrahedron 4-noded element
+static Register<mpm::Element<3>, mpm::TetrahedronElement<3, 4>> tet4("ED3T4");
 
 // Hexahedron 8-noded element
 static Register<mpm::Element<3>, mpm::HexahedronElement<3, 8>> hex8("ED3H8");

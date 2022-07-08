@@ -1,63 +1,52 @@
-#ifndef MPM_TRIANGLE_ELEMENT_H_
-#define MPM_TRIANGLE_ELEMENT_H_
+#ifndef MPM_TETRAHEDRON_ELEMENT_H_
+#define MPM_TETRAHEDRON_ELEMENT_H_
 
 #include "element.h"
 #include "logger.h"
 
+//! MPM namespace
 namespace mpm {
 
-//! Triangle element class derived from Element class
-//! \brief Triangle element
-//! \details 3-noded and 6-noded triangle element \n
-//! Shapte function, gradient shape function, B-matrix, indices \n
-//! 3-node Triangle ELement \n
+//! Tetrahedron element class derived from Element class
+//! \brief Tetrahedron element
+//! \details 4-noded tetrahedron element \n
+//! Shape function, gradient shape function, B-matrix, indices \n
+//! 4-node (Linear) Tetrahedron Element \n
 //! <pre>
-//!   2 0
-//!     |`\
-//!     |  `\
-//!     |    `\
-//!     |      `\
-//!     |        `\
-//!   0 0----------0 1
+//!       3
+//!       *
+//!      /|\
+//!     / | \
+//!    /  |  \
+//! 2 *. -|- .* 1
+//!      `*´
+//!       0
 //! </pre>
-//! 6-node Triangle Element
-//! <pre>
-//!   2 0
-//!     |`\
-//!     |  `\
-//!   5 0    `0 4
-//!     |      `\
-//!     |        `\
-//!   0 0-----0----0 1
-//!           3
-//! </pre>
-//!
 //!
 //! \tparam Tdim Dimension
 //! \tparam Tnfunctions Number of functions
 template <unsigned Tdim, unsigned Tnfunctions>
-class TriangleElement : public Element<Tdim> {
+class TetrahedronElement : public Element<Tdim> {
 
  public:
-  //! Define vector of size dimension
+  //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
   //! Define a matrix of size dimension
   using MatrixDim = Eigen::Matrix<double, Tdim, Tdim>;
 
   //! constructor with number of shape functions
-  TriangleElement() : mpm::Element<Tdim>() {
-    static_assert(Tdim == 2, "Invalid dimension for a triangular element");
-    static_assert((Tnfunctions == 3 || Tnfunctions == 6),
-                  "Specified number of shape funcions is not defined");
-
+  TetrahedronElement() : mpm::Element<Tdim>() {
+    static_assert(Tdim == 3, "Invalid dimension for a tetrahedron element");
+    static_assert((Tnfunctions == 4),
+                  "Specified number of shape functions is not defined");
     //! Logger
-    std::string logger = "triangular::<" + std::to_string(Tdim) + ", " +
+    std::string logger = "tetrahedron::<" + std::to_string(Tdim) + ", " +
                          std::to_string(Tnfunctions) + ">";
     console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
   }
 
-  //! Return number of shape functions
+  //! Return number of functions
   unsigned nfunctions() const override { return Tnfunctions; }
 
   //! Evaluate shape functions at given local coordinates
@@ -68,11 +57,11 @@ class TriangleElement : public Element<Tdim> {
   Eigen::VectorXd shapefn(const VectorDim& xi, VectorDim& particle_size,
                           const MatrixDim& deformation_gradient) const override;
 
-  //! Evaluate local shape functions at given coordinates
+  //! Evaluate local shape functions at given local coordinates
   //! \param[in] xi given local coordinates
   //! \param[in] particle_size Particle size
   //! \param[in] deformation_gradient Deformation gradient
-  //! \retval shapefn_local Shape function of a given cell
+  //! \retval shapefn Shape function of a given cell
   Eigen::VectorXd shapefn_local(
       const VectorDim& xi, VectorDim& particle_size,
       const MatrixDim& deformation_gradient) const override;
@@ -93,9 +82,10 @@ class TriangleElement : public Element<Tdim> {
   //! \param[in] deformation_gradient Deformation gradient
   //! \retval jacobian Jacobian matrix
   Eigen::Matrix<double, Tdim, Tdim> jacobian(
-      const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      VectorDim& particle_size,
-      const MatrixDim& deformation_gradient) const override;
+      const Eigen::Matrix<double, 3, 1>& xi,
+      const Eigen::MatrixXd& nodal_coordinates,
+      Eigen::Matrix<double, 3, 1>& particle_size,
+      const Eigen::Matrix<double, 3, 3>& deformation_gradient) const override;
 
   //! Compute Jacobian local
   //! \param[in] xi given local coordinates
@@ -104,9 +94,10 @@ class TriangleElement : public Element<Tdim> {
   //! \param[in] deformation_gradient Deformation gradient
   //! \retval jacobian Jacobian matrix
   Eigen::Matrix<double, Tdim, Tdim> jacobian_local(
-      const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      VectorDim& particle_size,
-      const MatrixDim& deformation_gradient) const override;
+      const Eigen::Matrix<double, 3, 1>& xi,
+      const Eigen::MatrixXd& nodal_coordinates,
+      Eigen::Matrix<double, 3, 1>& particle_size,
+      const Eigen::Matrix<double, 3, 3>& deformation_gradient) const override;
 
   //! Return the dN/dx at a given local coord
   //! \param[in] xi given local coordinates
@@ -167,8 +158,8 @@ class TriangleElement : public Element<Tdim> {
   //! \retval indices Indices that make the face
   Eigen::VectorXi face_indices(unsigned face_id) const override;
 
-  //! Return the number of faces in a triangle
-  unsigned nfaces() const override { return 3; }
+  //! Return the number of faces in a tetrahedron
+  unsigned nfaces() const override { return 4; }
 
   //! Return unit element length
   double unit_element_length() const override { return 1.; }
@@ -184,7 +175,7 @@ class TriangleElement : public Element<Tdim> {
       const Eigen::MatrixXd& nodal_coordinates) const override;
 
   //! Return if natural coordinates can be evaluates
-  bool isvalid_natural_coordinates_analytical() const override;
+  bool isvalid_natural_coordinates_analytical() const override { return true; }
 
   //! Compute Natural coordinates of a point (analytical)
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
@@ -217,6 +208,6 @@ class TriangleElement : public Element<Tdim> {
 };
 
 }  // namespace mpm
-#include "triangle_element.tcc"
+#include "tetrahedron_element.tcc"
 
-#endif  // MPM_TRIANGLE_ELEMENT_H_
+#endif  // MPM_TETRAHEDRON_ELEMENT_H_

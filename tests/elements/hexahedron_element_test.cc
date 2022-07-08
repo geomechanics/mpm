@@ -877,60 +877,6 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(indices(7) == 7);
     }
 
-    SECTION("Eight noded hexahedron element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = hex->inhedron_indices();
-      REQUIRE(indices.rows() == 12);
-      REQUIRE(indices.cols() == 3);
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 5);
-      REQUIRE(indices(0, 2) == 4);
-
-      REQUIRE(indices(1, 0) == 0);
-      REQUIRE(indices(1, 1) == 1);
-      REQUIRE(indices(1, 2) == 5);
-
-      REQUIRE(indices(2, 0) == 3);
-      REQUIRE(indices(2, 1) == 6);
-      REQUIRE(indices(2, 2) == 7);
-
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 2);
-      REQUIRE(indices(3, 2) == 6);
-
-      REQUIRE(indices(4, 0) == 2);
-      REQUIRE(indices(4, 1) == 1);
-      REQUIRE(indices(4, 2) == 6);
-
-      REQUIRE(indices(5, 0) == 6);
-      REQUIRE(indices(5, 1) == 1);
-      REQUIRE(indices(5, 2) == 5);
-
-      REQUIRE(indices(6, 0) == 7);
-      REQUIRE(indices(6, 1) == 6);
-      REQUIRE(indices(6, 2) == 5);
-
-      REQUIRE(indices(7, 0) == 5);
-      REQUIRE(indices(7, 1) == 4);
-      REQUIRE(indices(7, 2) == 7);
-
-      REQUIRE(indices(8, 0) == 7);
-      REQUIRE(indices(8, 1) == 4);
-      REQUIRE(indices(8, 2) == 0);
-
-      REQUIRE(indices(9, 0) == 7);
-      REQUIRE(indices(9, 1) == 0);
-      REQUIRE(indices(9, 2) == 3);
-
-      REQUIRE(indices(10, 0) == 3);
-      REQUIRE(indices(10, 1) == 0);
-      REQUIRE(indices(10, 2) == 1);
-
-      REQUIRE(indices(11, 0) == 3);
-      REQUIRE(indices(11, 1) == 1);
-      REQUIRE(indices(11, 2) == 2);
-    }
-
     SECTION("Eight noded hexahedron shape function for face indices") {
       // Check for face indices
       Eigen::Matrix<int, 6, 4> indices;
@@ -2394,60 +2340,6 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(indices(5) == 5);
       REQUIRE(indices(6) == 6);
       REQUIRE(indices(7) == 7);
-    }
-
-    SECTION("20-noded hexahedron element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = hex->inhedron_indices();
-      REQUIRE(indices.rows() == 12);
-      REQUIRE(indices.cols() == 3);
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 5);
-      REQUIRE(indices(0, 2) == 4);
-
-      REQUIRE(indices(1, 0) == 0);
-      REQUIRE(indices(1, 1) == 1);
-      REQUIRE(indices(1, 2) == 5);
-
-      REQUIRE(indices(2, 0) == 3);
-      REQUIRE(indices(2, 1) == 6);
-      REQUIRE(indices(2, 2) == 7);
-
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 2);
-      REQUIRE(indices(3, 2) == 6);
-
-      REQUIRE(indices(4, 0) == 2);
-      REQUIRE(indices(4, 1) == 1);
-      REQUIRE(indices(4, 2) == 6);
-
-      REQUIRE(indices(5, 0) == 6);
-      REQUIRE(indices(5, 1) == 1);
-      REQUIRE(indices(5, 2) == 5);
-
-      REQUIRE(indices(6, 0) == 7);
-      REQUIRE(indices(6, 1) == 6);
-      REQUIRE(indices(6, 2) == 5);
-
-      REQUIRE(indices(7, 0) == 5);
-      REQUIRE(indices(7, 1) == 4);
-      REQUIRE(indices(7, 2) == 7);
-
-      REQUIRE(indices(8, 0) == 7);
-      REQUIRE(indices(8, 1) == 4);
-      REQUIRE(indices(8, 2) == 0);
-
-      REQUIRE(indices(9, 0) == 7);
-      REQUIRE(indices(9, 1) == 0);
-      REQUIRE(indices(9, 2) == 3);
-
-      REQUIRE(indices(10, 0) == 3);
-      REQUIRE(indices(10, 1) == 0);
-      REQUIRE(indices(10, 2) == 1);
-
-      REQUIRE(indices(11, 0) == 3);
-      REQUIRE(indices(11, 1) == 1);
-      REQUIRE(indices(11, 2) == 2);
     }
 
     SECTION("20-noded noded hexahedron shape function for face indices") {

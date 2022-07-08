@@ -447,34 +447,18 @@ inline Eigen::VectorXi
   return indices;
 }
 
-//! Return indices of a sub-tetrahedrons in a volume
-template <unsigned Tdim, unsigned Tnfunctions>
-inline Eigen::MatrixXi
-    mpm::QuadrilateralElement<Tdim, Tnfunctions>::inhedron_indices() const {
-  Eigen::Matrix<int, 4, Tdim, Eigen::RowMajor> indices;
-
-  // clang-format off
-  indices << 0, 1,
-             1, 2,
-             2, 3,
-  // cppcheck-suppress *
-             3, 0;
-  //clang-format on
-  return indices;
-}
-
 //! Return indices of a face of the element
 //! 4-noded quadrilateral
 template <>
-inline Eigen::VectorXi
-    mpm::QuadrilateralElement<2, 4>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::QuadrilateralElement<2, 4>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
-  const std::map<unsigned, Eigen::Matrix<int, 2, 1>>
-      face_indices_quadrilateral{{0, Eigen::Matrix<int, 2, 1>(0, 1)},
-                                 {1, Eigen::Matrix<int, 2, 1>(1, 2)},
-                                 {2, Eigen::Matrix<int, 2, 1>(2, 3)},
-                                 {3, Eigen::Matrix<int, 2, 1>(3, 0)}};
+  const std::map<unsigned, Eigen::Matrix<int, 2, 1>> face_indices_quadrilateral{
+      {0, Eigen::Matrix<int, 2, 1>(0, 1)},
+      {1, Eigen::Matrix<int, 2, 1>(1, 2)},
+      {2, Eigen::Matrix<int, 2, 1>(2, 3)},
+      {3, Eigen::Matrix<int, 2, 1>(3, 0)}};
 
   return face_indices_quadrilateral.at(face_id);
 }
@@ -482,15 +466,15 @@ inline Eigen::VectorXi
 //! Return indices of a face of the element
 //! 8-noded quadrilateral
 template <>
-inline Eigen::VectorXi
-    mpm::QuadrilateralElement<2, 8>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::QuadrilateralElement<2, 8>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
-  const std::map<unsigned, Eigen::Matrix<int, 3, 1>>
-      face_indices_quadrilateral{{0, Eigen::Matrix<int, 3, 1>(0, 1, 4)},
-                                 {1, Eigen::Matrix<int, 3, 1>(1, 2, 5)},
-                                 {2, Eigen::Matrix<int, 3, 1>(2, 3, 6)},
-                                 {3, Eigen::Matrix<int, 3, 1>(3, 0, 7)}};
+  const std::map<unsigned, Eigen::Matrix<int, 3, 1>> face_indices_quadrilateral{
+      {0, Eigen::Matrix<int, 3, 1>(0, 1, 4)},
+      {1, Eigen::Matrix<int, 3, 1>(1, 2, 5)},
+      {2, Eigen::Matrix<int, 3, 1>(2, 3, 6)},
+      {3, Eigen::Matrix<int, 3, 1>(3, 0, 7)}};
 
   return face_indices_quadrilateral.at(face_id);
 }
@@ -498,19 +482,18 @@ inline Eigen::VectorXi
 //! Return indices of a face of the element
 //! 9-noded quadrilateral
 template <>
-inline Eigen::VectorXi
-    mpm::QuadrilateralElement<2, 9>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::QuadrilateralElement<2, 9>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
-  const std::map<unsigned, Eigen::Matrix<int, 3, 1>>
-      face_indices_quadrilateral{{0, Eigen::Matrix<int, 3, 1>(0, 1, 4)},
-                                 {1, Eigen::Matrix<int, 3, 1>(1, 2, 5)},
-                                 {2, Eigen::Matrix<int, 3, 1>(2, 3, 6)},
-                                 {3, Eigen::Matrix<int, 3, 1>(3, 0, 7)}};
+  const std::map<unsigned, Eigen::Matrix<int, 3, 1>> face_indices_quadrilateral{
+      {0, Eigen::Matrix<int, 3, 1>(0, 1, 4)},
+      {1, Eigen::Matrix<int, 3, 1>(1, 2, 5)},
+      {2, Eigen::Matrix<int, 3, 1>(2, 3, 6)},
+      {3, Eigen::Matrix<int, 3, 1>(3, 0, 7)}};
 
   return face_indices_quadrilateral.at(face_id);
 }
-
 
 //! Return quadrature
 template <unsigned Tdim, unsigned Tnfunctions>
@@ -519,19 +502,19 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
         unsigned nquadratures) const {
   switch (nquadratures) {
     case 1:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD1");
       break;
     case 2:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ2");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD2");
       break;
     case 3:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ3");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD3");
       break;
     case 4:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ4");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD4");
       break;
     default:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQ1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QQUAD1");
       break;
   }
 }
@@ -541,7 +524,7 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
 //! \retval volume Return the volume of cell
 template <unsigned Tdim, unsigned Tnfunctions>
 inline double mpm::QuadrilateralElement<Tdim, Tnfunctions>::compute_volume(
-  const Eigen::MatrixXd& nodal_coordinates) const {
+    const Eigen::MatrixXd& nodal_coordinates) const {
   //        b
   // 3 0---------0 2
   //   | \   q / |
@@ -550,65 +533,61 @@ inline double mpm::QuadrilateralElement<Tdim, Tnfunctions>::compute_volume(
   //   |  /    \ |
   // 0 0---------0 1
   //         d
-  const double a = (nodal_coordinates.row(0) -
-                    nodal_coordinates.row(3))
-    .norm();
-  const double b = (nodal_coordinates.row(2) -
-                    nodal_coordinates.row(3))
-    .norm();
-  const double c = (nodal_coordinates.row(1) -
-                    nodal_coordinates.row(2))
-    .norm();
-  const double d = (nodal_coordinates.row(0) -
-                    nodal_coordinates.row(1))
-    .norm();
-  const double p = (nodal_coordinates.row(0) -
-                    nodal_coordinates.row(2))
-    .norm();
-  const double q = (nodal_coordinates.row(1) -
-                    nodal_coordinates.row(3))
-    .norm();
+  const double a = (nodal_coordinates.row(0) - nodal_coordinates.row(3)).norm();
+  const double b = (nodal_coordinates.row(2) - nodal_coordinates.row(3)).norm();
+  const double c = (nodal_coordinates.row(1) - nodal_coordinates.row(2)).norm();
+  const double d = (nodal_coordinates.row(0) - nodal_coordinates.row(1)).norm();
+  const double p = (nodal_coordinates.row(0) - nodal_coordinates.row(2)).norm();
+  const double q = (nodal_coordinates.row(1) - nodal_coordinates.row(3)).norm();
 
   // K = 1/4 * sqrt ( 4p^2q^2 - (a^2 + c^2 - b^2 -d^2)^2)
   double volume =
-    0.25 * std::sqrt(4 * p * p * q * q -
-                     std::pow((a * a + c * c - b * b - d * d), 2.0));
+      0.25 * std::sqrt(4 * p * p * q * q -
+                       std::pow((a * a + c * c - b * b - d * d), 2.0));
 
   return volume;
 }
 
-
+//! Compute natural coordinates of a point (analytical)
+template <>
+inline bool mpm::QuadrilateralElement<
+    2, 4>::isvalid_natural_coordinates_analytical() const {
+  return true;
+}
 
 //! Compute natural coordinates of a point (analytical)
 template <>
-inline bool mpm::QuadrilateralElement<2, 4>::isvalid_natural_coordinates_analytical() const { return true; }
+inline bool mpm::QuadrilateralElement<
+    2, 8>::isvalid_natural_coordinates_analytical() const {
+  return false;
+}
 
 //! Compute natural coordinates of a point (analytical)
 template <>
-inline bool mpm::QuadrilateralElement<2, 8>::isvalid_natural_coordinates_analytical() const { return false; }
-
-//! Compute natural coordinates of a point (analytical)
-template <>
-inline bool mpm::QuadrilateralElement<2, 9>::isvalid_natural_coordinates_analytical() const { return false; }
+inline bool mpm::QuadrilateralElement<
+    2, 9>::isvalid_natural_coordinates_analytical() const {
+  return false;
+}
 
 //! Compute Natural coordinates of a point (analytical)
 //! Analytical solution based on A consistent point-searching algorithm for
 //! solution interpolation in unstructured meshes consisting of 4-node bilinear
 //! quadrilateral elements - Zhao et al., 1999
 template <>
-inline Eigen::Matrix<double, 2, 1> mpm::QuadrilateralElement<2, 4>::natural_coordinates_analytical(
-      const VectorDim& point,
-      const Eigen::MatrixXd& nodal_coordinates) const {
+inline Eigen::Matrix<double, 2, 1>
+    mpm::QuadrilateralElement<2, 4>::natural_coordinates_analytical(
+        const VectorDim& point,
+        const Eigen::MatrixXd& nodal_coordinates) const {
   // Local point coordinates
   Eigen::Matrix<double, 2, 1> xi;
   xi.fill(std::numeric_limits<double>::max());
-
 
   const double xa = point(0);
   const double ya = point(1);
 
   if (nodal_coordinates.rows() == 0 || nodal_coordinates.cols() == 0)
-    throw std::runtime_error("Nodal coordinates matrix is empty, cell is probably not initialized");
+    throw std::runtime_error(
+        "Nodal coordinates matrix is empty, cell is probably not initialized");
 
   const double x1 = nodal_coordinates(0, 0);
   const double y1 = nodal_coordinates(0, 1);
@@ -636,83 +615,83 @@ inline Eigen::Matrix<double, 2, 1> mpm::QuadrilateralElement<2, 4>::natural_coor
   // a2 * xi(0) + a3 * xi(1) + a4 * xi(0) * xi(1) = 4 x_a - a1
   // b2 * xi(0) + b3 * xi(1) + b4 * xi(0) * xi(1) = 4 y_a - b1
   const double u1 =
-    (-a1 * b4 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa +
-     (-a3 * b4 + a4 * b3) *
-     ((-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya +
-       4 * b4 * xa) /
-      (2 * (a3 * b4 - a4 * b3)) -
-      (std::sqrt(a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 -
-                 2 * a1 * a3 * b2 * b4 - 2 * a1 * a4 * b1 * b4 +
-                 4 * a1 * a4 * b2 * b3 + 8 * a1 * a4 * b4 * ya -
-                 8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
-                 4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
-                 16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
-                 8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa +
-                 a3 * a3 * b2 * b2 - 2 * a3 * a4 * b1 * b2 +
-                 8 * a3 * a4 * b2 * ya + 8 * a3 * b2 * b4 * xa +
-                 a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
-                 16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
-                 16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
-                 16 * b4 * b4 * xa * xa)) /
-      (2 * (a3 * b4 - a4 * b3)))) /
-    (a2 * b4 - a4 * b2);
+      (-a1 * b4 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa +
+       (-a3 * b4 + a4 * b3) *
+           ((-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya +
+             4 * b4 * xa) /
+                (2 * (a3 * b4 - a4 * b3)) -
+            (std::sqrt(a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 -
+                       2 * a1 * a3 * b2 * b4 - 2 * a1 * a4 * b1 * b4 +
+                       4 * a1 * a4 * b2 * b3 + 8 * a1 * a4 * b4 * ya -
+                       8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
+                       4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
+                       16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
+                       8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa +
+                       a3 * a3 * b2 * b2 - 2 * a3 * a4 * b1 * b2 +
+                       8 * a3 * a4 * b2 * ya + 8 * a3 * b2 * b4 * xa +
+                       a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
+                       16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
+                       16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
+                       16 * b4 * b4 * xa * xa)) /
+                (2 * (a3 * b4 - a4 * b3)))) /
+      (a2 * b4 - a4 * b2);
 
   const double u2 =
-    (-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa) /
-    (2 * (a3 * b4 - a4 * b3)) -
-    (std::sqrt(
-      a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 - 2 * a1 * a3 * b2 * b4 -
-      2 * a1 * a4 * b1 * b4 + 4 * a1 * a4 * b2 * b3 +
-      8 * a1 * a4 * b4 * ya - 8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
-      4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
-      16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
-      8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa + a3 * a3 * b2 * b2 -
-      2 * a3 * a4 * b1 * b2 + 8 * a3 * a4 * b2 * ya +
-      8 * a3 * b2 * b4 * xa + a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
-      16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
-      16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
-      16 * b4 * b4 * xa * xa)) /
-    (2 * (a3 * b4 - a4 * b3));
+      (-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa) /
+          (2 * (a3 * b4 - a4 * b3)) -
+      (std::sqrt(
+          a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 - 2 * a1 * a3 * b2 * b4 -
+          2 * a1 * a4 * b1 * b4 + 4 * a1 * a4 * b2 * b3 +
+          8 * a1 * a4 * b4 * ya - 8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
+          4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
+          16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
+          8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa + a3 * a3 * b2 * b2 -
+          2 * a3 * a4 * b1 * b2 + 8 * a3 * a4 * b2 * ya +
+          8 * a3 * b2 * b4 * xa + a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
+          16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
+          16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
+          16 * b4 * b4 * xa * xa)) /
+          (2 * (a3 * b4 - a4 * b3));
 
   // Second solution of a quadratic equation
   const double v1 =
-    (-a1 * b4 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa +
-     (-a3 * b4 + a4 * b3) *
-     ((-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya +
-       4 * b4 * xa) /
-      (2 * (a3 * b4 - a4 * b3)) +
-      (std::sqrt(a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 -
-                 2 * a1 * a3 * b2 * b4 - 2 * a1 * a4 * b1 * b4 +
-                 4 * a1 * a4 * b2 * b3 + 8 * a1 * a4 * b4 * ya -
-                 8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
-                 4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
-                 16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
-                 8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa +
-                 a3 * a3 * b2 * b2 - 2 * a3 * a4 * b1 * b2 +
-                 8 * a3 * a4 * b2 * ya + 8 * a3 * b2 * b4 * xa +
-                 a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
-                 16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
-                 16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
-                 16 * b4 * b4 * xa * xa)) /
-      (2 * (a3 * b4 - a4 * b3)))) /
-    (a2 * b4 - a4 * b2);
+      (-a1 * b4 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa +
+       (-a3 * b4 + a4 * b3) *
+           ((-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya +
+             4 * b4 * xa) /
+                (2 * (a3 * b4 - a4 * b3)) +
+            (std::sqrt(a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 -
+                       2 * a1 * a3 * b2 * b4 - 2 * a1 * a4 * b1 * b4 +
+                       4 * a1 * a4 * b2 * b3 + 8 * a1 * a4 * b4 * ya -
+                       8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
+                       4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
+                       16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
+                       8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa +
+                       a3 * a3 * b2 * b2 - 2 * a3 * a4 * b1 * b2 +
+                       8 * a3 * a4 * b2 * ya + 8 * a3 * b2 * b4 * xa +
+                       a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
+                       16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
+                       16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
+                       16 * b4 * b4 * xa * xa)) /
+                (2 * (a3 * b4 - a4 * b3)))) /
+      (a2 * b4 - a4 * b2);
 
   const double v2 =
-    (-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa) /
-    (2 * (a3 * b4 - a4 * b3)) +
-    (std::sqrt(
-      a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 - 2 * a1 * a3 * b2 * b4 -
-      2 * a1 * a4 * b1 * b4 + 4 * a1 * a4 * b2 * b3 +
-      8 * a1 * a4 * b4 * ya - 8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
-      4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
-      16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
-      8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa + a3 * a3 * b2 * b2 -
-      2 * a3 * a4 * b1 * b2 + 8 * a3 * a4 * b2 * ya +
-      8 * a3 * b2 * b4 * xa + a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
-      16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
-      16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
-      16 * b4 * b4 * xa * xa)) /
-    (2 * (a3 * b4 - a4 * b3));
+      (-a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1 - 4 * a4 * ya + 4 * b4 * xa) /
+          (2 * (a3 * b4 - a4 * b3)) +
+      (std::sqrt(
+          a1 * a1 * b4 * b4 - 2 * a1 * a2 * b3 * b4 - 2 * a1 * a3 * b2 * b4 -
+          2 * a1 * a4 * b1 * b4 + 4 * a1 * a4 * b2 * b3 +
+          8 * a1 * a4 * b4 * ya - 8 * a1 * b4 * b4 * xa + a2 * a2 * b3 * b3 +
+          4 * a2 * a3 * b1 * b4 - 2 * a2 * a3 * b2 * b3 -
+          16 * a2 * a3 * b4 * ya - 2 * a2 * a4 * b1 * b3 +
+          8 * a2 * a4 * b3 * ya + 8 * a2 * b3 * b4 * xa + a3 * a3 * b2 * b2 -
+          2 * a3 * a4 * b1 * b2 + 8 * a3 * a4 * b2 * ya +
+          8 * a3 * b2 * b4 * xa + a4 * a4 * b1 * b1 - 8 * a4 * a4 * b1 * ya +
+          16 * a4 * a4 * ya * ya + 8 * a4 * b1 * b4 * xa -
+          16 * a4 * b2 * b3 * xa - 32 * a4 * b4 * xa * ya +
+          16 * b4 * b4 * xa * xa)) /
+          (2 * (a3 * b4 - a4 * b3));
 
   // Choosing a quadratic solution
   if (u1 >= -1. && u1 <= 1. && u2 >= -1. && u2 <= 1.) {
@@ -801,18 +780,18 @@ inline Eigen::Matrix<double, 2, 1> mpm::QuadrilateralElement<2, 4>::natural_coor
         xi(1) = (c1s - a2s * xi(0)) / (a3s + xi(0));
       } else {  // Case 4.2b Eq 29
         // There are two possible solutions
-        const double u2 = (-(a2s * beta + a3s - alpha) +
-                           std::sqrt((a2s * beta + a3s - alpha) *
-                                     (a2s * beta + a3s - alpha) -
-                                     (4 * beta * (c1s - a2s * alpha)))) /
-          (2. * beta);
+        const double u2 =
+            (-(a2s * beta + a3s - alpha) +
+             std::sqrt((a2s * beta + a3s - alpha) * (a2s * beta + a3s - alpha) -
+                       (4 * beta * (c1s - a2s * alpha)))) /
+            (2. * beta);
         const double u1 = alpha - beta * u2;
         // Second solution of a quadratic equation
-        const double v2 = (-(a2s * beta + a3s - alpha) -
-                           std::sqrt((a2s * beta + a3s - alpha) *
-                                     (a2s * beta + a3s - alpha) -
-                                     (4 * beta * (c1s - a2s * alpha)))) /
-          (2. * beta);
+        const double v2 =
+            (-(a2s * beta + a3s - alpha) -
+             std::sqrt((a2s * beta + a3s - alpha) * (a2s * beta + a3s - alpha) -
+                       (4 * beta * (c1s - a2s * alpha)))) /
+            (2. * beta);
         const double v1 = alpha - beta * v2;
         if (u1 >= -1. && u1 <= 1. && u2 >= -1. && u2 <= 1.) {
           xi(0) = u1;
@@ -829,25 +808,29 @@ inline Eigen::Matrix<double, 2, 1> mpm::QuadrilateralElement<2, 4>::natural_coor
 
 //! Compute natural coordinates of a point (analytical)
 template <>
-inline Eigen::Matrix<double, 2, 1> mpm::QuadrilateralElement<2, 8>::natural_coordinates_analytical(
-      const VectorDim& point,
-      const Eigen::MatrixXd& nodal_coordinates) const {
+inline Eigen::Matrix<double, 2, 1>
+    mpm::QuadrilateralElement<2, 8>::natural_coordinates_analytical(
+        const VectorDim& point,
+        const Eigen::MatrixXd& nodal_coordinates) const {
   // Local point coordinates
   Eigen::Matrix<double, 2, 1> xi;
   xi.fill(std::numeric_limits<double>::max());
-  throw std::runtime_error("Analytical solution for Quad<2, 8> has not been implemented");
+  throw std::runtime_error(
+      "Analytical solution for Quad<2, 8> has not been implemented");
   return xi;
 }
 
 //! Compute natural coordinates of a point (analytical)
 template <>
-inline Eigen::Matrix<double, 2, 1> mpm::QuadrilateralElement<2, 9>::natural_coordinates_analytical(
-      const VectorDim& point,
-      const Eigen::MatrixXd& nodal_coordinates) const {
+inline Eigen::Matrix<double, 2, 1>
+    mpm::QuadrilateralElement<2, 9>::natural_coordinates_analytical(
+        const VectorDim& point,
+        const Eigen::MatrixXd& nodal_coordinates) const {
   // Local point coordinates
   Eigen::Matrix<double, 2, 1> xi;
   xi.fill(std::numeric_limits<double>::max());
-  throw std::runtime_error("Analytical solution for Quad<2, 9> has not been implemented");
+  throw std::runtime_error(
+      "Analytical solution for Quad<2, 9> has not been implemented");
   return xi;
 }
 
@@ -866,7 +849,8 @@ void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
 template <unsigned Tdim, unsigned Tnfunctions>
 void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
     initialise_lme_connectivity_properties(
-        double beta, double radius, bool anisotropy, const Eigen::MatrixXd& nodal_coordinates) {
+        double beta, double radius, bool anisotropy,
+        const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
       "Function to initialise lme connectivity is not implemented for "
       "Quad<Tdim, Tnfunctions> ");

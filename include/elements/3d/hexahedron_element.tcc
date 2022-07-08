@@ -541,37 +541,11 @@ inline Eigen::VectorXi
   return indices;
 }
 
-//! Return indices of a sub-tetrahedrons in a volume
-//! to check if a point is inside /outside of a hedron
-//! \retval indices Indices that form sub-tetrahedrons
-template <unsigned Tdim, unsigned Tnfunctions>
-inline Eigen::MatrixXi
-    mpm::HexahedronElement<Tdim, Tnfunctions>::inhedron_indices() const {
-  Eigen::Matrix<int, 12, Tdim, Eigen::RowMajor> indices;
-
-  // clang-format off
-  indices << 0, 5, 4,
-             0, 1, 5,
-             3, 6, 7,
-             3, 2, 6,
-             2, 1, 6,
-             6, 1, 5,
-             7, 6, 5,
-             5, 4, 7,
-             7, 4, 0,
-             7, 0, 3,
-             3, 0, 1,
-    // cppcheck-suppress *
-             3, 1, 2;
-  //clang-format on
-  return indices;
-}
-
 //! Return indices of a face of the element
 //! 8-noded hexahedron
 template <>
-inline Eigen::VectorXi
-    mpm::HexahedronElement<3, 8>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::HexahedronElement<3, 8>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
   const std::map<unsigned, Eigen::Matrix<int, 4, 1>> face_indices_hexahedron{
@@ -588,8 +562,8 @@ inline Eigen::VectorXi
 //! Return indices of a face of the element
 //! 20-noded hexahedron
 template <>
-inline Eigen::VectorXi
-    mpm::HexahedronElement<3, 20>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::HexahedronElement<3, 20>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
   // clang-format off
@@ -612,19 +586,19 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
         unsigned nquadratures) const {
   switch (nquadratures) {
     case 1:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX1");
       break;
     case 2:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH2");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX2");
       break;
     case 3:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH3");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX3");
       break;
     case 4:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH4");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX4");
       break;
     default:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QH1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QHEX1");
       break;
   }
 }
@@ -661,7 +635,7 @@ inline double mpm::HexahedronElement<Tdim, Tnfunctions>::compute_volume(
   const Eigen::Matrix<double, Tdim, 1> g = nodal_coordinates.row(1);
   const Eigen::Matrix<double, Tdim, 1> h = nodal_coordinates.row(0);
 
-  double volume_ =
+  const double volume =
       (1.0 / 12) * (a - g).dot(((b - d).cross(c - a)) + ((e - b).cross(f - a)) +
                                ((d - e).cross(h - a))) +
       (1.0 / 12) *
@@ -670,7 +644,7 @@ inline double mpm::HexahedronElement<Tdim, Tnfunctions>::compute_volume(
           (e - g).dot(((e - b).cross(f - a)) + ((f - g).cross(h - f))) +
       (1.0 / 12) * (d - g).dot(((d - e).cross(h - a)) + ((h - g).cross(h - c)));
 
-  return volume_;
+  return volume;
 }
 
 //! Compute natural coordinates of a point (analytical)

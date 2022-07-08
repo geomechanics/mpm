@@ -397,9 +397,16 @@ bool mpm::Particle<Tdim>::assign_cell_xi(
       // Assign the reference location of particle
       bool xi_nan = false;
 
-      // Check if point is within the cell
+      // Check if point is within the parametric bound
+      double min_xi = -1.;
+      double max_xi = 1.;
+      if ((Tdim == 2 && nodes_.size() == 3) or
+          (Tdim == 3 && nodes_.size() == 4))
+        min_xi = 0.;
+
       for (unsigned i = 0; i < xi.size(); ++i)
-        if (xi(i) < -1. || xi(i) > 1. || std::isnan(xi(i))) xi_nan = true;
+        if (xi(i) < min_xi || xi(i) > max_xi || std::isnan(xi(i)))
+          xi_nan = true;
 
       if (xi_nan == false)
         this->xi_ = xi;

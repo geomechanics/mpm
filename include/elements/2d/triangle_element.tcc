@@ -338,32 +338,17 @@ inline Eigen::VectorXi mpm::TriangleElement<Tdim, Tnfunctions>::corner_indices()
   return indices;
 }
 
-//! Return indices of a sub-tetrahedrons in a volume
-template <unsigned Tdim, unsigned Tnfunctions>
-inline Eigen::MatrixXi
-    mpm::TriangleElement<Tdim, Tnfunctions>::inhedron_indices() const {
-  Eigen::Matrix<int, 3, Tdim, Eigen::RowMajor> indices;
-
-  // clang-format off
-  indices << 0, 1,
-             1, 2,
-    // cppcheck-suppress *
-             2, 0;
-  //clang-format on
-  return indices;
-}
-
 //! Return indices of a face of the element
 //! 3-noded triangle
 template <>
-inline Eigen::VectorXi
-    mpm::TriangleElement<2, 3>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::TriangleElement<2, 3>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
-  const std::map<unsigned, Eigen::Matrix<int, 2, 1>>
-      face_indices_triangle{{0, Eigen::Matrix<int, 2, 1>(0, 1)},
-                            {1, Eigen::Matrix<int, 2, 1>(1, 2)},
-                            {2, Eigen::Matrix<int, 2, 1>(2, 0)}};
+  const std::map<unsigned, Eigen::Matrix<int, 2, 1>> face_indices_triangle{
+      {0, Eigen::Matrix<int, 2, 1>(0, 1)},
+      {1, Eigen::Matrix<int, 2, 1>(1, 2)},
+      {2, Eigen::Matrix<int, 2, 1>(2, 0)}};
 
   return face_indices_triangle.at(face_id);
 }
@@ -371,14 +356,14 @@ inline Eigen::VectorXi
 //! Return indices of a face of the element
 //! 6-noded triangle
 template <>
-inline Eigen::VectorXi
-    mpm::TriangleElement<2, 6>::face_indices(unsigned face_id) const {
+inline Eigen::VectorXi mpm::TriangleElement<2, 6>::face_indices(
+    unsigned face_id) const {
 
   //! Face ids and its associated nodal indices
-  const std::map<unsigned, Eigen::Matrix<int, 3, 1>>
-      face_indices_triangle{{0, Eigen::Matrix<int, 3, 1>(0, 1, 3)},
-                            {1, Eigen::Matrix<int, 3, 1>(1, 2, 4)},
-                            {2, Eigen::Matrix<int, 3, 1>(2, 0, 5)}};
+  const std::map<unsigned, Eigen::Matrix<int, 3, 1>> face_indices_triangle{
+      {0, Eigen::Matrix<int, 3, 1>(0, 1, 3)},
+      {1, Eigen::Matrix<int, 3, 1>(1, 2, 4)},
+      {2, Eigen::Matrix<int, 3, 1>(2, 0, 5)}};
 
   return face_indices_triangle.at(face_id);
 }
@@ -390,13 +375,13 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
         unsigned nquadratures) const {
   switch (nquadratures) {
     case 1:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QT1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTRI1");
       break;
     case 2:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QT2");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTRI2");
       break;
     default:
-      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QT1");
+      return Factory<mpm::Quadrature<Tdim>>::instance()->create("QTRI1");
       break;
   }
 }
@@ -406,7 +391,7 @@ inline std::shared_ptr<mpm::Quadrature<Tdim>>
 //! \retval volume Return the volume of cell
 template <unsigned Tdim, unsigned Tnfunctions>
 inline double mpm::TriangleElement<Tdim, Tnfunctions>::compute_volume(
-  const Eigen::MatrixXd& nodal_coordinates) const {
+    const Eigen::MatrixXd& nodal_coordinates) const {
   //   2 0
   //     |`\
   //     |  `\
@@ -422,32 +407,41 @@ inline double mpm::TriangleElement<Tdim, Tnfunctions>::compute_volume(
   // Area = 0.5 * [ (x1 * y2 - x2 * y1)
   //              - (x0 * y2 - x2 * y0)
   //              + (x0 * y1 - x1 * y0) ]
-  double volume_ = std::fabs(((node1(0) * node2(1)) - (node2(0) * node1(1))) -
-                             ((node0(0) * node2(1)) - (node2(0) * node0(1))) +
-                             ((node0(0) * node1(1)) - (node1(0) * node0(1)))) *
-    0.5;
+  const double volume =
+      std::fabs(((node1(0) * node2(1)) - (node2(0) * node1(1))) -
+                ((node0(0) * node2(1)) - (node2(0) * node0(1))) +
+                ((node0(0) * node1(1)) - (node1(0) * node0(1)))) *
+      0.5;
 
-  return volume_;
+  return volume;
 }
 
 //! Compute natural coordinates of a point (analytical)
 template <>
-inline bool mpm::TriangleElement<2, 3>::isvalid_natural_coordinates_analytical() const { return true; }
+inline bool mpm::TriangleElement<2, 3>::isvalid_natural_coordinates_analytical()
+    const {
+  return true;
+}
 
 //! Compute natural coordinates of a point (analytical)
 template <>
-inline bool mpm::TriangleElement<2, 6>::isvalid_natural_coordinates_analytical() const { return false; }
+inline bool mpm::TriangleElement<2, 6>::isvalid_natural_coordinates_analytical()
+    const {
+  return false;
+}
 
 //! Compute Natural coordinates of a point (analytical)
 template <>
-inline Eigen::Matrix<double, 2, 1> mpm::TriangleElement<2, 3>::natural_coordinates_analytical(
-      const VectorDim& point,
-      const Eigen::MatrixXd& nodal_coordinates) const {
+inline Eigen::Matrix<double, 2, 1>
+    mpm::TriangleElement<2, 3>::natural_coordinates_analytical(
+        const VectorDim& point,
+        const Eigen::MatrixXd& nodal_coordinates) const {
   // Local point coordinates
   Eigen::Matrix<double, 2, 1> xi;
   xi.fill(std::numeric_limits<double>::max());
 
-  // initialize cartesian coordinates of point of interest and vertices of the cell
+  // initialize cartesian coordinates of point of interest and vertices of the
+  // cell
   const double xa = point(0);
   const double ya = point(1);
   const double x1 = nodal_coordinates(0, 0);
@@ -471,16 +465,17 @@ inline Eigen::Matrix<double, 2, 1> mpm::TriangleElement<2, 3>::natural_coordinat
   return xi;
 }
 
-
 //! Compute natural coordinates of a point (analytical)
 template <>
-inline Eigen::Matrix<double, 2, 1> mpm::TriangleElement<2, 6>::natural_coordinates_analytical(
-      const VectorDim& point,
-      const Eigen::MatrixXd& nodal_coordinates) const {
+inline Eigen::Matrix<double, 2, 1>
+    mpm::TriangleElement<2, 6>::natural_coordinates_analytical(
+        const VectorDim& point,
+        const Eigen::MatrixXd& nodal_coordinates) const {
   // Local point coordinates
   Eigen::Matrix<double, 2, 1> xi;
   xi.fill(std::numeric_limits<double>::max());
-  throw std::runtime_error("Analytical solution for Triangle<2, 6> has not been implemented");
+  throw std::runtime_error(
+      "Analytical solution for Triangle<2, 6> has not been implemented");
   return xi;
 }
 
@@ -499,7 +494,8 @@ void mpm::TriangleElement<Tdim, Tnfunctions>::
 template <unsigned Tdim, unsigned Tnfunctions>
 void mpm::TriangleElement<Tdim, Tnfunctions>::
     initialise_lme_connectivity_properties(
-        double beta, double radius, bool anisotropy, const Eigen::MatrixXd& nodal_coordinates) {
+        double beta, double radius, bool anisotropy,
+        const Eigen::MatrixXd& nodal_coordinates) {
   throw std::runtime_error(
       "Function to initialise lme connectivity is not implemented for "
       "Triangle<Tdim, Tnfunctions> ");

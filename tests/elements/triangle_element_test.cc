@@ -608,22 +608,6 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(indices(2) == 2);
     }
 
-    SECTION("Three noded triangle element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = tri->inhedron_indices();
-      REQUIRE(indices.rows() == 3);
-      REQUIRE(indices.cols() == 2);
-
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 1);
-
-      REQUIRE(indices(1, 0) == 1);
-      REQUIRE(indices(1, 1) == 2);
-
-      REQUIRE(indices(2, 0) == 2);
-      REQUIRE(indices(2, 1) == 0);
-    }
-
     SECTION("Four noded triangle shape function for face indices") {
       // Check for face indices
       Eigen::Matrix<int, 3, 2> indices;
@@ -1333,22 +1317,6 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
       REQUIRE(indices(0) == 0);
       REQUIRE(indices(1) == 1);
       REQUIRE(indices(2) == 2);
-    }
-
-    SECTION("Six noded triangle element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = tri->inhedron_indices();
-      REQUIRE(indices.rows() == 3);
-      REQUIRE(indices.cols() == 2);
-
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 1);
-
-      REQUIRE(indices(1, 0) == 1);
-      REQUIRE(indices(1, 1) == 2);
-
-      REQUIRE(indices(2, 0) == 2);
-      REQUIRE(indices(2, 1) == 0);
     }
 
     SECTION("Six noded triangle shape function for face indices") {

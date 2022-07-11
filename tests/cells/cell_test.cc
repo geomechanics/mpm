@@ -12,6 +12,8 @@
 #include "node.h"
 #include "quadrilateral_element.h"
 #include "quadrilateral_quadrature.h"
+#include "tetrahedron_element.h"
+#include "tetrahedron_quadrature.h"
 
 //! \brief Check cell class for 2D case
 TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
@@ -261,6 +263,38 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
 
         // Use Newton-raphson iteration
         local_point = cell->transform_real_to_unit_cell(point);
+        for (unsigned i = 0; i < local_point.size(); ++i)
+          REQUIRE(local_point[i] ==
+                  Approx(point_unit_cell[i]).epsilon(Tolerance));
+      }
+
+      SECTION(
+          "Find local coordinates of a point in cell with triangle element") {
+        // 3-noded triangular shape functions
+        std::shared_ptr<mpm::Element<Dim>> tri_element =
+            Factory<mpm::Element<Dim>>::instance()->create("ED2T3");
+
+        auto cell = std::make_shared<mpm::Cell<Dim>>(0, 3, tri_element, true);
+
+        REQUIRE(cell->add_node(0, node0) == true);
+        REQUIRE(cell->add_node(1, node1) == true);
+        REQUIRE(cell->add_node(2, node3) == true);
+        REQUIRE(cell->nnodes() == 3);
+
+        // Initialise cell
+        REQUIRE(cell->initialise() == true);
+        REQUIRE(cell->is_initialised() == true);
+
+        // Coordinates of a point in real cell
+        Eigen::Vector2d point;
+        point << 0.5, 1.5;
+
+        // Coordinates of the point in an unit cell
+        Eigen::Matrix<double, 2, 1> point_unit_cell;
+        point_unit_cell << 0.25, 0.75;
+
+        // Get local coordinates of the point
+        auto local_point = cell->local_coordinates_point(point);
         for (unsigned i = 0; i < local_point.size(); ++i)
           REQUIRE(local_point[i] ==
                   Approx(point_unit_cell[i]).epsilon(Tolerance));
@@ -1052,6 +1086,40 @@ TEST_CASE("Cell is checked for 3D case", "[cell][3D]") {
 
         // Use Newton-raphson iteration
         local_point = cell->transform_real_to_unit_cell(point);
+        for (unsigned i = 0; i < local_point.size(); ++i)
+          REQUIRE(local_point[i] ==
+                  Approx(point_unit_cell[i]).epsilon(Tolerance));
+      }
+
+      SECTION(
+          "Find local coordinates of a point in cell with tetrahedron "
+          "element") {
+        // 4-noded tetrahedron shape functions
+        std::shared_ptr<mpm::Element<Dim>> tet_element =
+            Factory<mpm::Element<Dim>>::instance()->create("ED3T4");
+
+        auto cell = std::make_shared<mpm::Cell<Dim>>(0, 4, tet_element, true);
+
+        REQUIRE(cell->add_node(0, node0) == true);
+        REQUIRE(cell->add_node(1, node1) == true);
+        REQUIRE(cell->add_node(2, node3) == true);
+        REQUIRE(cell->add_node(3, node4) == true);
+        REQUIRE(cell->nnodes() == 4);
+
+        // Initialise cell
+        REQUIRE(cell->initialise() == true);
+        REQUIRE(cell->is_initialised() == true);
+
+        // Coordinates of a point in real cell
+        Eigen::Vector3d point;
+        point << 2.0 / 3, 2.0 / 3, 2.0 / 3;
+
+        // Coordinates of the point in an unit cell
+        Eigen::Matrix<double, 3, 1> point_unit_cell;
+        point_unit_cell << 1.0 / 3, 1.0 / 3, 1.0 / 3;
+
+        // Get local coordinates of the point
+        auto local_point = cell->local_coordinates_point(point);
         for (unsigned i = 0; i < local_point.size(); ++i)
           REQUIRE(local_point[i] ==
                   Approx(point_unit_cell[i]).epsilon(Tolerance));

@@ -280,6 +280,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
 
     // Apply friction constraints
     this->apply_friction_constraints(dt);
+    this->apply_cohesion_constraints(dt);
 
     // Velocity += acceleration * dt
     this->velocity_.col(phase).noalias() += this->acceleration_.col(phase) * dt;
@@ -316,6 +317,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
 
     // Apply friction constraints
     this->apply_friction_constraints(dt);
+    this->apply_cohesion_constraints(dt);
 
     // Velocity += acceleration * dt
     this->velocity_.col(phase).noalias() += this->acceleration_.col(phase) * dt;

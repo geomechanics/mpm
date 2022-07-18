@@ -278,7 +278,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
         (this->external_force_.col(phase) + this->internal_force_.col(phase)) /
         this->mass_(phase);
 
-    // Apply friction constraints
+    // Apply friction and cohesion constraints
     this->apply_friction_constraints(dt);
     this->apply_cohesion_constraints(dt);
 
@@ -315,7 +315,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
                                 this->velocity_.col(phase).cwiseSign()) /
         this->mass_(phase);
 
-    // Apply friction constraints
+    // Apply friction and cohesion constraints
     this->apply_friction_constraints(dt);
     this->apply_cohesion_constraints(dt);
 

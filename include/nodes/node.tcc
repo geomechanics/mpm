@@ -694,16 +694,17 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
       if ((acc_n * sign_dir_n) > 0.0) {
         if (vel_t != 0.0) {  // kinetic
           const double vel_net = dt * acc_t + vel_t;
-          const double vel_cohesional = dt * mass_(phase) * su * nodal_area_;
+          const double vel_cohesional =
+              dt * su * nodal_area_ / (double)mass_(phase);
           if (std::abs(vel_net) <= vel_cohesional)
             acc_t = -vel_t / dt;
           else
-            acc_t -= sign(vel_net) * mass_(phase) * su * nodal_area_;
+            acc_t -= sign(vel_net) * su * nodal_area_ / (double)mass_(phase);
         } else {  // static
-          if (std::abs(acc_t) <= mass_(phase) * su * nodal_area_)
+          if (std::abs(acc_t) <= su * nodal_area_ / (double)mass_(phase))
             acc_t = 0.0;
           else
-            acc_t -= sign(acc_t) * mass_(phase) * su * nodal_area_;
+            acc_t -= sign(acc_t) * su * nodal_area_ / (double)mass_(phase);
         }
 
         if (!generic_boundary_constraints_) {
@@ -761,28 +762,30 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
           vel_net(1) = vel(dir_t1) + acc(dir_t1) * dt;
           const double vel_net_t =
               sqrt(vel_net(0) * vel_net(0) + vel_net(1) * vel_net(1));
-          const double vel_cohesion = mass_(phase) * su * nodal_area_ * dt;
+          const double vel_cohesion =
+              dt * su * nodal_area_ / (double)mass_(phase);
 
           if (vel_net_t <= vel_cohesion) {
             acc(dir_t0) = -vel(dir_t0) / dt;
             acc(dir_t1) = -vel(dir_t1) / dt;
           } else {
-            acc(dir_t0) -=
-                mass_(phase) * su * nodal_area_ * (vel_net(0) / vel_net_t);
-            acc(dir_t1) -=
-                mass_(phase) * su * nodal_area_ * (vel_net(1) / vel_net_t);
+            acc(dir_t0) -= (su * nodal_area_ / (double)mass_(phase)) *
+                           (vel_net(0) / vel_net_t);
+            acc(dir_t1) -= (su * nodal_area_ / (double)mass_(phase)) *
+                           (vel_net(1) / vel_net_t);
           }
-        } else {                                           // static
-          if (acc_t <= mass_(phase) * su * nodal_area_) {  // since acc_t is
-                                                           // positive
+        } else {
+          // static
+          if (acc_t <= su * nodal_area_ / (double)mass_(phase)) {
+            // since acc_t is positive
             acc(dir_t0) = 0;
             acc(dir_t1) = 0;
           } else {
-            acc_t -= mass_(phase) * su * nodal_area_;
-            acc(dir_t0) -=
-                mass_(phase) * su * nodal_area_ * (acc(dir_t0) / acc_t);
-            acc(dir_t1) -=
-                mass_(phase) * su * nodal_area_ * (acc(dir_t1) / acc_t);
+            acc_t -= su * nodal_area_ / (double)mass_(phase);
+            acc(dir_t0) -= (su * nodal_area_ / (double)mass_(phase)) *
+                           (acc(dir_t0) / acc_t);
+            acc(dir_t1) -= (su * nodal_area_ / (double)mass_(phase)) *
+                           (acc(dir_t1) / acc_t);
           }
         }
 

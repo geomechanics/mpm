@@ -356,6 +356,14 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_velocity_constraint(
     else
       throw std::runtime_error("Constraint direction is out of bounds");
 
+    // Check if acceleration constraint already defined in same dir
+    for (auto const& acceleration_constraint : acceleration_constraints_) {
+      if (acceleration_constraint.first == dir) {
+        throw std::runtime_error(
+            "Acceleration and velocity constraints set in the same direction "
+            "for the same node");
+      }
+    }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

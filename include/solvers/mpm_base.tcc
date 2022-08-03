@@ -231,11 +231,11 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Read nodal euler angles and assign rotation matrices
   this->node_euler_angles(mesh_props, mesh_io);
 
-  // Read and assign acceleration constraints
-  this->nodal_acceleration_constraints(mesh_props, mesh_io);
-
   // Read and assign velocity constraints
   this->nodal_velocity_constraints(mesh_props, mesh_io);
+
+  // Read and assign acceleration constraints
+  this->nodal_acceleration_constraints(mesh_props, mesh_io);
 
   // Read and assign velocity constraints for implicit solver
   this->nodal_displacement_constraints(mesh_props, mesh_io);

@@ -73,6 +73,23 @@ void mpm::Mesh<Tdim>::iterate_over_nodes(Toper oper) {
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) oper(*nitr);
 }
 
+//! Iterate over particle set
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_node_set(int set_id, Toper oper) {
+  // If set id is -1, use all nodes
+  if (set_id == -1) {
+    this->iterate_over_nodes(oper);
+  } else {
+    // Iterate over the node set
+    auto nodes = node_sets_.at(set_id);
+#pragma omp parallel for schedule(runtime)
+    for (auto nitr = nodes.cbegin(); nitr != nodes.cend(); ++nitr) {
+      oper(*nitr);
+    }
+  }
+}
+
 //! Iterate over nodes
 template <unsigned Tdim>
 template <typename Toper, typename Tpred>
@@ -1366,6 +1383,48 @@ void mpm::Mesh<Tdim>::apply_traction_on_particles(double current_time) {
   }
 }
 
+//! Create nodal acceleration constraints
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_nodal_acceleration_constraint(
+    int set_id,
+    const std::shared_ptr<mpm::AccelerationConstraint>& constraint) {
+  bool status = true;
+  try {
+    if (set_id == -1 || node_sets_.find(set_id) != node_sets_.end()) {
+      // Create a nodal acceleration constraint
+      if (constraint->dir() < Tdim)
+        nodal_acceleration_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error(
+            "Invalid direction of nodal acceleration constraint");
+    } else
+      throw std::runtime_error(
+          "No node set found to assign nodal acceleration constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Update nodal acceleration constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::update_nodal_acceleration_constraints(
+    double current_time) {
+  // Iterate over all nodal acceleration constraints
+  for (const auto& nacceleration : nodal_acceleration_constraints_) {
+    // If set id is -1, use all particles
+    int set_id = nacceleration->setid();
+    unsigned dir = nacceleration->dir();
+    double acceleration = nacceleration->acceleration(current_time);
+
+    this->iterate_over_node_set(
+        set_id, std::bind(&mpm::NodeBase<Tdim>::update_acceleration_constraint,
+                          std::placeholders::_1, dir, acceleration));
+  }
+}
+
 //! Create particle velocity constraints
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::create_particle_velocity_constraint(
@@ -1389,7 +1448,7 @@ bool mpm::Mesh<Tdim>::create_particle_velocity_constraint(
   return status;
 }
 
-//! Apply particle tractions
+//! Apply particle velocity constraints
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
   // Iterate over all particle velocity constraints

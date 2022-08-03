@@ -234,6 +234,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Read and assign velocity constraints
   this->nodal_velocity_constraints(mesh_props, mesh_io);
 
+  // Read and assign acceleration constraints
+  this->nodal_acceleration_constraints(mesh_props, mesh_io);
+
   // Read and assign velocity constraints for implicit solver
   this->nodal_displacement_constraints(mesh_props, mesh_io);
 
@@ -419,8 +422,8 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
       }
     }
   } catch (std::exception& exception) {
-    console_->warn("{} #{}: Material sets are not specified", __FILE__,
-                   __LINE__, exception.what());
+    console_->warn("#{}: Material sets are not specified", __LINE__,
+                   exception.what());
   }
 }
 
@@ -916,6 +919,65 @@ void mpm::MPMBase<Tdim>::node_euler_angles(
   }
 }
 
+// Nodal acceleration constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nodal_acceleration_constraints(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign acceleration constraints
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("acceleration_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+      // Iterate over acceleration constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["acceleration_constraints"]) {
+        // Acceleration constraints are specified in a file
+        if (constraints.find("file") != constraints.end()) {
+          std::string acceleration_constraints_file =
+              constraints.at("file").template get<std::string>();
+          bool acceleration_constraints =
+              constraints_->assign_nodal_acceleration_constraints(
+                  mesh_io->read_acceleration_constraints(
+                      io_->file_name(acceleration_constraints_file)));
+          if (!acceleration_constraints)
+            throw std::runtime_error(
+                "Acceleration constraints are not properly assigned");
+
+        } else {
+          // Set id
+          int nset_id = constraints.at("nset_id").template get<int>();
+          // Direction
+          unsigned dir = constraints.at("dir").template get<unsigned>();
+          // Acceleration
+          double acceleration =
+              constraints.at("acceleration").template get<double>();
+          // Get the math function
+          std::shared_ptr<FunctionBase> afunction = nullptr;
+          if (constraints.find("math_function_id") != constraints.end())
+            afunction = math_functions_.at(
+                constraints.at("math_function_id").template get<unsigned>());
+          // Add acceleration constraint to mesh
+          auto acceleration_constraint =
+              std::make_shared<mpm::AccelerationConstraint>(nset_id, afunction,
+                                                            dir, acceleration);
+          mesh_->create_nodal_acceleration_constraint(nset_id,
+                                                      acceleration_constraint);
+          bool acceleration_constraints =
+              constraints_->assign_nodal_acceleration_constraint(
+                  nset_id, acceleration_constraint);
+          if (!acceleration_constraints)
+            throw std::runtime_error(
+                "Nodal acceleration constraint is not properly assigned");
+        }
+      }
+    } else
+      throw std::runtime_error("Acceleration constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Acceleration constraints are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
 // Nodal velocity constraints
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::nodal_velocity_constraints(
@@ -1032,7 +1094,7 @@ void mpm::MPMBase<Tdim>::nodal_frictional_constraints(
     if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
         mesh_props["boundary_conditions"].find("friction_constraints") !=
             mesh_props["boundary_conditions"].end()) {
-      // Iterate over velocity constraints
+      // Iterate over friction constraints
       for (const auto& constraints :
            mesh_props["boundary_conditions"]["friction_constraints"]) {
         // Friction constraints are specified in a file

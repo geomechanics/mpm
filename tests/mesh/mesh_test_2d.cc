@@ -305,6 +305,62 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
       }
     }
 
+    // Test create nodal acceleration constraint
+    SECTION("Check create nodal acceleration constraint") {
+      tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
+      node_sets[0] = std::vector<mpm::Index>{0, 1};
+
+      REQUIRE(mesh->create_node_sets(node_sets, true) == true);
+
+      int set_id = 0;
+      int dir = 0;
+      double constraint = 1.0;
+      // Add acceleration constraint to mesh
+      auto acceleration_constraint =
+          std::make_shared<mpm::AccelerationConstraint>(set_id, mfunction, dir,
+                                                        constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == true);
+
+      set_id = -1;
+      // Add acceleration constraint to mesh
+      acceleration_constraint = std::make_shared<mpm::AccelerationConstraint>(
+          set_id, mfunction, dir, constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == true);
+
+      // When constraints fail: invalid direction
+      dir = 2;
+      // Add acceleration constraint to mesh
+      acceleration_constraint = std::make_shared<mpm::AccelerationConstraint>(
+          set_id, mfunction, dir, constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == false);
+
+      // When constraints fail: invalid node set
+      set_id = 1;
+      // Add acceleration constraint to mesh
+      acceleration_constraint = std::make_shared<mpm::AccelerationConstraint>(
+          set_id, mfunction, dir, constraint);
+      REQUIRE(mesh->create_nodal_acceleration_constraint(
+                  set_id, acceleration_constraint) == false);
+
+      // Vector of particle coordinates
+      std::vector<std::tuple<mpm::Index, unsigned, double>>
+          acceleration_constraints;
+      //! Constraints object
+      auto constraints = std::make_shared<mpm::Constraints<Dim>>(mesh);
+      // Add acceleration constraint to node
+      acceleration_constraints.emplace_back(std::make_tuple(0, 0, 1.0));
+      REQUIRE(constraints->assign_nodal_acceleration_constraints(
+                  acceleration_constraints) == true);
+
+      double current_time = 0.5;
+      // Update acceleration constraint
+      REQUIRE_NOTHROW(
+          mesh->update_nodal_acceleration_constraints(current_time));
+    }
+
     // Test nonlocal mesh functions
     SECTION("Check nonlocal mesh functions") {
       tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
@@ -1103,6 +1159,59 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
             }
           }
         }
+
+        // Test assign acceleration constraints to nodes
+        SECTION("Check assign acceleration constraints to nodes") {
+          tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
+          node_sets[0] = std::vector<mpm::Index>{0, 2};
+          node_sets[1] = std::vector<mpm::Index>{1, 3};
+          node_sets[2] = std::vector<mpm::Index>{};
+
+          REQUIRE(mesh->create_node_sets(node_sets, true) == true);
+
+          //! Constraints object
+          auto constraints = std::make_shared<mpm::Constraints<Dim>>(mesh);
+
+          int set_id = 0;
+          int dir = 0;
+          double constraint = 1.0;
+          // Add acceleration constraint to mesh
+          auto acceleration_constraint =
+              std::make_shared<mpm::AccelerationConstraint>(set_id, mfunction,
+                                                            dir, constraint);
+          REQUIRE(constraints->assign_nodal_acceleration_constraint(
+                      set_id, acceleration_constraint) == true);
+
+          set_id = 1;
+          dir = 1;
+          constraint = -1.0;
+          // Add acceleration constraint to mesh
+          acceleration_constraint =
+              std::make_shared<mpm::AccelerationConstraint>(set_id, mfunction,
+                                                            dir, constraint);
+          REQUIRE(constraints->assign_nodal_acceleration_constraint(
+                      set_id, acceleration_constraint) == true);
+
+          // When constraints fail: invalid direction
+          dir = 3;
+          // Add acceleration constraint to mesh
+          acceleration_constraint =
+              std::make_shared<mpm::AccelerationConstraint>(set_id, mfunction,
+                                                            dir, constraint);
+          REQUIRE(constraints->assign_nodal_acceleration_constraint(
+                      set_id, acceleration_constraint) == false);
+
+          // When constraints fail: empty node set
+          dir = 0;
+          set_id = 2;
+          // Add acceleration constraint to mesh
+          acceleration_constraint =
+              std::make_shared<mpm::AccelerationConstraint>(set_id, mfunction,
+                                                            dir, constraint);
+          REQUIRE(constraints->assign_nodal_acceleration_constraint(
+                      set_id, acceleration_constraint) == false);
+        }
+
         // Test assign velocity constraints to nodes
         SECTION("Check assign velocity constraints to nodes") {
           tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
@@ -1237,6 +1346,7 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
           a = 2;
           b = 2;
           pos = mpm::Position::Corner;
+
           // Add absorbing constraint to mesh
           absorbing_constraint = std::make_shared<mpm::AbsorbingConstraint>(
               set_id, dir, delta, h_min, a, b, pos);
@@ -1298,6 +1408,28 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
           // Add pressure constraint to all nodes in mesh
           REQUIRE(constraints->assign_nodal_pressure_constraint(
                       mfunction, -1, 0, pressure) == true);
+        }
+
+        // Test assign acceleration constraints to nodes
+        SECTION("Check assign acceleration constraints to nodes") {
+          // Vector of particle coordinates
+          std::vector<std::tuple<mpm::Index, unsigned, double>>
+              acceleration_constraints;
+          //! Constraints object
+          auto constraints = std::make_shared<mpm::Constraints<Dim>>(mesh);
+          // Constraint
+          acceleration_constraints.emplace_back(std::make_tuple(0, 0, 1.5));
+          acceleration_constraints.emplace_back(std::make_tuple(1, 1, -1.5));
+          acceleration_constraints.emplace_back(std::make_tuple(2, 0, -1.5));
+          acceleration_constraints.emplace_back(std::make_tuple(3, 1, 0.0));
+
+          REQUIRE(constraints->assign_nodal_acceleration_constraints(
+                      acceleration_constraints) == true);
+
+          // When constraints fail: invalid direction
+          acceleration_constraints.emplace_back(std::make_tuple(3, 2, 0.0));
+          REQUIRE(constraints->assign_nodal_acceleration_constraints(
+                      acceleration_constraints) == false);
         }
 
         // Test assign velocity constraints to nodes

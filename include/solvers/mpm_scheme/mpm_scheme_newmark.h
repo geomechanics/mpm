@@ -51,7 +51,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] update_defgrad Update deformation gradient
   inline void compute_particle_kinematics(bool velocity_update, unsigned phase,
                                           const std::string& damping_type,
-                                          double damping_factor,
+                                          double damping_factor, unsigned step,
                                           bool update_defgrad) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes

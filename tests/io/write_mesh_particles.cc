@@ -40,12 +40,10 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
         {"isoparametric", false},
         {"node_type", node_type},
         {"boundary_conditions",
-         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -90,7 +88,6 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
         {"dt", 0.001},
         {"uuid", file_name + "-" + dimension},
         {"nsteps", 10},
-        {"boundary_friction", 0.5},
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
@@ -116,7 +113,6 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
 // Write JSON Configuration file for absorbing boundary
 bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,
-                          const std::string& mpm_scheme,
                           const std::string& file_name,
                           const std::string& position, const double delta) {
   // Make json object with input files
@@ -178,8 +174,7 @@ bool write_json_absorbing(unsigned dim, bool resume,
              {"position", position}}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -209,26 +204,317 @@ bool write_json_absorbing(unsigned dim, bool resume,
          {"type", "Linear"},
          {"xvalues", xvalues},
          {"fxvalues", fxvalues}},
-        {{"id", 1}, {"type", "Linear"}, {"file", "math_function.csv"}}}},
+        {{"id", 1}, {"type", "Linear"}, {"file", "math-function.csv"}}}},
       {"analysis",
        {{"type", analysis},
-        {"mpm_scheme", mpm_scheme},
+        {"mpm_scheme", 0.0},
         {"locate_particles", true},
         {"dt", 0.001},
         {"uuid", file_name + "-" + dimension},
-        {"nsteps", 10},
-        {"boundary_friction", 0.5},
+        {"nsteps", 5},
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
           {"step", 5}}},
-        {"damping", {{"type", "Cundall"}, {"damping_factor", 0.02}}},
-        {"newmark", {{"beta", 0.25}, {"gamma", 0.5}}}}},
+        {"damping", {{"type", "Cundall"}, {"damping_factor", "zero-wrong"}}},
+        {"nload_balance_steps", 1000}}},
       {"post_processing",
        {{"path", "results/"},
         {"vtk", {"stresses", "strains", "velocities"}},
-        {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
         {"output_steps", 5}}}};
+
+  // Dump JSON as an input file to be read
+  std::string fname = (file_name + "-" + dimension + ".json").c_str();
+  std::ofstream file;
+  file.open(fname, std::ios_base::out);
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
+// Write JSON Configuration file for acceleration constraint
+bool write_json_acceleration(unsigned dim, bool resume,
+                             const std::string& analysis,
+                             const std::string& file_name, const unsigned dir) {
+  // Make json object with input files
+  // 2D
+  std::string dimension = "2d";
+  auto particle_type = "P2D";
+  auto node_type = "N2D";
+  auto cell_type = "ED2Q4";
+  auto io_type = "Ascii2D";
+  std::string material = "LinearElastic2D";
+  std::vector<double> gravity{{0., 0.}};
+  unsigned material_id = 0;
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    particle_type = "P3D";
+    node_type = "N3D";
+    cell_type = "ED3H8";
+    io_type = "Ascii3D";
+    material = "LinearElastic3D";
+    gravity.clear();
+    gravity = {0., 0., 0.};
+  }
+
+  Json json_file = {{"title", "Example JSON Input for MPM"},
+                    {"mesh",
+                     {{"mesh", "mesh-" + dimension + ".txt"},
+                      {"entity_sets", "entity_sets_2.json"},
+                      {"io_type", io_type},
+                      {"check_duplicates", true},
+                      {"isoparametric", false},
+                      {"node_type", node_type},
+                      {"boundary_conditions",
+                       {{"acceleration_constraints",
+                         {{{"nset_id", 1},
+                           {"dir", dir},
+                           {"math_function_id", 0},
+                           {"acceleration", 1}}}}}},
+                      {"cell_type", cell_type}}},
+                    {"particles",
+                     {{{"generator",
+                        {{"type", "file"},
+                         {"material_id", material_id},
+                         {"pset_id", 0},
+                         {"io_type", io_type},
+                         {"particle_type", particle_type},
+                         {"check_duplicates", true},
+                         {"location", "particles-" + dimension + ".txt"}}}}}},
+                    {"materials",
+                     {
+                         {{"id", 0},
+                          {"type", material},
+                          {"density", 1000.},
+                          {"youngs_modulus", 1.0E+6},
+                          {"poisson_ratio", 0.0}},
+                     }},
+                    {"external_loading_conditions",
+                     {{"gravity", gravity},
+                      {"particle_surface_traction",
+                       {{{"math_function_id", 0},
+                         {"pset_id", -1},
+                         {"dir", 1},
+                         {"traction", 10.5}}}}}},
+                    {"math_functions",
+                     {{{"id", 0},
+                       {"type", "Linear"},
+                       {"xvalues", xvalues},
+                       {"fxvalues", fxvalues}}}},
+                    {"analysis",
+                     {{"type", analysis},
+                      {"mpm_scheme", 0.0},
+                      {"locate_particles", true},
+                      {"dt", 0.001},
+                      {"uuid", file_name + "-" + dimension},
+                      {"nsteps", 5},
+                      {"resume",
+                       {{"resume", resume},
+                        {"uuid", file_name + "-" + dimension},
+                        {"step", 5}}},
+                      {"nload_balance_steps", 1000}}},
+                    {"post_processing",
+                     {{"path", "results/"},
+                      {"vtk", {"stresses", "strains", "velocities"}},
+                      {"output_steps", 5}}}};
+
+  // Dump JSON as an input file to be read
+  std::string fname = (file_name + "-" + dimension + ".json").c_str();
+  std::ofstream file;
+  file.open(fname, std::ios_base::out);
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
+// Write JSON Configuration file for friction constraint
+bool write_json_friction(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& file_name, const unsigned dir) {
+  // Make json object with input files
+  // 2D
+  std::string dimension = "2d";
+  auto particle_type = "P2D";
+  auto node_type = "N2D";
+  auto cell_type = "ED2Q4";
+  auto io_type = "Ascii2D";
+  std::string material = "LinearElastic2D";
+  std::vector<double> gravity{{0., 0.}};
+  unsigned material_id = 0;
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    particle_type = "P3D";
+    node_type = "N3D";
+    cell_type = "ED3H8";
+    io_type = "Ascii3D";
+    material = "LinearElastic3D";
+    gravity.clear();
+    gravity = {0., 0., 0.};
+  }
+
+  Json json_file = {
+      {"title", "Example JSON Input for MPM"},
+      {"mesh",
+       {{"mesh", "mesh-" + dimension + ".txt"},
+        {"entity_sets", "entity_sets_2.json"},
+        {"io_type", io_type},
+        {"check_duplicates", true},
+        {"isoparametric", false},
+        {"node_type", node_type},
+        {"boundary_conditions",
+         {{"friction_constraints",
+           {{{"nset_id", 1}, {"dir", dir}, {"sign_n", -1}, {"friction", 1}}}}}},
+        {"cell_type", cell_type}}},
+      {"particles",
+       {{{"generator",
+          {{"type", "file"},
+           {"material_id", material_id},
+           {"pset_id", 0},
+           {"io_type", io_type},
+           {"particle_type", particle_type},
+           {"check_duplicates", true},
+           {"location", "particles-" + dimension + ".txt"}}}}}},
+      {"materials",
+       {
+           {{"id", 0},
+            {"type", material},
+            {"density", 1000.},
+            {"youngs_modulus", 1.0E+6},
+            {"poisson_ratio", 0.0}},
+       }},
+      {"external_loading_conditions",
+       {{"gravity", gravity},
+        {"particle_surface_traction",
+         {{{"math_function_id", 0},
+           {"pset_id", -1},
+           {"dir", 1},
+           {"traction", 10.5}}}}}},
+      {"math_functions",
+       {{{"id", 0},
+         {"type", "Linear"},
+         {"xvalues", xvalues},
+         {"fxvalues", fxvalues}}}},
+      {"analysis",
+       {{"type", analysis},
+        {"mpm_scheme", 0.0},
+        {"locate_particles", true},
+        {"dt", 0.001},
+        {"uuid", file_name + "-" + dimension},
+        {"nsteps", 5},
+        {"resume",
+         {{"resume", resume},
+          {"uuid", file_name + "-" + dimension},
+          {"step", 5}}},
+        {"nload_balance_steps", 1000}}},
+      {"post_processing",
+       {{"path", "results/"},
+        {"vtk", {"stresses", "strains", "velocities"}},
+        {"output_steps", 5}}}};
+
+  // Dump JSON as an input file to be read
+  std::string fname = (file_name + "-" + dimension + ".json").c_str();
+  std::ofstream file;
+  file.open(fname, std::ios_base::out);
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
+// Write JSON Configuration file for velocity constraint
+bool write_json_velocity(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& file_name, const unsigned dir) {
+  // Make json object with input files
+  // 2D
+  std::string dimension = "2d";
+  auto particle_type = "P2D";
+  auto node_type = "N2D";
+  auto cell_type = "ED2Q4";
+  auto io_type = "Ascii2D";
+  std::string material = "LinearElastic2D";
+  std::vector<double> gravity{{0., 0.}};
+  unsigned material_id = 0;
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    particle_type = "P3D";
+    node_type = "N3D";
+    cell_type = "ED3H8";
+    io_type = "Ascii3D";
+    material = "LinearElastic3D";
+    gravity.clear();
+    gravity = {0., 0., 0.};
+  }
+
+  Json json_file = {{"title", "Example JSON Input for MPM"},
+                    {"mesh",
+                     {{"mesh", "mesh-" + dimension + ".txt"},
+                      {"entity_sets", "entity_sets_2.json"},
+                      {"io_type", io_type},
+                      {"check_duplicates", true},
+                      {"isoparametric", false},
+                      {"node_type", node_type},
+                      {"boundary_conditions",
+                       {{"velocity_constraints",
+                         {{{"nset_id", 1}, {"dir", dir}, {"velocity", 1}}}}}},
+                      {"cell_type", cell_type}}},
+                    {"particles",
+                     {{{"generator",
+                        {{"type", "file"},
+                         {"material_id", material_id},
+                         {"pset_id", 0},
+                         {"io_type", io_type},
+                         {"particle_type", particle_type},
+                         {"check_duplicates", true},
+                         {"location", "particles-" + dimension + ".txt"}}}}}},
+                    {"materials",
+                     {
+                         {{"id", 0},
+                          {"type", material},
+                          {"density", 1000.},
+                          {"youngs_modulus", 1.0E+6},
+                          {"poisson_ratio", 0.0}},
+                     }},
+                    {"external_loading_conditions",
+                     {{"gravity", gravity},
+                      {"particle_surface_traction",
+                       {{{"math_function_id", 0},
+                         {"pset_id", -1},
+                         {"dir", 1},
+                         {"traction", 10.5}}}}}},
+                    {"math_functions",
+                     {{{"id", 0},
+                       {"type", "Linear"},
+                       {"xvalues", xvalues},
+                       {"fxvalues", fxvalues}}}},
+                    {"analysis",
+                     {{"type", analysis},
+                      {"mpm_scheme", 0.0},
+                      {"locate_particles", true},
+                      {"dt", 0.001},
+                      {"uuid", file_name + "-" + dimension},
+                      {"nsteps", 5},
+                      {"resume",
+                       {{"resume", resume},
+                        {"uuid", file_name + "-" + dimension},
+                        {"step", 5}}},
+                      {"nload_balance_steps", 1000}}},
+                    {"post_processing",
+                     {{"path", "results/"},
+                      {"vtk", {"stresses", "strains", "velocities"}},
+                      {"output_steps", 5}}}};
 
   // Dump JSON as an input file to be read
   std::string fname = (file_name + "-" + dimension + ".json").c_str();
@@ -280,12 +566,10 @@ bool write_json_finite_strain(unsigned dim, bool resume,
         {"isoparametric", false},
         {"node_type", node_type},
         {"boundary_conditions",
-         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -330,7 +614,6 @@ bool write_json_finite_strain(unsigned dim, bool resume,
         {"dt", 0.001},
         {"uuid", file_name + "-" + dimension},
         {"nsteps", 10},
-        {"boundary_friction", 0.5},
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
@@ -404,8 +687,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
          {{"type", "BSPLINE"},
           {"node_types", {{{"nset_id", 1}, {"dir", 0}, {"type", 1}}}}}}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -545,8 +827,7 @@ bool write_json_implicit_finite_strain(unsigned dim, bool resume,
          {{"type", "BSPLINE"},
           {"node_types", {{{"nset_id", 1}, {"dir", 0}, {"type", 1}}}}}}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -681,12 +962,10 @@ bool write_json_navierstokes(unsigned dim, bool resume,
         {"boundary_conditions",
          {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
           {"pressure_constraints",
-           {{{"phase_id", 0}, {"nset_id", 1}, {"pressure", 0.0}}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+           {{{"phase_id", 0}, {"nset_id", 1}, {"pressure", 0.0}}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -731,7 +1010,6 @@ bool write_json_navierstokes(unsigned dim, bool resume,
         {"dt", 0.0001},
         {"uuid", file_name + "-" + dimension},
         {"nsteps", 10},
-        {"boundary_friction", 0.5},
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
@@ -815,14 +1093,12 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
         {"boundary_conditions",
          {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
           {"pressure_constraints",
-           {{{"phase_id", 1}, {"nset_id", 1}, {"pressure", 0.0}}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+           {{{"phase_id", 1}, {"nset_id", 1}, {"pressure", 0.0}}}}}},
         {"cell_type", cell_type},
         {"particles_pore_pressures",
          {{"type", "isotropic"}, {"values", 0.0}}}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -887,7 +1163,6 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
         {"dt", 0.0001},
         {"uuid", file_name + "-" + dimension},
         {"nsteps", 10},
-        {"boundary_friction", 0.5},
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
@@ -1063,27 +1338,27 @@ bool write_particles_2d() {
   particle << 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 1
-  particle << 0.25, 0.125;
+  particle << 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 2
-  particle << 0.25, 0.25;
+  particle << 0.375, 0.375;
   coordinates.emplace_back(particle);
   // Particle 3
-  particle << 0.125, 0.25;
+  particle << 0.125, 0.375;
   coordinates.emplace_back(particle);
 
   // Cell 1
   // Particle 4
-  particle << 0.675, 0.125;
+  particle << 0.625, 0.125;
   coordinates.emplace_back(particle);
   // Particle 5
-  particle << 0.85, 0.125;
+  particle << 0.875, 0.125;
   coordinates.emplace_back(particle);
   // Particle 6
-  particle << 0.85, 0.25;
+  particle << 0.875, 0.375;
   coordinates.emplace_back(particle);
   // Particle 7
-  particle << 0.675, 0.25;
+  particle << 0.625, 0.375;
   coordinates.emplace_back(particle);
 
   // Dump particles coordinates as an input file to be read
@@ -1219,51 +1494,51 @@ bool write_particles_3d() {
   particle << 0.125, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 1
-  particle << 0.25, 0.125, 0.125;
+  particle << 0.375, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 2
-  particle << 0.25, 0.25, 0.125;
+  particle << 0.375, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 3
-  particle << 0.125, 0.25, 0.125;
+  particle << 0.125, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 4
-  particle << 0.125, 0.125, 0.25;
+  particle << 0.125, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 5
-  particle << 0.25, 0.125, 0.25;
+  particle << 0.375, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 6
-  particle << 0.25, 0.25, 0.25;
+  particle << 0.375, 0.375, 0.375;
   coordinates.emplace_back(particle);
   // Particle 7
-  particle << 0.125, 0.25, 0.25;
+  particle << 0.125, 0.375, 0.375;
   coordinates.emplace_back(particle);
 
   // Cell 1
   // Particle 8
-  particle << 0.675, 0.125, 0.125;
+  particle << 0.625, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 9
-  particle << 0.85, 0.125, 0.125;
+  particle << 0.875, 0.125, 0.125;
   coordinates.emplace_back(particle);
   // Particle 10
-  particle << 0.85, 0.25, 0.125;
+  particle << 0.875, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 11
-  particle << 0.675, 0.25, 0.125;
+  particle << 0.625, 0.375, 0.125;
   coordinates.emplace_back(particle);
   // Particle 12
-  particle << 0.675, 0.125, 0.25;
+  particle << 0.675, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 13
-  particle << 0.85, 0.125, 0.25;
+  particle << 0.875, 0.125, 0.375;
   coordinates.emplace_back(particle);
   // Particle 14
-  particle << 0.85, 0.25, 0.25;
+  particle << 0.875, 0.375, 0.375;
   coordinates.emplace_back(particle);
   // Particle 15
-  particle << 0.675, 0.25, 0.25;
+  particle << 0.675, 0.375, 0.375;
   coordinates.emplace_back(particle);
 
   // Dump particles coordinates as an input file to be read
@@ -1295,7 +1570,7 @@ bool write_math_function() {
   file.open("math-function.csv");
   // Write math function file
   for (const auto& math_fn : math_function) {
-    file << std::get<0>(math_fn) << "\t";
+    file << std::get<0>(math_fn) << ",";
     file << std::get<1>(math_fn) << "\t";
 
     file << "\n";

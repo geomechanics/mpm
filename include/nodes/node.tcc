@@ -597,9 +597,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
   if (cohesion_) {
-    auto sign = [](double value) {
-      return (value > 0.) ? 1. : -1.;
-    };  // LEDT TODO what is this ?
+    auto sign = [](double value) { return (value > 0.) ? 1. : -1.; };
 
     // Set cohesion constraint
     // Direction value in the constraint (0, Dim)
@@ -627,7 +625,6 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
 
     // Calculate area associated with node
     try {
-      // LEDT TODO only works for quad/hex with equal side lengths
       if (Tdim == 2) {  // STRUCTURED SQUARE QUADRILATERALS
         // plane-strain: use unit length in 2D
         switch (nposition) {
@@ -694,17 +691,16 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
       if ((acc_n * sign_dir_n) > 0.0) {
         if (vel_t != 0.0) {  // kinetic
           const double vel_net = dt * acc_t + vel_t;
-          const double vel_cohesional =
-              dt * su * nodal_area_ / (double)mass_(phase);
+          const double vel_cohesional = dt * su * nodal_area_ / mass_(phase);
           if (std::abs(vel_net) <= vel_cohesional)
             acc_t = -vel_t / dt;
           else
-            acc_t -= sign(vel_net) * su * nodal_area_ / (double)mass_(phase);
+            acc_t -= sign(vel_net) * su * nodal_area_ / mass_(phase);
         } else {  // static
-          if (std::abs(acc_t) <= su * nodal_area_ / (double)mass_(phase))
+          if (std::abs(acc_t) <= su * nodal_area_ / mass_(phase))
             acc_t = 0.0;
           else
-            acc_t -= sign(acc_t) * su * nodal_area_ / (double)mass_(phase);
+            acc_t -= sign(acc_t) * su * nodal_area_ / mass_(phase);
         }
 
         if (!generic_boundary_constraints_) {
@@ -720,7 +716,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
           this->acceleration_.col(phase) = rotation_matrix_ * acc.col(phase);
         }
       }
-    } else if (Tdim == 3) {  // LEDT TODO check 3D case
+    } else if (Tdim == 3) {
       Eigen::Matrix<int, 3, 2> dir;
       dir(0, 0) = 1;
       dir(0, 1) = 2;  // tangential directions for dir_n = 0
@@ -762,30 +758,29 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
           vel_net(1) = vel(dir_t1) + acc(dir_t1) * dt;
           const double vel_net_t =
               sqrt(vel_net(0) * vel_net(0) + vel_net(1) * vel_net(1));
-          const double vel_cohesion =
-              dt * su * nodal_area_ / (double)mass_(phase);
+          const double vel_cohesion = dt * su * nodal_area_ / mass_(phase);
 
           if (vel_net_t <= vel_cohesion) {
             acc(dir_t0) = -vel(dir_t0) / dt;
             acc(dir_t1) = -vel(dir_t1) / dt;
           } else {
-            acc(dir_t0) -= (su * nodal_area_ / (double)mass_(phase)) *
-                           (vel_net(0) / vel_net_t);
-            acc(dir_t1) -= (su * nodal_area_ / (double)mass_(phase)) *
-                           (vel_net(1) / vel_net_t);
+            acc(dir_t0) -=
+                (su * nodal_area_ / mass_(phase)) * (vel_net(0) / vel_net_t);
+            acc(dir_t1) -=
+                (su * nodal_area_ / mass_(phase)) * (vel_net(1) / vel_net_t);
           }
         } else {
           // static
-          if (acc_t <= su * nodal_area_ / (double)mass_(phase)) {
+          if (acc_t <= su * nodal_area_ / mass_(phase)) {
             // since acc_t is positive
             acc(dir_t0) = 0;
             acc(dir_t1) = 0;
           } else {
-            acc_t -= su * nodal_area_ / (double)mass_(phase);
-            acc(dir_t0) -= (su * nodal_area_ / (double)mass_(phase)) *
-                           (acc(dir_t0) / acc_t);
-            acc(dir_t1) -= (su * nodal_area_ / (double)mass_(phase)) *
-                           (acc(dir_t1) / acc_t);
+            acc_t -= su * nodal_area_ / mass_(phase);
+            acc(dir_t0) -=
+                (su * nodal_area_ / mass_(phase)) * (acc(dir_t0) / acc_t);
+            acc(dir_t1) -=
+                (su * nodal_area_ / mass_(phase)) * (acc(dir_t1) / acc_t);
           }
         }
 

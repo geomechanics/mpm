@@ -1108,7 +1108,7 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         node->apply_cohesion_constraints(dt);
 
         // Check apply constraints
-        acceleration << 7.5, -6.; //LEDT TODO REMOVE changed by: -2.5, 0.
+        acceleration << 7.5, -6.;  // LEDT TODO REMOVE changed by: -2.5, 0.
         for (unsigned i = 0; i < acceleration.size(); ++i) {
           std::cout << "mass: " << node->mass(Nphase) << std::endl;
           std::cout << "cartesian: " << node->acceleration(Nphase)(i)
@@ -1116,7 +1116,7 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
           REQUIRE(node->acceleration(Nphase)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
-        //std::exit(1); //LEDT TODO REMOVE
+        // std::exit(1); //LEDT TODO REMOVE
       }
 
       SECTION("Check general cohesion constraints in 1 direction") {
@@ -1142,17 +1142,7 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         node->assign_rotation_matrix(rotation_matrix);
         const auto inverse_rotation_matrix = rotation_matrix.inverse();
 
-        // Apply acceleration constraint
-        REQUIRE(node->assign_acceleration_constraint(0, 0.) == true);
-        REQUIRE(node->assign_acceleration_constraint(1, 1.) == true);
 
-        node->apply_acceleration_constraints();
-
-        // Check apply constraints
-        acceleration << -0.642787609686539, 0.766044443118978;
-        for (unsigned i = 0; i < acceleration.size(); ++i)
-          REQUIRE(node->acceleration(Nphase)(i) ==
-                  Approx(acceleration(i)).epsilon(Tolerance));
       }
 
       SECTION("Check Cartesian acceleration constraints") {
@@ -1852,11 +1842,11 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
         // Apply general cohesion constraints
         node->apply_cohesion_constraints(dt);
 
-        // // Check applied constraints on acceleration in the global coordinates
-        // acceleration << -0.02706329387, -9.794375, 0.;
-        // for (unsigned i = 0; i < Dim; ++i) {
-        //   std::cout << "global3d: " << node->acceleration(Nphase)(i) << std::endl;
-        //   REQUIRE(node->acceleration(Nphase)(i) ==
+        // // Check applied constraints on acceleration in the global
+        // coordinates acceleration << -0.02706329387, -9.794375, 0.; for
+        // (unsigned i = 0; i < Dim; ++i) {
+        //   std::cout << "global3d: " << node->acceleration(Nphase)(i) <<
+        //   std::endl; REQUIRE(node->acceleration(Nphase)(i) ==
         //           Approx(acceleration(i)).epsilon(Tolerance));
         // } //  LEDT TODO FIX
 

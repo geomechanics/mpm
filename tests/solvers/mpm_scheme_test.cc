@@ -195,13 +195,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        true, phase, "Cundall", 0.02, false));
+        true, phase, "Cundall", 0.02, step, false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        false, phase, "Cundall", 0.02, false));
+        false, phase, "Cundall", 0.02, step, false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(true, phase, "None",
-                                                            0.02, false));
+                                                            0.02, step, false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        false, phase, "None", 0.02, false));
+        false, phase, "None", 0.02, step, false));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
@@ -236,13 +236,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        true, phase, "Cundall", 0.02, true));
+        true, phase, "Cundall", 0.02, step, true));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        false, phase, "Cundall", 0.02, true));
+        false, phase, "Cundall", 0.02, step, true));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(true, phase, "None",
-                                                            0.02, true));
+                                                            0.02, step, true));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        false, phase, "None", 0.02, true));
+        false, phase, "None", 0.02, step, true));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
@@ -277,13 +277,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        true, phase, "Cundall", 0.02, true));
+        true, phase, "Cundall", 0.02, step, true));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        false, phase, "Cundall", 0.02, true));
+        false, phase, "Cundall", 0.02, step, true));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(true, phase, "None",
-                                                            0.02, true));
+                                                            0.02, step, true));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        false, phase, "None", 0.02, true));
+        false, phase, "None", 0.02, step, true));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
@@ -324,9 +324,9 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(true, phase, "None",
-                                                            0.02, true));
+                                                            0.02, step, true));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(true, phase, "None",
-                                                            0.02, false));
+                                                            0.02, step, false));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));

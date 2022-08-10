@@ -68,7 +68,7 @@ class MPMScheme {
   //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
       bool velocity_update, unsigned phase, const std::string& damping_type,
-      double damping_factor, bool update_defgrad);
+      double damping_factor, unsigned step, bool update_defgrad);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] phase Phase to smooth pressure

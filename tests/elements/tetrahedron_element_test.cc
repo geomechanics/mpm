@@ -675,5 +675,30 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       // Check number of faces
       REQUIRE(tet->nfaces() == 4);
     }
+
+    // Global Point Coordinates (1/3, 1/3, 1/3)
+    // Nodal Coordinates [0 0 0; 1 0 0; 0 1 0; 0 0 1]
+    SECTION("Four noded tetrahedron natural coordinates of a point") {
+
+      // Nodal coords
+      Eigen::Matrix<double, 4, Dim> nodal_coords;
+      // clang-format off
+      nodal_coords << 0., 0., 0.,
+                      1., 0., 0.,
+                      0., 1., 0.,
+                      0., 0., 1.;
+      // clang-format on
+
+      // Point coords (global)
+      Eigen::Matrix<double, Dim, 1> point_coords;
+      point_coords << 1.0 / 3, 1.0 / 3, 1.0 / 3;
+
+      // Check xi
+      auto xi = tet->natural_coordinates_analytical(point_coords, nodal_coords);
+      REQUIRE(xi.size() == 3);
+      REQUIRE(xi(0) == Approx(1.0 / 3).epsilon(Tolerance));
+      REQUIRE(xi(1) == Approx(1.0 / 3).epsilon(Tolerance));
+      REQUIRE(xi(2) == Approx(1.0 / 3).epsilon(Tolerance));
+    }
   }
 }

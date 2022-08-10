@@ -108,9 +108,6 @@ TEST_CASE("IO is checked for input parsing", "[IO][JSON]") {
     // Check analysis soil_particle_spacing
     REQUIRE(analysis["soil_particle_spacing"] ==
             json_file["analysis"]["soil_particle_spacing"]);
-    // Check analysis boundary_friction
-    REQUIRE(analysis["boundary_friction"] ==
-            json_file["analysis"]["boundary_friction"]);
     // Check analysis gravity
     REQUIRE(analysis["damping"] == json_file["analysis"]["damping"]);
     // Check analysis gravity

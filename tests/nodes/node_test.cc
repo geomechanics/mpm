@@ -1076,6 +1076,42 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
           REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
       }
+
+      SECTION("Check Cartesian acceleration constraints") {
+        // Apply acceleration constraint
+        REQUIRE(node->assign_acceleration_constraint(0, 0.) == true);
+        REQUIRE(node->assign_acceleration_constraint(1, 1.) == true);
+
+        node->apply_acceleration_constraints();
+
+        // Check apply constraints
+        acceleration << 0., 1.;
+        for (unsigned i = 0; i < acceleration.size(); ++i)
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+      }
+
+      SECTION("Check general acceleration constraints") {
+        // Apply rotation matrix with Euler angles alpha = 10 deg, beta = 30 deg
+        Eigen::Matrix<double, Dim, 1> euler_angles;
+        euler_angles << 10. * M_PI / 180, 30. * M_PI / 180;
+        const auto rotation_matrix =
+            mpm::geometry::rotation_matrix(euler_angles);
+        node->assign_rotation_matrix(rotation_matrix);
+        const auto inverse_rotation_matrix = rotation_matrix.inverse();
+
+        // Apply acceleration constraint
+        REQUIRE(node->assign_acceleration_constraint(0, 0.) == true);
+        REQUIRE(node->assign_acceleration_constraint(1, 1.) == true);
+
+        node->apply_acceleration_constraints();
+
+        // Check apply constraints
+        acceleration << -0.642787609686539, 0.766044443118978;
+        for (unsigned i = 0; i < acceleration.size(); ++i)
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+      }
     }
 
     SECTION("Check node material ids") {
@@ -1673,6 +1709,46 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
         acceleration << 6.878925666702865, 3.365244416454818, 2.302228080558999;
         for (unsigned i = 0; i < Dim; ++i)
           REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+      }
+
+      SECTION("Check Cartesian acceleration constraints") {
+        // Apply acceleration constraint
+        REQUIRE(node->assign_acceleration_constraint(0, 0.) == true);
+        REQUIRE(node->assign_acceleration_constraint(1, 1.) == true);
+        REQUIRE(node->assign_acceleration_constraint(2, 2.) == true);
+
+        node->apply_acceleration_constraints();
+
+        // Check apply constraints
+        acceleration << 0., 1., 2.;
+        for (unsigned i = 0; i < acceleration.size(); ++i)
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+      }
+
+      SECTION("Check general acceleration constraints") {
+        // Apply rotation matrix with Euler angles alpha = 10 deg, beta = 20 deg
+        // and gamma = 30 deg
+        Eigen::Matrix<double, Dim, 1> euler_angles;
+        euler_angles << 10. * M_PI / 180, 20. * M_PI / 180, 30. * M_PI / 180;
+        const auto rotation_matrix =
+            mpm::geometry::rotation_matrix(euler_angles);
+        node->assign_rotation_matrix(rotation_matrix);
+        const auto inverse_rotation_matrix = rotation_matrix.inverse();
+
+        // Apply acceleration constraint
+        REQUIRE(node->assign_acceleration_constraint(0, 0.) == true);
+        REQUIRE(node->assign_acceleration_constraint(1, 1.) == true);
+        REQUIRE(node->assign_acceleration_constraint(2, 2.) == true);
+
+        node->apply_acceleration_constraints();
+
+        // Check apply constraints
+        acceleration << -0.304490395522427, -0.242764661649871,
+            2.20189711796183;
+        for (unsigned i = 0; i < acceleration.size(); ++i)
+          REQUIRE(node->acceleration(Nphase)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
       }
     }

@@ -1142,7 +1142,26 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         node->assign_rotation_matrix(rotation_matrix);
         const auto inverse_rotation_matrix = rotation_matrix.inverse();
 
+        // Apply general cohesion constraints
+        node->apply_cohesion_constraints(dt);
 
+        // Check applied constraints on acceleration in the global coordinates
+        acceleration << -0.2165063509, -9.685;
+        for (unsigned i = 0; i < Dim; ++i) {
+          std::cout << "global: " << node->acceleration(Nphase)(i) << std::endl;
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+
+        // Check the acceleration in local coordinates
+        acceleration << 4.655, -8.49571;
+        for (unsigned i = 0; i < Dim; ++i) {
+          std::cout << "local: "
+                    << (inverse_rotation_matrix * node->acceleration(Nphase))(i)
+                    << std::endl;
+          REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
       }
 
       SECTION("Check Cartesian acceleration constraints") {

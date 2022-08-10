@@ -509,6 +509,13 @@ TEST_CASE("Twophase Node is checked for 1D case", "[node][1D][2Phase]") {
       REQUIRE(node->assign_friction_constraint(-1, 1., 0.5) == false);
       REQUIRE(node->assign_friction_constraint(3, 1., 0.5) == false);
 
+      // Apply cohesion constraints
+      REQUIRE(node->assign_cohesion_constraint(0, -1., 1000, 0.25, 2) == true);
+      // Apply cohesion constraints
+      REQUIRE(node->assign_cohesion_constraint(-1, -1., 1000, 0.25, 2) ==
+              false);
+      REQUIRE(node->assign_cohesion_constraint(3, -1., 1000, 0.25, 2) == false);
+
       // Test acceleration with constraints
       solid_acceleration[0] = 0.5 * solid_acceleration[0];
       liquid_acceleration[0] = 0.5 * liquid_acceleration[0];

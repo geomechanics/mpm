@@ -1,3 +1,4 @@
+#include <iostream>
 //! Constructor with id, coordinates and dof
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 mpm::Node<Tdim, Tdof, Tnphases>::Node(
@@ -86,7 +87,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_concentrated_force(
   try {
     if (phase >= Tnphases || direction >= Tdim) {
       throw std::runtime_error(
-          "Cannot assign nodal concentrated forcey: Direction / phase is "
+          "Cannot assign nodal concentrated forcego: Direction / phase is "
           "invalid");
     }
     // Assign concentrated force
@@ -706,6 +707,8 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
 
     // Acceleration and velocity
     double acc_n, acc_t, vel_n, vel_t;
+    double acc_t_old;  // LEDT TODO REMOVE (debug only)
+    int case_var;      // LEDT TODO REMOVE (debug only)
 
     // Nodal area
     double nodal_area_;
@@ -754,6 +757,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
         // Normal and tangential acceleration
         acc_n = this->acceleration_(dir_n, phase);
         acc_t = this->acceleration_(dir_t, phase);
+        acc_t_old = acc_t;  // LEDT TODO REMOVE (debug only)
         // Normal and tangential velocity
         vel_n = this->velocity_(dir_n, phase);
         vel_t = this->velocity_(dir_t, phase);
@@ -770,24 +774,33 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
         // Normal and tangential acceleration
         acc_n = local_acceleration(dir_n, phase);
         acc_t = local_acceleration(dir_t, phase);
+        acc_t_old = acc_t;  // LEDT TODO REMOVE (debug only)
         // Normal and tangential velocity
         vel_n = this->velocity_(dir_n, phase);
         vel_t = this->velocity_(dir_t, phase);
       }
 
+      std::cout << "acc_n: " << acc_n << std::endl;
+      std::cout << "vel_t: " << vel_t << std::endl;
       if ((acc_n * sign_dir_n) > 0.0) {
         if (vel_t != 0.0) {  // kinetic
           const double vel_net = dt * acc_t + vel_t;
           const double vel_cohesional = dt * su * nodal_area_ / mass_(phase);
-          if (std::abs(vel_net) <= vel_cohesional)
+          if (std::abs(vel_net) <= vel_cohesional) {
             acc_t = -vel_t / dt;
-          else
+            case_var = 4;  // LEDT TODO REMOVE (debug only)
+          } else {
             acc_t -= sign(vel_net) * su * nodal_area_ / mass_(phase);
+            case_var = 3;  // LEDT TODO REMOVE (debug only)
+          }
         } else {  // static
-          if (std::abs(acc_t) <= su * nodal_area_ / mass_(phase))
+          if (std::abs(acc_t) <= su * nodal_area_ / mass_(phase)) {
             acc_t = 0.0;
-          else
+            case_var = 2;  // LEDT TODO REMOVE (debug only)
+          } else {
             acc_t -= sign(acc_t) * su * nodal_area_ / mass_(phase);
+            case_var = 1;  // LEDT TODO REMOVE (debug only)
+          }
         }
 
         if (!generic_boundary_constraints_) {
@@ -802,6 +815,11 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
           // General case, transform to global coordinate
           this->acceleration_.col(phase) = rotation_matrix_ * acc.col(phase);
         }
+
+        double LEDT_NFc = (acc_t - acc_t_old) * mass_(phase);
+        // std::cout << this->id_ << "," << LEDT_NFc << "," << case_var << ","
+        //           << std::endl;
+        std::cout << this->id_ << "," << LEDT_NFc << "," << std::endl;
       }
     } else if (Tdim == 3) {
       Eigen::Matrix<int, 3, 2> dir;
@@ -815,11 +833,12 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
       const unsigned dir_t0 = dir(dir_n, 0);
       const unsigned dir_t1 = dir(dir_n, 1);
 
-      Eigen::Matrix<double, Tdim, 1> acc, vel;
+      Eigen::Matrix<double, Tdim, 1> acc, vel, acc_old3d;  // LEDT
       if (!generic_boundary_constraints_) {
         // Cartesian case
         acc = this->acceleration_.col(phase);
         vel = this->velocity_.col(phase);
+        acc_old3d = acc;  // LEDT TODO REMOVE (debug only)
       } else {
         // General case, transform to local coordinate
         // Compute inverse rotation matrix
@@ -828,6 +847,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
         // Transform to local coordinate
         acc = inverse_rotation_matrix * this->acceleration_.col(phase);
         vel = inverse_rotation_matrix * this->velocity_.col(phase);
+        acc_old3d = acc;  // LEDT TODO REMOVE (debug only)
       }
 
       const auto acc_n = acc(dir_n);
@@ -850,11 +870,13 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
           if (vel_net_t <= vel_cohesion) {
             acc(dir_t0) = -vel(dir_t0) / dt;
             acc(dir_t1) = -vel(dir_t1) / dt;
+            case_var = 4;  // LEDT TODO REMOVE (debug only)
           } else {
             acc(dir_t0) -=
                 (su * nodal_area_ / mass_(phase)) * (vel_net(0) / vel_net_t);
             acc(dir_t1) -=
                 (su * nodal_area_ / mass_(phase)) * (vel_net(1) / vel_net_t);
+            case_var = 3;  // LEDT TODO REMOVE (debug only)
           }
         } else {
           // static
@@ -862,12 +884,14 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
             // since acc_t is positive
             acc(dir_t0) = 0;
             acc(dir_t1) = 0;
+            case_var = 2;  // LEDT TODO REMOVE (debug only)
           } else {
             acc_t -= su * nodal_area_ / mass_(phase);
             acc(dir_t0) -=
                 (su * nodal_area_ / mass_(phase)) * (acc(dir_t0) / acc_t);
             acc(dir_t1) -=
                 (su * nodal_area_ / mass_(phase)) * (acc(dir_t1) / acc_t);
+            case_var = 1;  // LEDT TODO REMOVE (debug only)
           }
         }
 
@@ -879,6 +903,11 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
           this->acceleration_.col(phase) = rotation_matrix_ * acc;
         }
       }
+
+      double LEDT_NFc3d = (acc(dir_t0) - acc_old3d(dir_t0)) * mass_(phase);
+      // std::cout << this->id_ << "," << LEDT_NFc3d << "," << case_var << ","
+      //           << std::endl;
+      std::cout << this->id_ << "," << LEDT_NFc3d << "," << std::endl;
     }
   }
 }

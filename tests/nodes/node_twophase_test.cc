@@ -2661,7 +2661,7 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         node->apply_cohesion_constraints(dt);
 
         // Check apply constraints
-        acceleration << 9.375, -6., 0.;
+        acceleration << 9.3333333333, -6., 0.;
         for (unsigned i = 0; i < acceleration.size(); ++i) {
           std::cout << "mass: " << node->mass(mpm::NodePhase::NSolid)
                     << std::endl;
@@ -2701,18 +2701,18 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         // Apply general cohesion constraints
         node->apply_cohesion_constraints(dt);
 
-        // // Check applied constraints on acceleration in the global
-        // coordinates acceleration << -0.02706329387, -9.794375, 0.;
-        // for (unsigned i = 0; i < Dim; ++i) {
-        //   std::cout << "global3d: "
-        //             << node->acceleration(mpm::NodePhase::NSolid)(i)
-        //             << std::endl;
-        //   REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
-        //           Approx(acceleration(i)).epsilon(Tolerance));
-        // }  //  LEDT TODO FIX
+        // Check applied constraints on acceleration in the global coordinates
+        acceleration << -0.027236821, -9.7942748, 0.;
+        for (unsigned i = 0; i < Dim; ++i) {
+          std::cout << "global3d: "
+                    << node->acceleration(mpm::NodePhase::NSolid)(i)
+                    << std::endl;
+          REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
 
         // Check the acceleration in local coordinates
-        acceleration << 4.87375, -8.495709211, 0.;
+        acceleration << 4.873549628, -8.495709211, 0.;
         for (unsigned i = 0; i < Dim; ++i) {
           std::cout << "local3d: "
                     << (inverse_rotation_matrix *

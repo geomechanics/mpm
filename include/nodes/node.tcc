@@ -744,6 +744,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
             break;
         }
       }
+      std::cout << "nodal_area_: " << nodal_area_ << std::endl;
     } catch (std::exception& exception) {
       console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     }
@@ -802,6 +803,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
             case_var = 1;  // LEDT TODO REMOVE (debug only)
           }
         }
+        std::cout << "case_var: " << case_var << std::endl;
 
         if (!generic_boundary_constraints_) {
           // Cartesian case
@@ -856,6 +858,8 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
       const auto vel_t =
           std::sqrt(vel(dir_t0) * vel(dir_t0) + vel(dir_t1) * vel(dir_t1));
 
+      std::cout << "acc_n: " << acc_n << std::endl;
+      std::cout << "vel_t: " << vel_t << std::endl;
       if (acc_n * sign_dir_n > 0.0) {
         // kinetic
         if (vel_t != 0.0) {
@@ -887,13 +891,23 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
             case_var = 2;  // LEDT TODO REMOVE (debug only)
           } else {
             acc_t -= su * nodal_area_ / mass_(phase);
+            std::cout << "1_acc_t: " << acc_t << std::endl;
+            std::cout << "p_acc(dir_t0): " << acc(dir_t0) << std::endl;
+            std::cout << "p_acc(dir_t1): " << acc(dir_t1) << std::endl;
             acc(dir_t0) -=
                 (su * nodal_area_ / mass_(phase)) * (acc(dir_t0) / acc_t);
             acc(dir_t1) -=
                 (su * nodal_area_ / mass_(phase)) * (acc(dir_t1) / acc_t);
+            std::cout << "1_acc(dir_t0): " << acc(dir_t0) << ","
+                      << (su * nodal_area_ / mass_(phase)) << ","
+                      << (acc(dir_t0) / acc_t) << std::endl;
+            std::cout << "1_acc(dir_t1): " << acc(dir_t1) << ","
+                      << (su * nodal_area_ / mass_(phase)) << ","
+                      << (acc(dir_t1) / acc_t) << std::endl;
             case_var = 1;  // LEDT TODO REMOVE (debug only)
           }
         }
+        std::cout << "case_var: " << case_var << std::endl;
 
         if (!generic_boundary_constraints_) {
           // Cartesian case

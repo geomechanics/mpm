@@ -1823,7 +1823,8 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
         node->apply_cohesion_constraints(dt);
 
         // Check apply constraints
-        acceleration << 9.375, -6., 0.;
+        // 10-0.625*(10/(10-0.625))), -6., 0.
+        acceleration << 9.3333333333, -6., 0.;
         for (unsigned i = 0; i < acceleration.size(); ++i) {
           std::cout << "mass: " << node->mass(Nphase) << std::endl;
           std::cout << "cartesian3d: " << node->acceleration(Nphase)(i)
@@ -1861,16 +1862,20 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
         // Apply general cohesion constraints
         node->apply_cohesion_constraints(dt);
 
-        // // Check applied constraints on acceleration in the global
-        // coordinates acceleration << -0.02706329387, -9.794375, 0.; for
-        // (unsigned i = 0; i < Dim; ++i) {
-        //   std::cout << "global3d: " << node->acceleration(Nphase)(i) <<
-        //   std::endl; REQUIRE(node->acceleration(Nphase)(i) ==
-        //           Approx(acceleration(i)).epsilon(Tolerance));
-        // } //  LEDT TODO FIX
+        // Check applied constraints on acceleration in the global coordinates
+        // x=x'*cos(30)+y'*sin(30), y=y'*cos(30)-x'*sin(30)
+        // -0.02723682102, -9.794274814
+        acceleration << -0.027236821, -9.7942748, 0.;
+        for (unsigned i = 0; i < Dim; ++i) {
+          std::cout << "global3d: " << node->acceleration(Nphase)(i)
+                    << std::endl;
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
 
         // Check the acceleration in local coordinates
-        acceleration << 4.87375, -8.495709211, 0.;
+        // x'=4.905-0.03125*(4.905/(4.905-0.03125)), y'=-9.81*cos(30), z'=0.
+        acceleration << 4.873549628, -8.495709211, 0.;
         for (unsigned i = 0; i < Dim; ++i) {
           std::cout << "local3d: "
                     << (inverse_rotation_matrix * node->acceleration(Nphase))(i)

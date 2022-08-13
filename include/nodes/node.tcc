@@ -870,6 +870,8 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
           const double vel_net_t =
               sqrt(vel_net(0) * vel_net(0) + vel_net(1) * vel_net(1));
           const double vel_cohesion = dt * su * nodal_area_ / mass_(phase);
+          std::cout << "vel_net_t: " << vel_net_t << std::endl;
+          std::cout << "3d_vel_cohesion: " << vel_cohesion << std::endl;
 
           if (vel_net_t <= vel_cohesion) {
             acc(dir_t0) = -vel(dir_t0) / dt;

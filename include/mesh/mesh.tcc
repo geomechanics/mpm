@@ -2329,3 +2329,132 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
   }
   return status;
 }
+
+//! Create non-conforming pressure constraint
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_nonconforming_pressure_constraint(
+    const std::vector<double> bounding_box, const bool inside,
+    const std::shared_ptr<FunctionBase>& mfunction, const double pressure,
+    const std::vector<double> traction,
+    const std::vector<double> traction_grad) {
+  bool status = true;
+  try {
+    if (mfunction != nullptr)
+      // Create a non-conforming pressure constraint
+      nonconforming_pressure_constraints_.emplace_back(
+          std::make_shared<mpm::NonconformingPressureConstraint>(
+              bounding_box, inside, mfunction, pressure, traction,
+              traction_grad));
+    else
+      throw std::runtime_error(
+          "No math function set to assign non-conforming pressure constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply non-conforming pressure constraint
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
+    double current_time) {
+
+  // Iterate over all particle tractions
+  for (const auto& constraint : nonconforming_pressure_constraints_) {
+
+    auto const tolerance = std::numeric_limits<double>::epsilon();
+
+    // Get bounding box
+    const std::vector<double> bounding_box = constraint->bounding_box();
+    // Get inside-outside flag
+    const bool inside = constraint->inside();
+    // Get current pressure
+    const double pressure = constraint->pressure(current_time);
+    // Get traction
+    std::vector<double> traction = constraint->traction();
+    // Get traction gradient
+    std::vector<double> gradient_traction = constraint->traction_grad();
+    // Update traction for current pressure magnitude
+    for (int i = 0; i < 3; i++) traction.at(i) = -traction.at(i) * pressure;
+
+    // Set of cells located at the vicinity of the interface
+    std::set<mpm::Index> boundary_cell_list;
+    // Set of nodes located at the vicinity of the interface
+    std::set<mpm::Index> boundary_node_list;
+
+    for (auto citr = cells_.cbegin(); citr != cells_.cend(); citr++) {
+      // Loop over void cells
+      if ((*citr)->nparticles() != 0) continue;
+      // Check if cell is inside or outside bounding box
+      auto const cell_center = (*citr)->centroid();
+      bool cell_outside_bounding_box = false;
+      for (unsigned dim = 0; dim < Tdim; dim++)
+        if (cell_center[dim] < bounding_box.at(2 * dim) ||
+            cell_center[dim] > bounding_box.at(2 * dim + 1))
+          cell_outside_bounding_box = true;
+
+      if (inside) {
+        // If surface of interest is inside bounding box and cell is outside
+        // bounding box then ignore cell
+        if (cell_outside_bounding_box) continue;
+      } else {
+        // If goal surface of interest is outside bounding box and cell is
+        // inside bounding box then ignore cell
+        if (!cell_outside_bounding_box) continue;
+      }
+
+      // Find non-void cell connected with void cell
+      for (auto cell_neigh : (*citr)->neighbours()) {
+        if (map_cells_[cell_neigh]->nparticles() == 0) continue;
+        boundary_cell_list.insert((*citr)->id());
+        boundary_cell_list.insert(map_cells_[cell_neigh]->id());
+        for (auto node : map_cells_[cell_neigh]->nodes())
+          boundary_node_list.insert(node->id());
+      }
+    }
+
+    // for (auto cell : boundary_cell_list) {
+    //   auto nodes = map_cells_[cell]->nodes();
+    //   for (unsigned i = 0; i < nodes.size(); i++) {
+    //     // modify the nodal mass
+    //     if (nodes[i]->mass(mpm::NodePhase::NSolid) < tolerance) continue;
+    //     nodes[i]->update_fluid_mass(
+    //         true, 1. / num_nodes * fluid_density *
+    //         map_cells_[cell]->volume());
+    //   }
+    //   for (auto particle : map_cells_[cell]->particles())
+    //     // modify the nodal mass
+    //     map_particles_[particle]->minus_virtual_fluid_mass(fluid_density);
+    // }
+
+    for (auto cell : boundary_cell_list) {
+      auto nodes = map_cells_[cell]->nodes();
+
+      // Set cell values
+      const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
+      const double cvolume = map_cells_[cell]->volume();
+
+      for (unsigned i = 0; i < nodes.size(); i++) {
+        // Check nodal mass
+        if (nodes[i]->mass(mpm::NodePhase::NSolid) < tolerance) continue;
+
+        // Compute force
+        VectorDim force;
+        for (unsigned j = 0; j < Tdim; j++)
+          force[j] = -dn_dx_centroid(i, j) * traction[j] * cvolume;
+        for (unsigned j = 0; j < Tdim; j++)
+          force[j] +=
+              gradient_traction[j] * cvolume / map_cells_[cell]->nodes().size();
+
+        nodes[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+      }
+
+      for (auto particle : map_cells_[cell]->particles())
+        // modify the nodal force
+        map_particles_[particle]->minus_virtual_fluid_internal_force(
+            traction, gradient_traction);
+    }
+  }
+}

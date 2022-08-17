@@ -249,6 +249,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Read and assign absorbing constraintes
   this->nodal_absorbing_constraints(mesh_props, mesh_io);
 
+  // Read and assign non-conforming pressure constraints
+  this->nonconforming_pressure_constraints(mesh_props, mesh_io);
+
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();
   // Shape function name
@@ -1262,6 +1265,86 @@ void mpm::MPMBase<Tdim>::nodal_absorbing_constraints() {
     if (!absorbing_constraints)
       throw std::runtime_error(
           "Nodal absorbing constraint is not properly assigned");
+  }
+}
+
+// Non-conforming pressure constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign non-conforming pressure constraints
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find(
+            "nonconforming_pressure_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over non-conforming pressure constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]
+                     ["nonconforming_pressure_constraints"]) {
+
+        // Set bool flag for solve loop
+        nonconforming_pressure_ = true;
+        // Bounding box
+        std::vector<double> bounding_box;
+        if (constraints.find("bounding_box") != constraints.end() &&
+            constraints.at("bounding_box").is_array() &&
+            constraints.at("bounding_box").size() == (2 * Tdim)) {
+          for (const auto& bound : constraints["bounding_box"])
+            bounding_box.emplace_back(bound);
+        } else {
+          throw std::runtime_error(
+              "Non-conforming pressure constraints have bad bounding box");
+        }
+        // Bool with true for suface inside bounding box, false for surface
+        // outside bounding box, default is true
+        bool inside = true;
+        if (constraints.find("inside") != constraints.end())
+          inside = constraints.at("inside").template get<bool>();
+        // Get math function
+        std::shared_ptr<FunctionBase> pfunction = nullptr;
+        if (constraints.find("math_function_id") != constraints.end())
+          pfunction = math_functions_.at(
+              constraints.at("math_function_id").template get<unsigned>());
+        // Pressure magnitude
+        double pressure;
+        if (constraints.find("pressure") != constraints.end())
+          pressure = constraints.at("pressure").template get<double>();
+        // Traction
+        std::vector<double> traction(Tdim, 1.);
+        if (constraints.find("traction") != constraints.end() &&
+            constraints.at("traction").is_array() &&
+            constraints.at("traction").size() == Tdim) {
+          for (unsigned i = 0; i < constraints.at("traction").size(); ++i)
+            traction.at(i) = constraints["traction"][i];
+        }
+        // Traction gradient
+        std::vector<double> traction_grad(Tdim, 0.);
+        
+        
+        // TODO
+        //
+        // Handle hydrostatic pressure. 
+
+
+        // Create particle surface tractions
+        bool nonconforming_pressure_constraint =
+            mesh_->create_nonconforming_pressure_constraint(
+                bounding_box, inside, pfunction, pressure, traction,
+                traction_grad);
+
+        if (!nonconforming_pressure_constraint)
+          throw std::runtime_error(
+              "Non-conforming pressure constraints are not properly assigned");
+      }
+    } else
+      throw std::runtime_error(
+          "Non-conforming pressure constraints JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Non-conforming pressure constraints are undefined {} ",
+                   __LINE__, exception.what());
   }
 }
 

@@ -39,6 +39,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   status_ = false;
   solving_status_ = false;
   material_ids_.clear();
+  mass_fluid_ = 0.;
 }
 
 //! Initialise shared pointer to nodal properties pool
@@ -310,6 +311,13 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
   bool status = false;
   const double tolerance = 1.0E-15;
   if (mass_(phase) > tolerance) {
+
+    // TODO : remove me !! /////////////////////////////////////////////////////
+    // Enfore plane strain for TWC numerical example
+    this->external_force_.col(phase)(2) = 0.;
+    this->internal_force_.col(phase)(2) = 0.;
+    ////////////////////////////////////////////////////////////////////////////
+
     // acceleration = (unbalaced force / mass)
     auto unbalanced_force =
         this->external_force_.col(phase) + this->internal_force_.col(phase);
@@ -893,4 +901,17 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_displacement_constraint(
     status = false;
   }
   return status;
+}
+
+//! Update fluid mass
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::update_fluid_mass(bool update,
+                                                        double mass) noexcept {
+  // Decide to update or assign
+  const double factor = (update == true) ? 1. : 0.;
+
+  // Update/assign mass
+  node_mutex_.lock();
+  mass_fluid_ = (mass_fluid_ * factor) + mass;
+  node_mutex_.unlock();
 }

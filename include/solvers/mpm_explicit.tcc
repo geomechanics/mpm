@@ -149,6 +149,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
       this->nodal_absorbing_constraints();
     }
 
+    if (nonconforming_pressure_)
+      mesh_->apply_nonconforming_pressure_constraint(step_ * dt_);
+
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, phase, "Cundall",
                                              damping_factor_, step_,

@@ -39,6 +39,7 @@ using Json = nlohmann::json;
 #include "material.h"
 #include "nodal_properties.h"
 #include "node.h"
+#include "nonconforming_pressure_constraint.h"
 #include "particle.h"
 #include "particle_base.h"
 #include "pod_particle.h"
@@ -666,6 +667,22 @@ class Mesh {
 
   /**@}*/
 
+  //! Create non-conforming pressure constraint
+  //! \param[in] bounding_box Bounding box [xmin, xmax, ymin, ymax, zmin, zmax]
+  //! \param[in] inside True if surface is inside bounding box
+  //! \param[in] mfunction Math function
+  //! \param[in] pressure Pressure
+  //! \param[in] traction 1 or 0 for active or inactive directions
+  //! \param[in] traction_grad Gradient of traction values
+  bool create_nonconforming_pressure_constraint(
+      const std::vector<double> bounding_box, const bool inside,
+      const std::shared_ptr<FunctionBase>& mfunction, const double pressure,
+      const std::vector<double> traction,
+      const std::vector<double> traction_grad);
+
+  //! Apply non-conforming pressure constraint
+  void apply_nonconforming_pressure_constraint(double current_time);
+
  private:
   // Read particles from file
   //! \param[in] pset_id Set ID of the particles
@@ -727,6 +744,9 @@ class Mesh {
   //! Particle velocity constraints
   std::vector<std::shared_ptr<mpm::VelocityConstraint>>
       particle_velocity_constraints_;
+  //! Non-conforming pressure constraints
+  std::vector<std::shared_ptr<mpm::NonconformingPressureConstraint>>
+      nonconforming_pressure_constraints_;
   //! Vector of generators for particle injections
   std::vector<mpm::Injection> particle_injections_;
   //! Nodal property pool

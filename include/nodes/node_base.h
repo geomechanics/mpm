@@ -549,6 +549,14 @@ class NodeBase {
 
   /**@}*/
 
+  //! Update fluid mass at the node
+  //! \param[in] update A boolean to update (ture) or assign (false)
+  //! \param[in] mass Mass
+  virtual void update_fluid_mass(bool update, double mass) noexcept = 0;
+
+  //! Return fluid mass used for applying non-conforming boundary
+  virtual double mass_fluid() noexcept = 0;
+
 };  // NodeBase class
 }  // namespace mpm
 

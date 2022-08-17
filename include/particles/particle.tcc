@@ -1745,3 +1745,31 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 
   return beta;
 }
+//! Minus the mass of the virtual fluid
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::minus_virtual_fluid_mass(double fluid_density) {
+
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->update_fluid_mass(true, -fluid_density * volume_ * shapefn_[i]);
+  }
+}
+
+//! Minus the internal force of the virtual fluid
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
+    std::vector<double> traction, std::vector<double> gradient_traction) {
+  auto const tolerance = std::numeric_limits<double>::epsilon();
+
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    double mass_solid = nodes_[i]->mass(mpm::NodePhase::NSolid);
+    if (mass_solid < tolerance) continue;
+
+    VectorDim force;
+    for (unsigned j = 0; j < Tdim; j++)
+      force[j] = dn_dx_(i, j) * traction[j] * this->volume_;
+    for (unsigned j = 0; j < Tdim; j++)
+      force[j] += -gradient_traction[j] * this->volume_ * shapefn_[i];
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}

@@ -600,6 +600,24 @@ class ParticleBase {
   };
   //----------------------------------------------------------------------------
 
+  //! Minus the mass of the virtual fluid
+  //! \param[in] fluid_density the density of the fluid
+  virtual void minus_virtual_fluid_mass(double fluid_density) {
+    throw std::runtime_error(
+        "Calling the base class function (minus_virtual_fluid_mass) in "
+        "ParticleBase:: illegal operation!");
+  }
+
+  //! Minus the internal force of the virtual fluid
+  //! \param[in] tradtion Boundary pressure
+  //! \param[in] gradient Gradient of boundary pressure
+  virtual void minus_virtual_fluid_internal_force(
+      std::vector<double> traction, std::vector<double> gradient_traction) {
+    throw std::runtime_error(
+        "Calling the base class function (minus_virtual_fluid_internal_force) "
+        "in ParticleBase:: illegal operation!");
+  }
+
  protected:
   //! particleBase id
   Index id_{std::numeric_limits<Index>::max()};

@@ -39,6 +39,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   status_ = false;
   solving_status_ = false;
   material_ids_.clear();
+  mass_fluid_ = 0.;
 }
 
 //! Initialise shared pointer to nodal properties pool
@@ -311,6 +312,13 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
   bool status = false;
   const double tolerance = 1.0E-15;
   if (mass_(phase) > tolerance) {
+
+    // TODO : remove me !! /////////////////////////////////////////////////////
+    // Enfore plane strain for TWC numerical example
+    this->external_force_.col(phase)(2) = 0.;
+    this->internal_force_.col(phase)(2) = 0.;
+    ////////////////////////////////////////////////////////////////////////////
+
     // acceleration = (unbalaced force / mass)
     auto unbalanced_force =
         this->external_force_.col(phase) + this->internal_force_.col(phase);
@@ -1085,4 +1093,45 @@ template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {
   nonlocal_node_type_.resize(Tdim);
   std::fill(nonlocal_node_type_.begin(), nonlocal_node_type_.end(), 0);
+}
+
+//! Assign displacement constraints
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::assign_displacement_constraint(
+    const unsigned dir, const double displacement,
+    const std::shared_ptr<FunctionBase>& function) {
+  bool status = true;
+  try {
+    //! Constrain directions can take values between 0 and Dim * Nphases
+    if (dir < (Tdim * Tnphases))
+      this->displacement_constraints_.insert(std::make_pair<unsigned, double>(
+          static_cast<unsigned>(dir), static_cast<double>(displacement)));
+    else
+      throw std::runtime_error("Constraint direction is out of bounds");
+
+    // Assign displacement function
+    if (function != nullptr)
+      this->displacement_function_.insert(
+          std::make_pair<unsigned, std::shared_ptr<FunctionBase>>(
+              static_cast<unsigned>(dir),
+              static_cast<std::shared_ptr<FunctionBase>>(function)));
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Update fluid mass
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::update_fluid_mass(bool update,
+                                                        double mass) noexcept {
+  // Decide to update or assign
+  const double factor = (update == true) ? 1. : 0.;
+
+  // Update/assign mass
+  node_mutex_.lock();
+  mass_fluid_ = (mass_fluid_ * factor) + mass;
+  node_mutex_.unlock();
 }

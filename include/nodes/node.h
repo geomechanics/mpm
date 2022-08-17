@@ -596,6 +596,14 @@ class Node : public NodeBase<Tdim> {
   }
   /**@}*/
 
+  //! Update fluid mass at the node
+  //! \param[in] update A boolean to update (ture) or assign (false)
+  //! \param[in] mass Mass
+  void update_fluid_mass(bool update, double mass) noexcept override;
+
+  //! Return fluid mass used for applying pressure boundary
+  double mass_fluid() noexcept { return mass_fluid_; }
+
  private:
   //! Mutex
   SpinMutex node_mutex_;
@@ -666,6 +674,8 @@ class Node : public NodeBase<Tdim> {
   Index active_id_{std::numeric_limits<Index>::max()};
   //! Global index for active node (globally)
   Index global_active_id_{std::numeric_limits<Index>::max()};
+  //! Fluid mass for applying pressure boundary
+  double mass_fluid_;
 
   /**
    * \defgroup ImplicitVariables Variables dealing with implicit MPM

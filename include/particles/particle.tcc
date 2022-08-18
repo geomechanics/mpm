@@ -1766,10 +1766,10 @@ void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
     if (mass_solid < tolerance) continue;
 
     VectorDim force;
-    for (unsigned j = 0; j < Tdim; j++)
+    for (unsigned j = 0; j < Tdim; j++) {
       force[j] = dn_dx_(i, j) * traction[j] * this->volume_;
-    for (unsigned j = 0; j < Tdim; j++)
-      force[j] += -gradient_traction[j] * this->volume_ * shapefn_[i];
+      force[j] += shapefn_[i] * gradient_traction[j] * this->volume_;
+    }
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
 }

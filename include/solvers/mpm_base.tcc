@@ -1399,7 +1399,27 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
           throw std::runtime_error(
               "Non-conforming pressure constraints have bad bounding box");
         }
-        // Bool with true for suface inside bounding box, false for surface
+        // Get daum bool with true for hydrostatic pressure, default is false
+        bool hydrostatic = false;
+        if (constraints.find("hydrostatic") != constraints.end())
+          hydrostatic = constraints.at("hydrostatic").template get<bool>();
+        double datum = 0.;
+        double fluid_density = 0.;
+        if (hydrostatic) {
+          // Get datum for hydrostatic free surface
+          if (constraints.find("datum") != constraints.end())
+            datum = constraints.at("datum").template get<double>();
+          // Get fluid density for hydrostatic free surface
+          if (constraints.find("fluid_density") != constraints.end())
+            fluid_density =
+                constraints.at("fluid_density").template get<double>();
+          // Check fluid density
+          if (fluid_density < 1.e-14)
+            throw std::runtime_error(
+                "Non-conforming pressure constraints fluid density is too "
+                "small (or negative)");
+        }
+        // Get bool with true for suface inside bounding box, false for surface
         // outside bounding box, default is true
         bool inside = true;
         if (constraints.find("inside") != constraints.end())
@@ -1409,32 +1429,16 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
         if (constraints.find("math_function_id") != constraints.end())
           pfunction = math_functions_.at(
               constraints.at("math_function_id").template get<unsigned>());
-        // Pressure magnitude
-        double pressure;
+        // Get pressure magnitude
+        double pressure = 0.;
         if (constraints.find("pressure") != constraints.end())
           pressure = constraints.at("pressure").template get<double>();
-        // Traction
-        std::vector<double> traction(Tdim, 1.);
-        if (constraints.find("traction") != constraints.end() &&
-            constraints.at("traction").is_array() &&
-            constraints.at("traction").size() == Tdim) {
-          for (unsigned i = 0; i < constraints.at("traction").size(); ++i)
-            traction.at(i) = constraints["traction"][i];
-        }
-        // Traction gradient
-        std::vector<double> traction_grad(Tdim, 0.);
-        
-        
-        // TODO
-        //
-        // Handle hydrostatic pressure. 
-
 
         // Create particle surface tractions
         bool nonconforming_pressure_constraint =
             mesh_->create_nonconforming_pressure_constraint(
-                bounding_box, inside, pfunction, pressure, traction,
-                traction_grad);
+                bounding_box, datum, fluid_density, hydrostatic, inside,
+                pfunction, pressure);
 
         if (!nonconforming_pressure_constraint)
           throw std::runtime_error(

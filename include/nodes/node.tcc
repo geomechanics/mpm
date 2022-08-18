@@ -314,7 +314,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
   if (mass_(phase) > tolerance) {
 
     // TODO : remove me !! /////////////////////////////////////////////////////
-    // Enfore plane strain for TWC numerical example
+    // Enfore plane strain for TWC numerical example ///////////////////////////
     this->external_force_.col(phase)(2) = 0.;
     this->internal_force_.col(phase)(2) = 0.;
     ////////////////////////////////////////////////////////////////////////////

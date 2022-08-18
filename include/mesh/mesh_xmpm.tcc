@@ -1498,7 +1498,9 @@ void mpm::Mesh<Tdim>::apply_pressure_boundary_free_surface(int step) {
     //         sigmart * std::cos(2 * theta),
     //     0, 0;
     // for water
-    traction << 0, -1000 * 9.8 * (0.21 - centroid[1]), 0, 0, 0, 0;
+    traction << -1000 * 9.8 * (0.21 - centroid[1]),
+        -1000 * 9.8 * (0.21 - centroid[1]), -1000 * 9.8 * (0.21 - centroid[1]),
+        0, 0, 0;
     divergence_traction << 0, -1000 * 9.8, 0;
     // for constant pressure
     // traction << 0, -30e6, 0, 0, 0, 0;
@@ -1576,7 +1578,7 @@ void mpm::Mesh<Tdim>::compute_angular_momentum(int step) {
     center_s += particles_[i]->coordinates() * particles_[i]->mass();
     center_w +=
         particles_[i]->coordinates() * particles_[i]->volume() * density_w;
-    vol += particles_[i]->volume();
+    if (particles_[i]->coordinates()[1] < 0.21) vol += particles_[i]->volume();
     mass_s += particles_[i]->mass();
     vp += particles_[i]->mass() * particles_[i]->velocity();
   }
@@ -1594,7 +1596,7 @@ void mpm::Mesh<Tdim>::compute_angular_momentum(int step) {
 
   VectorDim r = center_w - center_s;
   VectorDim rf = r.cross(density_w * grav * vol);
-  double dt = 1e-5;
+  double dt = 0.5e-5;
   angular_momentum_ += (rf + rf_) * 0.5 * dt;
   vel_old_ += (f_ + mass_s * grav - density_w * grav * vol) * 0.5 / mass_s * dt;
   rf_ = rf;

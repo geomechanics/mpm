@@ -1302,7 +1302,9 @@ void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
   //         sigmart * std::cos(2 * theta),
   //     0, 0;
   // for water pressure
-  traction << 0, -1000 * 9.8 * (0.21 - coordinates_[1]), 0, 0, 0, 0;
+  traction << -1000 * 9.8 * (0.21 - coordinates_[1]),
+      -1000 * 9.8 * (0.21 - coordinates_[1]),
+      -1000 * 9.8 * (0.21 - coordinates_[1]), 0, 0, 0;
   divergence_traction << 0, -1000 * 9.8, 0;
   // for constant pressure
   // traction << 0, -30e6, 0, 0, 0, 0;

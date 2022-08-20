@@ -1404,16 +1404,19 @@ void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
     if (mass_solid < tolerance) continue;
 
     VectorDim force;
-    force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3] +
-               dn_dx_(i, 2) * traction[5];
+    if (Tdim == 2) {
+      force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3];
+      force[1] = dn_dx_(i, 0) * traction[3] + dn_dx_(i, 1) * traction[1];
+    } else if (Tdim == 3) {
+      force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3] +
+                 dn_dx_(i, 2) * traction[5];
+      force[1] = dn_dx_(i, 0) * traction[3] + dn_dx_(i, 1) * traction[1] +
+                 dn_dx_(i, 2) * traction[4];
+      force[2] = dn_dx_(i, 0) * traction[5] + dn_dx_(i, 1) * traction[4] +
+                 dn_dx_(i, 2) * traction[2];
+    }
 
-    force[1] = dn_dx_(i, 1) * traction[1] + dn_dx_(i, 0) * traction[3] +
-               dn_dx_(i, 2) * traction[4];
-
-    force[2] = dn_dx_(i, 2) * traction[2] + dn_dx_(i, 1) * traction[4] +
-               dn_dx_(i, 0) * traction[5];
-
-    // Note: must add particle-wise pressure term to force
+    // Note: add particle-wise traction and divergence terms to force
     force *= this->volume_;
     for (unsigned j = 0; j < Tdim; j++)
       force[j] += shapefn_[i] * divergence_traction[j] * this->volume_;

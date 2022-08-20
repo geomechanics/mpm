@@ -39,7 +39,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   status_ = false;
   solving_status_ = false;
   material_ids_.clear();
-  mass_fluid_ = 0.;
+  // mass_fluid_ = 0.;
 }
 
 //! Initialise shared pointer to nodal properties pool

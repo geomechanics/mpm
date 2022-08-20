@@ -444,16 +444,12 @@ class Particle : public ParticleBase<Tdim> {
   void initialise_constitutive_law() noexcept override;
   /**@}*/
 
-  //! Minus the mass of the virtual fluid
-  //! \param[in] fluid_density Density of the fluid
-  void minus_virtual_fluid_mass(double fluid_density) override;
-
-  //! Minus the internal force of the virtual fluid
-  //! \param[in] tradtion Boundary pressure
-  //! \param[in] gradient Gradient of boundary pressure
+  //! Minus the internal force of the virtual field
+  //! \param[in] traction Boundary traction
+  //! \param[in] divergence_traction Divergence of boundary traction
   virtual void minus_virtual_fluid_internal_force(
-      std::vector<double> traction,
-      std::vector<double> gradient_traction) override;
+      Eigen::Matrix<double, 6, 1>& traction,
+      VectorDim& divergence_traction) override;
 
  protected:
   //! Initialise particle material container

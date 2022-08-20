@@ -2334,8 +2334,9 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::create_nonconforming_pressure_constraint(
     const std::vector<double> bounding_box, const double datum,
-    const double fluid_density, const bool hydrostatic, const bool inside,
-    const std::shared_ptr<FunctionBase>& mfunction, const double pressure) {
+    const double fluid_density, const double gravity, const bool hydrostatic,
+    const bool inside, const std::shared_ptr<FunctionBase>& mfunction,
+    const double pressure) {
   bool status = true;
   try {
     if (std::fabs(pressure) < 1.e-14 && !hydrostatic)
@@ -2346,7 +2347,7 @@ bool mpm::Mesh<Tdim>::create_nonconforming_pressure_constraint(
       // Create a non-conforming pressure constraint
       nonconforming_pressure_constraints_.emplace_back(
           std::make_shared<mpm::NonconformingPressureConstraint>(
-              bounding_box, datum, fluid_density, hydrostatic, inside,
+              bounding_box, datum, fluid_density, gravity, hydrostatic, inside,
               mfunction, pressure));
 
   } catch (std::exception& exception) {
@@ -2408,43 +2409,45 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
       }
     }
 
-    // Preallocate traction and traction gradient
-    std::vector<double> traction(Tdim, 0.);
-    std::vector<double> gradient_traction(Tdim, 0.);
+    // Preallocate traction and divergence traction
+    Eigen::Matrix<double, 6, 1> traction;
+    traction.setZero();
+    VectorDim divergence_traction;
+    divergence_traction.setZero();
 
     // Set constants
     const unsigned num_nodes = std::pow(2, Tdim);
-    const double gravity = 10.;
+
+    // Set constants (for hydrostatic)
+    const double datum = constraint->datum();
+    const double fluid_density = constraint->fluid_density();
+    const double gravity = constraint->gravity();
 
     if (!hydrostatic) {
       // Get current pressure
       const double pressure = constraint->pressure(current_time);
       // Set traction
-      for (int i = 0; i < Tdim; i++) traction.at(i) += (-1. * pressure);
+      for (int i = 0; i < Tdim; i++) traction[i] += (-1. * pressure);
     }
 
     for (auto cell : boundary_cell_list) {
+      // Set cell values
       const auto nodes = map_cells_[cell]->nodes();
+      const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
+      const double cvolume = map_cells_[cell]->volume();
 
       if (hydrostatic) {
         // Set cell values
-        const double datum = constraint->datum();
         const double depth =
             (datum - map_cells_[cell]->centroid()(Tdim - 1, 0));
-        const double fluid_density = constraint->fluid_density();
-
-        // Check if below free surface
         if (depth < 0) continue;
-
         // Compute current pressure
         const double pressure = fluid_density * gravity * depth;
-        // Set traction and traction gradient
-        for (int i = 0; i < Tdim; i++) traction.at(i) += (-1. * pressure);
-        gradient_traction.at(Tdim - 1) += (-1. * fluid_density * gravity);
+        // Set traction and divergence traction
+        traction << pressure, pressure, pressure, 0, 0, 0;
+        // Note
+        divergence_traction << 0, -fluid_density * gravity, 0;
       }
-
-      // Set cell values
-      const auto dn_dx_centroid = map_cells_[cell]->dn_dx_centroid();
 
       for (unsigned i = 0; i < nodes.size(); i++) {
         // Check nodal mass
@@ -2452,19 +2455,27 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
 
         // Compute force
         VectorDim force;
-        for (unsigned j = 0; j < Tdim; j++) {
-          force[j] =
-              -dn_dx_centroid(i, j) * traction[j] * map_cells_[cell]->volume();
-          force[j] += (-1. / num_nodes) * gradient_traction[j] *
-                      map_cells_[cell]->volume();
-        }
+        force[0] = dn_dx_centroid(i, 0) * traction[0] +
+                   dn_dx_centroid(i, 1) * traction[3] +
+                   dn_dx_centroid(i, 2) * traction[5];
+        force[1] = dn_dx_centroid(i, 1) * traction[1] +
+                   dn_dx_centroid(i, 0) * traction[3] +
+                   dn_dx_centroid(i, 2) * traction[4];
+        force[2] = dn_dx_centroid(i, 2) * traction[2] +
+                   dn_dx_centroid(i, 1) * traction[4] +
+                   dn_dx_centroid(i, 0) * traction[5];
+        // Note: must subtract cell-wise pressure term from force
+        force *= -1. * cvolume;
+        for (unsigned j = 0; j < Tdim; j++)
+          force[j] += (-1. / num_nodes) * divergence_traction[j] * cvolume;
+
         nodes[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
       }
 
       for (auto particle : map_cells_[cell]->particles())
         // modify the nodal force
         map_particles_[particle]->minus_virtual_fluid_internal_force(
-            traction, gradient_traction);
+            traction, divergence_traction);
     }
   }
 }

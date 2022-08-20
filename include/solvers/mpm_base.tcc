@@ -1403,8 +1403,11 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
         bool hydrostatic = false;
         if (constraints.find("hydrostatic") != constraints.end())
           hydrostatic = constraints.at("hydrostatic").template get<bool>();
+        // Set hydrostatic pressure values
         double datum = 0.;
         double fluid_density = 0.;
+        double gravity = 0.;
+        // Update values if hydrostatic is true
         if (hydrostatic) {
           // Get datum for hydrostatic free surface
           if (constraints.find("datum") != constraints.end())
@@ -1416,8 +1419,17 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
           // Check fluid density
           if (fluid_density < 1.e-14)
             throw std::runtime_error(
-                "Non-conforming pressure constraints fluid density is too "
-                "small (or negative)");
+                "Non-conforming pressure constraints have bad fluid density");
+          // Get gravity
+          auto loads = io_->json_object("external_loading_conditions");
+          if (loads.at("gravity").is_array() &&
+              loads.at("gravity").size() == Tdim &&
+              loads.at("gravity").at(Tdim - 1) != 0.) {
+            gravity = loads.at("gravity").at(Tdim - 1);
+          } else {
+            throw std::runtime_error(
+                "Non-conforming pressure constraints have bad gravity");
+          }
         }
         // Get bool with true for suface inside bounding box, false for surface
         // outside bounding box, default is true
@@ -1437,8 +1449,8 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
         // Create particle surface tractions
         bool nonconforming_pressure_constraint =
             mesh_->create_nonconforming_pressure_constraint(
-                bounding_box, datum, fluid_density, hydrostatic, inside,
-                pfunction, pressure);
+                bounding_box, datum, fluid_density, gravity, hydrostatic,
+                inside, pfunction, pressure);
 
         if (!nonconforming_pressure_constraint)
           throw std::runtime_error(

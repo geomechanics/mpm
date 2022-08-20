@@ -1758,7 +1758,7 @@ void mpm::Particle<Tdim>::minus_virtual_fluid_mass(double fluid_density) {
 //! Minus the internal force of the virtual fluid
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
-    std::vector<double> traction, std::vector<double> gradient_traction) {
+    Eigen::Matrix<double, 6, 1>& traction, VectorDim& divergence_traction) {
   auto const tolerance = std::numeric_limits<double>::epsilon();
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -1766,10 +1766,20 @@ void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
     if (mass_solid < tolerance) continue;
 
     VectorDim force;
-    for (unsigned j = 0; j < Tdim; j++) {
-      force[j] = dn_dx_(i, j) * traction[j] * this->volume_;
-      force[j] += shapefn_[i] * gradient_traction[j] * this->volume_;
-    }
+    force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3] +
+               dn_dx_(i, 2) * traction[5];
+
+    force[1] = dn_dx_(i, 1) * traction[1] + dn_dx_(i, 0) * traction[3] +
+               dn_dx_(i, 2) * traction[4];
+
+    force[2] = dn_dx_(i, 2) * traction[2] + dn_dx_(i, 1) * traction[4] +
+               dn_dx_(i, 0) * traction[5];
+
+    // Note: must add particle-wise pressure term to force
+    force *= this->volume_;
+    for (unsigned j = 0; j < Tdim; j++)
+      force[j] += shapefn_[i] * divergence_traction[j] * this->volume_;
+
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
 }

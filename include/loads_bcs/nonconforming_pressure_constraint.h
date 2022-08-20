@@ -16,18 +16,20 @@ class NonconformingPressureConstraint {
   //! \param[in] bounding_box Bounding box [xmin, xmax, ymin, ymax, zmin, zmax]
   //! \param[in] datum Datum for hydrostatic free surface
   //! \param[in] fluid_density Fluid density for hydrostatic
+  //! \param[in] gravity Gravity for hydrostatic
   //! \param[in] hydrostatic True if hydrostatic pressure, false for constant
   //! \param[in] inside True if surface is inside bounding box
   //! \param[in] mfunction Math function
   //! \param[in] pressure Pressure if constant
   NonconformingPressureConstraint(
       const std::vector<double> bounding_box, const double datum,
-      const double fluid_density, const bool hydrostatic, const bool inside,
-      const std::shared_ptr<mpm::FunctionBase>& mfunction,
+      const double fluid_density, const double gravity, const bool hydrostatic,
+      const bool inside, const std::shared_ptr<mpm::FunctionBase>& mfunction,
       const double pressure)
       : bounding_box_{bounding_box},
         datum_{datum},
         fluid_density_{fluid_density},
+        gravity_{gravity},
         hydrostatic_{hydrostatic},
         inside_{inside},
         pressure_fn_{mfunction},
@@ -39,6 +41,8 @@ class NonconformingPressureConstraint {
   double datum() const { return datum_; }
   // Fluid density for hydrostatic free surface
   double fluid_density() const { return fluid_density_; }
+  // Gravity for hydrostatic free surface
+  double gravity() const { return gravity_; }
   // True if pressure from hydrostatic, false if constant pressure
   bool hydrostatic() const { return hydrostatic_; }
   // True if surface of interest is inside bounding box
@@ -59,6 +63,8 @@ class NonconformingPressureConstraint {
   double datum_;
   // Fluid density for hydrostatic free surface
   double fluid_density_;
+  // Gravity for hydrostatic free surface
+  double gravity_;
   // True if pressure from hydrostatic,
   bool hydrostatic_;
   // True if surface is inside bounding box

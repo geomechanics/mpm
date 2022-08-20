@@ -665,14 +665,16 @@ class Mesh {
   //! \param[in] bounding_box Bounding box [xmin, xmax, ymin, ymax, zmin, zmax]
   //! \param[in] datum Datum for hydrostatic free surface
   //! \param[in] fluid_density Fluid density for hydrostatic
+  //! \param[in] gravity Gravity for hydrostatic
   //! \param[in] hydrostatic True if hydrostatic pressure, false for constant
   //! \param[in] inside True if surface is inside bounding box
   //! \param[in] mfunction Math function
   //! \param[in] pressure Pressure if constant
   bool create_nonconforming_pressure_constraint(
       const std::vector<double> bounding_box, const double datum,
-      const double fluid_density, const bool hydrostatic, const bool inside,
-      const std::shared_ptr<FunctionBase>& mfunction, const double pressure);
+      const double fluid_density, const double gravity, const bool hydrostatic,
+      const bool inside, const std::shared_ptr<FunctionBase>& mfunction,
+      const double pressure);
 
   //! Apply non-conforming pressure constraint
   void apply_nonconforming_pressure_constraint(double current_time);

@@ -53,7 +53,7 @@ class NonconformingPressureConstraint {
     double scalar = (this->pressure_fn_ != nullptr)
                         ? (this->pressure_fn_)->value(current_time)
                         : 1.0;
-    return pressure_ * scalar;
+    return (-1. * pressure_ * scalar);
   }
 
  private:

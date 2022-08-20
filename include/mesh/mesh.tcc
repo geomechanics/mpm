@@ -2412,7 +2412,7 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
     // Preallocate traction and divergence traction
     Eigen::Matrix<double, 6, 1> traction;
     traction.setZero();
-    VectorDim divergence_traction;
+    Eigen::Matrix<double, Tdim, 1> divergence_traction;
     divergence_traction.setZero();
 
     // Set constants
@@ -2424,10 +2424,10 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
     const double gravity = constraint->gravity();
 
     if (!hydrostatic) {
-      // Get current pressure
+      // Get current pressure (returns negative to match hydrostatic case)
       const double pressure = constraint->pressure(current_time);
       // Set traction
-      for (int i = 0; i < Tdim; i++) traction[i] += (-1. * pressure);
+      for (int i = 0; i < Tdim; i++) traction[i] += pressure;
     }
 
     for (auto cell : boundary_cell_list) {
@@ -2444,9 +2444,8 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
         // Compute current pressure
         const double pressure = fluid_density * gravity * depth;
         // Set traction and divergence traction
-        traction << pressure, pressure, pressure, 0, 0, 0;
-        // Note
-        divergence_traction << 0, -fluid_density * gravity, 0;
+        for (unsigned i = 0; i < Tdim; i++) traction[i] = pressure;
+        divergence_traction[Tdim - 1] = -1. * fluid_density * gravity;
       }
 
       for (unsigned i = 0; i < nodes.size(); i++) {
@@ -2455,16 +2454,23 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
 
         // Compute force
         VectorDim force;
-        force[0] = dn_dx_centroid(i, 0) * traction[0] +
-                   dn_dx_centroid(i, 1) * traction[3] +
-                   dn_dx_centroid(i, 2) * traction[5];
-        force[1] = dn_dx_centroid(i, 1) * traction[1] +
-                   dn_dx_centroid(i, 0) * traction[3] +
-                   dn_dx_centroid(i, 2) * traction[4];
-        force[2] = dn_dx_centroid(i, 2) * traction[2] +
-                   dn_dx_centroid(i, 1) * traction[4] +
-                   dn_dx_centroid(i, 0) * traction[5];
-        // Note: must subtract cell-wise pressure term from force
+        if (Tdim == 2) {
+          force[0] = dn_dx_centroid(i, 0) * traction[0] +
+                     dn_dx_centroid(i, 1) * traction[3];
+          force[1] = dn_dx_centroid(i, 0) * traction[3] +
+                     dn_dx_centroid(i, 1) * traction[1];
+        } else if (Tdim == 3) {
+          force[0] = dn_dx_centroid(i, 0) * traction[0] +
+                     dn_dx_centroid(i, 1) * traction[3] +
+                     dn_dx_centroid(i, 2) * traction[5];
+          force[1] = dn_dx_centroid(i, 0) * traction[3] +
+                     dn_dx_centroid(i, 1) * traction[1] +
+                     dn_dx_centroid(i, 2) * traction[4];
+          force[2] = dn_dx_centroid(i, 0) * traction[5] +
+                     dn_dx_centroid(i, 1) * traction[4] +
+                     dn_dx_centroid(i, 2) * traction[2];
+        }
+        // Note: subtract cell-wise traction and divergence terms from force
         force *= -1. * cvolume;
         for (unsigned j = 0; j < Tdim; j++)
           force[j] += (-1. / num_nodes) * divergence_traction[j] * cvolume;

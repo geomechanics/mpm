@@ -2423,13 +2423,6 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
     const double fluid_density = constraint->fluid_density();
     const double gravity = constraint->gravity();
 
-    if (!hydrostatic) {
-      // Get current pressure (returns negative to match hydrostatic case)
-      const double pressure = constraint->pressure(current_time);
-      // Set traction
-      for (int i = 0; i < Tdim; i++) traction[i] += pressure;
-    }
-
     for (auto cell : boundary_cell_list) {
       // Set cell values
       const auto nodes = map_cells_[cell]->nodes();
@@ -2445,8 +2438,19 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
         const double pressure = fluid_density * gravity * depth;
         // Set traction and divergence traction
         for (unsigned i = 0; i < Tdim; i++) traction[i] = pressure;
+        // Assumed y-dir gravity in 2D, z-dir gravity in 3D
         divergence_traction[Tdim - 1] = -1. * fluid_density * gravity;
+      } else {
+        // Get current pressure (returns negative to match hydrostatic case)
+        const double pressure = constraint->pressure(current_time);
+        // Set traction
+        for (int i = 0; i < Tdim; i++) traction[i] = pressure;
       }
+      // // Placeholder for arbitrary traction and divergence terms
+      // else {
+      //   traction << 0., 0., 0., 0., 0., 0.;
+      //   divergence_traction << 0., 0., 0.;
+      // }
 
       for (unsigned i = 0; i < nodes.size(); i++) {
         // Check nodal mass

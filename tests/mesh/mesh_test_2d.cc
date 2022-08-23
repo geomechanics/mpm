@@ -1459,6 +1459,21 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                       mfunction, -1, 0, pressure) == true);
         }
 
+        // Test assign non-conforming pressure constraint
+        SECTION("Check assign non-conforming pressure constraint to nodes") {
+          // Define bounding box
+          std::vector<double> bounding_box{0., 1., 0., 1.};
+          // Constraint
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 1., 0., 0., false, true, mfunction, 100.) ==
+                  true);
+
+          // Constraint fails due to pressure = 0. && !hydrostatic
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 1., 0., 0., false, true, mfunction, 0.) ==
+                  false);
+        }
+
         // Test assign acceleration constraints to nodes
         SECTION("Check assign acceleration constraints to nodes") {
           // Vector of particle coordinates

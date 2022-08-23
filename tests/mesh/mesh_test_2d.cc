@@ -1412,17 +1412,107 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
 
         // Test assign non-conforming pressure constraint
         SECTION("Check assign non-conforming pressure constraint to nodes") {
+          // Vector of particle coordinates
+          std::vector<Eigen::Matrix<double, Dim, 1>> coordinates;
+          coordinates.clear();
+
+          // Particle coordinates
+          Eigen::Matrix<double, Dim, 1> particle;
+
+          // Cell 0
+          // Particle 0
+          particle << 0.125, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 1
+          particle << 0.375, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 2
+          particle << 0.375, 0.375;
+          coordinates.emplace_back(particle);
+          // Particle 3
+          particle << 0.125, 0.375;
+          coordinates.emplace_back(particle);
+
+          // Initialise material models in mesh
+          mesh->initialise_material_models(materials);
+
+          SECTION("Check addition of particles to mesh") {
+            // Particle type 2D
+            const std::string particle_type = "P2D";
+            // Create particles from file
+            bool status = mesh->create_particles(particle_type, coordinates,
+                                                 mids, 0, false);
+
+            // Check if mesh has added particles
+            REQUIRE(mesh->nparticles() == coordinates.size());
+
+            // Vector of particle cells
+            std::vector<std::array<mpm::Index, 2>> particles_cells;
+            // Particle cells
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({0, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({1, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({2, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({3, 0}));
+
+            REQUIRE(mesh->assign_particles_cells(particles_cells) == true);
+
+            // Locate particles
+            auto missing_particles = mesh->locate_particles_mesh();
+            REQUIRE(missing_particles.size() == 0);
+
+            REQUIRE(mesh->particles_cells().size() == mesh->nparticles());
+          }
+
+          // Add cell neighbors
+          auto cells = mesh->cells();
+          unsigned count = 1;
+          for (auto citr = cells.cbegin(); citr != cells.cend(); ++citr) {
+            REQUIRE((*citr)->add_neighbour(count) == true);
+            count -= 1;
+          }
+
           // Define bounding box
-          std::vector<double> bounding_box{0., 1., 0., 1.};
-          // Constraint
+          std::vector<double> bounding_box{-5., 5., -5., 5.};
+
+          // Constraint for hydrostatic case
           REQUIRE(mesh->create_nonconforming_pressure_constraint(
-                      bounding_box, 1., 0., 0., false, true, mfunction, 100.) ==
+                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.) ==
                   true);
+          // Constraint for hydrostatic case (above datum)
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 0., 1000., -10., true, true, nullptr, 0.) ==
+                  true);
+          // Constraint for hydrostatic case (outside bounding box)
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 2., 1000., -10., true, false, nullptr,
+                      0.) == true);
+          // Constraint for constant case
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 2., 1000., -10., false, true, mfunction,
+                      100.) == true);
+          // Constraint for constant case (no mathfunction)
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 2., 1000., -10., false, true, nullptr,
+                      100.) == true);
+
+          bounding_box.at(0) = 5.;
+          bounding_box.at(1) = -5.;
+          // Constraint for hydrostatic case (outside bounding box)
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.) ==
+                  true);
+          // Constraint for hydrostatic case (outside bounding box)
+          REQUIRE(mesh->create_nonconforming_pressure_constraint(
+                      bounding_box, 2., 1000., -10., true, false, nullptr,
+                      0.) == true);
 
           // Constraint fails due to pressure = 0. && !hydrostatic
           REQUIRE(mesh->create_nonconforming_pressure_constraint(
-                      bounding_box, 1., 0., 0., false, true, mfunction, 0.) ==
-                  false);
+                      bounding_box, 2., 1000., -10., false, true, mfunction,
+                      0.) == false);
+
+          // Apply constraint
+          mesh->apply_nonconforming_pressure_constraint(10.);
         }
 
         // Test assign acceleration constraints to nodes

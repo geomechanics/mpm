@@ -1413,6 +1413,10 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
             REQUIRE(missing_particles.size() == 0);
 
             REQUIRE(mesh->particles_cells().size() == mesh->nparticles());
+
+            mesh->iterate_over_particles(
+                std::bind(&mpm::ParticleBase<Dim>::compute_shapefn,
+                          std::placeholders::_1));
           }
 
           // Add cell neighbors
@@ -1421,6 +1425,14 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
           for (auto citr = cells.cbegin(); citr != cells.cend(); ++citr) {
             REQUIRE((*citr)->add_neighbour(count) == true);
             count -= 1;
+          }
+
+          // Update nodal mass
+          auto nodes = mesh->nodes();
+          for (auto nitr = nodes.cbegin(); nitr != nodes.cend(); ++nitr) {
+            if ((*nitr) != nullptr) {
+              (*nitr)->update_mass(false, 0, 100.);
+            }
           }
 
           // Define bounding box

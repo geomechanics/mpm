@@ -1119,6 +1119,14 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         // std::exit(1); //LEDT TODO REMOVE
       }
 
+      SECTION("Check failing cohesion constraint case") {
+        // Apply cohesion constraint with incorrect nposition
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+                true);
+        // Should throw: invalid cohesion boundary nposition
+        node->apply_cohesion_constraints(dt);
+      }
+
       SECTION("Check additional cohesion constraint cases") {
         // Case: static, cohesion not fully mobilized, corner
         // Assign mass
@@ -1920,6 +1928,14 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
           REQUIRE(node->acceleration(Nphase)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
+      }
+
+      SECTION("Check failing cohesion constraint case") {
+        // Apply cohesion constraint with incorrect nposition
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 0) ==
+                true);
+        // Should throw: invalid cohesion boundary nposition
+        node->apply_cohesion_constraints(dt);
       }
 
       SECTION("Check additional cohesion constraint cases") {

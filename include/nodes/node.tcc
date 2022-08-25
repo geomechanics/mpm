@@ -87,7 +87,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_concentrated_force(
   try {
     if (phase >= Tnphases || direction >= Tdim) {
       throw std::runtime_error(
-          "Cannot assign nodal concentrated forcego: Direction / phase is "
+          "Cannot assign nodal concentrated force: Direction / phase is "
           "invalid");
     }
     // Assign concentrated force

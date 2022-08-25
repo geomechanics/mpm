@@ -1720,9 +1720,6 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
         // Check applied constraints on acceleration in the global coordinates
         acceleration << -0.2165063509, -9.685;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "global: "
-                    << node->acceleration(mpm::NodePhase::NSolid)(i)
-                    << std::endl;
           REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
@@ -1730,10 +1727,6 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
         // Check the acceleration in local coordinates
         acceleration << 4.655, -8.49571;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "local: "
-                    << (inverse_rotation_matrix *
-                        node->acceleration(mpm::NodePhase::NSolid))(i)
-                    << std::endl;
           REQUIRE((inverse_rotation_matrix *
                    node->acceleration(mpm::NodePhase::NSolid))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
@@ -2693,11 +2686,6 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         // Check apply constraints
         acceleration << 9.3333333333, -6., 0.;
         for (unsigned i = 0; i < acceleration.size(); ++i) {
-          std::cout << "mass: " << node->mass(mpm::NodePhase::NSolid)
-                    << std::endl;
-          std::cout << "cartesian3d: "
-                    << node->acceleration(mpm::NodePhase::NSolid)(i)
-                    << std::endl;
           REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
@@ -2735,9 +2723,6 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         // Check applied constraints on acceleration in the global coordinates
         acceleration << -0.027236821, -9.7942748, 0.;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "global3d: "
-                    << node->acceleration(mpm::NodePhase::NSolid)(i)
-                    << std::endl;
           REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
@@ -2745,10 +2730,6 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         // Check the acceleration in local coordinates
         acceleration << 4.873549628, -8.495709211, 0.;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "local3d: "
-                    << (inverse_rotation_matrix *
-                        node->acceleration(mpm::NodePhase::NSolid))(i)
-                    << std::endl;
           REQUIRE((inverse_rotation_matrix *
                    node->acceleration(mpm::NodePhase::NSolid))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));

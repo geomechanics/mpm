@@ -1,5 +1,4 @@
 #include <cmath>
-#include <iostream>
 #include <limits>
 #include <memory>
 
@@ -1110,13 +1109,9 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         // Check apply constraints
         acceleration << 7.5, -6.;
         for (unsigned i = 0; i < acceleration.size(); ++i) {
-          std::cout << "mass: " << node->mass(Nphase) << std::endl;
-          std::cout << "cartesian: " << node->acceleration(Nphase)(i)
-                    << std::endl;
           REQUIRE(node->acceleration(Nphase)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
-        // std::exit(1); //LEDT TODO REMOVE
       }
 
       SECTION("Check failing cohesion constraint case") {
@@ -1244,7 +1239,6 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         // Check applied constraints on acceleration in the global coordinates
         acceleration << -0.2165063509, -9.685;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "global: " << node->acceleration(Nphase)(i) << std::endl;
           REQUIRE(node->acceleration(Nphase)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
@@ -1252,9 +1246,6 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         // Check the acceleration in local coordinates
         acceleration << 4.655, -8.49571;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "local: "
-                    << (inverse_rotation_matrix * node->acceleration(Nphase))(i)
-                    << std::endl;
           REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
@@ -1922,9 +1913,6 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
         // 10-0.625*(10/(10-0.625))), -6., 0.
         acceleration << 9.3333333333, -6., 0.;
         for (unsigned i = 0; i < acceleration.size(); ++i) {
-          std::cout << "mass: " << node->mass(Nphase) << std::endl;
-          std::cout << "cartesian3d: " << node->acceleration(Nphase)(i)
-                    << std::endl;
           REQUIRE(node->acceleration(Nphase)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
@@ -2059,11 +2047,8 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
 
         // Check applied constraints on acceleration in the global coordinates
         // x=x'*cos(30)+y'*sin(30), y=y'*cos(30)-x'*sin(30)
-        // -0.02723682102, -9.794274814
         acceleration << -0.027236821, -9.7942748, 0.;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "global3d: " << node->acceleration(Nphase)(i)
-                    << std::endl;
           REQUIRE(node->acceleration(Nphase)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }
@@ -2072,9 +2057,6 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
         // x'=4.905-0.03125*(4.905/(4.905-0.03125)), y'=-9.81*cos(30), z'=0.
         acceleration << 4.873549628, -8.495709211, 0.;
         for (unsigned i = 0; i < Dim; ++i) {
-          std::cout << "local3d: "
-                    << (inverse_rotation_matrix * node->acceleration(Nphase))(i)
-                    << std::endl;
           REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
         }

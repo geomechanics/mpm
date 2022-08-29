@@ -573,13 +573,13 @@ class ParticleBase {
   };
   //----------------------------------------------------------------------------
 
-  //! Minus the internal force of the virtual field
+  //! Minus the internal force of the virtual stress field
   //! \param[in] traction Boundary traction
   //! \param[in] divergence_traction Divergence of boundary traction
-  virtual void minus_virtual_fluid_internal_force(
-      Eigen::Matrix<double, 6, 1>& traction, VectorDim& divergence_traction) {
+  virtual void minus_virtual_stress_field(Eigen::Matrix<double, 6, 1>& traction,
+                                          VectorDim& divergence_traction) {
     throw std::runtime_error(
-        "Calling the base class function (minus_virtual_fluid_internal_force) "
+        "Calling the base class function (minus_virtual_stress_field) "
         "in ParticleBase:: illegal operation!");
   }
 

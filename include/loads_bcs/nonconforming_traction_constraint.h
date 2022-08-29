@@ -1,16 +1,16 @@
-#ifndef MPM_NONCONFORMING_PRESSURE_CONSTRAINT_H_
-#define MPM_NONCONFORMING_PRESSURE_CONSTRAINT_H_
+#ifndef MPM_NONCONFORMING_TRACTION_CONSTRAINT_H_
+#define MPM_NONCONFORMING_TRACTION_CONSTRAINT_H_
 
 #include "function_base.h"
 
 namespace mpm {
 
-//! NonconformingPressureConstraint class to store non-conforming pressure
+//! NonconformingTractionConstraint class to store non-conforming traction
 //! constraint
-//! \brief NonconformingPressureConstraint class to store a constraint
-//! \details NonconformingPressureConstraint stores the constraint as a static
+//! \brief NonconformingTractionConstraint class to store a constraint
+//! \details NonconformingTractionConstraint stores the constraint as a static
 //! value
-class NonconformingPressureConstraint {
+class NonconformingTractionConstraint {
  public:
   // Constructor
   //! \param[in] bounding_box Bounding box [xmin, xmax, ymin, ymax, zmin, zmax]
@@ -20,8 +20,8 @@ class NonconformingPressureConstraint {
   //! \param[in] hydrostatic True if hydrostatic pressure, false for constant
   //! \param[in] inside True if surface is inside bounding box
   //! \param[in] mfunction Math function
-  //! \param[in] pressure Pressure if constant
-  NonconformingPressureConstraint(
+  //! \param[in] pressure Traction if constant
+  NonconformingTractionConstraint(
       const std::vector<double> bounding_box, const double datum,
       const double fluid_density, const double gravity, const bool hydrostatic,
       const bool inside, const std::shared_ptr<mpm::FunctionBase>& mfunction,
@@ -75,4 +75,4 @@ class NonconformingPressureConstraint {
   std::shared_ptr<mpm::FunctionBase> pressure_fn_;
 };
 }  // namespace mpm
-#endif  // MPM_NONCONFORMING_PRESSURE_CONSTRAINT_H_
+#endif  // MPM_NONCONFORMING_TRACTION_CONSTRAINT_H_

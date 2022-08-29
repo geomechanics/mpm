@@ -435,10 +435,10 @@ class Particle : public ParticleBase<Tdim> {
   void initialise_constitutive_law() noexcept override;
   /**@}*/
 
-  //! Minus the internal force of the virtual field
+  //! Minus the internal force of the virtual stress field
   //! \param[in] traction Boundary traction
   //! \param[in] divergence_traction Divergence of boundary traction
-  virtual void minus_virtual_fluid_internal_force(
+  virtual void minus_virtual_stress_field(
       Eigen::Matrix<double, 6, 1>& traction,
       VectorDim& divergence_traction) override;
 

@@ -1393,9 +1393,9 @@ void mpm::Particle<Tdim>::update_deformation_gradient(const std::string& type,
       def_grad_increment * this->deformation_gradient_;
 }
 
-//! Minus the internal force of the virtual fluid
+//! Minus the internal force of the virtual stress field
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::minus_virtual_fluid_internal_force(
+void mpm::Particle<Tdim>::minus_virtual_stress_field(
     Eigen::Matrix<double, 6, 1>& traction, VectorDim& divergence_traction) {
   auto const tolerance = std::numeric_limits<double>::epsilon();
 

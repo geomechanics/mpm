@@ -2330,9 +2330,9 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
   return status;
 }
 
-//! Create non-conforming pressure constraint
+//! Create non-conforming traction constraint
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::create_nonconforming_pressure_constraint(
+bool mpm::Mesh<Tdim>::create_nonconforming_traction_constraint(
     const std::vector<double> bounding_box, const double datum,
     const double fluid_density, const double gravity, const bool hydrostatic,
     const bool inside, const std::shared_ptr<FunctionBase>& mfunction,
@@ -2342,11 +2342,11 @@ bool mpm::Mesh<Tdim>::create_nonconforming_pressure_constraint(
     if (std::fabs(pressure) < 1.e-14 && !hydrostatic)
       throw std::runtime_error(
           "Neither hydrostatic nor constant pressure defined for "
-          "non-conforming pressure constraint");
+          "non-conforming traction constraint");
     else
-      // Create a non-conforming pressure constraint
-      nonconforming_pressure_constraints_.emplace_back(
-          std::make_shared<mpm::NonconformingPressureConstraint>(
+      // Create a non-conforming traction constraint
+      nonconforming_traction_constraints_.emplace_back(
+          std::make_shared<mpm::NonconformingTractionConstraint>(
               bounding_box, datum, fluid_density, gravity, hydrostatic, inside,
               mfunction, pressure));
 
@@ -2357,13 +2357,13 @@ bool mpm::Mesh<Tdim>::create_nonconforming_pressure_constraint(
   return status;
 }
 
-//! Apply non-conforming pressure constraint
+//! Apply non-conforming traction constraint
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
+void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
     double current_time) {
 
-  // Iterate over all non-conforming pressure constraints
-  for (const auto& constraint : nonconforming_pressure_constraints_) {
+  // Iterate over all non-conforming traction constraints
+  for (const auto& constraint : nonconforming_traction_constraints_) {
     // Set tolerance
     const auto tolerance = std::numeric_limits<double>::epsilon();
 
@@ -2484,7 +2484,7 @@ void mpm::Mesh<Tdim>::apply_nonconforming_pressure_constraint(
 
       for (auto particle : map_cells_[cell]->particles())
         // modify the nodal force
-        map_particles_[particle]->minus_virtual_fluid_internal_force(
+        map_particles_[particle]->minus_virtual_stress_field(
             traction, divergence_traction);
     }
   }

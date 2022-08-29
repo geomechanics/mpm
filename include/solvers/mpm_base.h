@@ -178,10 +178,10 @@ class MPMBase : public MPM {
   void nodal_absorbing_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
-  //! Non-conforming pressure constraints
+  //! Non-conforming traction constraints
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] mesh_io Mesh IO handle
-  void nonconforming_pressure_constraints(
+  void nonconforming_traction_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
   //! Cell entity sets
@@ -298,8 +298,8 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing boundary flag
   bool absorbing_boundary_{false};
-  //! Non-conforming pressure boundary flag
-  bool nonconforming_pressure_{false};
+  //! Non-conforming traction boundary flag
+  bool nonconforming_traction_{false};
   //! Boolean to update deformation gradient
   bool update_defgrad_{false};
 

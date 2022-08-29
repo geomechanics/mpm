@@ -293,8 +293,8 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Read and assign absorbing constraintes
   this->nodal_absorbing_constraints(mesh_props, mesh_io);
 
-  // Read and assign non-conforming pressure constraints
-  this->nonconforming_pressure_constraints(mesh_props, mesh_io);
+  // Read and assign non-conforming traction constraints
+  this->nonconforming_traction_constraints(mesh_props, mesh_io);
 
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();
@@ -1370,24 +1370,24 @@ void mpm::MPMBase<Tdim>::nodal_absorbing_constraints() {
   }
 }
 
-// Non-conforming pressure constraints
+// Non-conforming traction constraints
 template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
+void mpm::MPMBase<Tdim>::nonconforming_traction_constraints(
     const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
   try {
-    // Read and assign non-conforming pressure constraints
+    // Read and assign non-conforming traction constraints
     if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
         mesh_props["boundary_conditions"].find(
-            "nonconforming_pressure_constraints") !=
+            "nonconforming_traction_constraints") !=
             mesh_props["boundary_conditions"].end()) {
 
-      // Iterate over non-conforming pressure constraints
+      // Iterate over non-conforming traction constraints
       for (const auto& constraints :
            mesh_props["boundary_conditions"]
-                     ["nonconforming_pressure_constraints"]) {
+                     ["nonconforming_traction_constraints"]) {
 
         // Set bool flag for solve loop
-        nonconforming_pressure_ = true;
+        nonconforming_traction_ = true;
         // Bounding box
         std::vector<double> bounding_box;
         if (constraints.find("bounding_box") != constraints.end() &&
@@ -1397,7 +1397,7 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
             bounding_box.emplace_back(bound);
         } else {
           throw std::runtime_error(
-              "Non-conforming pressure constraints have bad bounding box");
+              "Non-conforming traction constraints have bad bounding box");
         }
         // Get daum bool with true for hydrostatic pressure, default is false
         bool hydrostatic = false;
@@ -1419,7 +1419,7 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
           // Check fluid density
           if (fluid_density < 1.e-14)
             throw std::runtime_error(
-                "Non-conforming pressure constraints have bad fluid density");
+                "Non-conforming traction constraints have bad fluid density");
           // Get gravity
           auto loads = io_->json_object("external_loading_conditions");
           if (loads.at("gravity").is_array() &&
@@ -1428,7 +1428,7 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
             gravity = loads.at("gravity").at(Tdim - 1);
           } else {
             throw std::runtime_error(
-                "Non-conforming pressure constraints have bad gravity");
+                "Non-conforming traction constraints have bad gravity");
           }
         }
         // Get bool with true for suface inside bounding box, false for surface
@@ -1447,21 +1447,21 @@ void mpm::MPMBase<Tdim>::nonconforming_pressure_constraints(
           pressure = constraints.at("pressure").template get<double>();
 
         // Create particle surface tractions
-        bool nonconforming_pressure_constraint =
-            mesh_->create_nonconforming_pressure_constraint(
+        bool nonconforming_traction_constraint =
+            mesh_->create_nonconforming_traction_constraint(
                 bounding_box, datum, fluid_density, gravity, hydrostatic,
                 inside, pfunction, pressure);
 
-        if (!nonconforming_pressure_constraint)
+        if (!nonconforming_traction_constraint)
           throw std::runtime_error(
-              "Non-conforming pressure constraints are not properly assigned");
+              "Non-conforming traction constraints are not properly assigned");
       }
     } else
       throw std::runtime_error(
-          "Non-conforming pressure constraints JSON not found");
+          "Non-conforming traction constraints JSON not found");
 
   } catch (std::exception& exception) {
-    console_->warn("#{}: Non-conforming pressure constraints are undefined {} ",
+    console_->warn("#{}: Non-conforming traction constraints are undefined {} ",
                    __LINE__, exception.what());
   }
 }

@@ -1477,11 +1477,30 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
           reference_points.insert(std::make_pair<double, double>(
               static_cast<double>(position), static_cast<double>(h0)));
         }
+
+        // Read gravity
+        Eigen::Matrix<double, Tdim, 1> gravity =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        auto loads = io_->json_object("external_loading_conditions");
+        if (loads.contains("gravity")) {
+          if (loads.at("gravity").is_array() &&
+              loads.at("gravity").size() == gravity.size()) {
+            for (unsigned i = 0; i < gravity.size(); ++i) {
+              gravity[i] = loads.at("gravity").at(i);
+            }
+          } else {
+            throw std::runtime_error("Specified gravity dimension is invalid");
+          }
+        } else {
+          throw std::runtime_error(
+              "In order to use the option water table, \"gravity\" should be "
+              "specified in the \"external_loading_conditions\"! ");
+        }
+
         // Initialise particles pore pressures by watertable
         mesh_->iterate_over_particles(std::bind(
             &mpm::ParticleBase<Tdim>::initialise_pore_pressure_watertable,
-            std::placeholders::_1, dir_v, dir_h, this->gravity_,
-            reference_points));
+            std::placeholders::_1, dir_v, dir_h, gravity, reference_points));
       } else if (type == "isotropic") {
         const double pore_pressure =
             mesh_props["particles_pore_pressures"]["values"]

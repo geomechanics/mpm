@@ -1296,6 +1296,16 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
         {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
         {"output_steps", 5}}}};
 
+  if (dim == 3) {
+    Json water_table = {{{"position", 0.0}, {"h0", 0.0}},
+                        {{"position", 1.0}, {"h0", 0.0}}};
+
+    json_file["mesh"]["particles_pore_pressures"]["type"] = "water_table";
+    json_file["mesh"]["particles_pore_pressures"]["dir_v"] = 1;
+    json_file["mesh"]["particles_pore_pressures"]["dir_h"] = 0;
+    json_file["mesh"]["particles_pore_pressures"]["water_tables"] = water_table;
+  }
+
   // Dump JSON as an input file to be read
   std::ofstream file;
   file.open((file_name + "-" + dimension + ".json").c_str());

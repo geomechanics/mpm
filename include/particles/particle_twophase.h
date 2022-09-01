@@ -176,7 +176,9 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   };
 
   //! Return projection parameter
-  double projection_parameter() const override { return this->projection_param_; }
+  double projection_parameter() const override {
+    return this->projection_param_;
+  }
 
   //! Map drag matrix to cell assuming linear-darcy drag force
   bool map_drag_matrix_to_cell() override;

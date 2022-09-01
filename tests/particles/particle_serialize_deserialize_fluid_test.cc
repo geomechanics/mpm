@@ -150,7 +150,8 @@ TEST_CASE("Fluid particle is checked for serialization and deserialization",
     // Check particle status
     REQUIRE(particle->status() == rparticle->status());
     // Check particle projection parameter
-    REQUIRE(particle->projection_parameter() == rparticle->projection_parameter());
+    REQUIRE(particle->projection_parameter() ==
+            rparticle->projection_parameter());
 
     // Check for coordinates
     auto coordinates = rparticle->coordinates();

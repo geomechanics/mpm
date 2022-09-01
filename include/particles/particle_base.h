@@ -429,7 +429,7 @@ class ParticleBase {
   };
 
   //! Return projection parameter
-  virtual double projection_param() const {
+  virtual double projection_parameter() const {
     throw std::runtime_error(
         "Calling the base class function (projection_param) in "
         "ParticleBase:: illegal operation!");

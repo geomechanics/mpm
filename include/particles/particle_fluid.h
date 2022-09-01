@@ -63,7 +63,7 @@ class FluidParticle : public mpm::Particle<Tdim> {
   };
 
   //! Return projection parameter
-  double projection_param() const override { return this->projection_param_; }
+  double projection_parameter() const override { return this->projection_param_; }
 
   //! Map laplacian element matrix to cell (used in poisson equation LHS)
   bool map_laplacian_to_cell() override;

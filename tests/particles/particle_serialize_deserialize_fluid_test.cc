@@ -11,7 +11,7 @@
 #include "pod_particle.h"
 
 //! \brief Check particle class for serialization and deserialization
-TEST_CASE("Particle is checked for serialization and deserialization",
+TEST_CASE("Fluid particle is checked for serialization and deserialization",
           "[particle][3D][serialize][fluid]") {
   // Dimension
   const unsigned Dim = 3;

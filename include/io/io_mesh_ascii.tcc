@@ -727,7 +727,7 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
           // Cell height
           double h_min;
           // Node nposition
-          int nposition;  // LEDT TODO not reading? use #s in input file?
+          int nposition;
           while (istream.good()) {
             // Read stream
             istream >> id >> dir >> sign >> cohesion >> h_min >> nposition;

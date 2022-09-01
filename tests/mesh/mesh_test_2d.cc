@@ -1337,7 +1337,7 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
 
           // Add cohesion constraint to all nodes in mesh
           cohesion_constraint = std::make_shared<mpm::CohesionConstraint>(
-              1, dir, sign_n, cohesion, h_min, nposition);  // LEDT TODO FIX?
+              1, dir, sign_n, cohesion, h_min, nposition);
           REQUIRE(constraints->assign_nodal_cohesional_constraint(
                       set_id, cohesion_constraint) == true);
 

@@ -1441,7 +1441,7 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
 
   // Check nodal pressure constraints file
   SECTION("Check pressure constraints file") {
-    // Vector of friction constraints
+    // Vector of pressure constraints
     std::vector<std::tuple<mpm::Index, double>> pressure_constraints;
 
     // Pressure constraint

@@ -12,7 +12,7 @@ class CohesionConstraint {
  public:
   // Constructor
   //! \param[in] setid  set id
-  //! \param[in] dir Direction of constraint load
+  //! \param[in] dir Direction of constraint load (normal)
   //! \param[in] sign_n Sign of normal vector
   //! \param[in] cohesion Constraint cohesion
   //! \param[in] h_min Characteristic length (cell height)
@@ -32,7 +32,7 @@ class CohesionConstraint {
   // Direction
   unsigned dir() const { return dir_; }
 
-  // Sign of normal component
+  // Sign of normal direction
   int sign_n() const { return sign_n_; }
 
   // Return cohesion
@@ -51,9 +51,9 @@ class CohesionConstraint {
  private:
   // ID
   int setid_;
-  // Direction
+  // Direction (normal)
   unsigned dir_;
-  // Sign
+  // Sign of normal direction
   int sign_n_;
   // Cohesion
   double cohesion_;

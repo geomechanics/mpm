@@ -173,10 +173,10 @@ bool mpm::Constraints<Tdim>::assign_nodal_frictional_constraint(
       throw std::runtime_error(
           "Node set is empty for assignment of friction constraints");
     unsigned dir = fconstraint->dir();
-    int nsign_n = fconstraint->sign_n();
+    int sign_n = fconstraint->sign_n();
     double friction = fconstraint->friction();
     for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
-      if (!(*nitr)->assign_friction_constraint(dir, nsign_n, friction))
+      if (!(*nitr)->assign_friction_constraint(dir, sign_n, friction))
         throw std::runtime_error(
             "Failed to initialise friction constraint at node");
     }
@@ -197,15 +197,15 @@ bool mpm::Constraints<Tdim>::assign_nodal_friction_constraints(
     for (const auto& friction_constraint : friction_constraints) {
       // Node id
       mpm::Index nid = std::get<0>(friction_constraint);
-      // Direction
+      // Direction (normal)
       unsigned dir = std::get<1>(friction_constraint);
-      // Sign
-      int sign = std::get<2>(friction_constraint);
+      // Sign of normal direction
+      int sign_n = std::get<2>(friction_constraint);
       // Friction
       double friction = std::get<3>(friction_constraint);
 
       // Apply constraint
-      if (!mesh_->node(nid)->assign_friction_constraint(dir, sign, friction))
+      if (!mesh_->node(nid)->assign_friction_constraint(dir, sign_n, friction))
         throw std::runtime_error(
             "Nodal friction constraints assignment failed");
     }
@@ -228,12 +228,12 @@ bool mpm::Constraints<Tdim>::assign_nodal_cohesional_constraint(
       throw std::runtime_error(
           "Node set is empty for assignment of cohesion constraints");
     unsigned dir = cconstraint->dir();
-    int nsign_n = cconstraint->sign_n();
+    int sign_n = cconstraint->sign_n();
     double cohesion = cconstraint->cohesion();
     double h_min = cconstraint->h_min();
     int nposition = cconstraint->nposition();
     for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
-      if (!(*nitr)->assign_cohesion_constraint(dir, nsign_n, cohesion, h_min,
+      if (!(*nitr)->assign_cohesion_constraint(dir, sign_n, cohesion, h_min,
                                                nposition))
         throw std::runtime_error(
             "Failed to initialise cohesion constraint at node");
@@ -255,10 +255,10 @@ bool mpm::Constraints<Tdim>::assign_nodal_cohesion_constraints(
     for (const auto& cohesion_constraint : cohesion_constraints) {
       // Node id
       mpm::Index nid = std::get<0>(cohesion_constraint);
-      // Direction
+      // Direction (normal)
       unsigned dir = std::get<1>(cohesion_constraint);
-      // Sign
-      int sign = std::get<2>(cohesion_constraint);
+      // Sign of normal direction
+      int sign_n = std::get<2>(cohesion_constraint);
       // Cohesion
       double cohesion = std::get<3>(cohesion_constraint);
       // Cell height for area computation
@@ -267,7 +267,7 @@ bool mpm::Constraints<Tdim>::assign_nodal_cohesion_constraints(
       int nposition = std::get<5>(cohesion_constraint);
 
       // Apply constraint
-      if (!mesh_->node(nid)->assign_cohesion_constraint(dir, sign, cohesion,
+      if (!mesh_->node(nid)->assign_cohesion_constraint(dir, sign_n, cohesion,
                                                         h_min, nposition))
         throw std::runtime_error(
             "Nodal cohesion constraints assignment failed");

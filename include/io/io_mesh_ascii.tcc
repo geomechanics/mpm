@@ -667,16 +667,17 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double>>
             (line.find('!') == std::string::npos) && (line != "")) {
           // ID
           mpm::Index id;
-          // Direction
+          // Direction (normal)
           unsigned dir;
-          // Sign
-          int sign;
+          // Sign of normal direction
+          int sign_n;
           // Friction
           double friction;
           while (istream.good()) {
             // Read stream
-            istream >> id >> dir >> sign >> friction;
-            constraints.emplace_back(std::make_tuple(id, dir, sign, friction));
+            istream >> id >> dir >> sign_n >> friction;
+            constraints.emplace_back(
+                std::make_tuple(id, dir, sign_n, friction));
           }
         }
       }
@@ -718,10 +719,10 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
             (line.find('!') == std::string::npos) && (line != "")) {
           // ID
           mpm::Index id;
-          // Direction
+          // Direction (normal)
           unsigned dir;
-          // Sign
-          int sign;
+          // Sign of normal direction
+          int sign_n;
           // Cohesion
           double cohesion;
           // Cell height
@@ -730,9 +731,9 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
           int nposition;
           while (istream.good()) {
             // Read stream
-            istream >> id >> dir >> sign >> cohesion >> h_min >> nposition;
+            istream >> id >> dir >> sign_n >> cohesion >> h_min >> nposition;
             constraints.emplace_back(
-                std::make_tuple(id, dir, sign, cohesion, h_min, nposition));
+                std::make_tuple(id, dir, sign_n, cohesion, h_min, nposition));
           }
         }
       }

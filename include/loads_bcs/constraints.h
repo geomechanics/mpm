@@ -56,27 +56,27 @@ class Constraints {
 
   //! Assign nodal frictional constraints
   //! \param[in] setid Node set id
-  //! \param[in] friction_constraints Constraint at node, dir, sign, friction
+  //! \param[in] friction_constraints Constraint at node, dir, sign_n, friction
   bool assign_nodal_frictional_constraint(
       int nset_id,
       const std::shared_ptr<mpm::FrictionConstraint>& fconstraints);
 
   //! Assign friction constraints to nodes
-  //! \param[in] friction_constraints Constraint at node, dir, sign, friction
+  //! \param[in] friction_constraints Constraint at node, dir, sign_n, friction
   bool assign_nodal_friction_constraints(
       const std::vector<std::tuple<mpm::Index, unsigned, int, double>>&
           friction_constraints);
 
   //! Assign nodal cohesional constraints
   //! \param[in] setid Node set id
-  //! \param[in] cohesion_constraints Constraint at node, dir, sign, cohesion,
+  //! \param[in] cohesion_constraints Constraint at node, dir, sign_n, cohesion,
   //! h_min, nposition
   bool assign_nodal_cohesional_constraint(
       int nset_id,
       const std::shared_ptr<mpm::CohesionConstraint>& cconstraints);
 
   //! Assign cohesion constraints to nodes
-  //! \param[in] cohesion_constraints Constraint at node, dir, sign, cohesion,
+  //! \param[in] cohesion_constraints Constraint at node, dir, sign_n, cohesion,
   //! h_min, nposition
   bool assign_nodal_cohesion_constraints(
       const std::vector<std::tuple<mpm::Index, unsigned, int, double, double,

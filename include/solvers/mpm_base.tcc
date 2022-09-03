@@ -1116,9 +1116,9 @@ void mpm::MPMBase<Tdim>::nodal_frictional_constraints(
 
           // Set id
           int nset_id = constraints.at("nset_id").template get<int>();
-          // Direction
+          // Direction (normal)
           unsigned dir = constraints.at("dir").template get<unsigned>();
-          // Sign n
+          // Sign of normal direction
           int sign_n = constraints.at("sign_n").template get<int>();
           // Friction
           double friction = constraints.at("friction").template get<double>();
@@ -1170,9 +1170,9 @@ void mpm::MPMBase<Tdim>::nodal_cohesional_constraints(
 
           // Set id
           int nset_id = constraints.at("nset_id").template get<int>();
-          // Direction
+          // Direction (normal)
           unsigned dir = constraints.at("dir").template get<unsigned>();
-          // Sign n
+          // Sign of normal direction
           int sign_n = constraints.at("sign_n").template get<int>();
           // Cohesion
           double cohesion = constraints.at("cohesion").template get<double>();

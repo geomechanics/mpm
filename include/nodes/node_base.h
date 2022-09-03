@@ -242,10 +242,10 @@ class NodeBase {
 
   //! Assign friction constraint
   //! Directions can take values between 0 and Dim * Nphases
-  //! \param[in] dir Direction of friction constraint
-  //! \param[in] sign Sign of normal wrt coordinate system for friction
+  //! \param[in] dir Direction of friction constraint (normal)
+  //! \param[in] sign_n Sign of normal wrt coordinate system for friction
   //! \param[in] friction Applied friction constraint
-  virtual bool assign_friction_constraint(unsigned dir, int sign,
+  virtual bool assign_friction_constraint(unsigned dir, int sign_n,
                                           double friction) = 0;
 
   //! Apply friction constraints
@@ -254,12 +254,12 @@ class NodeBase {
 
   //! Assign cohesion constraint
   //! Directions can take values between 0 and Dim * Nphases
-  //! \param[in] dir Direction of cohesion constraint
-  //! \param[in] sign Sign of normal wrt coordinate system for cohesion
+  //! \param[in] dir Direction of cohesion constraint (normal)
+  //! \param[in] sign_n Sign of normal wrt coordinate system for cohesion
   //! \param[in] cohesion Applied cohesion constraint
   //! \param[in] h_min Characteristic length (cell height)
   //! \param[in] nposition Nodal location, nposition, along boundary
-  virtual bool assign_cohesion_constraint(unsigned dir, int sign,
+  virtual bool assign_cohesion_constraint(unsigned dir, int sign_n,
                                           double cohesion, double h_min,
                                           int nposition) = 0;
 

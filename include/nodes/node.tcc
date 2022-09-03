@@ -14,8 +14,9 @@ mpm::Node<Tdim, Tdof, Tnphases>::Node(
       "node" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 
-  // Clear any velocity constraints
+  // Clear any velocity and acceleration constraints
   velocity_constraints_.clear();
+  acceleration_constraints_.clear();
   concentrated_force_.setZero();
   this->initialise();
 }
@@ -281,6 +282,9 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
     // Apply friction constraints
     this->apply_friction_constraints(dt);
 
+    // Apply acceleration constraints
+    this->apply_acceleration_constraints();
+
     // Velocity += acceleration * dt
     this->velocity_.col(phase).noalias() += this->acceleration_.col(phase) * dt;
     // Apply velocity constraints, which also sets acceleration to 0,
@@ -316,6 +320,9 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
 
     // Apply friction constraints
     this->apply_friction_constraints(dt);
+
+    // Apply acceleration constraints
+    this->apply_acceleration_constraints();
 
     // Velocity += acceleration * dt
     this->velocity_.col(phase).noalias() += this->acceleration_.col(phase) * dt;
@@ -388,6 +395,86 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_velocity_constraints() {
       local_acceleration(direction, phase) = 0.;
       // Transform back to global coordinate
       this->velocity_ = rotation_matrix_ * local_velocity;
+      this->acceleration_ = rotation_matrix_ * local_acceleration;
+    }
+  }
+}
+
+//! Assign acceleration constraint
+//! Constrain directions can take values between 0 and Dim * Nphases
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::assign_acceleration_constraint(
+    unsigned dir, double acceleration) {
+  bool status = true;
+  try {
+    //! Constrain directions can take values between 0 and Dim * Nphases
+    if (dir < (Tdim * Tnphases))
+      this->acceleration_constraints_.insert(std::make_pair<unsigned, double>(
+          static_cast<unsigned>(dir), static_cast<double>(acceleration)));
+    else
+      throw std::runtime_error("Constraint direction is out of bounds");
+
+    // Check if velocity constraint already defined in same dir
+    for (auto const& velocity_constraint : velocity_constraints_) {
+      if (velocity_constraint.first == dir) {
+        throw std::runtime_error(
+            "Acceleration and velocity constraints set in the same direction "
+            "for the same node");
+      }
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Update acceleration constraint
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::update_acceleration_constraint(
+    unsigned dir, double acceleration) {
+  bool status = true;
+  try {
+    // Check if an acceleration constraint was assigned to dir
+    if (acceleration_constraints_.find(dir) != acceleration_constraints_.end())
+      acceleration_constraints_.find(dir)->second = acceleration;
+    else
+      throw std::runtime_error("Acceleration constraint direction is invalid");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply acceleration constraints
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_acceleration_constraints() {
+  // Set acceleration constraint
+  for (const auto& constraint : this->acceleration_constraints_) {
+    // Direction value in the constraint (0, Dim * Nphases)
+    const unsigned dir = constraint.first;
+    // Direction: dir % Tdim (modulus)
+    const auto direction = static_cast<unsigned>(dir % Tdim);
+    // Phase: Integer value of division (dir / Tdim)
+    const auto phase = static_cast<unsigned>(dir / Tdim);
+
+    if (!generic_boundary_constraints_) {
+      // Acceleration constraints are applied on Cartesian boundaries
+      this->acceleration_(direction, phase) = constraint.second;
+    } else {
+      // Acceleration constraints on general boundaries
+      // Compute inverse rotation matrix
+      const Eigen::Matrix<double, Tdim, Tdim> inverse_rotation_matrix =
+          rotation_matrix_.inverse();
+      // Transform to local coordinate
+      Eigen::Matrix<double, Tdim, Tnphases> local_acceleration =
+          inverse_rotation_matrix * this->acceleration_;
+      // Apply boundary condition in local coordinate
+      local_acceleration(direction, phase) = constraint.second;
+      // Transform back to global coordinate
       this->acceleration_ = rotation_matrix_ * local_acceleration;
     }
   }
@@ -567,6 +654,99 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_friction_constraints(double dt) {
   }
 }
 
+// !Apply absorbing constraints
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::apply_absorbing_constraint(
+    unsigned dir, double delta, double h_min, double a, double b,
+    mpm::Position position) {
+  bool status = true;
+  try {
+
+    if (dir >= Tdim) {
+      throw std::runtime_error("Direction is out of bounds");
+      status = false;
+    }
+    if (material_ids_.size() != 0) {
+      // Get material id
+      auto mat_id = material_ids_.begin();
+
+      // Extract material properties and displacements
+      double pwave_v = this->property_handle_->property(
+          "wave_velocities", prop_id_, *mat_id, 2)(0);
+      double swave_v = this->property_handle_->property(
+          "wave_velocities", prop_id_, *mat_id, 2)(1);
+      double density =
+          this->property_handle_->property("density", prop_id_, *mat_id)(0);
+      Eigen::Matrix<double, Tdim, 1> material_displacement =
+          this->property_handle_->property("displacements", prop_id_, *mat_id,
+                                           Tdim);
+
+      // Update quantities based on nodal mass
+      pwave_v /= this->mass(*mat_id);
+      swave_v /= this->mass(*mat_id);
+      density /= this->mass(*mat_id);
+      material_displacement /= this->mass(*mat_id);
+
+      // Wave velocity Eigen Matrix
+      Eigen::Matrix<double, Tdim, 1> wave_velocity =
+          Eigen::MatrixXd::Constant(Tdim, 1, b * swave_v);
+      wave_velocity(dir, 0) = a * pwave_v;
+      // Spring constant Eigen matrix
+      const double k_s = (density * pow(swave_v, 2)) / delta;
+      const double k_p = (density * pow(pwave_v, 2)) / delta;
+      Eigen::Matrix<double, Tdim, 1> spring_constant =
+          Eigen::MatrixXd::Constant(Tdim, 1, k_s);
+      spring_constant(dir, 0) = k_p;
+
+      // Only consider solid phase
+      unsigned phase = 0;
+
+      // Calculate Aborbing Traction
+      Eigen::Matrix<double, Tdim, 1> absorbing_traction_ =
+          this->velocity_.col(phase).cwiseProduct(wave_velocity) * density +
+          material_displacement.cwiseProduct(spring_constant);
+
+      // Update external force
+      if (Tdim == 2) {
+        Eigen::Matrix<double, Tdim, 1> absorbing_force_;
+        switch (position) {
+          case mpm::Position::Corner:
+            absorbing_force_ = 0.5 * h_min * absorbing_traction_;
+            break;
+          case mpm::Position::Edge:
+            absorbing_force_ = h_min * absorbing_traction_;
+            break;
+          default:
+            throw std::runtime_error("Invalid absorbing boundary position");
+            break;
+        }
+        this->update_external_force(true, phase, -absorbing_force_);
+      } else if (Tdim == 3) {
+        Eigen::Matrix<double, Tdim, 1> absorbing_force_;
+        switch (position) {
+          case mpm::Position::Corner:
+            absorbing_force_ = 0.25 * pow(h_min, 2) * absorbing_traction_;
+            break;
+          case mpm::Position::Edge:
+            absorbing_force_ = 0.5 * pow(h_min, 2) * absorbing_traction_;
+            break;
+          case mpm::Position::Face:
+            absorbing_force_ = pow(h_min, 2) * absorbing_traction_;
+            break;
+          default:
+            throw std::runtime_error("Invalid absorbing boundary position");
+            break;
+        }
+        this->update_external_force(true, phase, -absorbing_force_);
+      }
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Add material id from material points to material_ids_
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::append_material_id(unsigned id) {
@@ -594,6 +774,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_property(
   node_mutex_.lock();
   property_handle_->update_property(property, prop_id_, mat_id, property_value,
                                     nprops);
+
   node_mutex_.unlock();
 }
 

@@ -42,6 +42,29 @@ void mpm::Particle<Tdim>::map_inertial_force() noexcept {
          shapefn_(i)));
 }
 
+//! Map mass and material stiffness matrix to cell (used in poisson equation
+//! LHS)
+template <unsigned Tdim>
+inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
+    double newmark_beta, double dt, bool quasi_static) {
+  bool status = true;
+  try {
+    // Check if material ptr is valid
+    assert(this->material() != nullptr);
+
+    // Compute material stiffness matrix
+    this->map_material_stiffness_matrix_to_cell();
+
+    // Compute mass matrix
+    if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
 template <unsigned Tdim>
 inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell() {
@@ -244,12 +267,23 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
   return strain_increment;
 }
 
-// Compute strain of the particle using nodal displacement
+// Compute strain and volume of the particle using nodal displacement
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain_newmark() noexcept {
+void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
+  // Compute the volume at the previous time step
+  this->volume_ /= (1. + dvolumetric_strain_);
+  this->mass_density_ *= (1. + dvolumetric_strain_);
+
   // Compute strain increment from previous time step
   this->dstrain_ =
       this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+
+  // Updated volumetric strain increment
+  this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
+
+  // Update volume using volumetric strain increment
+  this->volume_ *= (1. + dvolumetric_strain_);
+  this->mass_density_ /= (1. + dvolumetric_strain_);
 }
 
 // Compute stress using implicit updating scheme
@@ -315,14 +349,9 @@ void mpm::Particle<Tdim>::update_stress_strain() noexcept {
   // Update total strain
   this->strain_.noalias() += this->dstrain_;
 
-  // Volumetric strain increment
-  this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
-
-  // Update volumetric strain at particle position (not at centroid)
-  this->volumetric_strain_centroid_ += this->dvolumetric_strain_;
-
   // Reset strain increment
   this->dstrain_.setZero();
+  this->dvolumetric_strain_ = 0.;
 }
 
 // Assign acceleration to the particle
@@ -332,4 +361,89 @@ bool mpm::Particle<Tdim>::assign_acceleration(
   // Assign acceleration
   acceleration_ = acceleration;
   return true;
+}
+
+// Compute deformation gradient increment of the particle
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::Particle<1>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
+      Eigen::Matrix<double, 3, 3>::Identity();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& displacement = nodes_[i]->displacement(phase);
+    deformation_gradient_increment(0, 0) += dn_dx(i, 0) * displacement[0];
+  }
+
+  if (std::fabs(deformation_gradient_increment(0, 0) - 1.) < 1.E-15)
+    deformation_gradient_increment(0, 0) = 1.;
+  return deformation_gradient_increment;
+}
+
+// Compute deformation gradient increment of the particle
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::Particle<2>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
+      Eigen::Matrix<double, 3, 3>::Identity();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& displacement = nodes_[i]->displacement(phase);
+    deformation_gradient_increment(0, 0) += displacement[0] * dn_dx(i, 0);
+    deformation_gradient_increment(0, 1) += displacement[0] * dn_dx(i, 1);
+    deformation_gradient_increment(1, 0) += displacement[1] * dn_dx(i, 0);
+    deformation_gradient_increment(1, 1) += displacement[1] * dn_dx(i, 1);
+  }
+
+  for (unsigned i = 0; i < 2; ++i) {
+    for (unsigned j = 0; i < 2; ++i) {
+      if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
+        deformation_gradient_increment(i, j) = 0.;
+      if (i == j &&
+          std::fabs(deformation_gradient_increment(i, j) - 1.) < 1.E-15)
+        deformation_gradient_increment(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_increment;
+}
+
+// Compute deformation gradient increment of the particle
+template <>
+inline Eigen::Matrix<double, 3, 3>
+    mpm::Particle<3>::compute_deformation_gradient_increment(
+        const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
+      Eigen::Matrix<double, 3, 3>::Identity();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& displacement = nodes_[i]->displacement(phase);
+    deformation_gradient_increment(0, 0) += displacement[0] * dn_dx(i, 0);
+    deformation_gradient_increment(0, 1) += displacement[0] * dn_dx(i, 1);
+    deformation_gradient_increment(0, 2) += displacement[0] * dn_dx(i, 2);
+    deformation_gradient_increment(1, 0) += displacement[1] * dn_dx(i, 0);
+    deformation_gradient_increment(1, 1) += displacement[1] * dn_dx(i, 1);
+    deformation_gradient_increment(1, 2) += displacement[1] * dn_dx(i, 2);
+    deformation_gradient_increment(2, 0) += displacement[2] * dn_dx(i, 0);
+    deformation_gradient_increment(2, 1) += displacement[2] * dn_dx(i, 1);
+    deformation_gradient_increment(2, 2) += displacement[2] * dn_dx(i, 2);
+  }
+
+  for (unsigned i = 0; i < 3; ++i) {
+    for (unsigned j = 0; i < 3; ++i) {
+      if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
+        deformation_gradient_increment(i, j) = 0.;
+      if (i == j &&
+          std::fabs(deformation_gradient_increment(i, j) - 1.) < 1.E-15)
+        deformation_gradient_increment(i, j) = 1.;
+    }
+  }
+  return deformation_gradient_increment;
 }

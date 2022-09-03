@@ -27,6 +27,16 @@ void mpm::Cell<Tdim>::compute_local_material_stiffness_matrix(
       bmatrix.transpose() * dmatrix * bmatrix * multiplier * pvolume;
 }
 
+//! Compute local geometric stiffness matrix
+template <unsigned Tdim>
+void mpm::Cell<Tdim>::compute_local_geometric_stiffness_matrix(
+    const Eigen::MatrixXd& geometric_stiffness, double pvolume,
+    double multiplier) noexcept {
+
+  std::lock_guard<std::mutex> guard(cell_mutex_);
+  stiffness_matrix_.noalias() += geometric_stiffness * multiplier * pvolume;
+}
+
 //! Compute local mass matrix
 template <unsigned Tdim>
 inline void mpm::Cell<Tdim>::compute_local_mass_matrix(

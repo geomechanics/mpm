@@ -41,6 +41,18 @@ class AssemblerBase {
       case 3:
         sparse_row_size_ = (Tdim == 2) ? 49 : 343;
         break;
+      case 4:
+        sparse_row_size_ = (Tdim == 2) ? 81 : 729;
+        break;
+      case 5:
+        sparse_row_size_ = (Tdim == 2) ? 121 : 1331;
+        break;
+      case 6:
+        sparse_row_size_ = (Tdim == 2) ? 169 : 2197;
+        break;
+      case 7:
+        sparse_row_size_ = (Tdim == 2) ? 225 : 3375;
+        break;
       default:
         throw std::runtime_error(
             "The node neighbourhood passed in AssemblerBase constructor is "
@@ -67,12 +79,25 @@ class AssemblerBase {
   }
 
   //! Create a pair between nodes and index in Matrix / Vector
+  //! \param[in] nactive_node Number of active node in the current process
+  //! \param[in] nglobal_active_node Number of active node in the all processes
   bool assign_global_node_indices(unsigned nactive_node,
                                   unsigned nglobal_active_node);
 
-  //! Null-space treatment of a sparse matrix
+  //! Null-space treatment of a sparse matrix given a coefficient matrix
+  //! \param[in] coefficient_matrix Coefficient matrix of the linear systems of
+  //! equations
+  //! \param[in] nblock Number of DOF per node
   void apply_null_space_treatment(
       Eigen::SparseMatrix<double>& coefficient_matrix, unsigned nblock = 1);
+
+  //! Null-space treatment of a sparse matrix given a triplet list
+  //! \param[in] coefficient_tripletList Tripletlist of to construct the sparse
+  //! coefficient matrix
+  //! \param[in] nblock Number of DOF per node
+  void apply_null_space_treatment(
+      std::vector<Eigen::Triplet<double>>& coefficient_tripletList,
+      unsigned nblock = 1);
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

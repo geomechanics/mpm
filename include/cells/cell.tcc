@@ -42,12 +42,14 @@ bool mpm::Cell<Tdim>::initialise() {
       Eigen::Matrix<double, Tdim, 1> xi_centroid;
       xi_centroid.setZero();
 
-      Eigen::Matrix<double, Tdim, 1> zero;
-      zero.setZero();
+      Eigen::Matrix<double, Tdim, 1> zero =
+          Eigen::Matrix<double, Tdim, 1>::Zero();
+      const Eigen::Matrix<double, Tdim, Tdim> identity_matrix =
+          Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
       // dN/dX at the centroid
-      dn_dx_centroid_ =
-          element_->dn_dx(xi_centroid, this->nodal_coordinates_, zero, zero);
+      dn_dx_centroid_ = element_->dn_dx(xi_centroid, this->nodal_coordinates_,
+                                        zero, identity_matrix);
 
       dis_id_ = std::numeric_limits<unsigned>::max();
 
@@ -102,20 +104,32 @@ std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points() {
   const Eigen::MatrixXd nodal_coords = nodal_coordinates_.transpose();
 
   // Zeros
-  const Eigen::Matrix<double, Tdim, 1> zeros =
-      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
+  const Eigen::Matrix<double, Tdim, Tdim> zeros_matrix =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
 
   // Get local coordinates of gauss points and transform to global
   for (unsigned i = 0; i < quadratures.cols(); ++i) {
     const auto lpoint = quadratures.col(i);
     // Get shape functions
-    const auto sf = element_->shapefn(lpoint, zeros, zeros);
+    const auto& sf = element_->shapefn(lpoint, zeros, zeros_matrix);
     const auto point = nodal_coords * sf;
     const auto xi = this->transform_real_to_unit_cell(point);
     bool status = true;
+
     // Check if point is within the cell
-    for (unsigned i = 0; i < xi.size(); ++i)
-      if (xi(i) < -1. || xi(i) > 1. || std::isnan(xi(i))) status = false;
+    if ((Tdim == 2 && indices.size() == 3) or
+        (Tdim == 3 && indices.size() == 4)) {
+      if (xi.sum() > 1.)
+        status = false;
+      else {
+        for (unsigned i = 0; i < xi.size(); ++i)
+          if (xi(i) < 0. || std::isnan(xi(i))) status = false;
+      }
+    } else {
+      for (unsigned i = 0; i < xi.size(); ++i)
+        if (xi(i) < -1. || xi(i) > 1. || std::isnan(xi(i))) status = false;
+    }
 
     if (status)
       points.emplace_back(point);
@@ -337,18 +351,22 @@ inline bool mpm::Cell<Tdim>::is_point_in_cell(
     (*xi) = this->transform_real_to_unit_cell(point);
 
   // Check if the transformed coordinate is within the unit cell:
-  // between 0 and 1-xi(1-i) if the element is a triangle, and between
-  // -1 and 1 if otherwise. Also, check if the transformed coordinate lies
-  // exactly on cell edge.
+  // between 0 and 1-x-y-z plane if the element is a triangle or a tetrahedron,
+  // and between -1 and 1 if otherwise. Also, check if the transformed
+  // coordinate lies exactly on cell edge.
   const double tolerance = std::numeric_limits<double>::epsilon();
-  if (this->element_->corner_indices().size() == 3) {
-    for (unsigned i = 0; i < (*xi).size(); ++i) {
-      if ((*xi)(i) < 0. || (*xi)(i) > 1. - (*xi)(1 - i) || std::isnan((*xi)(i)))
-        status = false;
-      else {
-        if ((*xi)(i) < tolerance) (*xi)(i) = tolerance;
-        if ((*xi)(i) > 1. - (*xi)(1 - i) - tolerance)
-          (*xi)(i) = 1. - (*xi)(1 - i) - tolerance;
+  if ((Tdim == 2 && this->element_->corner_indices().size() == 3) or
+      (Tdim == 3 && this->element_->corner_indices().size() == 4)) {
+    if ((*xi).sum() > 1.)
+      status = false;
+    else {
+      for (unsigned i = 0; i < (*xi).size(); ++i) {
+        if ((*xi)(i) < 0. || std::isnan((*xi)(i)))
+          status = false;
+        else {
+          if ((*xi)(i) < tolerance) (*xi)(i) = tolerance;
+          if ((*xi)(i) > 1. - tolerance) (*xi)(i) = 1. - tolerance;
+        }
       }
     }
   } else {
@@ -361,6 +379,7 @@ inline bool mpm::Cell<Tdim>::is_point_in_cell(
       }
     }
   }
+
   return status;
 }
 
@@ -480,8 +499,68 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
     // Indices of corner nodes
     Eigen::VectorXi indices = element_->corner_indices();
 
+    // Tetrahedron
+    if (indices.size() == 4) {
+      // Node numbering (k) convention: 0,0,0 node first; CW looking from
+      // outside
+      //       3
+      //       *
+      //      /|\
+      //     / | \
+      //    /  |  \
+      // 2 *. -|- .* 1
+      //      `*´
+      //       0
+
+      // Assemble Ainv
+      // 1. Temporary variables for node coordinants (xk, yk, zk)
+      const double x1 = nodal_coordinates_(0, 0);
+      const double x2 = nodal_coordinates_(1, 0);
+      const double x3 = nodal_coordinates_(2, 0);
+      const double x4 = nodal_coordinates_(3, 0);
+      const double y1 = nodal_coordinates_(0, 1);
+      const double y2 = nodal_coordinates_(1, 1);
+      const double y3 = nodal_coordinates_(2, 1);
+      const double y4 = nodal_coordinates_(3, 1);
+      const double z1 = nodal_coordinates_(0, 2);
+      const double z2 = nodal_coordinates_(1, 2);
+      const double z3 = nodal_coordinates_(2, 2);
+      const double z4 = nodal_coordinates_(3, 2);
+
+      // 2. Volume of linear tetrahedron, multuiplied by 6
+      const double tetrahedron_6xV =
+          6.0 * element_->compute_volume(this->nodal_coordinates_);
+
+      // 3. Assembled matrix in cpp numbering; with (1/(6*V)); without first row
+      Eigen::Matrix<double, 3, 4> Ainv;
+      Ainv(0, 0) = (x1 * y4 * z3 - x1 * y3 * z4 + x3 * y1 * z4 - x3 * y4 * z1 -
+                    x4 * y1 * z3 + x4 * y3 * z1);
+      Ainv(0, 1) = (y1 * z3 - y3 * z1 - y1 * z4 + y4 * z1 + y3 * z4 - y4 * z3);
+      Ainv(0, 2) = (x3 * z1 - x1 * z3 + x1 * z4 - x4 * z1 - x3 * z4 + x4 * z3);
+      Ainv(0, 3) = (x1 * y3 - x3 * y1 - x1 * y4 + x4 * y1 + x3 * y4 - x4 * y3);
+      Ainv(1, 0) = (x1 * y2 * z4 - x1 * y4 * z2 - x2 * y1 * z4 + x2 * y4 * z1 +
+                    x4 * y1 * z2 - x4 * y2 * z1);
+      Ainv(1, 1) = (y2 * z1 - y1 * z2 + y1 * z4 - y4 * z1 - y2 * z4 + y4 * z2);
+      Ainv(1, 2) = (x1 * z2 - x2 * z1 - x1 * z4 + x4 * z1 + x2 * z4 - x4 * z2);
+      Ainv(1, 3) = (x2 * y1 - x1 * y2 + x1 * y4 - x4 * y1 - x2 * y4 + x4 * y2);
+      Ainv(2, 0) = (x1 * y3 * z2 - x1 * y2 * z3 + x2 * y1 * z3 - x2 * y3 * z1 -
+                    x3 * y1 * z2 + x3 * y2 * z1);
+      Ainv(2, 1) = (y1 * z2 - y2 * z1 - y1 * z3 + y3 * z1 + y2 * z3 - y3 * z2);
+      Ainv(2, 2) = (x2 * z1 - x1 * z2 + x1 * z3 - x3 * z1 - x2 * z3 + x3 * z2);
+      Ainv(2, 3) = (x1 * y2 - x2 * y1 - x1 * y3 + x3 * y1 + x2 * y3 - x3 * y2);
+      Ainv *= (1 / tetrahedron_6xV);
+
+      // Output point in natural coordinates (3x4 Ainv matrix multiplied
+      // by 3x1 point in global coordinates)
+      xi(0) = Ainv(0, 0) + Ainv(0, 1) * point(0) + Ainv(0, 2) * point(1) +
+              Ainv(0, 3) * point(2);
+      xi(1) = Ainv(1, 0) + Ainv(1, 1) * point(0) + Ainv(1, 2) * point(1) +
+              Ainv(1, 3) * point(2);
+      xi(2) = Ainv(2, 0) + Ainv(2, 1) * point(0) + Ainv(2, 2) * point(1) +
+              Ainv(2, 3) * point(2);
+    }
     // Hexahedron
-    if (indices.size() == 8) {
+    else if (indices.size() == 8) {
       // Node numbering as read in by mesh file
       //        3               2
       //          *_ _ _ _ _ _*
@@ -514,8 +593,9 @@ inline Eigen::Matrix<double, 3, 1> mpm::Cell<3>::local_coordinates_point(
       xi(0) = 2. * (point(0) - centre(0)) / xlength;
       xi(1) = 2. * (point(1) - centre(1)) / ylength;
       xi(2) = 2. * (point(2) - centre(2)) / zlength;
-
-    } else {
+    }
+    // Element not recognized
+    else {
       throw std::runtime_error("Unable to compute local coordinates");
     }
   } catch (std::exception& exception) {
@@ -543,8 +623,9 @@ inline Eigen::Matrix<double, Tdim, 1>
   // Get indices of corner nodes
   Eigen::VectorXi indices = element_->corner_indices();
 
-  // Analytical solution for 2D linear triangle element
-  if (Tdim == 2 && indices.size() == 3) {
+  // Analytical solution for 2D linear triangle and 3D tetrahedral elements
+  if ((Tdim == 2 && indices.size() == 3) or
+      (Tdim == 3 && indices.size() == 4)) {
     if (element_->isvalid_natural_coordinates_analytical())
       return element_->natural_coordinates_analytical(point,
                                                       this->nodal_coordinates_);
@@ -555,8 +636,9 @@ inline Eigen::Matrix<double, Tdim, 1>
   xi.fill(std::numeric_limits<double>::max());
 
   // Zeros
-  const Eigen::Matrix<double, Tdim, 1> zero =
-      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> zero = Eigen::Matrix<double, Tdim, 1>::Zero();
+  const Eigen::Matrix<double, Tdim, Tdim> zero_matrix =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
 
   // Matrix of nodal coordinates
   const Eigen::MatrixXd nodal_coords = nodal_coordinates_.transpose();
@@ -584,7 +666,7 @@ inline Eigen::Matrix<double, Tdim, 1>
         analytical_xi_in_cell = false;
 
     // Local shape function
-    const auto sf = element_->shapefn_local(analytical_xi, zero, zero);
+    const auto& sf = element_->shapefn_local(analytical_xi, zero, zero_matrix);
     // f(x) = p(x) - p, where p is the real point
     analytical_residual = (nodal_coords * sf) - point;
     // Early exit
@@ -631,7 +713,7 @@ inline Eigen::Matrix<double, Tdim, 1>
     // Set xi to affine guess
     if (!affine_nan) {
       // Local shape function
-      const auto sf = element_->shapefn_local(affine_xi, zero, zero);
+      const auto& sf = element_->shapefn_local(affine_xi, zero, zero_matrix);
 
       // f(x) = p(x) - p, where p is the real point
       affine_residual = (nodal_coords * sf) - point;
@@ -684,13 +766,13 @@ inline Eigen::Matrix<double, Tdim, 1>
   for (; iter < max_iterations; ++iter) {
     // Calculate local Jacobian
     const Eigen::Matrix<double, Tdim, Tdim> jacobian =
-        element_->jacobian_local(nr_xi, unit_cell, zero, zero);
+        element_->jacobian_local(nr_xi, unit_cell, zero, zero_matrix);
 
     // Set guess nr_xi to zero
     if (std::abs(jacobian.determinant()) < 1.0E-10) nr_xi.setZero();
 
     // Local shape function
-    const auto sf = element_->shapefn_local(nr_xi, zero, zero);
+    const auto& sf = element_->shapefn_local(nr_xi, zero, zero_matrix);
 
     // Residual (f(x))
     // f(x) = p(x) - p, where p is the real point
@@ -709,7 +791,8 @@ inline Eigen::Matrix<double, Tdim, 1>
           nr_xi - (step_length * delta);
 
       // Trial shape function
-      const auto sf_trial = element_->shapefn_local(xi_trial, zero, zero);
+      const auto& sf_trial =
+          element_->shapefn_local(xi_trial, zero, zero_matrix);
 
       // Trial residual: f(x) = p(x) - p, where p is the real point
       const Eigen::Matrix<double, Tdim, 1> nr_residual_trial =
@@ -882,20 +965,28 @@ bool mpm::Cell<Tdim>::assign_nonlocal_elementptr(
 
 //! Initialising nonlocal cell-element properties
 template <unsigned Tdim>
-bool mpm::Cell<Tdim>::initialiase_nonlocal() {
+bool mpm::Cell<Tdim>::initialiase_nonlocal(
+    const tsl::robin_map<std::string, double>& nonlocal_properties) {
   bool status = false;
   try {
     // Node property
     std::vector<std::vector<unsigned>> nodal_properties(this->nnodes());
-    // Loop over the cell node to get node type
-    for (unsigned i = 0; i < nodes_.size(); ++i)
-      nodal_properties[i] = nodes_[i]->nonlocal_node_type();
 
     // Initialise element
-    if (element_->shapefn_type() == mpm::ShapefnType::BSPLINE)
+    if (element_->shapefn_type() == mpm::ShapefnType::BSPLINE) {
+      // Loop over the cell node to get node type
+      for (unsigned i = 0; i < nodes_.size(); ++i)
+        nodal_properties[i] = nodes_[i]->nonlocal_node_type();
+
       this->element_->initialise_bspline_connectivity_properties(
           this->nodal_coordinates_, nodal_properties);
-    else
+    } else if (element_->shapefn_type() == mpm::ShapefnType::LME or
+               element_->shapefn_type() == mpm::ShapefnType::ALME) {
+      this->element_->initialise_lme_connectivity_properties(
+          nonlocal_properties.at("beta"),
+          nonlocal_properties.at("support_radius"),
+          nonlocal_properties.at("anisotropy"), this->nodal_coordinates_);
+    } else
       throw std::runtime_error(
           "Initialise nonlocal cell failed! Element type is not compatible.");
 

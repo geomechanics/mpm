@@ -35,8 +35,6 @@ TEST_CASE("Contact test case", "[contact][friction][3D]") {
   const unsigned Nphases = 1;
   // Number of nodes per cell
   const unsigned Nnodes = 8;
-  // Tolerance
-  const double Tolerance = 1.E-9;
 
   // Assign material
   unsigned mid = 0;

@@ -29,17 +29,8 @@
 TEST_CASE("Graph is checked for 2D case", "[graph][2D]") {
   // Dimension
   const unsigned Dim = 2;
-  // Deress of freedom
-  const unsigned Dof = 2;
   // Number of nodes per cell
   const unsigned Nnodes = 4;
-  // Number of phases
-  const unsigned Nphases = 1;
-
-  // Tolerance
-  const double Tolerance = 1.E-7;
-
-  //! Try to use the graph from the guide to test the graph for 2D
 
   // Element
   std::shared_ptr<mpm::Element<Dim>> element =
@@ -306,8 +297,6 @@ TEST_CASE("Graph Partitioning in 2D", "[mpi][graph][2D]") {
   const unsigned Nphases = 1;
   // Number of nodes per cell
   const unsigned Nnodes = 4;
-  // Tolerance
-  const double Tolerance = 1.E-7;
 
   SECTION("Transfer particles in mesh in nonrank MPI cells") {
 
@@ -316,7 +305,6 @@ TEST_CASE("Graph Partitioning in 2D", "[mpi][graph][2D]") {
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
     int mpi_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    int receiver = 1;
 
     // Assign material
     unsigned mid = 1;
@@ -338,7 +326,6 @@ TEST_CASE("Graph Partitioning in 2D", "[mpi][graph][2D]") {
         Factory<mpm::Element<Dim>>::instance()->create("ED2Q4");
 
     // Cell 1
-    mpm::Index id1 = 0;
     Eigen::Vector2d coords;
     coords.setZero();
 
@@ -516,7 +503,7 @@ TEST_CASE("Graph Partitioning in 2D", "[mpi][graph][2D]") {
       if (mpi_size == 4) {
         // Initialize MPI
         MPI_Comm comm;
-        int val = MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+        MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 
         auto graph = std::make_shared<mpm::Graph<Dim>>(mesh->cells());
 
@@ -573,8 +560,6 @@ TEST_CASE("Graph Partitioning in 3D", "[mpi][graph][3D]") {
   const unsigned Nphases = 1;
   // Number of nodes per cell
   const unsigned Nnodes = 8;
-  // Tolerance
-  const double Tolerance = 1.E-9;
 
   SECTION("Transfer particles in mesh in nonrank MPI cells") {
 
@@ -583,7 +568,6 @@ TEST_CASE("Graph Partitioning in 3D", "[mpi][graph][3D]") {
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
     int mpi_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-    int receiver = 1;
 
     // Assign material
     unsigned mid = 1;
@@ -605,7 +589,6 @@ TEST_CASE("Graph Partitioning in 3D", "[mpi][graph][3D]") {
         Factory<mpm::Element<Dim>>::instance()->create("ED3H8");
 
     // Cell 1
-    mpm::Index id1 = 0;
     Eigen::Vector3d coords;
     coords.setZero();
 
@@ -810,7 +793,7 @@ TEST_CASE("Graph Partitioning in 3D", "[mpi][graph][3D]") {
       if (mpi_size == 4) {
         // Initialize MPI
         MPI_Comm comm;
-        int val = MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+        MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 
         auto graph = std::make_shared<mpm::Graph<Dim>>(mesh->cells());
 

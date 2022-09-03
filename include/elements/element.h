@@ -14,10 +14,17 @@
 namespace mpm {
 
 // Degree of Element
-enum ElementDegree { Linear = 1, Quadratic = 2 };
+enum ElementDegree { Linear = 1, Quadratic = 2, Infinity = 99 };
 
 // Element Shapefn
-enum ShapefnType { NORMAL_MPM = 1, GIMP = 2, CPDI = 3, BSPLINE = 4 };
+enum ShapefnType {
+  NORMAL_MPM = 1,
+  GIMP = 2,
+  CPDI = 3,
+  BSPLINE = 4,
+  LME = 5,
+  ALME = 6
+};
 
 //! Base class of shape functions
 //! \brief Base class that stores the information about shape functions
@@ -27,6 +34,9 @@ class Element {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
+
+  //! Define a matrix of size dimension
+  using MatrixDim = Eigen::Matrix<double, Tdim, Tdim>;
 
   //! Constructor
   //! Assign variables to zero
@@ -43,24 +53,24 @@ class Element {
   //! \param[in] particle_size Particle size
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::VectorXd shapefn(
-      const VectorDim& xi, const VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const = 0;
+      const VectorDim& xi, VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
 
   //! Evaluate local shape functions at given coordinates
   //! \param[in] xi given local coordinates
   //! \param[in] particle_size Particle size
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::VectorXd shapefn_local(
-      const VectorDim& xi, const VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const = 0;
+      const VectorDim& xi, VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
 
   //! Evaluate gradient of shape functions
   //! \param[in] xi given local coordinates
   //! \param[in] particle_size Particle size
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::MatrixXd grad_shapefn(
-      const VectorDim& xi, const VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const = 0;
+      const VectorDim& xi, VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
 
   //! Compute Jacobian
   //! \param[in] xi given local coordinates
@@ -70,8 +80,8 @@ class Element {
   //! \retval jacobian Jacobian matrix
   virtual Eigen::Matrix<double, Tdim, Tdim> jacobian(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const = 0;
+      VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
 
   //! Compute Jacobian local
   //! \param[in] xi given local coordinates
@@ -81,8 +91,8 @@ class Element {
   //! \retval jacobian Jacobian matrix
   virtual Eigen::Matrix<double, Tdim, Tdim> jacobian_local(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const = 0;
+      VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
 
   //! Return the dN/dx at a given local coord
   //! \param[in] xi given local coordinates
@@ -91,8 +101,8 @@ class Element {
   //! \param[in] deformation_gradient Deformation gradient
   virtual Eigen::MatrixXd dn_dx(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const = 0;
+      VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
 
   //! Evaluate the B matrix at given local coordinates for a real cell
   //! \param[in] xi given local coordinates
@@ -102,8 +112,8 @@ class Element {
   //! \retval bmatrix B matrix
   virtual std::vector<Eigen::MatrixXd> bmatrix(
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
-      const VectorDim& particle_size,
-      const VectorDim& deformation_gradient) const = 0;
+      VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
 
   //! Evaluate the Ni Nj matrix
   //! \param[in] xi_s Vector of local coordinates
@@ -135,11 +145,6 @@ class Element {
   //! Return the corner indices of a cell to calculate the cell volume
   //! \retval indices Outer-indices that form the cell
   virtual Eigen::VectorXi corner_indices() const = 0;
-
-  //! Return indices of a sub-tetrahedrons in a volume
-  //! to check if a point is inside /outside of a hedron
-  //! \retval indices Indices that form sub-tetrahedrons
-  virtual Eigen::MatrixXi inhedron_indices() const = 0;
 
   //! Return indices of a face of an element
   //! \param[in] face_id given id of the face
@@ -179,6 +184,15 @@ class Element {
   virtual void initialise_bspline_connectivity_properties(
       const Eigen::MatrixXd& nodal_coordinates,
       const std::vector<std::vector<unsigned>>& nodal_properties) = 0;
+
+  //! Assign nodal connectivity property for LME elements
+  //! \param[in] beta Coldness function of the system in the range of [0,inf)
+  //! \param[in] radius Support radius of the kernel
+  //! \param[in] anisotropy Shape function anisotropy (F^{-T}F^{-1})
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  virtual void initialise_lme_connectivity_properties(
+      double beta, double radius, bool anisotropy,
+      const Eigen::MatrixXd& nodal_coordinates) = 0;
 };
 
 }  // namespace mpm

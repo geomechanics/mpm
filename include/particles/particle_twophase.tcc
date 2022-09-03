@@ -107,7 +107,15 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   particle_data->gamma_yz = strain[4];
   particle_data->gamma_xz = strain[5];
 
-  particle_data->epsilon_v = this->volumetric_strain_centroid_;
+  particle_data->defgrad_00 = deformation_gradient_(0, 0);
+  particle_data->defgrad_01 = deformation_gradient_(0, 1);
+  particle_data->defgrad_02 = deformation_gradient_(0, 2);
+  particle_data->defgrad_10 = deformation_gradient_(1, 0);
+  particle_data->defgrad_11 = deformation_gradient_(1, 1);
+  particle_data->defgrad_12 = deformation_gradient_(1, 2);
+  particle_data->defgrad_20 = deformation_gradient_(2, 0);
+  particle_data->defgrad_21 = deformation_gradient_(2, 1);
+  particle_data->defgrad_22 = deformation_gradient_(2, 2);
 
   particle_data->status = this->status();
 
@@ -465,6 +473,7 @@ template <unsigned Tdim>
 inline void mpm::TwoPhaseParticle<Tdim>::map_internal_force() noexcept {
   mpm::TwoPhaseParticle<Tdim>::map_mixture_internal_force();
   mpm::TwoPhaseParticle<Tdim>::map_liquid_internal_force();
+  mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force();
 }
 
 //! Map liquid phase internal force
@@ -605,6 +614,27 @@ inline void mpm::TwoPhaseParticle<3>::map_mixture_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Mixture, force);
+  }
+}
+
+//! Map liquid phase advection force
+template <unsigned Tdim>
+inline void mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force() noexcept {
+  // Compute nodal advection forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    Eigen::Matrix<double, Tdim, 1> force;
+
+    // Nodal liquid velocity
+    const auto& nodal_liquid_vel =
+        nodes_[i]->velocity(mpm::ParticlePhase::Liquid);
+
+    force = this->liquid_mass_density_ * shapefn_[i] *
+            ((liquid_velocity_ - velocity_) * dn_dx_.row(i)) * nodal_liquid_vel;
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Mixture, force);
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Liquid, force);
   }
 }
 
@@ -775,21 +805,31 @@ bool mpm::TwoPhaseParticle<Tdim>::map_drag_force_coefficient() {
     // Porosity parameter
     const double k_p =
         std::pow(this->porosity_, 3) / std::pow((1. - this->porosity_), 2);
-    // Initialise drag force coefficient
-    VectorDim drag_force_coefficient;
-    drag_force_coefficient.setZero();
 
-    // Check if permeability coefficient is valid
-    const double liquid_unit_weight =
-        9.81 * this->material(mpm::ParticlePhase::Liquid)
-                   ->template property<double>(std::string("density"));
-    for (unsigned i = 0; i < Tdim; ++i) {
-      if (k_p > 0.)
-        drag_force_coefficient(i) = porosity_ * porosity_ * liquid_unit_weight /
-                                    (k_p * permeability_(i));
-      else
-        throw std::runtime_error("Porosity coefficient is invalid");
-    }
+    // Initialise drag force coefficient
+    VectorDim drag_force_coefficient = VectorDim::Zero();
+
+    // Check which type of permeability coefficient
+    // Set true if unit is L^2 and false if unit is L/T
+    bool use_intrinsic =
+        this->material(mpm::ParticlePhase::Solid)
+            ->template property<bool>(std::string("intrinsic_permeability"));
+
+    // Multiplier depends on the permeability type
+    double multiplier;
+    if (use_intrinsic)
+      multiplier =
+          this->material(mpm::ParticlePhase::Liquid)
+              ->template property<double>(std::string("dynamic_viscosity"));
+    else
+      multiplier =
+          9.81 * this->material(mpm::ParticlePhase::Liquid)
+                     ->template property<double>(std::string("density"));
+
+    // Compute drag force coefficient
+    for (unsigned i = 0; i < Tdim; ++i)
+      drag_force_coefficient(i) =
+          porosity_ * porosity_ * multiplier / (k_p * permeability_(i));
 
     // Map drag forces from particle to nodes
     for (unsigned j = 0; j < nodes_.size(); ++j)
@@ -1025,9 +1065,8 @@ std::vector<uint8_t> mpm::TwoPhaseParticle<Tdim>::serialize() {
   // Strain
   MPI_Pack(strain_.data(), 6, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
-
-  // epsv
-  MPI_Pack(&volumetric_strain_centroid_, 1, MPI_DOUBLE, data_ptr, data.size(),
+  // Deformation Gradient
+  MPI_Pack(deformation_gradient_.data(), 9, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
 
   // Cell id
@@ -1163,10 +1202,10 @@ void mpm::TwoPhaseParticle<Tdim>::deserialize(
   // Strain
   MPI_Unpack(data_ptr, data.size(), &position, strain_.data(), 6, MPI_DOUBLE,
              MPI_COMM_WORLD);
-
-  // epsv
-  MPI_Unpack(data_ptr, data.size(), &position, &volumetric_strain_centroid_, 1,
+  // Deformation gradient
+  MPI_Unpack(data_ptr, data.size(), &position, deformation_gradient_.data(), 9,
              MPI_DOUBLE, MPI_COMM_WORLD);
+
   // cell id
   MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,
              MPI_UNSIGNED_LONG_LONG, MPI_COMM_WORLD);
@@ -1273,20 +1312,38 @@ template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::map_drag_matrix_to_cell() {
   bool status = true;
   try {
-    // Initialise drag force multiplier
-    VectorDim multiplier;
-    multiplier.setZero();
     // Porosity parameter
     const double k_p =
         std::pow(this->porosity_, 3) / std::pow((1. - this->porosity_), 2);
-    // Compute drag force multiplier
+
+    // Initialise drag force coefficient
+    VectorDim drag_force_coefficient = VectorDim::Zero();
+
+    // Check which type of permeability coefficient
+    // Set true if unit is L^2 and false if unit is L/T
+    bool use_intrinsic =
+        this->material(mpm::ParticlePhase::Solid)
+            ->template property<bool>(std::string("intrinsic_permeability"));
+
+    // Multiplier depends on the permeability type
+    double multiplier;
+    if (use_intrinsic)
+      multiplier =
+          this->material(mpm::ParticlePhase::Liquid)
+              ->template property<double>(std::string("dynamic_viscosity"));
+    else
+      multiplier =
+          9.81 * this->material(mpm::ParticlePhase::Liquid)
+                     ->template property<double>(std::string("density"));
+
+    // Compute drag force coefficient
     for (unsigned i = 0; i < Tdim; ++i)
-      multiplier(i) = this->porosity_ * this->porosity_ * 9.81 *
-                      this->material(mpm::ParticlePhase::Liquid)
-                          ->template property<double>(std::string("density")) /
-                      (this->permeability_(i) * k_p);
+      drag_force_coefficient(i) =
+          porosity_ * porosity_ * multiplier / (k_p * permeability_(i));
+
     // Compute local drag matrix
-    cell_->compute_local_drag_matrix(shapefn_, volume_, multiplier);
+    cell_->compute_local_drag_matrix(shapefn_, volume_, drag_force_coefficient);
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

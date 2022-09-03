@@ -10,6 +10,9 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
   const unsigned Dim = 3;
   const double Tolerance = 1.E-7;
 
+  Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  const Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
+
   //! Check for 8 noded element
   SECTION("Hexahedron element with eight nodes") {
     const unsigned nfunctions = 8;
@@ -24,8 +27,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
     SECTION("Eight noded hexahedron element for coordinates(0, 0, 0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -40,8 +42,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(shapefn(7) == Approx(0.125).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -77,8 +78,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
     SECTION("Eight noded hexahedron element for coordinates(-1, -1, -1)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << -1., -1., -1.;
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
 
@@ -92,8 +92,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(shapefn(7) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -129,8 +128,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
     SECTION("Eight noded hexahedron element for coordinates(1, 1, 1)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 1., 1., 1.;
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -145,8 +143,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(shapefn(7) == Approx(0.0).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -183,8 +180,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
         "Eight noded local sf hexahedron element for coordinates(0, 0, 0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn_local(coords, Eigen::Vector3d::Zero(),
-                                        Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn_local(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -204,7 +200,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       coords.setZero();
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
       auto shapefn = hex->shapefn(coords, psize, defgrad);
 
@@ -280,8 +276,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                               Eigen::Vector3d::Zero());
+      auto jac = hex->jacobian(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -320,8 +315,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = hex->jacobian_local(xi, coords, Eigen::Vector3d::Zero(),
-                                     Eigen::Vector3d::Zero());
+      auto jac = hex->jacobian_local(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -350,7 +344,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       xi << 0.5, 0.5, 0.5;
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       // Jacobian result
@@ -391,17 +385,14 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = hex->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= 2.;
 
       // Check dN/dx
-      auto dn_dx = hex->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -453,17 +444,14 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = hex->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= 2.;
 
       // Check dN/dx
-      auto dn_dx = hex->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -515,17 +503,14 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // clang-format on
 
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = hex->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(xi, zero, zero_matrix);
       gradsf *= 2.;
 
       // Check dN/dx
-      auto dn_dx = hex->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -565,7 +550,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       Eigen::Matrix<double, 8, Dim> coords;
@@ -588,8 +573,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       gradsf *= 2.;
 
       // Check dN/dx
-      auto dn_dx = hex->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -638,10 +622,8 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
                 1., 1., 1.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
-      auto jacobian = hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                                    Eigen::Vector3d::Zero());
+      hex->bmatrix(xi, coords, zero, zero_matrix);
+      hex->jacobian(xi, coords, zero, zero_matrix);
     }
 
     // Ni Nj matrix of a cell
@@ -895,60 +877,6 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(indices(7) == 7);
     }
 
-    SECTION("Eight noded hexahedron element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = hex->inhedron_indices();
-      REQUIRE(indices.rows() == 12);
-      REQUIRE(indices.cols() == 3);
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 5);
-      REQUIRE(indices(0, 2) == 4);
-
-      REQUIRE(indices(1, 0) == 0);
-      REQUIRE(indices(1, 1) == 1);
-      REQUIRE(indices(1, 2) == 5);
-
-      REQUIRE(indices(2, 0) == 3);
-      REQUIRE(indices(2, 1) == 6);
-      REQUIRE(indices(2, 2) == 7);
-
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 2);
-      REQUIRE(indices(3, 2) == 6);
-
-      REQUIRE(indices(4, 0) == 2);
-      REQUIRE(indices(4, 1) == 1);
-      REQUIRE(indices(4, 2) == 6);
-
-      REQUIRE(indices(5, 0) == 6);
-      REQUIRE(indices(5, 1) == 1);
-      REQUIRE(indices(5, 2) == 5);
-
-      REQUIRE(indices(6, 0) == 7);
-      REQUIRE(indices(6, 1) == 6);
-      REQUIRE(indices(6, 2) == 5);
-
-      REQUIRE(indices(7, 0) == 5);
-      REQUIRE(indices(7, 1) == 4);
-      REQUIRE(indices(7, 2) == 7);
-
-      REQUIRE(indices(8, 0) == 7);
-      REQUIRE(indices(8, 1) == 4);
-      REQUIRE(indices(8, 2) == 0);
-
-      REQUIRE(indices(9, 0) == 7);
-      REQUIRE(indices(9, 1) == 0);
-      REQUIRE(indices(9, 2) == 3);
-
-      REQUIRE(indices(10, 0) == 3);
-      REQUIRE(indices(10, 1) == 0);
-      REQUIRE(indices(10, 2) == 1);
-
-      REQUIRE(indices(11, 0) == 3);
-      REQUIRE(indices(11, 1) == 1);
-      REQUIRE(indices(11, 2) == 2);
-    }
-
     SECTION("Eight noded hexahedron shape function for face indices") {
       // Check for face indices
       Eigen::Matrix<int, 6, 4> indices;
@@ -991,8 +919,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
     SECTION("Twenty noded hexahedron element for coordinates(0, 0, 0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -1042,8 +969,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(shapefn(19) == Approx(0.25).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -1189,8 +1115,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
         "-0.5, -0.5)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << -0.5, -0.5, -0.5;
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -1240,8 +1165,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(shapefn(19) == Approx(0.046875).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -1386,8 +1310,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
         "0.5, 0.5)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords << 0.5, 0.5, 0.5;
-      auto shapefn = hex->shapefn(coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -1437,8 +1360,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(shapefn(19) == Approx(0.421875).epsilon(Tolerance));
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(coords, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
       REQUIRE(gradsf.rows() == nfunctions);
       REQUIRE(gradsf.cols() == Dim);
 
@@ -1583,8 +1505,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
         "Twenty noded local sf hexahedron element for coordinates(0, 0, 0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn_local(coords, Eigen::Vector3d::Zero(),
-                                        Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn_local(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
@@ -1639,7 +1560,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       coords.setZero();
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = hex->shapefn(coords, psize, defgrad);
@@ -1790,8 +1711,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                               Eigen::Vector3d::Zero());
+      auto jac = hex->jacobian(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -1842,8 +1762,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       // clang-format on
 
       // Get Jacobian
-      auto jac = hex->jacobian_local(xi, coords, Eigen::Vector3d::Zero(),
-                                     Eigen::Vector3d::Zero());
+      auto jac = hex->jacobian_local(xi, coords, zero, zero_matrix);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -1885,7 +1804,7 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.25, 0.5, 0.75;
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       // Jacobian result
@@ -1923,10 +1842,8 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
                 1., 1., 1.;
       // clang-format on
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
-      auto jacobian = hex->jacobian(xi, coords, Eigen::Vector3d::Zero(),
-                                    Eigen::Vector3d::Zero());
+      hex->bmatrix(xi, coords, zero, zero_matrix);
+      hex->jacobian(xi, coords, zero, zero_matrix);
     }
 
     // Ni Nj matrix of a cell
@@ -2425,60 +2342,6 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       REQUIRE(indices(7) == 7);
     }
 
-    SECTION("20-noded hexahedron element for inhedron indices") {
-      // Check for inhedron indices
-      Eigen::MatrixXi indices = hex->inhedron_indices();
-      REQUIRE(indices.rows() == 12);
-      REQUIRE(indices.cols() == 3);
-      REQUIRE(indices(0, 0) == 0);
-      REQUIRE(indices(0, 1) == 5);
-      REQUIRE(indices(0, 2) == 4);
-
-      REQUIRE(indices(1, 0) == 0);
-      REQUIRE(indices(1, 1) == 1);
-      REQUIRE(indices(1, 2) == 5);
-
-      REQUIRE(indices(2, 0) == 3);
-      REQUIRE(indices(2, 1) == 6);
-      REQUIRE(indices(2, 2) == 7);
-
-      REQUIRE(indices(3, 0) == 3);
-      REQUIRE(indices(3, 1) == 2);
-      REQUIRE(indices(3, 2) == 6);
-
-      REQUIRE(indices(4, 0) == 2);
-      REQUIRE(indices(4, 1) == 1);
-      REQUIRE(indices(4, 2) == 6);
-
-      REQUIRE(indices(5, 0) == 6);
-      REQUIRE(indices(5, 1) == 1);
-      REQUIRE(indices(5, 2) == 5);
-
-      REQUIRE(indices(6, 0) == 7);
-      REQUIRE(indices(6, 1) == 6);
-      REQUIRE(indices(6, 2) == 5);
-
-      REQUIRE(indices(7, 0) == 5);
-      REQUIRE(indices(7, 1) == 4);
-      REQUIRE(indices(7, 2) == 7);
-
-      REQUIRE(indices(8, 0) == 7);
-      REQUIRE(indices(8, 1) == 4);
-      REQUIRE(indices(8, 2) == 0);
-
-      REQUIRE(indices(9, 0) == 7);
-      REQUIRE(indices(9, 1) == 0);
-      REQUIRE(indices(9, 2) == 3);
-
-      REQUIRE(indices(10, 0) == 3);
-      REQUIRE(indices(10, 1) == 0);
-      REQUIRE(indices(10, 2) == 1);
-
-      REQUIRE(indices(11, 0) == 3);
-      REQUIRE(indices(11, 1) == 1);
-      REQUIRE(indices(11, 2) == 2);
-    }
-
     SECTION("20-noded noded hexahedron shape function for face indices") {
       // Check for face indices
       Eigen::Matrix<int, 6, 8> indices;
@@ -2514,6 +2377,8 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
       Eigen::MatrixXd error;
       REQUIRE_THROWS(hex->initialise_bspline_connectivity_properties(
           error, std::vector<std::vector<unsigned>>()));
+      REQUIRE_THROWS(
+          hex->initialise_lme_connectivity_properties(0.0, 0.0, true, error));
     }
   }
 }

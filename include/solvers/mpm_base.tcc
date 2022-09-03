@@ -280,6 +280,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Read and assign velocity constraints
   this->nodal_velocity_constraints(mesh_props, mesh_io);
 
+  // Read and assign acceleration constraints
+  this->nodal_acceleration_constraints(mesh_props, mesh_io);
+
   // Read and assign velocity constraints for implicit solver
   this->nodal_displacement_constraints(mesh_props, mesh_io);
 
@@ -288,6 +291,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign pressure constraints
   this->nodal_pressure_constraints(mesh_props, mesh_io);
+
+  // Read and assign absorbing constraintes
+  this->nodal_absorbing_constraints(mesh_props, mesh_io);
 
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();
@@ -316,7 +322,7 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   this->cell_entity_sets(mesh_props, check_duplicates);
 
   // Use Nonlocal basis
-  if (cell_type.back() == 'B') {
+  if (cell_type.back() == 'B' || cell_type.back() == 'L') {
     this->initialise_nonlocal_mesh(mesh_props);
   }
 
@@ -463,8 +469,8 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
       }
     }
   } catch (std::exception& exception) {
-    console_->warn("{} #{}: Material sets are not specified", __FILE__,
-                   __LINE__, exception.what());
+    console_->warn("#{}: Material sets are not specified", __LINE__,
+                   exception.what());
   }
 }
 
@@ -914,16 +920,36 @@ bool mpm::MPMBase<Tdim>::initialise_math_functions(const Json& math_functions) {
       const std::string function_type =
           function_props["type"].template get<std::string>();
 
+      // Initiate another function_prop to be passed
+      auto function_props_update = function_props;
+
+      // Create a file reader
+      const std::string io_type =
+          io_->json_object("mesh")["io_type"].template get<std::string>();
+      const auto& reader =
+          Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+      // Math function is specified in a file, replace function_props_update
+      if (function_props.find("file") != function_props.end()) {
+        // Read file and store in array of vectors
+        std::string math_file = io_->file_name(
+            function_props.at("file").template get<std::string>());
+        const auto& xfx_values = reader->read_math_functions(math_file);
+
+        function_props_update["xvalues"] = xfx_values[0];
+        function_props_update["fxvalues"] = xfx_values[1];
+      }
+
       // Create a new function from JSON object
       auto function =
           Factory<mpm::FunctionBase, unsigned, const Json&>::instance()->create(
-              function_type, std::move(function_id), function_props);
+              function_type, std::move(function_id), function_props_update);
 
-      // Add material to list
+      // Add math function to list
       auto insert_status =
           math_functions_.insert(std::make_pair(function->id(), function));
 
-      // If insert material failed
+      // If insert math function failed
       if (!insert_status.second) {
         status = false;
         throw std::runtime_error(
@@ -983,6 +1009,65 @@ void mpm::MPMBase<Tdim>::node_euler_angles(
       throw std::runtime_error("Euler angles JSON not found");
   } catch (std::exception& exception) {
     console_->warn("#{}: Euler angles are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Nodal acceleration constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nodal_acceleration_constraints(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign acceleration constraints
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("acceleration_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+      // Iterate over acceleration constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["acceleration_constraints"]) {
+        // Acceleration constraints are specified in a file
+        if (constraints.find("file") != constraints.end()) {
+          std::string acceleration_constraints_file =
+              constraints.at("file").template get<std::string>();
+          bool acceleration_constraints =
+              constraints_->assign_nodal_acceleration_constraints(
+                  mesh_io->read_acceleration_constraints(
+                      io_->file_name(acceleration_constraints_file)));
+          if (!acceleration_constraints)
+            throw std::runtime_error(
+                "Acceleration constraints are not properly assigned");
+
+        } else {
+          // Set id
+          int nset_id = constraints.at("nset_id").template get<int>();
+          // Direction
+          unsigned dir = constraints.at("dir").template get<unsigned>();
+          // Acceleration
+          double acceleration =
+              constraints.at("acceleration").template get<double>();
+          // Get the math function
+          std::shared_ptr<FunctionBase> afunction = nullptr;
+          if (constraints.find("math_function_id") != constraints.end())
+            afunction = math_functions_.at(
+                constraints.at("math_function_id").template get<unsigned>());
+          // Add acceleration constraint to mesh
+          auto acceleration_constraint =
+              std::make_shared<mpm::AccelerationConstraint>(nset_id, afunction,
+                                                            dir, acceleration);
+          mesh_->create_nodal_acceleration_constraint(nset_id,
+                                                      acceleration_constraint);
+          bool acceleration_constraints =
+              constraints_->assign_nodal_acceleration_constraint(
+                  nset_id, acceleration_constraint);
+          if (!acceleration_constraints)
+            throw std::runtime_error(
+                "Nodal acceleration constraint is not properly assigned");
+        }
+      }
+    } else
+      throw std::runtime_error("Acceleration constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Acceleration constraints are undefined {} ", __LINE__,
                    exception.what());
   }
 }
@@ -1103,7 +1188,7 @@ void mpm::MPMBase<Tdim>::nodal_frictional_constraints(
     if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
         mesh_props["boundary_conditions"].find("friction_constraints") !=
             mesh_props["boundary_conditions"].end()) {
-      // Iterate over velocity constraints
+      // Iterate over friction constraints
       for (const auto& constraints :
            mesh_props["boundary_conditions"]["friction_constraints"]) {
         // Friction constraints are specified in a file
@@ -1197,6 +1282,80 @@ void mpm::MPMBase<Tdim>::nodal_pressure_constraints(
   } catch (std::exception& exception) {
     console_->warn("#{}: Nodal pressure constraints are undefined {} ",
                    __LINE__, exception.what());
+  }
+}
+
+// Assign nodal absorbing constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nodal_absorbing_constraints(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign absorbing constraints
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("absorbing_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+      // Iterate over absorbing constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["absorbing_constraints"]) {
+        // Set id
+        int nset_id = constraints.at("nset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Delta
+        double delta = constraints.at("delta").template get<double>();
+        // h_min
+        double h_min = constraints.at("h_min").template get<double>();
+        // a
+        double a = constraints.at("a").template get<double>();
+        // b
+        double b = constraints.at("b").template get<double>();
+        // position
+        std::string position_str =
+            constraints.at("position").template get<std::string>();
+        mpm::Position position = mpm::Position::None;
+        if (position_str == "corner")
+          position = mpm::Position::Corner;
+        else if (position_str == "edge")
+          position = mpm::Position::Edge;
+        else if (position_str == "face")
+          position = mpm::Position::Face;
+        // Add absorbing constraint to mesh
+        auto absorbing_constraint = std::make_shared<mpm::AbsorbingConstraint>(
+            nset_id, dir, delta, h_min, a, b, position);
+        bool absorbing_constraints =
+            constraints_->assign_nodal_absorbing_constraint(
+                nset_id, absorbing_constraint);
+        if (!absorbing_constraints)
+          throw std::runtime_error(
+              "Nodal absorbing constraint is not properly assigned");
+        // Assign node set IDs and list of constraints
+        constraints_->assign_absorbing_id_ptr(nset_id, absorbing_constraint);
+        // Set bool for solve loop
+        absorbing_boundary_ = true;
+      }
+    } else
+      throw std::runtime_error("Absorbing constraints JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Absorbing conditions are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Apply nodal absorbing constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nodal_absorbing_constraints() {
+  std::vector<std::shared_ptr<mpm::AbsorbingConstraint>> absorbing_constraint =
+      constraints_->absorbing_ptrs();
+  std::vector<unsigned> absorbing_nset_id = constraints_->absorbing_ids();
+  for (unsigned i = 0; i < absorbing_nset_id.size(); i++) {
+    auto nset_id = absorbing_nset_id.at(i);
+    const auto& a_constraint = absorbing_constraint.at(i);
+    bool absorbing_constraints =
+        constraints_->assign_nodal_absorbing_constraint(nset_id, a_constraint);
+    if (!absorbing_constraints)
+      throw std::runtime_error(
+          "Nodal absorbing constraint is not properly assigned");
   }
 }
 
@@ -1412,11 +1571,30 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
           reference_points.insert(std::make_pair<double, double>(
               static_cast<double>(position), static_cast<double>(h0)));
         }
+
+        // Read gravity
+        Eigen::Matrix<double, Tdim, 1> gravity =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        auto loads = io_->json_object("external_loading_conditions");
+        if (loads.contains("gravity")) {
+          if (loads.at("gravity").is_array() &&
+              loads.at("gravity").size() == gravity.size()) {
+            for (unsigned i = 0; i < gravity.size(); ++i) {
+              gravity[i] = loads.at("gravity").at(i);
+            }
+          } else {
+            throw std::runtime_error("Specified gravity dimension is invalid");
+          }
+        } else {
+          throw std::runtime_error(
+              "In order to use the option water table, \"gravity\" should be "
+              "specified in the \"external_loading_conditions\"! ");
+        }
+
         // Initialise particles pore pressures by watertable
         mesh_->iterate_over_particles(std::bind(
             &mpm::ParticleBase<Tdim>::initialise_pore_pressure_watertable,
-            std::placeholders::_1, dir_v, dir_h, this->gravity_,
-            reference_points));
+            std::placeholders::_1, dir_v, dir_h, gravity, reference_points));
       } else if (type == "isotropic") {
         const double pore_pressure =
             mesh_props["particles_pore_pressures"]["values"]
@@ -1648,6 +1826,10 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
   //! Shape function name
   const auto cell_type = mesh_props["cell_type"].template get<std::string>();
   try {
+    // Initialise additional properties
+    tsl::robin_map<std::string, double> nonlocal_properties;
+
+    // Parameters for B-Spline elements
     if (cell_type.back() == 'B') {
       // Cell and node neighbourhood for quadratic B-Spline
       cell_neighbourhood_ = 1;
@@ -1659,9 +1841,10 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                     std::placeholders::_1));
 
       //! Read nodal type from entity sets
-      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end() &&
-          mesh_props["nonlocal_mesh_properties"].find("node_types") !=
-              mesh_props["nonlocal_mesh_properties"].end()) {
+      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end()) {
+        const auto sf_type = mesh_props["nonlocal_mesh_properties"]["type"]
+                                 .template get<std::string>();
+        assert(sf_type == "BSPLINE");
 
         // Iterate over node type
         for (const auto& node_type :
@@ -1676,10 +1859,67 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
           mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
         }
       }
-
-      //! Update number of nodes in cell
-      mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_);
     }
+    // Parameters for LME elements
+    else if (cell_type.back() == 'L') {
+      //! Read nodal type from entity sets
+      if (mesh_props.find("nonlocal_mesh_properties") != mesh_props.end()) {
+        const auto sf_type = mesh_props["nonlocal_mesh_properties"]["type"]
+                                 .template get<std::string>();
+        assert(sf_type == "LME");
+
+        // Gamma parameter
+        const double gamma = mesh_props["nonlocal_mesh_properties"]["gamma"]
+                                 .template get<double>();
+
+        // Support tolerance
+        double tol0 = 1.e-6;
+        if (mesh_props["nonlocal_mesh_properties"].contains(
+                "support_tolerance"))
+          tol0 = mesh_props["nonlocal_mesh_properties"]["support_tolerance"]
+                     .template get<double>();
+
+        // Average mesh size
+        double h;
+        if (mesh_props["nonlocal_mesh_properties"].contains("mesh_size"))
+          h = mesh_props["nonlocal_mesh_properties"]["mesh_size"]
+                  .template get<double>();
+        else
+          h = mesh_->compute_average_cell_size();
+
+        // Anisotropy parameter
+        bool anisotropy = false;
+        if (mesh_props["nonlocal_mesh_properties"].contains("anisotropy")) {
+          anisotropy = mesh_props["nonlocal_mesh_properties"]["anisotropy"]
+                           .template get<bool>();
+          update_defgrad_ = true;
+        }
+        nonlocal_properties.insert(
+            std::pair<std::string, bool>("anisotropy", anisotropy));
+
+        // Calculate beta
+        const double beta = gamma / (h * h);
+        nonlocal_properties.insert(
+            std::pair<std::string, double>("beta", beta));
+
+        // Calculate support radius automatically
+        const double r = std::sqrt(-std::log(tol0) / gamma) * h;
+        nonlocal_properties.insert(
+            std::pair<std::string, double>("support_radius", r));
+
+        // Cell and node neighbourhood for LME
+        cell_neighbourhood_ = static_cast<unsigned>(floor(r / h));
+        node_neighbourhood_ = 1 + 2 * cell_neighbourhood_;
+      }
+    } else {
+      throw std::runtime_error(
+          "Unable to initialise nonlocal mesh for cell type: " + cell_type);
+    }
+
+    //! Update number of nodes in cell
+    mesh_->upgrade_cells_to_nonlocal(cell_type, cell_neighbourhood_,
+                                     nonlocal_properties);
+
   } catch (std::exception& exception) {
     console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,
                    __LINE__, exception.what());

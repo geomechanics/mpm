@@ -56,7 +56,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] materials Material associated with the particle arranged in a
   //! vector
   //! \retval status Status of reading POD particle
-  virtual bool initialise_particle(
+  bool initialise_particle(
       PODParticle& particle,
       const std::vector<std::shared_ptr<Material<Tdim>>>& materials) override;
 
@@ -145,6 +145,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Map particle volume to nodes
   void map_volume_to_nodes() noexcept override;
 
+  // ! Map linear elastic wave velocities to nodes
+  void map_wave_velocities_to_nodes() noexcept override;
+
   //! Assign nodal mass to particles
   //! \param[in] mass Mass from the particles in a cell
   //! \retval status Assignment status
@@ -175,11 +178,17 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval dvolumetric strain at centroid
   double dvolumetric_strain() const override { return dvolumetric_strain_; }
 
-  //! Return volumetric strain of centroid
-  //! \retval volumetric strain at centroid
-  double volumetric_strain_centroid() const override {
-    return volumetric_strain_centroid_;
+  //! Deformation gradient
+  Eigen::Matrix<double, 3, 3> deformation_gradient() const override {
+    return deformation_gradient_;
   }
+
+  //! Compute deformation gradient
+  //! \param[in] type Type of interpolation variables: "displacement" or
+  //! "velocity"
+  //! \param[in] dt Analysis time step
+  void update_deformation_gradient(const std::string& type,
+                                   double dt) noexcept override;
 
   //! Initial stress
   //! \param[in] stress Initial sress
@@ -379,9 +388,14 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup Implicit
   VectorDim acceleration() const override { return acceleration_; }
 
-  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+  //! Map mass and material stiffness matrix to cell (used in equilibrium
+  //! equation LHS)
   //! \ingroup Implicit
-  inline bool map_material_stiffness_matrix_to_cell() override;
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] quasi_static Boolean of quasi-static analysis
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
+                                           bool quasi_static) override;
 
   //! Reduce constitutive relations matrix depending on the dimension
   //! \ingroup Implicit
@@ -394,15 +408,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Compute B matrix of a particle, based on local coordinates
   inline Eigen::MatrixXd compute_bmatrix() noexcept override;
 
-  //! Map mass matrix to cell (used in equilibrium equation LHS)
+  //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
-  //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
-  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
-
-  //! Compute strain using nodal displacement
-  //! \ingroup Implicit
-  void compute_strain_newmark() noexcept override;
+  void compute_strain_volume_newmark() noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
@@ -451,6 +459,14 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval pack size of serialized object
   virtual int compute_pack_size() const;
 
+  //! Compute deformation gradient increment using nodal velocity
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \param[in] dt time increment
+  //! \retval deformaton gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -462,6 +478,24 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval strain increment at particle inside a cell
   virtual inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
+  //! Compute deformation gradient increment using nodal displacement
+  //! \ingroup Implicit
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval deformaton gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
+  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  inline bool map_material_stiffness_matrix_to_cell();
+
+  //! Map mass matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
   /**@}*/
 
   //! particle id
@@ -493,17 +527,15 @@ class Particle : public ParticleBase<Tdim> {
   //! Volume
   double volume_{0.};
   //! Size of particle
-  Eigen::Matrix<double, 1, Tdim> size_;
+  Eigen::Matrix<double, Tdim, 1> size_;
   //! Size of particle in natural coordinates
-  Eigen::Matrix<double, 1, Tdim> natural_size_;
+  Eigen::Matrix<double, Tdim, 1> natural_size_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
   //! Strains
   Eigen::Matrix<double, 6, 1> strain_;
   //! dvolumetric strain
   double dvolumetric_strain_{0.};
-  //! Volumetric strain at centroid
-  double volumetric_strain_centroid_{0.};
   //! Strain rate
   Eigen::Matrix<double, 6, 1> strain_rate_;
   //! dstrains
@@ -550,6 +582,14 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> previous_stress_;
   //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
   Eigen::MatrixXd constitutive_matrix_;
+  /**@}*/
+
+  /**
+   * \defgroup FiniteStrainVariables Variables for finite strain formulation
+   */
+  /**@{*/
+  //! Deformation gradient
+  Eigen::Matrix<double, 3, 3> deformation_gradient_;
   /**@}*/
 
 };  // Particle class

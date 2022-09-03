@@ -222,6 +222,23 @@ class Node : public NodeBase<Tdim> {
   //! Apply velocity constraints
   void apply_velocity_constraints() override;
 
+  //! Assign acceleration constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of acceleration constraint
+  //! \param[in] acceleration Applied acceleration constraint
+  bool assign_acceleration_constraint(unsigned dir,
+                                      double acceleration) override;
+
+  //! Update acceleration constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of acceleration constraint
+  //! \param[in] acceleration Applied acceleration constraint
+  bool update_acceleration_constraint(unsigned dir,
+                                      double acceleration) override;
+
+  //! Apply acceleration constraints
+  void apply_acceleration_constraints() override;
+
   //! Assign friction constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of friction constraint
@@ -233,6 +250,17 @@ class Node : public NodeBase<Tdim> {
   //! Apply friction constraints
   //! \param[in] dt Time-step
   void apply_friction_constraints(double dt) override;
+
+  //! Apply absorbing constraint
+  //! \param[in] dir Direction of p-wave propagation in model
+  //! \param[in] delta Virtual viscous layer thickness
+  //! \param[in] h_min Characteristic length (cell height)
+  //! \param[in] a Dimensionless dashpot weight factor, p-wave
+  //! \param[in] b Dimensionless dashpot weight factor, s-wave
+  //! \param[in] position Nodal position along boundary
+  bool apply_absorbing_constraint(unsigned dir, double delta, double h_min,
+                                  double a, double b,
+                                  mpm::Position position) override;
 
   //! Assign rotation matrix
   //! \param[in] rotation_matrix Rotation matrix of the node
@@ -587,6 +615,8 @@ class Node : public NodeBase<Tdim> {
   Eigen::Matrix<double, Tdim, Tnphases> acceleration_;
   //! Velocity constraints
   std::map<unsigned, double> velocity_constraints_;
+  //! Acceleration constraints
+  std::map<unsigned, double> acceleration_constraints_;
   //! Pressure constraint
   std::map<unsigned, double> pressure_constraints_;
   //! Rotation matrix for general velocity constraints

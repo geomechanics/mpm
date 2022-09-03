@@ -223,6 +223,23 @@ class NodeBase {
   //! Apply velocity constraints
   virtual void apply_velocity_constraints() = 0;
 
+  //! Assign acceleration constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of acceleration constraint
+  //! \param[in] acceleration Applied acceleration constraint
+  virtual bool assign_acceleration_constraint(unsigned dir,
+                                              double acceleration) = 0;
+
+  //! Update acceleration constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of acceleration constraint
+  //! \param[in] acceleration Applied acceleration constraint
+  virtual bool update_acceleration_constraint(unsigned dir,
+                                              double acceleration) = 0;
+
+  //! Apply acceleration constraints
+  virtual void apply_acceleration_constraints() = 0;
+
   //! Assign friction constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of friction constraint
@@ -234,6 +251,17 @@ class NodeBase {
   //! Apply friction constraints
   //! \param[in] dt Time-step
   virtual void apply_friction_constraints(double dt) = 0;
+
+  //! Apply absorbing constraint
+  //! \param[in] dir Direction of p-wave propagation in model
+  //! \param[in] delta Virtual viscous layer thickness
+  //! \param[in] h_min Characteristic length (cell height)
+  //! \param[in] a Dimensionless dashpot weight factor, p-wave
+  //! \param[in] b Dimensionless dashpot weight factor, s-wave
+  //! \param[in] position Nodal position along boundary
+  virtual bool apply_absorbing_constraint(unsigned dir, double delta,
+                                          double h_min, double a, double b,
+                                          mpm::Position position) = 0;
 
   //! Assign rotation matrix
   //! \param[in] rotation_matrix Rotation matrix of the node

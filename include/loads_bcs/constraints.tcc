@@ -1,3 +1,57 @@
+//! Assign nodal acceleration constraints
+template <unsigned Tdim>
+bool mpm::Constraints<Tdim>::assign_nodal_acceleration_constraint(
+    int set_id,
+    const std::shared_ptr<mpm::AccelerationConstraint>& constraint) {
+  bool status = true;
+  try {
+    int set_id = constraint->setid();
+    auto nset = mesh_->nodes(set_id);
+    if (nset.size() == 0)
+      throw std::runtime_error(
+          "Node set is empty for assignment of acceleration constraints");
+
+    unsigned dir = constraint->dir();
+    double acceleration = constraint->acceleration(0);
+    for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
+      if (!(*nitr)->assign_acceleration_constraint(dir, acceleration))
+        throw std::runtime_error(
+            "Failed to initialise acceleration constraint at node");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign acceleration constraints to nodes
+template <unsigned Tdim>
+bool mpm::Constraints<Tdim>::assign_nodal_acceleration_constraints(
+    const std::vector<std::tuple<mpm::Index, unsigned, double>>&
+        acceleration_constraints) {
+  bool status = true;
+  try {
+    for (const auto& acceleration_constraint : acceleration_constraints) {
+      // Node id
+      mpm::Index nid = std::get<0>(acceleration_constraint);
+      // Direction
+      unsigned dir = std::get<1>(acceleration_constraint);
+      // Acceleration
+      double acceleration = std::get<2>(acceleration_constraint);
+
+      // Apply constraint
+      if (!mesh_->node(nid)->assign_acceleration_constraint(dir, acceleration))
+        throw std::runtime_error(
+            "Nodal acceleration constraints assignment failed");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Assign nodal velocity constraints
 template <unsigned Tdim>
 bool mpm::Constraints<Tdim>::assign_nodal_velocity_constraint(
@@ -117,14 +171,14 @@ bool mpm::Constraints<Tdim>::assign_nodal_frictional_constraint(
     auto nset = mesh_->nodes(set_id);
     if (nset.size() == 0)
       throw std::runtime_error(
-          "Node set is empty for assignment of velocity constraints");
+          "Node set is empty for assignment of frictional constraints");
     unsigned dir = fconstraint->dir();
     int nsign_n = fconstraint->sign_n();
     double friction = fconstraint->friction();
     for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
       if (!(*nitr)->assign_friction_constraint(dir, nsign_n, friction))
         throw std::runtime_error(
-            "Failed to initialise velocity constraint at node");
+            "Failed to initialise friction constraint at node");
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -210,4 +264,92 @@ bool mpm::Constraints<Tdim>::assign_nodal_pressure_constraints(
     status = false;
   }
   return status;
+}
+
+//! Apply absorbing constraints to nodes
+template <unsigned Tdim>
+bool mpm::Constraints<Tdim>::assign_nodal_absorbing_constraint(
+    int nset_id,
+    const std::shared_ptr<mpm::AbsorbingConstraint>& absorbing_constraint) {
+  bool status = true;
+  try {
+    int set_id = nset_id;
+    auto nset = mesh_->nodes(set_id);
+    if (nset.size() == 0)
+      throw std::runtime_error(
+          "Node set is empty for application of absorbing constraints");
+    unsigned dir = absorbing_constraint->dir();
+    double delta = absorbing_constraint->delta();
+    double h_min = absorbing_constraint->h_min();
+    double a = absorbing_constraint->a();
+    double b = absorbing_constraint->b();
+    mpm::Position position = absorbing_constraint->position();
+    if (delta >= h_min / (2 * a) and delta >= h_min / (2 * b))
+      for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
+        if (!(*nitr)->apply_absorbing_constraint(dir, delta, h_min, a, b,
+                                                 position))
+          throw std::runtime_error(
+              "Failed to apply absorbing constraint at node");
+      }
+    else
+      throw std::runtime_error("Invalid value for delta");
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign absorbing constraints to nodes
+template <unsigned Tdim>
+bool mpm::Constraints<Tdim>::assign_nodal_absorbing_constraints(
+    const std::vector<std::tuple<mpm::Index, unsigned, double, double, double,
+                                 double, mpm::Position>>&
+        absorbing_constraints) {
+  bool status = true;
+  try {
+    for (const auto& absorbing_constraint : absorbing_constraints) {
+      // Node id
+      mpm::Index nid = std::get<0>(absorbing_constraint);
+      // Direction
+      unsigned dir = std::get<1>(absorbing_constraint);
+      // Delta
+      double delta = std::get<2>(absorbing_constraint);
+      // h_min
+      double h_min = std::get<3>(absorbing_constraint);
+      // a
+      double a = std::get<4>(absorbing_constraint);
+      // b
+      double b = std::get<5>(absorbing_constraint);
+      // Position
+      mpm::Position position = std::get<6>(absorbing_constraint);
+      // delta check
+      if (delta >= h_min / (2 * a) and delta >= h_min / (2 * b)) {
+        if (position == mpm::Position::Corner or
+            position == mpm::Position::Edge or
+            position == mpm::Position::Face) {
+          // Apply constraint
+          if (!mesh_->node(nid)->apply_absorbing_constraint(dir, delta, h_min,
+                                                            a, b, position))
+            throw std::runtime_error(
+                "Nodal absorbing constraints assignment failed");
+        } else
+          throw std::runtime_error("Invalid position");
+      } else
+        throw std::runtime_error("Invalid value for delta");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign absorbing constraints pointers and ids
+template <unsigned Tdim>
+void mpm::Constraints<Tdim>::assign_absorbing_id_ptr(
+    unsigned nset_id,
+    std::shared_ptr<mpm::AbsorbingConstraint>& absorbing_constraint) {
+  this->absorbing_constraint_.emplace_back(absorbing_constraint);
+  this->absorbing_nset_id_.emplace_back(nset_id);
 }

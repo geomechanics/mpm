@@ -10,6 +10,9 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
   const unsigned Dim = 3;
   const double Tolerance = 1.E-7;
 
+  Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  const Eigen::Matrix3d zero_matrix = Eigen::Matrix3d::Zero();
+
   //! Check for center element nodes
   SECTION("64 Node hexrilateral GIMP Element") {
     const unsigned nfunctions = 64;
@@ -32,7 +35,7 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
       // Deformation gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = hex->shapefn(coords, psize, defgrad);
@@ -316,7 +319,7 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
       Eigen::Matrix<double, Dim, 1> psize;
       psize << 0.5, 0.5, 0.5;
       // Deformation gradient
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       auto shapefn = hex->shapefn(coords, psize, defgrad);
@@ -588,12 +591,28 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
       REQUIRE(gradsf(63, 2) == Approx(0).epsilon(Tolerance));
     }
 
+    // Shapefn and grad check fail
+    SECTION("64 Node hexrilateral element check fail") {
+
+      // Coordinate location of point (x,y)
+      Eigen::Matrix<double, Dim, 1> coords;
+      coords << 20.0, 10.0, 200.0;
+      // Size of particle (x,y)
+      Eigen::Matrix<double, Dim, 1> psize;
+      psize << 0.5, 0.5, 0.5;
+      // Deformation gradient
+      Eigen::Matrix<double, Dim, Dim> defgrad;
+      defgrad.setZero();
+
+      hex->shapefn(coords, psize, defgrad);
+      hex->grad_shapefn(coords, psize, defgrad);
+    }
+
     // Coordinates is (0,0,0)
     SECTION("Eight noded local sf hexahedron element for coordinates(0,0,0)") {
       Eigen::Matrix<double, Dim, 1> coords;
       coords.setZero();
-      auto shapefn = hex->shapefn_local(coords, Eigen::Vector3d::Zero(),
-                                        Eigen::Vector3d::Zero());
+      auto shapefn = hex->shapefn_local(coords, zero, zero_matrix);
 
       // Check shape function
       REQUIRE(shapefn.size() == 8);
@@ -627,7 +646,7 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
 
       Eigen::Matrix<double, Dim, 1> psize;
       psize.setZero();
-      Eigen::Matrix<double, Dim, 1> defgrad;
+      Eigen::Matrix<double, Dim, Dim> defgrad;
       defgrad.setZero();
 
       Eigen::Matrix<double, Dim, 1> xi;
@@ -642,6 +661,17 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
 
       // Get Jacobian
       auto jac = hex->jacobian(xi, coords, psize, defgrad);
+
+      // Check size of jacobian
+      REQUIRE(jac.size() == jacobian.size());
+
+      // Check Jacobian
+      for (unsigned i = 0; i < Dim; ++i)
+        for (unsigned j = 0; j < Dim; ++j)
+          REQUIRE(jac(i, j) == Approx(jacobian(i, j)).epsilon(Tolerance));
+
+      // Get Jacobian
+      jac = hex->jacobian_local(xi, coords, psize, defgrad);
 
       // Check size of jacobian
       REQUIRE(jac.size() == jacobian.size());
@@ -672,17 +702,14 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
           -3., 3, 1., -3., 3, 3., -3., 3;
 
       // Get B-Matrix
-      auto bmatrix = hex->bmatrix(xi, coords, Eigen::Vector3d::Zero(),
-                                  Eigen::Vector3d::Zero());
+      auto bmatrix = hex->bmatrix(xi, coords, zero, zero_matrix);
 
       // Check gradient of shape functions
-      auto gradsf = hex->grad_shapefn(xi, Eigen::Vector3d::Zero(),
-                                      Eigen::Vector3d::Zero());
+      auto gradsf = hex->grad_shapefn(xi, zero, zero_matrix);
       //  gradsf *= 2.;
 
       // Check dN/dx
-      auto dn_dx = hex->dn_dx(xi, coords, Eigen::Vector3d::Zero(),
-                              Eigen::Vector3d::Zero());
+      auto dn_dx = hex->dn_dx(xi, coords, zero, zero_matrix);
       REQUIRE(dn_dx.rows() == nfunctions);
       REQUIRE(dn_dx.cols() == Dim);
       for (unsigned i = 0; i < nfunctions; ++i) {
@@ -714,6 +741,25 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
         REQUIRE(bmatrix.at(i)(5, 1) == Approx(0.).epsilon(Tolerance));
         REQUIRE(bmatrix.at(i)(5, 2) == Approx(gradsf(i, 0)).epsilon(Tolerance));
       }
+    }
+
+    SECTION("Eight noded GIMP hexahedron B-matrix and Jacobian failure") {
+      Eigen::Matrix<double, Dim, 1> xi;
+      xi << 0., 0., 0.;
+
+      Eigen::Matrix<double, 7, Dim> coords;
+      // clang-format off
+      coords << 0., 0., 0.,
+                1., 0., 0.,
+                1., 1., 0.,
+                0., 1., 0.,
+                0., 0., 1.,
+                1., 0., 1.,
+                1., 1., 1.;
+      // clang-format on
+      // Get B-Matrix
+      hex->bmatrix(xi, coords, zero, zero_matrix);
+      hex->jacobian(xi, coords, zero, zero_matrix);
     }
 
     SECTION("Center cell gimp element length") {

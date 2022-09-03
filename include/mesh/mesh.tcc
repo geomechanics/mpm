@@ -73,6 +73,23 @@ void mpm::Mesh<Tdim>::iterate_over_nodes(Toper oper) {
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) oper(*nitr);
 }
 
+//! Iterate over particle set
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_node_set(int set_id, Toper oper) {
+  // If set id is -1, use all nodes
+  if (set_id == -1) {
+    this->iterate_over_nodes(oper);
+  } else {
+    // Iterate over the node set
+    auto nodes = node_sets_.at(set_id);
+#pragma omp parallel for schedule(runtime)
+    for (auto nitr = nodes.cbegin(); nitr != nodes.cend(); ++nitr) {
+      oper(*nitr);
+    }
+  }
+}
+
 //! Iterate over nodes
 template <unsigned Tdim>
 template <typename Toper, typename Tpred>
@@ -293,6 +310,17 @@ void mpm::Mesh<Tdim>::find_cell_neighbours(bool assign_to_nodes) {
         if (neighbour_id != cell_id) (*citr)->add_neighbour(neighbour_id);
     }
   }
+}
+
+//! Compute average cell size
+template <unsigned Tdim>
+double mpm::Mesh<Tdim>::compute_average_cell_size() const {
+  double mesh_size = 0.0;
+#pragma omp parallel for schedule(runtime) reduction(+ : mesh_size)
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr)
+    mesh_size += (*citr)->mean_length();
+  mesh_size *= 1. / cells_.size();
+  return mesh_size;
 }
 
 //! Find global number of particles across MPI ranks / cell
@@ -1363,6 +1391,48 @@ void mpm::Mesh<Tdim>::apply_traction_on_particles(double current_time) {
   }
 }
 
+//! Create nodal acceleration constraints
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_nodal_acceleration_constraint(
+    int set_id,
+    const std::shared_ptr<mpm::AccelerationConstraint>& constraint) {
+  bool status = true;
+  try {
+    if (set_id == -1 || node_sets_.find(set_id) != node_sets_.end()) {
+      // Create a nodal acceleration constraint
+      if (constraint->dir() < Tdim)
+        nodal_acceleration_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error(
+            "Invalid direction of nodal acceleration constraint");
+    } else
+      throw std::runtime_error(
+          "No node set found to assign nodal acceleration constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Update nodal acceleration constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::update_nodal_acceleration_constraints(
+    double current_time) {
+  // Iterate over all nodal acceleration constraints
+  for (const auto& nacceleration : nodal_acceleration_constraints_) {
+    // If set id is -1, use all particles
+    int set_id = nacceleration->setid();
+    unsigned dir = nacceleration->dir();
+    double acceleration = nacceleration->acceleration(current_time);
+
+    this->iterate_over_node_set(
+        set_id, std::bind(&mpm::NodeBase<Tdim>::update_acceleration_constraint,
+                          std::placeholders::_1, dir, acceleration));
+  }
+}
+
 //! Create particle velocity constraints
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::create_particle_velocity_constraint(
@@ -1386,7 +1456,7 @@ bool mpm::Mesh<Tdim>::create_particle_velocity_constraint(
   return status;
 }
 
-//! Apply particle tractions
+//! Apply particle velocity constraints
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
   // Iterate over all particle velocity constraints
@@ -1973,7 +2043,8 @@ bool mpm::Mesh<Tdim>::generate_particles(const std::shared_ptr<mpm::IO>& io,
           "Particle generator type is not properly specified");
 
   } catch (std::exception& exception) {
-    console_->error("{}: #{} Generating particle failed", __FILE__, __LINE__);
+    console_->error("{}: #{} Generating particle failed! {}\n", __FILE__,
+                    __LINE__, exception.what());
     status = false;
   }
   return status;
@@ -2144,6 +2215,10 @@ void mpm::Mesh<Tdim>::create_nodal_properties() {
                                        materials_.size());
     nodal_properties_->create_property("normal_unit_vectors", nrows,
                                        materials_.size());
+    nodal_properties_->create_property("wave_velocities", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("density", nodes_.size(),
+                                       materials_.size());
 
     // Iterate over all nodes to initialise the property handle in each node
     // and assign its node id as the prop id in the nodal property data pool
@@ -2163,10 +2238,11 @@ void mpm::Mesh<Tdim>::initialise_nodal_properties() {
 
 //! Upgrade cells to nonlocal cells
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
-                                                unsigned cell_neighbourhood) {
+bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(
+    const std::string& cell_type, unsigned cell_neighbourhood,
+    const tsl::robin_map<std::string, double>& nonlocal_properties) {
   bool status = true;
-  if (cell_type.back() != 'B') {
+  if (!(cell_type.back() == 'B' || cell_type.back() == 'L')) {
     throw std::runtime_error(
         "Unable to upgrade cell to a nonlocal for cell type: " + cell_type);
     status = false;
@@ -2211,7 +2287,7 @@ bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(const std::string& cell_type,
 
         if ((*citr)->nnodes() == new_nnodes) {
           // Reinitialise cell
-          (*citr)->initialiase_nonlocal();
+          (*citr)->initialiase_nonlocal(nonlocal_properties);
         }
       }
     }

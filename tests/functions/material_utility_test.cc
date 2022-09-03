@@ -60,27 +60,6 @@ TEST_CASE("materials utility is checked", "[material]") {
     double lode_angle_tolerance = mpm::materials::lode_angle(stress, Tolerance);
     REQUIRE(lode_angle_tolerance == Approx(M_PI / 6.).epsilon(Tolerance));
 
-    // Compute principal stresses and directions
-    auto principal_stresses = mpm::materials::principal_tensor(stress);
-    REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(0.).epsilon(Tolerance));
-
-    Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-    principal_stresses = mpm::materials::principal_tensor(stress, directors);
-    REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(0, 0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(0, 1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(0, 2) == Approx(1.).epsilon(Tolerance));
-    REQUIRE(directors(1, 0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(1, 1) == Approx(1.).epsilon(Tolerance));
-    REQUIRE(directors(1, 2) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(2, 0) == Approx(1.).epsilon(Tolerance));
-    REQUIRE(directors(2, 1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(2, 2) == Approx(0.).epsilon(Tolerance));
-
     // Compute dp_dsigma
     Eigen::Matrix<double, 6, 1> dp_dsigma = mpm::materials::dp_dsigma();
     REQUIRE(dp_dsigma(0) == Approx(1. / 3.).epsilon(Tolerance));
@@ -207,41 +186,6 @@ TEST_CASE("materials utility is checked", "[material]") {
     double lode_angle_tolerance = mpm::materials::lode_angle(stress, Tolerance);
     REQUIRE(lode_angle_tolerance ==
             Approx(0.563342522771415).epsilon(Tolerance));
-
-    // Compute principal stresses and directions
-    auto principal_stresses = mpm::materials::principal_tensor(stress);
-
-    REQUIRE(principal_stresses(0) == Approx(-98.9515).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(-163.611442455).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(-237.837).epsilon(Tolerance));
-
-    Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-    principal_stresses = mpm::materials::principal_tensor(stress, directors);
-
-    REQUIRE(principal_stresses(0) == Approx(-98.9515).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(-163.611442455).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(-237.837).epsilon(Tolerance));
-    REQUIRE(directors(0, 0) == Approx(-0.5187).epsilon(Tolerance));
-    REQUIRE(directors(0, 1) == Approx(0.079565).epsilon(Tolerance));
-    REQUIRE(directors(0, 2) == Approx(0.851246).epsilon(Tolerance));
-    REQUIRE(directors(1, 0) == Approx(-0.674829).epsilon(Tolerance));
-    REQUIRE(directors(1, 1) == Approx(0.573224).epsilon(Tolerance));
-    REQUIRE(directors(1, 2) == Approx(-0.464781).epsilon(Tolerance));
-    REQUIRE(directors(2, 0) == Approx(0.524935).epsilon(Tolerance));
-    REQUIRE(directors(2, 1) == Approx(0.815527).epsilon(Tolerance));
-    REQUIRE(directors(2, 2) == Approx(0.243639).epsilon(Tolerance));
-
-    Eigen::Matrix<double, 3, 3> eigen = Eigen::Matrix<double, 3, 3>::Zero();
-    eigen(0, 0) = principal_stresses(0);
-    eigen(1, 1) = principal_stresses(1);
-    eigen(2, 2) = principal_stresses(2);
-    auto initial_stress = directors * eigen * directors.transpose();
-    REQUIRE(initial_stress(0, 0) == Approx(-200.).epsilon(Tolerance));
-    REQUIRE(initial_stress(1, 1) == Approx(-150.2).epsilon(Tolerance));
-    REQUIRE(initial_stress(2, 2) == Approx(-150.2).epsilon(Tolerance));
-    REQUIRE(initial_stress(0, 1) == Approx(52.).epsilon(Tolerance));
-    REQUIRE(initial_stress(1, 2) == Approx(-14.5).epsilon(Tolerance));
-    REQUIRE(initial_stress(0, 2) == Approx(-33.).epsilon(Tolerance));
 
     // Compute dp_dsigma
     Eigen::Matrix<double, 6, 1> dp_dsigma = mpm::materials::dp_dsigma();

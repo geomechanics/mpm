@@ -53,6 +53,8 @@ std::shared_ptr<void> mpm::ParticleXMPM<Tdim>::pod() const {
 
   Eigen::Matrix<double, 6, 1> strain = this->strain_;
 
+  Eigen::Matrix<double, 3, 3> defgrad = this->deformation_gradient_;
+
   particle_data->id = this->id();
   particle_data->mass = this->mass();
   particle_data->volume = this->volume();
@@ -96,7 +98,16 @@ std::shared_ptr<void> mpm::ParticleXMPM<Tdim>::pod() const {
   particle_data->gamma_yz = strain[4];
   particle_data->gamma_xz = strain[5];
 
-  particle_data->epsilon_v = this->volumetric_strain_centroid_;
+  // Deformation gradient
+  particle_data->defgrad_00 = defgrad(0, 0);
+  particle_data->defgrad_01 = defgrad(0, 1);
+  particle_data->defgrad_02 = defgrad(0, 2);
+  particle_data->defgrad_10 = defgrad(1, 0);
+  particle_data->defgrad_11 = defgrad(1, 1);
+  particle_data->defgrad_12 = defgrad(1, 2);
+  particle_data->defgrad_20 = defgrad(2, 0);
+  particle_data->defgrad_21 = defgrad(2, 1);
+  particle_data->defgrad_22 = defgrad(2, 2);
 
   particle_data->status = this->status();
 

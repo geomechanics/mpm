@@ -311,13 +311,18 @@ void mpm::Cell<Tdim>::assign_cohesion_area(unsigned dis_id) {
   const auto& centers = this->discontinuity_element_[dis_id]->cohesion_cor();
   const auto area = this->discontinuity_element_[dis_id]->area();
 
-  const Eigen::Matrix<double, Tdim, 1> zeros =
+  // Identity matrix
+  const auto& identity = Eigen::Matrix<double, Tdim, Tdim>::Identity();
+
+  // Compute shape function of the point
+  Eigen::Matrix<double, Tdim, 1> zero_natural_size =
       Eigen::Matrix<double, Tdim, 1>::Zero();
+
   Eigen::Matrix<double, Tdim, 1> xi;
 
   if (!this->is_point_in_cell(centers, &xi)) return;
 
-  const auto& shapefn = element_->shapefn(xi, zeros, zeros);
+  const auto& shapefn = element_->shapefn(xi, zero_natural_size, identity);
   for (int i = 0; i < nodes_.size(); i++) {
     const double node_area = shapefn[i] * area;
     nodes_[i]->update_cohesion_area(node_area, dis_id);

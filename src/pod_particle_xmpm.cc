@@ -35,7 +35,15 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODParticleXMPM, gamma_xy),
     HOFFSET(PODParticleXMPM, gamma_yz),
     HOFFSET(PODParticleXMPM, gamma_xz),
-    HOFFSET(PODParticleXMPM, epsilon_v),
+    HOFFSET(PODParticleXMPM, defgrad_00),
+    HOFFSET(PODParticleXMPM, defgrad_01),
+    HOFFSET(PODParticleXMPM, defgrad_02),
+    HOFFSET(PODParticleXMPM, defgrad_10),
+    HOFFSET(PODParticleXMPM, defgrad_11),
+    HOFFSET(PODParticleXMPM, defgrad_12),
+    HOFFSET(PODParticleXMPM, defgrad_20),
+    HOFFSET(PODParticleXMPM, defgrad_21),
+    HOFFSET(PODParticleXMPM, defgrad_22),
     HOFFSET(PODParticleXMPM, status),
     HOFFSET(PODParticleXMPM, cell_id),
     HOFFSET(PODParticleXMPM, material_id),
@@ -60,7 +68,7 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODParticleXMPM, svars[17]),
     HOFFSET(PODParticleXMPM, svars[18]),
     HOFFSET(PODParticleXMPM, svars[19]),
-    // 56
+    // 64
     // XMPM variables
     HOFFSET(PODParticleXMPM, levelset_phi),
 };
@@ -68,7 +76,6 @@ const size_t dst_offset[NFIELDS] = {
 // Get size of particleXMPM
 PODParticleXMPM particle;
 const size_t dst_sizes[NFIELDS] = {
-    // Solid phase
     sizeof(particle.id),
     sizeof(particle.mass),
     sizeof(particle.volume),
@@ -100,7 +107,15 @@ const size_t dst_sizes[NFIELDS] = {
     sizeof(particle.gamma_xy),
     sizeof(particle.gamma_yz),
     sizeof(particle.gamma_xz),
-    sizeof(particle.epsilon_v),
+    sizeof(particle.defgrad_00),
+    sizeof(particle.defgrad_01),
+    sizeof(particle.defgrad_02),
+    sizeof(particle.defgrad_10),
+    sizeof(particle.defgrad_11),
+    sizeof(particle.defgrad_12),
+    sizeof(particle.defgrad_20),
+    sizeof(particle.defgrad_21),
+    sizeof(particle.defgrad_22),
     sizeof(particle.status),
     sizeof(particle.cell_id),
     sizeof(particle.material_id),
@@ -164,7 +179,15 @@ const char* field_names[NFIELDS] = {
     "gamma_xy",
     "gamma_yz",
     "gamma_xz",
-    "epsilon_v",
+    "defgrad_00",
+    "defgrad_01",
+    "defgrad_02",
+    "defgrad_10",
+    "defgrad_11",
+    "defgrad_12",
+    "defgrad_20",
+    "defgrad_21",
+    "defgrad_22",
     "status",
     "cell_id",
     "material_id",
@@ -203,15 +226,17 @@ const hid_t field_type[NFIELDS] = {
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_HBOOL, H5T_NATIVE_LLONG, H5T_NATIVE_UINT, H5T_NATIVE_UINT,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    // 56
+    // 64
     // XMPM
-    H5T_NATIVE_DOUBLE};
+    H5T_NATIVE_DOUBLE};  // namespace particlexmpm
 }  // namespace particlexmpm
 }  // namespace pod
 }  // namespace mpm

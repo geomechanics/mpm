@@ -150,12 +150,13 @@ void mpm::PointBase<Tdim>::compute_shapefn() noexcept {
   // Get element ptr of a cell
   const auto element = cell_->element_ptr();
 
-  // Zero matrix
-  const auto& zero = Eigen::Matrix<double, Tdim, 1>::Zero();
+  // Identity matrix
+  const auto& identity = Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
   // Compute shape function of the point
-  const auto& zero_natural_size = Eigen::Matrix<double, 1, Tdim>::Zero();
-  shapefn_ = element->shapefn(this->xi_, zero_natural_size, zero);
+  Eigen::Matrix<double, Tdim, 1> zero_natural_size =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  shapefn_ = element->shapefn(this->xi_, zero_natural_size, identity);
 }
 
 // Compute updated position of the point

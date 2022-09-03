@@ -16,7 +16,7 @@ typedef struct PODParticleXMPM : PODParticle {
 
 namespace pod {
 namespace particlexmpm {
-const hsize_t NFIELDS = 57;
+const hsize_t NFIELDS = 65;
 
 const size_t dst_size = sizeof(PODParticleXMPM);
 

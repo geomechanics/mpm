@@ -370,6 +370,17 @@
 #   define CATCH_AUTO_PTR( T ) std::auto_ptr<T>
 #endif
 
+// SIGSTKSZ is not a constant anymore
+// on glibc > 2.33 this is no longer constant, see
+// https://sourceware.org/git/?p=glibc.git;a=blob;f=NEWS;h=85e84fe53699fe9e392edffa993612ce08b2954a;hb=HEAD
+#include <cstdlib>
+#if defined(_SC_SIGSTKSZ_SOURCE) || defined(_GNU_SOURCE)
+static constexpr std::size_t sigStackSize = 32768;
+#else
+static constexpr std::size_t sigStackSize =
+    32768 >= SIGSTKSZ ? 32768 : SIGSTKSZ;
+#endif
+
 #define INTERNAL_CATCH_UNIQUE_NAME_LINE2( name, line ) name##line
 #define INTERNAL_CATCH_UNIQUE_NAME_LINE( name, line ) INTERNAL_CATCH_UNIQUE_NAME_LINE2( name, line )
 #ifdef CATCH_CONFIG_COUNTER
@@ -2130,7 +2141,11 @@ namespace Catch{
                 __asm__("li r0, 20\nsc\nnop\nli r0, 37\nli r4, 2\nsc\nnop\n" \
                 : : : "memory","r0","r3","r4" ) /* NOLINT */
     #else
-        #define CATCH_TRAP() __asm__("int $3\n" : : /* NOLINT */ )
+        #if defined(__i386__) || defined(__x86_64__)
+            #define CATCH_TRAP() __asm__("int $3\n" : : ) /* NOLINT */
+        #elif defined(__aarch64__)
+            #define CATCH_TRAP()  __asm__(".inst 0xd4200000")
+        #endif
     #endif
 
 #elif defined(CATCH_PLATFORM_LINUX)
@@ -6540,7 +6555,7 @@ namespace Catch {
         static bool isSet;
         static struct sigaction oldSigActions [sizeof(signalDefs)/sizeof(SignalDefs)];
         static stack_t oldSigStack;
-        static char altStackMem[SIGSTKSZ];
+        static char altStackMem[sigStackSize];
 
         static void handleSignal( int sig ) {
             std::string name = "<unknown signal>";
@@ -6560,7 +6575,7 @@ namespace Catch {
             isSet = true;
             stack_t sigStack;
             sigStack.ss_sp = altStackMem;
-            sigStack.ss_size = SIGSTKSZ;
+            sigStack.ss_size = sigStackSize;
             sigStack.ss_flags = 0;
             sigaltstack(&sigStack, &oldSigStack);
             struct sigaction sa = { 0 };
@@ -6591,7 +6606,7 @@ namespace Catch {
     bool FatalConditionHandler::isSet = false;
     struct sigaction FatalConditionHandler::oldSigActions[sizeof(signalDefs)/sizeof(SignalDefs)] = {};
     stack_t FatalConditionHandler::oldSigStack = {};
-    char FatalConditionHandler::altStackMem[SIGSTKSZ] = {};
+    char FatalConditionHandler::altStackMem[sigStackSize] = {};
 
 } // namespace Catch
 

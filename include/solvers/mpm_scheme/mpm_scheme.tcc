@@ -228,6 +228,7 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
     // Update the discontinuity position
     mesh_->compute_updated_position_discontinuity(this->dt_);
+
   } else {
     if (damping_type == "Cundall")
       mesh_->iterate_over_nodes_predicate(

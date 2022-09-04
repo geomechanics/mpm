@@ -346,6 +346,7 @@ class Cell {
   //! Assign interaction element type
   //! \param[in] the interaction type
   void assign_interaction_type(unsigned dis_id, mpm::InteractionType type) {
+    std::lock_guard<std::mutex> guard(cell_mutex_);
     this->discontinuity_element_[dis_id]->assign_interaction_type(type);
   }
 
@@ -377,7 +378,10 @@ class Cell {
 
   //! Assign the discontinuity id which can propagates in this cell
   //! \param[in] dis_id discontinuity id
-  void assign_dis_id(unsigned dis_id) { dis_id_ = dis_id; }
+  void assign_dis_id(unsigned dis_id) {
+    std::lock_guard<std::mutex> guard(cell_mutex_);
+    dis_id_ = dis_id;
+  }
 
   /**@}*/
 

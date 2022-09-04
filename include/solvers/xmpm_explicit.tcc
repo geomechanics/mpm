@@ -16,25 +16,6 @@ mpm::XMPMExplicit<Tdim>::XMPMExplicit(const std::shared_ptr<IO>& io)
   this->mpm_scheme_->assign_xmpm(true);
 }
 
-//! MPM Explicit compute stress strain
-template <unsigned Tdim>
-void mpm::XMPMExplicit<Tdim>::compute_stress_strain(unsigned phase) {
-  // Iterate over each particle to calculate strain
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_strain, std::placeholders::_1, dt_));
-
-  // Iterate over each particle to update particle volume
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));
-
-  // Pressure smoothing
-  if (pressure_smoothing_) this->pressure_smoothing(phase);
-
-  // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
-}
-
 //! MPM Explicit solver
 template <unsigned Tdim>
 bool mpm::XMPMExplicit<Tdim>::solve() {
@@ -99,9 +80,15 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     //! Particle entity sets and velocity constraints
     this->particle_entity_sets(false);
     this->particle_velocity_constraints();
+
+    // Initialise discontinuity
+    this->initialise_discontinuity();
   } else {
     // Initialise particles
     this->initialise_particles();
+
+    // Initialise discontinuity
+    this->initialise_discontinuity();
 
     // Compute mass
     mesh_->iterate_over_particles(std::bind(
@@ -110,9 +97,6 @@ bool mpm::XMPMExplicit<Tdim>::solve() {
     // Domain decompose
     this->mpi_domain_decompose(initial_step);
   }
-
-  // Initialise discontinuity
-  this->initialise_discontinuity();
 
   // Initialise loading conditions
   this->initialise_loads();
@@ -229,18 +213,20 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
         double contact_distance = 0;
         double width = std::numeric_limits<double>::max();
         int move_direction = 1;
-        bool friction_coef_average = false;
+        bool friction_coef_average = true;
         bool mls = false;
-        if (discontinuity_props.contains("friction_coefficient_average"))
-          friction_coef_average =
-              discontinuity_props.at("friction_coefficient_average")
-                  .template get<bool>();
-        if (discontinuity_props.contains("friction_coefficient"))
+
+        // store friction coefficient if it's given in input file
+        if (discontinuity_props.contains("friction_coefficient")) {
+          friction_coef_average = false;
           friction_coef = discontinuity_props.at("friction_coefficient")
                               .template get<double>();
+        }
+
         // store cohesion if it's given in input file
         if (discontinuity_props.contains("cohesion"))
           cohesion = discontinuity_props.at("cohesion").template get<double>();
+
         // store contact_distance if it's given in input file
         if (discontinuity_props.contains("contact_distance"))
           contact_distance =
@@ -250,13 +236,16 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
         if (discontinuity_props.contains("move_direction"))
           move_direction =
               discontinuity_props.at("move_direction").template get<int>();
+
         // store width if it's given in input file
         if (discontinuity_props.contains("width"))
           width = discontinuity_props.at("width").template get<double>();
+
         // store mls if it's given in input file
         if (discontinuity_props.contains("mls"))
           mls = discontinuity_props.at("mls").template get<bool>();
 
+        // Discontinuity initiation property
         initiation_property_ = std::make_tuple(
             cohesion, friction_coef, contact_distance, width, maximum_pdstrain_,
             move_direction, friction_coef_average, mls);
@@ -296,6 +285,7 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
               discontinuity_io->read_mesh_cells(discontinuity_file));
 
           mesh_->insert_discontinuity(discontinuity);
+
           // initialise particle level set values by the discontinuity mesh
           mesh_->initialise_levelset_discontinuity(dis_id);
 
@@ -305,7 +295,6 @@ void mpm::XMPMExplicit<Tdim>::initialise_discontinuity() {
             mesh_->assign_particles_levelset(
                 discontinuity_io->read_id_levelset(discontinuity_file), dis_id);
           }
-
         }
         // TODO: Check node levelset for predetermined discontinuities
         else if (discontinuity->description_type() == "node_levelset") {

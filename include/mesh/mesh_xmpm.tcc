@@ -9,6 +9,8 @@ void mpm::Mesh<Tdim>::compute_updated_position_discontinuity(double dt) {
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_cell_normal_vector_discontinuity(
     unsigned dis_id) {
+
+#pragma omp parallel for schedule(runtime)
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
     // Exit if regular cell
     if ((*citr)->element_discontinuity_type(dis_id) == mpm::EnrichType::Regular)
@@ -27,6 +29,7 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_nodal_normal_vector_discontinuity(
     unsigned dis_id) {
 
+#pragma omp parallel for schedule(runtime)
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
     VectorDim normal_cell = VectorDim::Zero();
     int crossed_cell = 0;
@@ -567,6 +570,7 @@ void mpm::Mesh<Tdim>::assign_enrich_nodes(unsigned dis_id) {
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::assign_self_contact_property(unsigned dis_id) {
 
+#pragma omp parallel for schedule(runtime)
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
     if ((*citr)->element_discontinuity_type(dis_id) != mpm::EnrichType::Crossed)
       continue;
@@ -578,6 +582,7 @@ void mpm::Mesh<Tdim>::assign_self_contact_property(unsigned dis_id) {
   const double friction_coef = discontinuity_[dis_id]->friction_coef();
   const double cohesion = discontinuity_[dis_id]->cohesion();
 
+#pragma omp parallel for schedule(runtime)
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
     if (!(*nitr)->discontinuity_enrich(dis_id)) continue;
 
@@ -731,9 +736,11 @@ bool mpm::Mesh<Tdim>::initiation_discontinuity(
 }
 
 //! Compute the distance between two sides of discontinuity
+// FIXME: MPI_HEADACHE
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::selfcontact_detection() {
 
+#pragma omp parallel for schedule(runtime)
   for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); nitr++) {
     if ((*nitr)->enrich_type() == mpm::NodeEnrichType::regular) continue;
 
@@ -745,7 +752,10 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
       double contact_distance = discontinuity_[dis_id[0]]->contact_distance();
       double dis_negative = -10.0 * contact_distance;
       double dis_positive = 10.0 * contact_distance;
+
+      // Access surrounding cells
       for (auto cell : (*nitr)->cells()) {
+        // Access particles inside the surrounding cells
         for (auto particle : map_cells_[cell]->particles()) {
           const auto& corp = map_particles_[particle]->coordinates();
           const double phi = map_particles_[particle]->levelset_phi(dis_id[0]);
@@ -773,6 +783,7 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
       for (int i = 0; i < 3; i++)
         for (int j = i + 1; j < 4; j++) {
           const auto& dis_id = (*nitr)->discontinuity_id();
+
           // loop for 2 normal directions
           bool status = true;
           k++;
@@ -785,7 +796,9 @@ void mpm::Mesh<Tdim>::selfcontact_detection() {
             double dis_negative = -10 * contact_distance;
             double dis_positive = 10 * contact_distance;
 
+            // Access surrounding cells
             for (auto cell : (*nitr)->cells()) {
+              // Access particles inside the surrounding cells
               for (auto particle : map_cells_[cell]->particles()) {
                 const auto& corp = map_particles_[particle]->coordinates();
                 const double phi =
@@ -1078,6 +1091,7 @@ void mpm::Mesh<Tdim>::postprocess_discontinuity() {
     const auto& type = discontinuity_[dis_id]->description_type();
 
     if (!propagation) continue;
+
     // Localization propagation search
     find_next_tip_cells(dis_id);
   }
@@ -1102,6 +1116,8 @@ void mpm::Mesh<Tdim>::postprocess_discontinuity() {
 //! The post-process of discontinuity
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::interaction_discontinuity() {
+
+#pragma omp parallel for schedule(runtime)
   // Loop over cells
   for (auto citr = cells_.cbegin(); citr != cells_.cend(); citr++) {
     for (int i = 0; i < discontinuity_num() - 1; i++) {
@@ -1147,6 +1163,7 @@ void mpm::Mesh<Tdim>::interaction_discontinuity() {
         }
       }
     }
+
     // loop all the discontinuity
     for (int i = 0; i < discontinuity_num() - 1; i++) {
       // Exit if it's not nexttip cell of discontinuity i
@@ -1173,6 +1190,7 @@ template <unsigned Tdim>
 void mpm::Mesh<Tdim>::adjust_particle_levelset_interaction() {
 
   for (unsigned i = 0; i < discontinuity_num(); i++) {
+#pragma omp parallel for schedule(runtime)
     for (auto citr = cells_.cbegin(); citr != cells_.cend(); citr++) {
       if ((*citr)->interaction_type(i) != mpm::InteractionType::Terminated_2)
         continue;
@@ -1236,6 +1254,7 @@ void mpm::Mesh<Tdim>::modify_nodal_levelset_mls(unsigned dis_id) {
     std::vector<Index> cell_list = (*nitr)->cells();
 
     // Loop over cell in the list
+    // FIXME: MPI_HEADACHE
     for (auto cell : cell_list) {
       const double length = discontinuity_[dis_id]->width();
       cell_volume += map_cells_[cell]->volume();

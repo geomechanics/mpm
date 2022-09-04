@@ -166,6 +166,7 @@ void mpm::ParticleXMPM<Tdim>::map_mass_momentum_to_nodes() noexcept {
                                mass_ * shapefn_[i] * velocity_);
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
     auto discontinuity_id = nodes_[i]->discontinuity_id();
+
     // Single enriched node
     if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
 
@@ -180,9 +181,9 @@ void mpm::ParticleXMPM<Tdim>::map_mass_momentum_to_nodes() noexcept {
 
       nodes_[i]->update_mass_enrich(true, mass_enrich);
       nodes_[i]->update_momentum_enrich(true, momentum_enrich);
-    } else if (nodes_[i]->enrich_type() ==
-               mpm::NodeEnrichType::double_enriched) {
-      // Double enriched node
+    }
+    // Double enriched node
+    else if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::double_enriched) {
       Eigen::Matrix<double, 3, 1> mass_enrich;
       mass_enrich.setZero();
       mass_enrich[0] =

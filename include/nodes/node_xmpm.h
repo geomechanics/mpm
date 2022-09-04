@@ -54,7 +54,9 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] the value of the nodal levelset_phi
   //! \param[in] dis_id the discontinuity id
   void update_levelset_phi(double phi, int dis_id) {
+    node_mutex_.lock();
     levelset_phi_[dis_id] += phi;
+    node_mutex_.unlock();
   };
 
   //! assign the nodal levelset values
@@ -72,7 +74,10 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   void update_mass_enrich(bool update, Eigen::Matrix<double, 3, 1> mass) {
     // Decide to update or assign
     const double factor = (update == true) ? 1. : 0.;
+
+    node_mutex_.lock();
     mass_enrich_ = mass_enrich_ * factor + mass;
+    node_mutex_.unlock();
   };
 
   //! Update the nodal enriched momentum
@@ -83,7 +88,10 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
                               Eigen::Matrix<double, Tdim, 3> momentum) {
     // Decide to update or assign
     const double factor = (update == true) ? 1. : 0.;
+
+    node_mutex_.lock();
     momentum_enrich_ = momentum_enrich_ * factor + momentum;
+    node_mutex_.unlock();
   };
 
   //! Update the nodal enriched internal_force
@@ -91,7 +99,9 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] the value of the enriched momentum
   virtual void update_internal_force_enrich(
       Eigen::Matrix<double, Tdim, 3> internal_force) {
+    node_mutex_.lock();
     internal_force_enrich_ += internal_force;
+    node_mutex_.unlock();
   }
 
   //! Update the nodal enriched external_force
@@ -99,13 +109,19 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] the value of the enriched external_force
   virtual void update_external_force_enrich(
       Eigen::Matrix<double, Tdim, 3> external_force) {
+    node_mutex_.lock();
     external_force_enrich_ += external_force;
+    node_mutex_.unlock();
   }
 
   //! Update the nodal mass_h_
   //! \ingroup XMPM
   //! \param[in] the value of mass_h_
-  void update_mass_h(double mass_h) { mass_h_ += mass_h; }
+  void update_mass_h(double mass_h) {
+    node_mutex_.lock();
+    mass_h_ += mass_h;
+    node_mutex_.unlock();
+  }
 
   //! Initialise the nodal mass_h_
   //! \ingroup XMPM
@@ -294,6 +310,8 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] dis_id the discontinuity id
   void update_cohesion_area(double cohesion_area, unsigned dis_id) {
     if (enrich_type_ == mpm::NodeEnrichType::regular) return;
+
+    node_mutex_.lock();
     if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
         discontinuity_id_[0] == dis_id) {
       cohesion_area_[0] += cohesion_area;
@@ -301,6 +319,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
       if (discontinuity_id_[0] == dis_id) cohesion_area_[0] += cohesion_area;
       if (discontinuity_id_[1] == dis_id) cohesion_area_[1] += cohesion_area;
     }
+    node_mutex_.unlock();
   }
 
   //! Return  connected cells

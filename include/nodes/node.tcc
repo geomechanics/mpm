@@ -701,8 +701,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
       // Assign to tuple
       this->cohesion_constraint_ = std::make_tuple(
           static_cast<unsigned>(dir), static_cast<int>(sign_n),
-          static_cast<double>(cohesion), static_cast<double>(nodal_area),
-          static_cast<int>(nposition));
+          static_cast<double>(cohesion), static_cast<double>(nodal_area));
       this->cohesion_ = true;
     } else
       throw std::runtime_error("Constraint direction is out of bounds");
@@ -732,9 +731,6 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
 
     // Nodal area
     const double nodal_area = std::get<3>(this->cohesion_constraint_);
-
-    // Location of node for area computation
-    const int nposition = std::get<4>(this->cohesion_constraint_);
 
     const unsigned phase = 0;
 

@@ -728,7 +728,7 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
           // Cell height
           double h_min;
           // Node nposition
-          int nposition;
+          int nposition = 0;
           while (istream.good()) {
             // Read stream
             istream >> id >> dir >> sign_n >> cohesion >> h_min >> nposition;

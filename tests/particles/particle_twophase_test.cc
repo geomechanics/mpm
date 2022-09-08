@@ -1257,7 +1257,7 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location from nodal velocity
-    REQUIRE_NOTHROW(particle->compute_updated_position(dt, true));
+    REQUIRE_NOTHROW(particle->compute_updated_position(dt, "pic"));
     // Check particle velocity
     velocity << 0., 0.894;
     for (unsigned i = 0; i < velocity.size(); ++i)
@@ -2887,7 +2887,7 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location based on nodal velocity
-    REQUIRE_NOTHROW(particle->compute_updated_position(dt, true));
+    REQUIRE_NOTHROW(particle->compute_updated_position(dt, "pic"));
     // Check particle velocity
     velocity << 0., 5.875, 10.3485714286;
     for (unsigned i = 0; i < velocity.size(); ++i)

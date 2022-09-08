@@ -232,9 +232,9 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
-  //! \param[in] velocity_update Update particle velocity from nodal vel
-  void compute_updated_position(double dt,
-                                bool velocity_update = false) noexcept override;
+  //! \param[in] velocity_update Method to update particle velocity
+  void compute_updated_position(
+      double dt, const std::string& velocity_update = "flip") noexcept override;
 
   //! Assign material history variables
   //! \param[in] state_vars State variables
@@ -422,7 +422,6 @@ class Particle : public ParticleBase<Tdim> {
   //! Compute updated position of the particle by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  //! \param[in] velocity_update Update particle velocity from nodal vel
   void compute_updated_position_newmark(double dt) noexcept override;
 
   //! Update stress and strain after convergence of Newton-Raphson iteration

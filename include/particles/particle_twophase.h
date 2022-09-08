@@ -83,10 +83,11 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   inline void map_internal_force() noexcept override;
 
   //! Compute updated position of the particle and kinematics of both solid and
-  //! liquid phase \param[in] dt Analysis time step \param[in] velocity_update
-  //! Update particle velocity from nodal vel when true
-  void compute_updated_position(double dt,
-                                bool velocity_update = false) noexcept override;
+  //! liquid phase
+  //! \param[in] dt Analysis time step
+  //! \param[in] velocity_update Method to update particle velocity
+  void compute_updated_position(
+      double dt, const std::string& velocity_update = "flip") noexcept override;
 
   //! Assign velocity to the particle liquid phase
   //! \param[in] velocity A vector of particle liquid phase velocity
@@ -232,8 +233,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Compute updated velocity of the particle based on nodal velocity
   //! \param[in] dt Analysis time step
   //! \retval status Compute status
-  virtual void compute_updated_liquid_velocity(double dt,
-                                               bool velocity_update) noexcept;
+  virtual void compute_updated_liquid_velocity(
+      double dt, const std::string& velocity_update = "flip") noexcept;
 
  protected:
   //! particle id

@@ -191,8 +191,9 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 // Compute particle kinematics
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
-    bool velocity_update, unsigned phase, const std::string& damping_type,
-    double damping_factor, unsigned step, bool update_defgrad) {
+    const std::string& velocity_update, unsigned phase,
+    const std::string& damping_type, double damping_factor, unsigned step,
+    bool update_defgrad) {
 
   // Update nodal acceleration constraints
   mesh_->update_nodal_acceleration_constraints(step * dt_);

@@ -251,8 +251,8 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::MPMScheme<Tdim>> mpm_scheme_{nullptr};
   //! Interface scheme
   std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
-  //! velocity update
-  bool velocity_update_{false};
+  //! Velocity update method
+  std::string velocity_update_{"flip"};
   //! Gravity
   Eigen::Matrix<double, Tdim, 1> gravity_;
   //! Mesh object

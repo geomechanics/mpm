@@ -288,7 +288,7 @@ class ParticleBase {
 
   //! Compute updated position
   virtual void compute_updated_position(
-      double dt, bool velocity_update = false) noexcept = 0;
+      double dt, const std::string& velocity_update = "flip") noexcept = 0;
 
   //! Return scalar data of particles
   //! \param[in] property Property string

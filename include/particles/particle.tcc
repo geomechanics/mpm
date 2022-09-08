@@ -870,7 +870,7 @@ void mpm::Particle<Tdim>::map_traction_force() noexcept {
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(
-    double dt, bool velocity_update) noexcept {
+    double dt, const std::string& velocity_update) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
   // Get interpolated nodal velocity
@@ -882,7 +882,7 @@ void mpm::Particle<Tdim>::compute_updated_position(
         shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
 
   // Acceleration update
-  if (!velocity_update) {
+  if (velocity_update == "flip") {
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();

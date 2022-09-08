@@ -61,14 +61,15 @@ class MPMScheme {
   virtual inline void absorbing_boundary_properties();
 
   //! Compute acceleration velocity position
-  //! \param[in] velocity_update Velocity or acceleration update flag
+  //! \param[in] velocity_update Method to update particle velocity
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
   //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
-      bool velocity_update, unsigned phase, const std::string& damping_type,
-      double damping_factor, unsigned step, bool update_defgrad);
+      const std::string& velocity_update, unsigned phase,
+      const std::string& damping_type, double damping_factor, unsigned step,
+      bool update_defgrad);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] phase Phase to smooth pressure

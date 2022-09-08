@@ -642,7 +642,7 @@ inline void mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force() noexcept {
 // liquid phase
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_position(
-    double dt, bool velocity_update) noexcept {
+    double dt, const std::string& velocity_update) noexcept {
   mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update);
   this->compute_updated_liquid_velocity(dt, velocity_update);
 }
@@ -678,11 +678,11 @@ bool mpm::TwoPhaseParticle<Tdim>::map_pressure_to_nodes(
 // Compute updated velocity of the liquid phase based on nodal velocity
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
-    double dt, bool velocity_update) noexcept {
+    double dt, const std::string& velocity_update) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
-  if (!velocity_update) {
+  if (velocity_update == "flip") {
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> acceleration;
     acceleration.setZero();

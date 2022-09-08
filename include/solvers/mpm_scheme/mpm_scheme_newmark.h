@@ -44,12 +44,13 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
                                         bool pressure_smoothing) override;
 
   //! Compute acceleration velocity position
-  //! \param[in] velocity_update Velocity or acceleration update flag
+  //! \param[in] velocity_update Method to update particle velocity
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
   //! \param[in] update_defgrad Update deformation gradient
-  inline void compute_particle_kinematics(bool velocity_update, unsigned phase,
+  inline void compute_particle_kinematics(const std::string& velocity_update,
+                                          unsigned phase,
                                           const std::string& damping_type,
                                           double damping_factor, unsigned step,
                                           bool update_defgrad) override;

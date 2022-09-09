@@ -324,6 +324,13 @@ TEST_CASE("Node is checked for 1D case", "[node][1D]") {
       REQUIRE(node->assign_friction_constraint(-1, 1., 0.5) == false);
       REQUIRE(node->assign_friction_constraint(3, 1., 0.5) == false);
 
+      // Apply cohesion constraints
+      REQUIRE(node->assign_cohesion_constraint(0, -1., 1000, 0.25, 2) == true);
+      // Apply cohesion constraints
+      REQUIRE(node->assign_cohesion_constraint(-1, -1., 1000, 0.25, 2) ==
+              false);
+      REQUIRE(node->assign_cohesion_constraint(3, -1., 1000, 0.25, 2) == false);
+
       // Test acceleration with constraints
       acceleration[0] = 0.5 * acceleration[0];
       for (unsigned i = 0; i < acceleration.size(); ++i)
@@ -400,7 +407,7 @@ TEST_CASE("Node is checked for 1D case", "[node][1D]") {
       node->compute_velocity();
 
       mass = 100.;
-      // Update mass to 100.5
+      // Update mass to 100
       REQUIRE_NOTHROW(node->update_mass(true, Nphase, mass));
       REQUIRE(node->mass(Nphase) == Approx(100.).epsilon(Tolerance));
 
@@ -896,7 +903,7 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
       node->compute_velocity();
 
       mass = 100.;
-      // Update mass to 100.5
+      // Update mass to 100.
       REQUIRE_NOTHROW(node->update_mass(true, Nphase, mass));
       REQUIRE(node->mass(Nphase) == Approx(100.).epsilon(Tolerance));
 
@@ -1075,6 +1082,173 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
         for (unsigned i = 0; i < Dim; ++i)
           REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
+      }
+
+      SECTION("Check cartesian cohesion constraints") {
+        // Case: static, cohesion fully mobilized, edge
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 2) ==
+                true);
+        // Check out of bounds condition
+        REQUIRE(node->assign_cohesion_constraint(2, -1., 1000, 0.25, 2) ==
+                false);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        acceleration << 7.5, -6.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check failing cohesion constraint case") {
+        // Apply cohesion constraint with incorrect nposition
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+                false);
+        // Should throw: invalid cohesion boundary nposition
+        node->apply_cohesion_constraints(dt);
+      }
+
+      SECTION("Check additional cohesion constraint cases") {
+        // Case: static, cohesion not fully mobilized, corner
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 1., -6.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 1) ==
+                true);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        acceleration << 0., -6.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check additional cohesion constraint cases") {
+        // Case: kinetic, cohesion fully mobilized, edge
+        // Time step
+        const double dt = 0.1;
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 4.);
+        node->assign_velocity_constraint(1, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 2) ==
+                true);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        // vel_net=5., vel_cohesional=0.25
+        acceleration << 7.5, -6.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check additional cohesion constraint cases") {
+        // Case: kinetic, cohesion not fully mobilized, edge
+        // Time step
+        const double dt = 0.1;
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 1.);
+        node->assign_velocity_constraint(1, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 10000, 0.25, 2) ==
+                true);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        // vel_net=2., vel_cohesional=2.5
+        acceleration << -10., -6.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check general cohesion constraints in 1 direction") {
+        // Case: static, cohesion fully mobilized, edge
+        // Assign mass
+        mass = 1000.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 0., -9.81;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 2) ==
+                true);
+
+        // Apply rotation matrix with Euler angles alpha = -30 deg, beta = 0 deg
+        Eigen::Matrix<double, Dim, 1> euler_angles;
+        euler_angles << -30. * M_PI / 180, 0. * M_PI / 180;
+        const auto rotation_matrix =
+            mpm::geometry::rotation_matrix(euler_angles);
+        node->assign_rotation_matrix(rotation_matrix);
+        const auto inverse_rotation_matrix = rotation_matrix.inverse();
+
+        // Apply general cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check applied constraints on acceleration in the global coordinates
+        acceleration << -0.2165063509, -9.685;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+
+        // Check the acceleration in local coordinates
+        acceleration << 4.655, -8.49571;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
       }
 
       SECTION("Check Cartesian acceleration constraints") {
@@ -1710,6 +1884,182 @@ TEST_CASE("Node is checked for 3D case", "[node][3D]") {
         for (unsigned i = 0; i < Dim; ++i)
           REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
+      }
+
+      SECTION("Check cartesian cohesion constraints") {
+        // Case: static, cohesion fully mobilized, face
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->assign_velocity_constraint(2, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6., 0.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+                true);
+        // Check out of bounds condition
+        REQUIRE(node->assign_cohesion_constraint(3, -1., 1000, 0.25, 3) ==
+                false);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        // 10-0.625*(10/(10-0.625))), -6., 0.
+        acceleration << 9.3333333333, -6., 0.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check failing cohesion constraint case") {
+        // Apply cohesion constraint with incorrect nposition
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 0) ==
+                false);
+        // Should throw: invalid cohesion boundary nposition
+        node->apply_cohesion_constraints(dt);
+      }
+
+      SECTION("Check additional cohesion constraint cases") {
+        // Case: static, cohesion not fully mobilized, edge
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->assign_velocity_constraint(2, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 3., -6., 0.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 10000, 0.25, 2) ==
+                true);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        acceleration << 0., -6., 0.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check additional cohesion constraint cases") {
+        // Case: kinetic, cohesion fully mobilized, corner
+        // Time step
+        const double dt = 0.1;
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 4.);
+        node->assign_velocity_constraint(1, 0.);
+        node->assign_velocity_constraint(2, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6., 0.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 1) ==
+                true);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        // vel_net_t=5., vel_cohesion=0.015625
+        acceleration << 9.84375, -6., 0.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check additional cohesion constraint cases") {
+        // Case: kinetic, cohesion not fully mobilized, edge
+        // Time step
+        const double dt = 0.1;
+        // Assign mass
+        mass = 10.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 1);
+        node->assign_velocity_constraint(1, 0.);
+        node->assign_velocity_constraint(2, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6., 0.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 10000, 0.25, 2) ==
+                true);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        // vel_net_t=2., vel_cohesion=3.125
+        acceleration << -10., -6., 0.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check general cohesion constraints in 1 direction") {
+        // Case: static, cohesion fully mobilized, face
+        // Assign mass
+        mass = 2000.;
+        node->update_mass(false, Nphase, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->assign_velocity_constraint(2, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 0., -9.81, 0.;
+        node->update_acceleration(false, Nphase, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+                true);
+
+        // Apply rotation matrix with Euler angles alpha = -30 deg, beta = 0 deg
+        // and gamma = 0 deg
+        Eigen::Matrix<double, Dim, 1> euler_angles;
+        euler_angles << -30. * M_PI / 180, 0. * M_PI / 180, 0. * M_PI / 180;
+        const auto rotation_matrix =
+            mpm::geometry::rotation_matrix(euler_angles);
+        node->assign_rotation_matrix(rotation_matrix);
+        const auto inverse_rotation_matrix = rotation_matrix.inverse();
+
+        // Apply general cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check applied constraints on acceleration in the global coordinates
+        // x=x'*cos(30)+y'*sin(30), y=y'*cos(30)-x'*sin(30)
+        acceleration << -0.027236821, -9.7942748, 0.;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE(node->acceleration(Nphase)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+
+        // Check the acceleration in local coordinates
+        // x'=4.905-0.03125*(4.905/(4.905-0.03125)), y'=-9.81*cos(30), z'=0.
+        acceleration << 4.873549628, -8.495709211, 0.;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE((inverse_rotation_matrix * node->acceleration(Nphase))(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
       }
 
       SECTION("Check Cartesian acceleration constraints") {

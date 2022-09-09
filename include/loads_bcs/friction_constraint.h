@@ -10,8 +10,8 @@ class FrictionConstraint {
  public:
   // Constructor
   //! \param[in] setid  set id
-  //! \param[in] dir Direction of constraint load
-  //! \param[in] sign_n Sign of normal vector
+  //! \param[in] dir Direction of constraint load (normal)
+  //! \param[in] sign_n Sign of normal direction
   //! \param[in] friction Constraint  friction
   FrictionConstraint(int setid, unsigned dir, int sign_n, double friction)
       : setid_{setid}, dir_{dir}, sign_n_{sign_n}, friction_{friction} {};
@@ -22,7 +22,7 @@ class FrictionConstraint {
   // Direction
   unsigned dir() const { return dir_; }
 
-  // Sign of normal component
+  // Sign of normal direction
   int sign_n() const { return sign_n_; }
 
   // Return friction
@@ -31,9 +31,9 @@ class FrictionConstraint {
  private:
   // ID
   int setid_;
-  // Direction
+  // Direction (normal)
   unsigned dir_;
-  // Sign
+  // Sign of normal direction
   int sign_n_;
   // Friction
   double friction_;

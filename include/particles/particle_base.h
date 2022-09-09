@@ -150,7 +150,9 @@ class ParticleBase {
   virtual void compute_mass() noexcept = 0;
 
   //! Map particle mass and momentum to nodes
-  virtual void map_mass_momentum_to_nodes() noexcept = 0;
+  //! \param[in] velocity_update Method to update nodal velocity
+  virtual void map_mass_momentum_to_nodes(
+      const std::string& velocity_update = "flip") noexcept = 0;
 
   //! Map multimaterial properties to nodes
   virtual void map_multimaterial_mass_momentum_to_nodes() noexcept = 0;

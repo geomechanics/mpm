@@ -179,7 +179,7 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     // Assign mass and momentum to nodes
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
-                  std::placeholders::_1));
+                  std::placeholders::_1, velocity_update_));
 
 #ifdef USE_MPI
     // Run if there is more than a single MPI task

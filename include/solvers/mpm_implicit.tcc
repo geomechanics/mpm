@@ -179,7 +179,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mpm_scheme_->initialise();
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
-    mpm_scheme_->compute_nodal_kinematics(phase_);
+    mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
 
     // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,

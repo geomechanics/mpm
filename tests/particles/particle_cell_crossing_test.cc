@@ -190,7 +190,7 @@ TEST_CASE("Particle cell crossing is checked for 2D case",
   // Assign mass and momentum to nodes
   mesh->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Dim>::map_mass_momentum_to_nodes,
-                std::placeholders::_1));
+                std::placeholders::_1, "flip"));
 
   // Iterate over active nodes to compute acceleratation and velocity
   mesh->iterate_over_nodes_predicate(
@@ -448,7 +448,7 @@ TEST_CASE("Particle cell crossing is checked for 3D case",
   // Assign mass and momentum to nodes
   mesh->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Dim>::map_mass_momentum_to_nodes,
-                std::placeholders::_1));
+                std::placeholders::_1, "flip"));
 
   // Iterate over active nodes to compute acceleratation and velocity
   mesh->iterate_over_nodes_predicate(

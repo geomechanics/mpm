@@ -288,6 +288,7 @@ void mpm::Particle<Tdim>::initialise() {
   normal_.setZero();
   volume_ = std::numeric_limits<double>::max();
   deformation_gradient_.setIdentity();
+  velocity_gradient_.setZero();
 
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_["mass"] = [&]() { return mass(); };
@@ -586,16 +587,22 @@ void mpm::Particle<Tdim>::compute_mass() noexcept {
 
 //! Map particle mass and momentum to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_mass_momentum_to_nodes() noexcept {
+void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
+    const std::string& velocity_update) noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 
   // Map mass and momentum to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
+    VectorDim map_velocity = velocity_;
+    if (velocity_update == "tpic")
+      map_velocity.noalias() +=
+          velocity_gradient_ * (nodes_[i]->coordinates() - this->coordinates_);
+
     nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
                            mass_ * shapefn_[i]);
     nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i] * velocity_);
+                               mass_ * shapefn_[i] * map_velocity);
   }
 }
 
@@ -896,6 +903,13 @@ void mpm::Particle<Tdim>::compute_updated_position(
   // Update particle velocity using interpolated nodal velocity
   else
     this->velocity_ = nodal_velocity;
+
+  // Update velocity gradient for next step map momentum
+  if (velocity_update == "tpic") {
+    const auto& def_grad_inc = this->compute_deformation_gradient_increment(
+        this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
+    velocity_gradient_ = def_grad_inc.block(0, 0, Tdim, Tdim) / dt;
+  }
 
   // New position  current position + velocity * dt
   this->coordinates_.noalias() += nodal_velocity * dt;

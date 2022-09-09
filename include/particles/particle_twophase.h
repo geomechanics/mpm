@@ -70,7 +70,9 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   void compute_mass() noexcept override;
 
   //! Map particle mass and momentum to nodes (both solid and liquid)
-  void map_mass_momentum_to_nodes() noexcept override;
+  //! \param[in] velocity_update Method to update nodal velocity
+  void map_mass_momentum_to_nodes(
+      const std::string& velocity_update = "flip") noexcept override;
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle

@@ -363,8 +363,9 @@ void mpm::TwoPhaseParticle<Tdim>::compute_mass() noexcept {
 
 //! Map particle mass and momentum to nodes
 template <unsigned Tdim>
-void mpm::TwoPhaseParticle<Tdim>::map_mass_momentum_to_nodes() noexcept {
-  mpm::Particle<Tdim>::map_mass_momentum_to_nodes();
+void mpm::TwoPhaseParticle<Tdim>::map_mass_momentum_to_nodes(
+    const std::string& velocity_update) noexcept {
+  mpm::Particle<Tdim>::map_mass_momentum_to_nodes(velocity_update);
   this->map_liquid_mass_momentum_to_nodes();
 }
 

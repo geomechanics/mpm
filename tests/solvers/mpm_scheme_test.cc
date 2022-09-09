@@ -183,7 +183,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(phase));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics("flip", phase));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -224,7 +224,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(phase));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics("flip", phase));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -265,7 +265,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(phase));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics("flip", phase));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -310,7 +310,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(phase));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics("flip", phase));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));

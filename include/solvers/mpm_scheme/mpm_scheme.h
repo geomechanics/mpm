@@ -22,8 +22,10 @@ class MPMScheme {
   virtual inline void initialise();
 
   //! Compute nodal kinematics - map mass and momentum to nodes
+  //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  virtual inline void compute_nodal_kinematics(unsigned phase);
+  virtual inline void compute_nodal_kinematics(
+      const std::string& velocity_update, unsigned phase);
 
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
@@ -72,8 +74,10 @@ class MPMScheme {
       bool update_defgrad);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
+  //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  virtual inline void postcompute_nodal_kinematics(unsigned phase) = 0;
+  virtual inline void postcompute_nodal_kinematics(
+      const std::string& velocity_update, unsigned phase) = 0;
 
   //! Compute particle location
   //! \param[in] locate_particles Flag to enable locate particles, if set to

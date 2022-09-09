@@ -22,8 +22,10 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   inline void initialise() override;
 
   //! Compute nodal kinematics - map mass, momentum and inertia to nodes
+  //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  inline void compute_nodal_kinematics(unsigned phase) override;
+  inline void compute_nodal_kinematics(const std::string& velocity_update,
+                                       unsigned phase) override;
 
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
@@ -56,8 +58,10 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
                                           bool update_defgrad) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
+  //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  inline void postcompute_nodal_kinematics(unsigned phase) override;
+  inline void postcompute_nodal_kinematics(const std::string& velocity_update,
+                                           unsigned phase) override;
 
   //! Stress update scheme
   //! \retval scheme Stress update scheme

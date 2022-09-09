@@ -248,11 +248,17 @@ class ParticleBase {
   //! Initial stress
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;
 
+  //! Beginning stress
+  virtual void beginning_stress(const Eigen::Matrix<double, 6, 1>&) = 0;
+
   //! Compute stress
   virtual void compute_stress() noexcept = 0;
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;
+
+  //! Return stress beginning
+  virtual Eigen::Matrix<double, 6, 1> stress_beginning() const = 0;
 
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;

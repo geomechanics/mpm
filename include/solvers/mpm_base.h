@@ -206,6 +206,13 @@ class MPMBase : public MPM {
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  //! Particles stresses beginning
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_stresses_beginning(
+      const Json& mesh_prop,
+      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   //! Initialise damping
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);

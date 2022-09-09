@@ -1522,6 +1522,33 @@ bool mpm::Mesh<Tdim>::assign_particles_stresses(
   return status;
 }
 
+//! Assign particle beginning stresses
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_stresses_beginning(
+    const std::vector<Eigen::Matrix<double, 6, 1>>&
+        particle_stresses_beginning) {
+  bool status = true;
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign stresses");
+
+    if (particles_.size() != particle_stresses_beginning.size())
+      throw std::runtime_error(
+          "Number of particles in mesh and beginning stresses don't match");
+
+    unsigned i = 0;
+    for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
+      (*pitr)->beginning_stress(particle_stresses_beginning.at(i));
+      ++i;
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Assign particle cells
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_particles_cells(

@@ -374,6 +374,12 @@ class Mesh {
   bool assign_particles_stresses(
       const std::vector<Eigen::Matrix<double, 6, 1>>& particle_stresses);
 
+  //! Assign particles beginning stresses
+  //! \param[in] particle_stresses_beginning Beginning stresses of particle
+  bool assign_particles_stresses_beginning(
+      const std::vector<Eigen::Matrix<double, 6, 1>>&
+          particle_stresses_beginning);
+
   //! Assign particles cells
   //! \param[in] particles_cells Particles and cells
   bool assign_particles_cells(

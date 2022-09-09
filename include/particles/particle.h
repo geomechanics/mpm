@@ -194,11 +194,22 @@ class Particle : public ParticleBase<Tdim> {
     this->previous_stress_ = stress;
   }
 
+  //! Beginning stress
+  //! \param[in] stress Beginning stress
+  void beginning_stress(const Eigen::Matrix<double, 6, 1>& stress) override {
+    this->stress_beginning_ = stress;
+  }
+
   //! Compute stress
   void compute_stress() noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
+
+  //! Return stress beginning of the particle
+  Eigen::Matrix<double, 6, 1> stress_beginning() const override {
+    return stress_beginning_;
+  }
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
@@ -529,6 +540,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, Tdim, 1> natural_size_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
+  //! Beginning stresses
+  Eigen::Matrix<double, 6, 1> stress_beginning_;
   //! Strains
   Eigen::Matrix<double, 6, 1> strain_;
   //! dvolumetric strain

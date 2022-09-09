@@ -4,6 +4,7 @@
 #include "linear_elastic.h"
 #include "modified_cam_clay.h"
 #include "mohr_coulomb.h"
+#include "mohr_coulomb_sfd.h"
 #include "newtonian.h"
 #include "norsand.h"
 
@@ -40,6 +41,14 @@ static Register<mpm::Material<2>, mpm::MohrCoulomb<2>, unsigned, const Json&>
 // MohrCoulomb 3D
 static Register<mpm::Material<3>, mpm::MohrCoulomb<3>, unsigned, const Json&>
     mohr_coulomb_3d("MohrCoulomb3D");
+
+// MohrCoulombSFD 2D
+static Register<mpm::Material<2>, mpm::MohrCoulombSFD<2>, unsigned, const Json&>
+    mohr_coulomb_sfd_2d("MohrCoulombSFD2D");
+
+// MohrCoulombSFD 3D
+static Register<mpm::Material<3>, mpm::MohrCoulombSFD<3>, unsigned, const Json&>
+    mohr_coulomb_sfd_3d("MohrCoulombSFD3D");
 
 // Newtonian 2D
 static Register<mpm::Material<2>, mpm::Newtonian<2>, unsigned, const Json&>

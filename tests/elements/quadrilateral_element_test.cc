@@ -31,6 +31,8 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(quad->nfunctions() == nfunctions);
+      REQUIRE(quad->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(0.25).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.25).epsilon(Tolerance));

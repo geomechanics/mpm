@@ -44,6 +44,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(quad->nfunctions() == nfunctions);
+      REQUIRE(quad->nfunctions_local() == 4);
 
       REQUIRE(shapefn(0) == Approx(0.25).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.25).epsilon(Tolerance));
@@ -120,6 +122,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(quad->nfunctions() == nfunctions);
+      REQUIRE(quad->nfunctions_local() == 4);
 
       REQUIRE(shapefn(0) == Approx(1.0).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.0).epsilon(Tolerance));
@@ -198,6 +202,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(quad->nfunctions() == nfunctions);
+      REQUIRE(quad->nfunctions_local() == 4);
 
       REQUIRE(shapefn(0) == Approx(0.0).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.0).epsilon(Tolerance));
@@ -276,6 +282,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(quad->nfunctions() == nfunctions);
+      REQUIRE(quad->nfunctions_local() == 4);
 
       REQUIRE(shapefn(0) == Approx(0.80550625).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.090871875).epsilon(Tolerance));
@@ -354,6 +362,8 @@ TEST_CASE("Quadrilateral gimp elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(quad->nfunctions() == nfunctions);
+      REQUIRE(quad->nfunctions_local() == 4);
 
       REQUIRE(shapefn(0) == Approx(0.0102515625).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.090871875).epsilon(Tolerance));

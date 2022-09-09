@@ -620,7 +620,7 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == 8);
-      REQUIRE(hex->nfunctions() == 8);
+      REQUIRE(hex->nfunctions() == 64);
       REQUIRE(hex->nfunctions_local() == 8);
 
       REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));

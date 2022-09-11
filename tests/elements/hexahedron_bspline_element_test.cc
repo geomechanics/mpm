@@ -34,6 +34,8 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == 8);
+      REQUIRE(hex->nfunctions() == 8);
+      REQUIRE(hex->nfunctions_local() == 8);
 
       REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.125).epsilon(Tolerance));
@@ -223,6 +225,8 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
           // Check shape function
           REQUIRE(shapefn.size() == 64);
+          REQUIRE(hex->nfunctions() == 64);
+          REQUIRE(hex->nfunctions_local() == 8);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));
@@ -812,6 +816,8 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
           // Check shape function
           REQUIRE(shapefn.size() == 48);
+          REQUIRE(hex->nfunctions() == 48);
+          REQUIRE(hex->nfunctions_local() == 8);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(0.0833333).epsilon(Tolerance));
@@ -1040,6 +1046,8 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
           // Check shape function
           REQUIRE(shapefn.size() == 36);
+          REQUIRE(hex->nfunctions() == 36);
+          REQUIRE(hex->nfunctions_local() == 8);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(0.111111).epsilon(Tolerance));
@@ -1227,6 +1235,8 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
           // Check shape function
           REQUIRE(shapefn.size() == 27);
+          REQUIRE(hex->nfunctions() == 27);
+          REQUIRE(hex->nfunctions_local() == 8);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(0.0740741).epsilon(Tolerance));

@@ -31,6 +31,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(tri->nfunctions() == nfunctions);
+      REQUIRE(tri->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(1.0).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.0).epsilon(Tolerance));
@@ -57,6 +59,8 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(tri->nfunctions() == nfunctions);
+      REQUIRE(tri->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(0.334).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.333).epsilon(Tolerance));

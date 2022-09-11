@@ -101,6 +101,9 @@ class HexahedronGIMPElement : public HexahedronElement<3, 8> {
   //! Return number of shape functions
   unsigned nfunctions() const override { return Tnfunctions; }
 
+  //! Return number of local shape functions
+  unsigned nfunctions_local() const override { return 8; }
+
  private:
   //! Return natural nodal coordinates
   Eigen::MatrixXd natural_nodal_coordinates() const;

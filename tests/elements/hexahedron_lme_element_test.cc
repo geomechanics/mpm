@@ -33,6 +33,8 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == 8);
+      REQUIRE(hex->nfunctions() == 8);
+      REQUIRE(hex->nfunctions_local() == 8);
 
       REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.125).epsilon(Tolerance));
@@ -163,6 +165,8 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
 
           // Check shape function
           REQUIRE(shapefn.size() == 64);
+          REQUIRE(hex->nfunctions() == 64);
+          REQUIRE(hex->nfunctions_local() == 8);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));
@@ -780,6 +784,8 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == 216);
+      REQUIRE(hex->nfunctions() == 216);
+      REQUIRE(hex->nfunctions_local() == 8);
       REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
       Eigen::VectorXd shapefn_ans = Eigen::VectorXd::Constant(216, 1.0);

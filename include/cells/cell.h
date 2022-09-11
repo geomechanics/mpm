@@ -435,6 +435,14 @@ class Cell {
   bool initialiase_nonlocal(
       const tsl::robin_map<std::string, double>& nonlocal_properties);
 
+  //! Return nodes id in a cell
+  //! \ingroup Nonlocal
+  std::set<mpm::Index> local_nodes_id() const;
+
+  //! Return number of local shape functions, returns zero if the element type
+  //! is not set.
+  //! \ingroup Nonlocal
+  unsigned nfunctions_local() const;
   /**@}*/
 
  private:

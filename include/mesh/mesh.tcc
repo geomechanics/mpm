@@ -2482,10 +2482,26 @@ void mpm::Mesh<Tdim>::apply_nonconforming_traction_constraint(
         nodes[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
       }
 
-      for (auto particle : map_cells_[cell]->particles())
+      for (auto particle : map_cells_[cell]->particles()) {
+        if (hydrostatic) {
+          // Set cell values
+          const double depth =
+              (datum - map_particles_[particle]->coordinates()(Tdim - 1, 0));
+          if (depth < 0) continue;
+          // Compute current pressure
+          const double pressure = fluid_density * gravity * depth;
+          // Set traction
+          for (unsigned i = 0; i < Tdim; i++) traction[i] = pressure;
+        }
+        // // Placeholder for arbitrary traction and divergence terms
+        // else {
+        //   traction << 0., 0., 0., 0., 0., 0.;
+        //   divergence_traction << 0., 0., 0.;
+        // }
         // modify the nodal force
         map_particles_[particle]->minus_virtual_stress_field(
             traction, divergence_traction);
+      }
     }
   }
 }

@@ -90,7 +90,7 @@ class MPMSemiImplicitNavierStokes : public MPMBase<Tdim> {
   //! Method to detect free surface detection
   std::string free_surface_detection_;
   //! Volume tolerance for free surface
-  double volume_tolerance_{0};
+  double fs_vol_tolerance_{0.25};
 
 };  // MPMSemiImplicit class
 }  // namespace mpm

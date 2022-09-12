@@ -170,21 +170,23 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
 #endif
 
     // Compute free surface cells, nodes, and particles
-    mesh_->compute_free_surface(free_surface_detection_, volume_tolerance_);
+    if (free_surface_detection_ != "none") {
+      mesh_->compute_free_surface(free_surface_detection_, fs_vol_tolerance_);
 
-    // Spawn a task for initializing pressure at free surface
+      // Spawn a task for initializing pressure at free surface
 #pragma omp parallel sections
-    {
-#pragma omp section
       {
-        // Assign initial pressure for all free-surface particle
-        mesh_->iterate_over_particles_predicate(
-            std::bind(&mpm::ParticleBase<Tdim>::assign_pressure,
-                      std::placeholders::_1, 0.0, fluid),
-            std::bind(&mpm::ParticleBase<Tdim>::free_surface,
-                      std::placeholders::_1));
-      }
-    }  // Wait to complete
+#pragma omp section
+        {
+          // Assign initial pressure for all free-surface particle
+          mesh_->iterate_over_particles_predicate(
+              std::bind(&mpm::ParticleBase<Tdim>::assign_pressure,
+                        std::placeholders::_1, 0.0, fluid),
+              std::bind(&mpm::ParticleBase<Tdim>::free_surface,
+                        std::placeholders::_1));
+        }
+      }  // Wait to complete
+    }
 
     // Compute nodal velocity at the begining of time step
     mesh_->iterate_over_nodes_predicate(
@@ -343,6 +345,14 @@ template <unsigned Tdim>
 bool mpm::MPMSemiImplicitNavierStokes<Tdim>::initialise_matrix() {
   bool status = true;
   try {
+    // Initialise MPI size
+    int mpi_size = 1;
+
+#ifdef USE_MPI
+    // Get number of MPI ranks
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
     // Get matrix assembler type
     std::string assembler_type = analysis_["linear_solver"]["assembler_type"]
                                      .template get<std::string>();
@@ -382,10 +392,6 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::initialise_matrix() {
 
       // NOTE: Only KrylovPETSC solver is supported for MPI
 #ifdef USE_MPI
-      // Get number of MPI ranks
-      int mpi_size = 1;
-      MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
-
       if (solver_type != "KrylovPETSC" && mpi_size > 1) {
         console_->warn(
             "The linear solver in MPI setting is automatically set to default: "
@@ -413,12 +419,30 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::initialise_matrix() {
 
     // Get method to detect free surface detection
     free_surface_detection_ = "density";
-    if (analysis_["free_surface_detection"].contains("type"))
-      free_surface_detection_ = analysis_["free_surface_detection"]["type"]
-                                    .template get<std::string>();
-    // Get volume tolerance for free surface
-    volume_tolerance_ = analysis_["free_surface_detection"]["volume_tolerance"]
-                            .template get<double>();
+    if (analysis_.find("free_surface_detection") != analysis_.end()) {
+      // Get method to detect free surface detection
+      free_surface_detection_ = "density";
+      if (analysis_["free_surface_detection"].contains("type"))
+        free_surface_detection_ = analysis_["free_surface_detection"]["type"]
+                                      .template get<std::string>();
+      // Get volume tolerance for free surface
+      fs_vol_tolerance_ =
+          analysis_["free_surface_detection"]["volume_tolerance"]
+              .template get<double>();
+    }
+
+#ifdef USE_MPI
+    if ((free_surface_detection_ != "none" ||
+         free_surface_detection_ != "density") &&
+        mpi_size > 1) {
+      console_->warn(
+          "The free-surface detection in MPI setting is automatically set to "
+          "default: "
+          "\'density\'. Only \'none\' and \'density\' free-surface detection "
+          "algorithm are supported for MPI.");
+      free_surface_detection_ = "density";
+    }
+#endif
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

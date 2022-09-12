@@ -64,7 +64,9 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] the value of the nodal levelset_phi
   //! \param[in] dis_id the discontinuity id
   void assign_levelset_phi(double phi, int dis_id) {
+    node_mutex_.lock();
     levelset_phi_[dis_id] = phi;
+    node_mutex_.unlock();
   };
 
   //! Update the nodal enriched mass
@@ -256,7 +258,9 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] the normal direction
   //! \param[in] dis_id the discontinuity id
   void assign_normal(VectorDim normal, unsigned dis_id) {
+    node_mutex_.lock();
     normal_[dis_id] = normal;
+    node_mutex_.unlock();
   }
 
   //! Reset the size of the discontinuity

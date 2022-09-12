@@ -493,6 +493,7 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::add_cell_id(Index id) {
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::assign_discontinuity_enrich(
     bool enrich, unsigned dis_id) {
+  node_mutex_.lock();
   if (enrich) {
     if (enrich_type_ == mpm::NodeEnrichType::regular) {
       enrich_type_ = mpm::NodeEnrichType::single_enriched;
@@ -511,4 +512,5 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::assign_discontinuity_enrich(
       enrich_type_ = mpm::NodeEnrichType::single_enriched;
     }
   }
+  node_mutex_.unlock();
 }

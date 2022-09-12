@@ -2,6 +2,7 @@
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::assign_discontinuity_type(mpm::EnrichType type,
                                                 unsigned dis_id) {
+  std::lock_guard<std::mutex> guard(cell_mutex_);
   if (nparticles() == 0 && type != mpm::EnrichType::NeighbourTip_2)
     type = mpm::EnrichType::Regular;
   if (discontinuity_element_[dis_id] == nullptr)
@@ -71,17 +72,15 @@ void mpm::Cell<Tdim>::compute_discontinuity_point(
   const int index_line[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0},
                                  {0, 4}, {1, 5}, {2, 6}, {3, 7},
                                  {4, 5}, {5, 6}, {6, 7}, {7, 4}};
-  for (int i = 0; i < 12; i++) {
 
+  for (int i = 0; i < 12; i++) {
     double phi[2];
     phi[0] = nodes_[index_line[i][0]]->levelset_phi(dis_id);
     phi[1] = nodes_[index_line[i][1]]->levelset_phi(dis_id);
     if (phi[0] * phi[1] >= 0) continue;
     Eigen::Matrix<double, Tdim, 1> intersection;
-    Eigen::Matrix<double, Tdim, 1> cor0 =
-        nodes_[index_line[i][0]]->coordinates();
-    Eigen::Matrix<double, Tdim, 1> cor1 =
-        nodes_[index_line[i][1]]->coordinates();
+    const auto& cor0 = nodes_[index_line[i][0]]->coordinates();
+    const auto& cor1 = nodes_[index_line[i][1]]->coordinates();
     intersection = cor0 * std::abs(phi[1] / ((phi[1] - phi[0]))) +
                    cor1 * std::abs(phi[0] / ((phi[1] - phi[0])));
 
@@ -92,7 +91,8 @@ void mpm::Cell<Tdim>::compute_discontinuity_point(
 
   Eigen::Matrix<double, Tdim, 1> cor = Eigen::Matrix<double, Tdim, 1>::Zero();
   for (int i = 0; i < intersections_list.size(); i++)
-    cor.noalias() += 1.0 / intersections_list.size() * intersections_list[i];
+    cor.noalias() += intersections_list[i];
+  cor = cor / intersections_list.size();
   coordinates.push_back(cor);
 }
 

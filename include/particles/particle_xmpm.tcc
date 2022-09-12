@@ -622,7 +622,7 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
                                                       unsigned dis_id) {
 
   // compute the elasto plastic tensor
-  Eigen::Matrix<double, 6, 6> dp =
+  const Eigen::Matrix<double, 6, 6>& dp =
       (this->material())
           ->compute_elasto_plastic_tensor(
               stress_, dstrain_, this,
@@ -648,7 +648,7 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
     normal_cellcenter = cell_->normal_discontinuity(dis_id);
   } else {
     //! compute the gradient of displacement dot direction
-    compute_initiation_normal(normal_cellcenter, dp);
+    this->compute_initiation_normal(normal_cellcenter, dp);
     initiation = false;
   }
 
@@ -698,8 +698,8 @@ bool mpm::ParticleXMPM<Tdim>::minimum_acoustic_tensor(VectorDim& normal_cell,
     J *= 0.5 * det_A;
 
     Eigen::EigenSolver<Eigen::Matrix3d> eigen_J(J);
-    auto eigenvalues = eigen_J.pseudoEigenvalueMatrix();
-    auto eigenvectors = eigen_J.pseudoEigenvectors();
+    const auto& eigenvalues = eigen_J.pseudoEigenvalueMatrix();
+    const auto& eigenvectors = eigen_J.pseudoEigenvectors();
 
     double max_prod = -1e6;
     for (int i = 0; i < 3; ++i) {
@@ -738,19 +738,15 @@ template <unsigned Tdim>
 void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
     VectorDim& normal_initiation, const Eigen::Matrix<double, 6, 6>& dp) {
 
-  double dtheta = 1;
+  const double dtheta = 1;
   const double PI = M_PI / 180;
-
-  // Variables used in the loop
-  VectorDim dudx_n;
-  VectorDim normal;
 
   Eigen::Matrix<double, 3, 3> dp_n;
   Eigen::Matrix<double, 3, 3> de_n;
 
   double max_dudxmn = 0;
 
-  Eigen::Matrix<double, 6, 6> de =
+  const Eigen::Matrix<double, 6, 6>& de =
       (this->material())
           ->compute_elastic_tensor(
               stress_, &state_variables_[mpm::ParticlePhase::Solid]);
@@ -760,41 +756,57 @@ void mpm::ParticleXMPM<Tdim>::compute_initiation_normal(
   index << 0, 3, 5,
            3, 1, 4,
            5, 4, 2;
-  // clang-format on
+// clang-format on
 
-  // Search loop in all direction assuming 1 degree increment
-  for (int i = 0; i < std::floor(360 / dtheta); i++) {
-    for (int j = 0; j < 180; j++) {
-      const double theta = i * dtheta * PI;
-      const double phi = j * dtheta * PI;
-      normal << std::cos(phi) * std::cos(theta),
-          std::cos(phi) * std::sin(theta), std::sin(phi);
+// Search loop in all direction assuming 1 degree increment
+#pragma omp parallel
+  {
+    double max_dudxmn_private = 0;
+    VectorDim normal_initiation_private = VectorDim::Zero();
+    int max_i = std::floor(360 / dtheta);
+#pragma omp for nowait
+    for (int i = 0; i < max_i; i++) {
+      for (int j = 0; j < 180; j++) {
+        const double theta = i * dtheta * PI;
+        const double phi = j * dtheta * PI;
+        VectorDim normal;
+        normal << std::cos(phi) * std::cos(theta),
+            std::cos(phi) * std::sin(theta), std::sin(phi);
 
-      dp_n.setZero();
-      de_n.setZero();
-      for (int m = 0; m < 3; m++) {
-        for (int n = 0; n < 3; n++) {
-          for (int r = 0; r < 3; r++)
-            for (int s = 0; s < 3; s++) {
-              dp_n(m, n) +=
-                  normal(r) * normal(s) * dp(index(m, r), index(n, s));
-              de_n(m, n) +=
-                  normal(r) * normal(s) * de(index(m, r), index(n, s));
-            }
+        dp_n.setZero();
+        de_n.setZero();
+        for (int m = 0; m < 3; m++) {
+          for (int n = 0; n < 3; n++) {
+            for (int r = 0; r < 3; r++)
+              for (int s = 0; s < 3; s++) {
+                dp_n(m, n) +=
+                    normal(r) * normal(s) * dp(index(m, r), index(n, s));
+                de_n(m, n) +=
+                    normal(r) * normal(s) * de(index(m, r), index(n, s));
+              }
+          }
+        }
+
+        const double det_dp_n = dp_n.determinant();
+        const double det_de_n = de_n.determinant();
+
+        const double ratio = det_dp_n / det_de_n;
+        if (ratio > 0.01) continue;
+
+        const double dudx_mn = max_displacement_gradient(normal);
+
+        if (dudx_mn > max_dudxmn_private) {
+          max_dudxmn_private = dudx_mn;
+          normal_initiation_private = normal;
         }
       }
+    }
 
-      const double det_dp_n = dp_n.determinant();
-      const double det_de_n = de_n.determinant();
-
-      const double ratio = det_dp_n / det_de_n;
-      if (ratio > 0.01) continue;
-
-      const double dudx_mn = max_displacement_gradient(normal);
-
-      if (dudx_mn > max_dudxmn) {
-        max_dudxmn = dudx_mn;
-        normal_initiation = normal;
+#pragma omp critical
+    {
+      if (max_dudxmn_private > max_dudxmn) {
+        max_dudxmn = max_dudxmn_private;
+        normal_initiation = normal_initiation_private;
       }
     }
   }

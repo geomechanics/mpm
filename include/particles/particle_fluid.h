@@ -41,6 +41,17 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
+  //! Serialize
+  //! \retval buffer Serialized buffer data
+  std::vector<uint8_t> serialize() override;
+
+  //! Deserialize
+  //! \param[in] buffer Serialized buffer data
+  //! \param[in] material Particle material pointers
+  void deserialize(
+      const std::vector<uint8_t>& buffer,
+      std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) override;
+
   //! ----------------------------------------------------------------
   //! Semi-Implicit integration functions based on Chorin's Projection
   //! ----------------------------------------------------------------
@@ -50,6 +61,11 @@ class FluidParticle : public mpm::Particle<Tdim> {
   void assign_projection_parameter(double parameter) override {
     this->projection_param_ = parameter;
   };
+
+  //! Return projection parameter
+  double projection_parameter() const override {
+    return this->projection_param_;
+  }
 
   //! Map laplacian element matrix to cell (used in poisson equation LHS)
   bool map_laplacian_to_cell() override;
@@ -68,33 +84,62 @@ class FluidParticle : public mpm::Particle<Tdim> {
     return (Tdim == 2) ? "P2DFLUID" : "P3DFLUID";
   }
 
+ protected:
+  //! Compute pack size
+  //! \retval pack size of serialized object
+  int compute_pack_size() const override;
+
  private:
   //! Compute turbulent stress
   virtual Eigen::Matrix<double, 6, 1> compute_turbulent_stress();
 
  private:
+  //! particle id
+  using ParticleBase<Tdim>::id_;
+  //! coordinates
+  using ParticleBase<Tdim>::coordinates_;
+  //! Status
+  using ParticleBase<Tdim>::status_;
   //! Cell
   using ParticleBase<Tdim>::cell_;
+  //! Cell id
+  using ParticleBase<Tdim>::cell_id_;
   //! Nodes
   using ParticleBase<Tdim>::nodes_;
   //! Fluid material
   using ParticleBase<Tdim>::material_;
+  //! Material ids
+  using ParticleBase<Tdim>::material_id_;
   //! State variables
   using ParticleBase<Tdim>::state_variables_;
   //! Shape functions
   using Particle<Tdim>::shapefn_;
   //! dN/dX
   using Particle<Tdim>::dn_dx_;
+  //! Size of particle in natural coordinates
+  using Particle<Tdim>::natural_size_;
+  //! Deformation gradient
+  using Particle<Tdim>::deformation_gradient_;
   //! Fluid strain rate
   using Particle<Tdim>::strain_rate_;
-  //! Effective stress of soil skeleton
+  //! Fluid strain
+  using Particle<Tdim>::strain_;
+  //! Fluid stress
   using Particle<Tdim>::stress_;
   //! Particle mass density
   using Particle<Tdim>::mass_density_;
+  //! Displacement
+  using Particle<Tdim>::displacement_;
+  //! Velocity
+  using Particle<Tdim>::velocity_;
+  //! Acceleration
+  using Particle<Tdim>::acceleration_;
   //! Particle mass density
   using Particle<Tdim>::mass_;
   //! Particle total volume
   using Particle<Tdim>::volume_;
+  //! Size of particle
+  using Particle<Tdim>::pack_size_;
   //! Projection parameter for semi-implicit update
   double projection_param_{0.0};
   //! Pressure constraint

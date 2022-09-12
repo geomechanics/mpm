@@ -974,6 +974,10 @@ int mpm::TwoPhaseParticle<Tdim>::compute_pack_size() const {
   MPI_Pack_size(1, MPI_UNSIGNED, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
+  // projection parameter - beta
+  MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+
   // liquid mass
   MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
@@ -1097,6 +1101,9 @@ std::vector<uint8_t> mpm::TwoPhaseParticle<Tdim>::serialize() {
   }
 
   // Liquid Phase
+  // Projection parameter
+  MPI_Pack(&projection_param_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
   // Mass
   MPI_Pack(&liquid_mass_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
@@ -1250,6 +1257,9 @@ void mpm::TwoPhaseParticle<Tdim>::deserialize(
   }
 
   // Liquid Phase
+  // projection parameter
+  MPI_Unpack(data_ptr, data.size(), &position, &projection_param_, 1,
+             MPI_DOUBLE, MPI_COMM_WORLD);
   // liquid mass
   MPI_Unpack(data_ptr, data.size(), &position, &liquid_mass_, 1, MPI_DOUBLE,
              MPI_COMM_WORLD);

@@ -108,6 +108,9 @@ class HexahedronLMEElement : public HexahedronElement<3, 8> {
   //! Return number of shape functions
   unsigned nfunctions() const override { return nconnectivity_; }
 
+  //! Return number of local shape functions
+  unsigned nfunctions_local() const override { return 8; }
+
   //! Assign nodal connectivity property for LME elements
   //! \param[in] beta Coldness function of the system in the range of [0,inf)
   //! \param[in] radius Support radius of the kernel

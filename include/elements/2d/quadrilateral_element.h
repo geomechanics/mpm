@@ -90,6 +90,9 @@ class QuadrilateralElement : public Element<Tdim> {
   //! Return number of shape functions
   unsigned nfunctions() const override { return Tnfunctions; }
 
+  //! Return number of local shape functions
+  unsigned nfunctions_local() const override { return Tnfunctions; }
+
   //! Evaluate shape functions at given local coordinates
   //! \param[in] xi given local coordinates
   //! \param[in] particle_size Particle size

@@ -434,6 +434,14 @@ class ParticleBase {
         "ParticleBase:: illegal operation!");
   };
 
+  //! Return projection parameter
+  virtual double projection_parameter() const {
+    throw std::runtime_error(
+        "Calling the base class function (projection_param) in "
+        "ParticleBase:: illegal operation!");
+    return 0;
+  };
+
   //! Map laplacian element matrix to cell (used in poisson equation LHS)
   virtual bool map_laplacian_to_cell() {
     throw std::runtime_error(

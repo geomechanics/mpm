@@ -645,7 +645,7 @@ class Node : public NodeBase<Tdim> {
   std::tuple<unsigned, int, double> friction_constraint_;
   //! Cohesion constraints
   bool cohesion_{false};
-  std::tuple<unsigned, int, double, double, int> cohesion_constraint_;
+  std::tuple<unsigned, int, double, double> cohesion_constraint_;
   //! Mathematical function for pressure
   std::map<unsigned, std::shared_ptr<FunctionBase>> pressure_function_;
   //! Concentrated force

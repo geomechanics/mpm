@@ -32,6 +32,8 @@ TEST_CASE("Quadrilateral lme elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == 4);
+      REQUIRE(quad->nfunctions() == 4);
+      REQUIRE(quad->nfunctions_local() == 4);
 
       REQUIRE(shapefn(0) == Approx(0.25).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.25).epsilon(Tolerance));
@@ -114,6 +116,8 @@ TEST_CASE("Quadrilateral lme elements are checked",
 
           // Check shape function
           REQUIRE(shapefn.size() == 16);
+          REQUIRE(quad->nfunctions() == 16);
+          REQUIRE(quad->nfunctions_local() == 4);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(0.25).epsilon(Tolerance));
@@ -350,6 +354,8 @@ TEST_CASE("Quadrilateral lme elements are checked",
 
       // Check shape function
       REQUIRE(shapefn.size() == 100);
+      REQUIRE(quad->nfunctions() == 100);
+      REQUIRE(quad->nfunctions_local() == 4);
       REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
       Eigen::VectorXd shapefn_ans = Eigen::VectorXd::Constant(100, 1.0);

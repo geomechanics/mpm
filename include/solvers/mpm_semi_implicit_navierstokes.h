@@ -75,7 +75,9 @@ class MPMSemiImplicitNavierStokes : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::mesh_;
   //! Materials
   using mpm::MPMBase<Tdim>::materials_;
-  //! Nonlocal neighbourhood
+  //! Nonlocal cell neighbourhood
+  using mpm::MPMBase<Tdim>::cell_neighbourhood_;
+  //! Nonlocal node neighbourhood
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
   //! Pressure smoothing
   bool pressure_smoothing_{false};

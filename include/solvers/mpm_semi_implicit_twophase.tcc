@@ -216,7 +216,8 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
 
     // Compute free surface cells, nodes, and particles
     if (free_surface_detection_ != "none") {
-      mesh_->compute_free_surface(free_surface_detection_, fs_vol_tolerance_);
+      mesh_->compute_free_surface(free_surface_detection_, fs_vol_tolerance_,
+                                  cell_neighbourhood_);
 
       // Spawn a task for initializing pressure at free surface
 #pragma omp parallel sections

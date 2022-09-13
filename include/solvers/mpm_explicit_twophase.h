@@ -68,6 +68,8 @@ class MPMExplicitTwoPhase : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::damping_factor_;
   //! Locate particles
   using mpm::MPMBase<Tdim>::locate_particles_;
+  //! Nonlocal cell neighbourhood
+  using mpm::MPMBase<Tdim>::cell_neighbourhood_;
 
  private:
   //! Pressure smoothing

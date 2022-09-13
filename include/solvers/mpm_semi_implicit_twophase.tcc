@@ -548,7 +548,6 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::initialise_matrix() {
     free_surface_detection_ = "density";
     if (analysis_.find("free_surface_detection") != analysis_.end()) {
       // Get method to detect free surface detection
-      free_surface_detection_ = "density";
       if (analysis_["free_surface_detection"].contains("type"))
         free_surface_detection_ = analysis_["free_surface_detection"]["type"]
                                       .template get<std::string>();
@@ -559,8 +558,8 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::initialise_matrix() {
     }
 
 #ifdef USE_MPI
-    if ((free_surface_detection_ != "none" ||
-         free_surface_detection_ != "density") &&
+    if ((free_surface_detection_ != "density" ||
+         free_surface_detection_ != "none") &&
         mpi_size > 1) {
       console_->warn(
           "The free-surface detection in MPI setting is automatically set to "

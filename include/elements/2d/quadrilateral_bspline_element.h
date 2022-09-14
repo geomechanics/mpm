@@ -245,6 +245,8 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   std::vector<std::vector<unsigned>> node_type_;
   //! BSpline knot vector for different node type
   std::vector<std::vector<double>> BSplineKnotVector;
+  //! Boolean to identify kernel correction
+  bool kernel_correction_{false};
 };
 
 }  // namespace mpm

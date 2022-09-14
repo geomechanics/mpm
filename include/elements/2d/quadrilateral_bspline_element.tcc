@@ -14,6 +14,20 @@ void mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::
   //! Uniform spacing length in 2D
   this->spacing_length_ =
       std::abs(nodal_coordinates(1, 0) - nodal_coordinates(0, 0));
+
+  //! Identify if element is at boundary to see if kernel correction is
+  //! necessary
+  if (kernel_correction) {
+    for (unsigned n = 0; n < 4; ++n) {
+      for (unsigned i = 0; i < Tdim; ++i) {
+        if (this->node_type_[n][i] == 1 || this->node_type_[n][i] == 4) {
+          this->kernel_correction_ = true;
+          goto breakout;
+        }
+      }
+    }
+  breakout:;
+  }
 }
 
 //! Return shape functions of a Quadrilateral BSpline Element at a given

@@ -3,7 +3,8 @@ template <unsigned Tdim, unsigned Tpolynomial>
 void mpm::HexahedronBSplineElement<Tdim, Tpolynomial>::
     initialise_bspline_connectivity_properties(
         const Eigen::MatrixXd& nodal_coordinates,
-        const std::vector<std::vector<unsigned>>& nodal_properties) {
+        const std::vector<std::vector<unsigned>>& nodal_properties,
+        bool kernel_correction) {
   assert(nodal_coordinates.rows() == nodal_properties.size());
 
   this->nconnectivity_ = nodal_coordinates.rows();

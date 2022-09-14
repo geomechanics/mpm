@@ -125,9 +125,11 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   //! \param[in] nodal_properties Vector determining node type for each
   //! dimension
+  //! \param[in] kernel_correction Apply Kernel correction at the boundary
   void initialise_bspline_connectivity_properties(
       const Eigen::MatrixXd& nodal_coordinates,
-      const std::vector<std::vector<unsigned>>& nodal_properties) override;
+      const std::vector<std::vector<unsigned>>& nodal_properties,
+      bool kernel_correction = false) override;
 
   //! Return the degree of shape function
   mpm::ElementDegree degree() const override {

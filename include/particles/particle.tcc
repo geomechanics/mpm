@@ -905,11 +905,9 @@ void mpm::Particle<Tdim>::compute_updated_position(
     this->velocity_ = nodal_velocity;
 
   // Update velocity gradient for next step map momentum
-  if (velocity_update == "tpic") {
-    const auto& def_grad_inc = this->compute_deformation_gradient_increment(
-        this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
-    velocity_gradient_ = def_grad_inc.block(0, 0, Tdim, Tdim) / dt;
-  }
+  if (velocity_update == "tpic")
+    velocity_gradient_ = this->compute_velocity_gradient(
+        this->dn_dx_, mpm::ParticlePhase::SinglePhase);
 
   // New position  current position + velocity * dt
   this->coordinates_.noalias() += nodal_velocity * dt;
@@ -1405,4 +1403,79 @@ void mpm::Particle<Tdim>::update_deformation_gradient(const std::string& type,
   // Update deformation gradient
   this->deformation_gradient_ =
       def_grad_increment * this->deformation_gradient_;
+}
+
+// Compute velocity gradient
+template <>
+inline Eigen::Matrix<double, 1, 1> mpm::Particle<1>::compute_velocity_gradient(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define velocity gradient
+  Eigen::Matrix<double, 1, 1> velocity_gradient =
+      Eigen::Matrix<double, 1, 1>::Zero();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity = nodes_[i]->velocity(phase);
+    velocity_gradient(0, 0) += dn_dx(i, 0) * velocity[0];
+  }
+
+  if (std::fabs(velocity_gradient(0, 0)) < 1.E-15) velocity_gradient(0, 0) = 0.;
+  return velocity_gradient;
+}
+
+// Compute velocity gradient
+template <>
+inline Eigen::Matrix<double, 2, 2> mpm::Particle<2>::compute_velocity_gradient(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define velocity gradient
+  Eigen::Matrix<double, 2, 2> velocity_gradient =
+      Eigen::Matrix<double, 2, 2>::Zero();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity = nodes_[i]->velocity(phase);
+    velocity_gradient(0, 0) += dn_dx(i, 0) * velocity[0];
+    velocity_gradient(0, 1) += dn_dx(i, 1) * velocity[0];
+    velocity_gradient(1, 0) += dn_dx(i, 0) * velocity[1];
+    velocity_gradient(1, 1) += dn_dx(i, 1) * velocity[1];
+  }
+
+  for (unsigned i = 0; i < 2; ++i) {
+    for (unsigned j = 0; i < 2; ++i) {
+      if (std::fabs(velocity_gradient(i, j)) < 1.E-15)
+        velocity_gradient(i, j) = 0.;
+    }
+  }
+  return velocity_gradient;
+}
+
+// Compute velocity gradient
+template <>
+inline Eigen::Matrix<double, 3, 3> mpm::Particle<3>::compute_velocity_gradient(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define velocity gradient
+  Eigen::Matrix<double, 3, 3> velocity_gradient =
+      Eigen::Matrix<double, 3, 3>::Zero();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity = nodes_[i]->velocity(phase);
+    velocity_gradient(0, 0) += dn_dx(i, 0) * velocity[0];
+    velocity_gradient(0, 1) += dn_dx(i, 1) * velocity[0];
+    velocity_gradient(0, 2) += dn_dx(i, 2) * velocity[0];
+    velocity_gradient(1, 0) += dn_dx(i, 0) * velocity[1];
+    velocity_gradient(1, 1) += dn_dx(i, 1) * velocity[1];
+    velocity_gradient(1, 2) += dn_dx(i, 2) * velocity[1];
+    velocity_gradient(2, 0) += dn_dx(i, 0) * velocity[2];
+    velocity_gradient(2, 1) += dn_dx(i, 1) * velocity[2];
+    velocity_gradient(2, 2) += dn_dx(i, 2) * velocity[2];
+  }
+
+  for (unsigned i = 0; i < 3; ++i) {
+    for (unsigned j = 0; i < 3; ++i) {
+      if (std::fabs(velocity_gradient(i, j)) < 1.E-15)
+        velocity_gradient(i, j) = 0.;
+    }
+  }
+  return velocity_gradient;
 }

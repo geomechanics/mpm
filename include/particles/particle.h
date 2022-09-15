@@ -465,6 +465,13 @@ class Particle : public ParticleBase<Tdim> {
   inline Eigen::Matrix<double, 3, 3> compute_deformation_gradient_increment(
       const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept;
 
+  //! Compute velocity gradient
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval velocity gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, Tdim, Tdim> compute_velocity_gradient(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

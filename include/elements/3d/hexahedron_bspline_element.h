@@ -171,6 +171,11 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
     return BSplineKnotVector[node_type];
   }
 
+  //! Function to check if particle is lying on the region where kernel
+  //! correction is necessary
+  //! \param[in] xi given local coordinates
+  bool kernel_correction_region(const VectorDim& xi) const;
+
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Number of connectivity

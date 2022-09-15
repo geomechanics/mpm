@@ -18,7 +18,7 @@ void mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::
   //! Identify if element is at boundary to see if kernel correction is
   //! necessary
   if (kernel_correction) {
-    for (unsigned n = 0; n < 4; ++n) {
+    for (unsigned n = 0; n < this->nconnectivity_; ++n) {
       for (unsigned i = 0; i < Tdim; ++i) {
         if (this->node_type_[n][i] == 1 || this->node_type_[n][i] == 4) {
           this->kernel_correction_ = true;
@@ -48,6 +48,13 @@ inline Eigen::VectorXd
                                                        deformation_gradient);
 
   try {
+    //! Check if we need to apply kernel correction based on particle position
+    //! with respective to local element nodes
+    bool apply_kernel_correction = false;
+    if (kernel_correction_) {
+      apply_kernel_correction = this->kernel_correction_region(xi);
+    }
+
     //! Convert local coordinates to real coordinates
     Eigen::Matrix<double, Tdim, 1> pcoord;
     pcoord.setZero();
@@ -78,6 +85,27 @@ inline Eigen::VectorXd
       }
     }
 
+    //! If kernel correction is needed
+    if (apply_kernel_correction) {
+      // Compute M inverse matrix
+      Eigen::Matrix<double, Tdim + 1, Tdim + 1> M =
+          Eigen::Matrix<double, Tdim + 1, Tdim + 1>::Zero();
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        Eigen::Matrix<double, Tdim + 1, 1> p;
+        p << 1.0, (nodal_coordinates_.row(n).transpose() - pcoord);
+        M.noalias() += shapefn(n) * p * p.transpose();
+      }
+      const auto& M_inv = M.inverse();
+      const double C1 = M_inv(0, 0);
+      const VectorDim& C2 = M_inv.block(1, 0, Tdim, 1);
+
+      // Corrected shape function calculation
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        shapefn(n) *=
+            (C1 + C2.dot(nodal_coordinates_.row(n).transpose() - pcoord));
+      }
+    }
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     return shapefn;
@@ -102,6 +130,13 @@ inline Eigen::MatrixXd
         xi, particle_size, deformation_gradient);
 
   try {
+    //! Check if we need to apply kernel correction based on particle position
+    //! with respective to local element nodes
+    bool apply_kernel_correction = false;
+    if (kernel_correction_) {
+      apply_kernel_correction = this->kernel_correction_region(xi);
+    }
+
     //! Convert local coordinates to real coordinates
     Eigen::Matrix<double, Tdim, 1> pcoord;
     pcoord.setZero();
@@ -111,43 +146,89 @@ inline Eigen::MatrixXd
       pcoord.noalias() +=
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
-    //! Compute the shape function gradient following a multiplicative rule
-    for (unsigned n = 0; n < this->nconnectivity_; ++n)
-      //! Loop over dimension
-      for (unsigned i = 0; i < Tdim; ++i) {
-        double dN_dx = this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
-                                      (this->node_type_[n])[i], Tpolynomial);
-        switch (this->node_type_[n][i]) {
-          case 1:
-            dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i], 5,
-                                    Tpolynomial);
-            break;
-          case 4:
-            dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i], 6,
-                                    Tpolynomial);
-            break;
-        }
-
-        for (unsigned j = 0; j < Tdim; ++j) {
-          if (j != i) {
-            double N = this->kernel(pcoord[j], nodal_coordinates_.row(n)[j],
-                                    this->node_type_[n][j], Tpolynomial);
-            switch (this->node_type_[n][j]) {
-              case 1:
-                N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j], 5,
-                                  Tpolynomial);
-                break;
-              case 4:
-                N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j], 6,
-                                  Tpolynomial);
-                break;
-            }
-            dN_dx = dN_dx * N;
+    if (!apply_kernel_correction) {
+      //! Compute the shape function gradient following a multiplicative rule
+      for (unsigned n = 0; n < this->nconnectivity_; ++n)
+        //! Loop over dimension
+        for (unsigned i = 0; i < Tdim; ++i) {
+          double dN_dx = this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
+                                        (this->node_type_[n])[i], Tpolynomial);
+          switch (this->node_type_[n][i]) {
+            case 1:
+              dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
+                                      5, Tpolynomial);
+              break;
+            case 4:
+              dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
+                                      6, Tpolynomial);
+              break;
           }
-        }
 
-        grad_shapefn(n, i) = dN_dx;
+          for (unsigned j = 0; j < Tdim; ++j) {
+            if (j != i) {
+              double N = this->kernel(pcoord[j], nodal_coordinates_.row(n)[j],
+                                      this->node_type_[n][j], Tpolynomial);
+              switch (this->node_type_[n][j]) {
+                case 1:
+                  N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j], 5,
+                                    Tpolynomial);
+                  break;
+                case 4:
+                  N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j], 6,
+                                    Tpolynomial);
+                  break;
+              }
+              dN_dx = dN_dx * N;
+            }
+          }
+
+          grad_shapefn(n, i) = dN_dx;
+        }
+    } else {
+      Eigen::VectorXd shapefn =
+          Eigen::VectorXd::Constant(this->nconnectivity_, 1.0);
+
+      //! Compute shape function following a multiplicative rule
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        //! Loop over dimension
+        for (unsigned i = 0; i < Tdim; ++i) {
+          double N = this->kernel(pcoord[i], nodal_coordinates_.row(n)[i],
+                                  this->node_type_[n][i], Tpolynomial);
+          switch (this->node_type_[n][i]) {
+            case 1:
+              N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 5,
+                                Tpolynomial);
+              break;
+            case 4:
+              N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 6,
+                                Tpolynomial);
+              break;
+          }
+
+          shapefn[n] = shapefn[n] * N;
+        }
       }
+
+      // Compute M inverse matrix
+      Eigen::Matrix<double, Tdim + 1, Tdim + 1> M =
+          Eigen::Matrix<double, Tdim + 1, Tdim + 1>::Zero();
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        Eigen::Matrix<double, Tdim + 1, 1> p;
+        p << 1.0, (nodal_coordinates_.row(n).transpose() - pcoord);
+        M.noalias() += shapefn(n) * p * p.transpose();
+      }
+      const auto& M_inv = M.inverse();
+      const VectorDim& C2 = M_inv.block(1, 0, Tdim, 1);
+      const MatrixDim& C3 = M_inv.block(1, 1, Tdim, Tdim);
+
+      // Corrected shape function gradient calculation
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        grad_shapefn.row(n) =
+            shapefn(n) *
+            (C2 + C3 * (nodal_coordinates_.row(n).transpose() - pcoord))
+                .transpose();
+      }
+    }
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -349,4 +430,49 @@ double mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::gradient(
                            index + 1);
 
   return value;
+}
+
+//! Function to check if particle is lying on the region where kernel
+//! correction is necessary
+template <unsigned Tdim, unsigned Tpolynomial>
+bool mpm::QuadrilateralBSplineElement<
+    Tdim, Tpolynomial>::kernel_correction_region(const VectorDim& xi) const {
+  bool status = false;
+  // Exit if kernel_correction_ is false
+  if (!kernel_correction_) return status;
+
+  // Loop over dimension
+  for (unsigned i = 0; i < Tdim; ++i) {
+    // First loop over local nodes
+    for (unsigned n = 0; n < this->nfunctions_local(); ++n) {
+      // If it is located at the lower or uppermost boundary
+      if (this->node_type_[n][i] == 1 || this->node_type_[n][i] == 4) {
+        status = true;
+        goto breakout;
+      }
+    }
+
+    // Second loop over local nodes
+    for (unsigned n = 0; n < this->nfunctions_local(); ++n) {
+      // If it is located at the lower intermediate boundary
+      if (this->node_type_[n][i] == 2) {
+        // Check if particle is located at the negative region
+        if (xi[i] < 0.0) {
+          status = true;
+          goto breakout;
+        }
+      }
+      // If it is located at the lower intermediate boundary
+      else if (this->node_type_[n][i] == 3) {
+        // Check if particle is located at the positive region
+        if (xi[i] > 0.0) {
+          status = true;
+          goto breakout;
+        }
+      }
+    }
+  }
+
+breakout:
+  return status;
 }

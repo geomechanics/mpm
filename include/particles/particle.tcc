@@ -595,6 +595,8 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
   // Map mass and momentum to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     VectorDim map_velocity = velocity_;
+
+    // For TPIC add additional component
     if (velocity_update == "tpic")
       map_velocity.noalias() +=
           velocity_gradient_ * (nodes_[i]->coordinates() - this->coordinates_);
@@ -889,7 +891,7 @@ void mpm::Particle<Tdim>::compute_updated_position(
         shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
 
   // Acceleration update
-  if (velocity_update == "flip") {
+  if (velocity_update == "flip" || velocity_update == "blend") {
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
@@ -904,7 +906,11 @@ void mpm::Particle<Tdim>::compute_updated_position(
   else
     this->velocity_ = nodal_velocity;
 
-  // Update velocity gradient for next step map momentum
+  // Blend update
+  if (velocity_update == "blend")
+    this->velocity_ = 0.95 * this->velocity_ + 0.05 * nodal_velocity;
+
+  // Update velocity gradient for next step map momentum for TPIC
   if (velocity_update == "tpic")
     velocity_gradient_ = this->compute_velocity_gradient(
         this->dn_dx_, mpm::ParticlePhase::SinglePhase);

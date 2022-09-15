@@ -685,8 +685,8 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
 
   if (velocity_update == "flip") {
     // Get interpolated nodal acceleration
-    Eigen::Matrix<double, Tdim, 1> acceleration;
-    acceleration.setZero();
+    Eigen::Matrix<double, Tdim, 1> acceleration =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
 
     for (unsigned i = 0; i < nodes_.size(); ++i)
       acceleration.noalias() +=
@@ -694,10 +694,28 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
 
     // Update particle velocity from interpolated nodal acceleration
     this->liquid_velocity_.noalias() += acceleration * dt;
+  } else if (velocity_update == "blend") {
+    // Get interpolated nodal acceleration and velocity
+    Eigen::Matrix<double, Tdim, 1> velocity =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+    Eigen::Matrix<double, Tdim, 1> acceleration =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      velocity.noalias() +=
+          shapefn_(i) * nodes_[i]->velocity(mpm::ParticlePhase::Liquid);
+      acceleration.noalias() +=
+          shapefn_(i) * nodes_[i]->acceleration(mpm::ParticlePhase::Liquid);
+    }
+
+    // Update particle velocity from both interpolated nodal acceleration and
+    // velocity
+    this->liquid_velocity_.noalias() += acceleration * dt;
+    this->liquid_velocity_ = 0.95 * this->liquid_velocity_ + 0.05 * velocity;
   } else {
     // Get interpolated nodal velocity
-    Eigen::Matrix<double, Tdim, 1> velocity;
-    velocity.setZero();
+    Eigen::Matrix<double, Tdim, 1> velocity =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
 
     for (unsigned i = 0; i < nodes_.size(); ++i)
       velocity.noalias() +=

@@ -79,14 +79,26 @@ bool mpm::MPMExplicitTwoPhase<Tdim>::solve() {
   free_surface_detection_ = "none";
   if (analysis_.find("free_surface_detection") != analysis_.end()) {
     // Get method to detect free surface detection
-    free_surface_detection_ = "density";
     if (analysis_["free_surface_detection"].contains("type"))
       free_surface_detection_ = analysis_["free_surface_detection"]["type"]
                                     .template get<std::string>();
     // Get volume tolerance for free surface
-    volume_tolerance_ = analysis_["free_surface_detection"]["volume_tolerance"]
+    fs_vol_tolerance_ = analysis_["free_surface_detection"]["volume_tolerance"]
                             .template get<double>();
   }
+
+#ifdef USE_MPI
+  if ((free_surface_detection_ != "density" ||
+       free_surface_detection_ != "none") &&
+      mpi_size > 1) {
+    console_->warn(
+        "The free-surface detection in MPI setting is automatically set to "
+        "default: "
+        "\'density\'. Only \'none\' and \'density\' free-surface detection "
+        "algorithm are supported for MPI.");
+    free_surface_detection_ = "density";
+  }
+#endif
 
   // Initialise material
   this->initialise_materials();
@@ -220,7 +232,8 @@ bool mpm::MPMExplicitTwoPhase<Tdim>::solve() {
 
     // Compute free surface cells, nodes, and particles
     if (free_surface_detection_ != "none") {
-      mesh_->compute_free_surface(free_surface_detection_, volume_tolerance_);
+      mesh_->compute_free_surface(free_surface_detection_, fs_vol_tolerance_,
+                                  cell_neighbourhood_);
 
       // Spawn a task for initializing pressure at free surface
 #pragma omp parallel sections

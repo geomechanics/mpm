@@ -138,6 +138,9 @@ class TriangleLMEElement : public TriangleElement<2, 3> {
   //! Return number of shape functions
   unsigned nfunctions() const override { return nconnectivity_; }
 
+  //! Return number of local shape functions
+  unsigned nfunctions_local() const override { return 3; }
+
   //! Return if natural coordinates can be evaluates
   bool isvalid_natural_coordinates_analytical() const override { return false; }
 

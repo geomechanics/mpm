@@ -130,6 +130,7 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
 
     // Warn if solver does not converge
     if (reason < 0) {
+      KSPConvergedReasonView(solver, PETSC_VIEWER_STDOUT_WORLD);
       PetscPrintf(MPI_COMM_WORLD,
                   "\nKrylov PETSC solver \"%s\" with \"%s\" preconditioner "
                   "DIVERGED, try to modify the preconditioner, set tolerance "

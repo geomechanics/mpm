@@ -20,10 +20,15 @@ bool write_json_acceleration(unsigned dim, bool resume,
                              const std::string& analysis,
                              const std::string& file_name, const unsigned dir);
 
+// Write JSON Configuration file for friction boundary
 bool write_json_friction(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& file_name, const unsigned dir);
 
-// Write JSON Configuration file for absorbing boundary
+// Write JSON Configuration file for cohesion boundary
+bool write_json_cohesion(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& file_name, const unsigned dir);
+
+// Write JSON Configuration file for velocity boundary
 bool write_json_velocity(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& file_name, const unsigned dir);
 

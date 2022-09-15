@@ -509,6 +509,12 @@ TEST_CASE("Twophase Node is checked for 1D case", "[node][1D][2Phase]") {
       REQUIRE(node->assign_friction_constraint(-1, 1., 0.5) == false);
       REQUIRE(node->assign_friction_constraint(3, 1., 0.5) == false);
 
+      // Apply cohesion constraints
+      REQUIRE(node->assign_cohesion_constraint(0, -1., 100, 0.25, 2) == true);
+      // Apply cohesion constraints
+      REQUIRE(node->assign_cohesion_constraint(-1, -1., 100, 0.25, 2) == false);
+      REQUIRE(node->assign_cohesion_constraint(3, -1., 100, 0.25, 2) == false);
+
       // Test acceleration with constraints
       solid_acceleration[0] = 0.5 * solid_acceleration[0];
       liquid_acceleration[0] = 0.5 * liquid_acceleration[0];
@@ -1646,12 +1652,85 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
           REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
 
-        // Check the acceleration in local coordinate
+        // Check the acceleration in local coordinates
         acceleration << 6.920903430595146, 0.616284167162194;
         for (unsigned i = 0; i < Dim; ++i)
           REQUIRE((inverse_rotation_matrix *
                    node->acceleration(mpm::NodePhase::NSolid))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
+      }
+
+      SECTION("Check cartesian cohesion constraints") {
+        // Case: static, cohesion fully mobilized, edge
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, mpm::NodePhase::NSolid, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6.;
+        node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 2) ==
+                true);
+        // Check out of bounds condition
+        REQUIRE(node->assign_cohesion_constraint(2, -1., 1000, 0.25, 2) ==
+                false);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        acceleration << 7.5, -6.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check general cohesion constraints in 1 direction") {
+        // Case: static, cohesion fully mobilized, edge
+        // Assign mass
+        mass = 1000.;
+        node->update_mass(false, mpm::NodePhase::NSolid, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 0., -9.81;
+        node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 2) ==
+                true);
+
+        // Apply rotation matrix with Euler angles alpha = -30 deg, beta = 0 deg
+        Eigen::Matrix<double, Dim, 1> euler_angles;
+        euler_angles << -30. * M_PI / 180, 0. * M_PI / 180;
+        const auto rotation_matrix =
+            mpm::geometry::rotation_matrix(euler_angles);
+        node->assign_rotation_matrix(rotation_matrix);
+        const auto inverse_rotation_matrix = rotation_matrix.inverse();
+
+        // Apply general cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check applied constraints on acceleration in the global coordinates
+        acceleration << -0.2165063509, -9.685;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+
+        // Check the acceleration in local coordinates
+        acceleration << 4.655, -8.49571;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE((inverse_rotation_matrix *
+                   node->acceleration(mpm::NodePhase::NSolid))(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
       }
     }
 
@@ -2580,6 +2659,81 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
           REQUIRE((inverse_rotation_matrix *
                    node->acceleration(mpm::NodePhase::NSolid))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
+      }
+      SECTION("Check cartesian cohesion constraints") {
+        // Case: static, cohesion fully mobilized, face
+        // Assign mass
+        mass = 100.;
+        node->update_mass(false, mpm::NodePhase::NSolid, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->assign_velocity_constraint(2, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 10., -6., 0.;
+        node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+                true);
+        // Check out of bounds condition
+        REQUIRE(node->assign_cohesion_constraint(3, -1., 1000, 0.25, 3) ==
+                false);
+
+        // Apply cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check apply constraints
+        acceleration << 9.3333333333, -6., 0.;
+        for (unsigned i = 0; i < acceleration.size(); ++i) {
+          REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+      }
+
+      SECTION("Check general cohesion constraints in 1 direction") {
+        // Case: static, cohesion fully mobilized, face
+        // Assign mass
+        mass = 2000.;
+        node->update_mass(false, mpm::NodePhase::NSolid, mass);
+        // Reset velocity
+        node->assign_velocity_constraint(0, 0.);
+        node->assign_velocity_constraint(1, 0.);
+        node->assign_velocity_constraint(2, 0.);
+        node->apply_velocity_constraints();
+        // Assign acceleration
+        acceleration << 0., -9.81, 0.;
+        node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
+        // Apply cohesion constraints
+        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+                true);
+
+        // Apply rotation matrix with Euler angles alpha = -30 deg, beta = 0 deg
+        // and gamma = 0 deg
+        Eigen::Matrix<double, Dim, 1> euler_angles;
+        euler_angles << -30. * M_PI / 180, 0. * M_PI / 180, 0. * M_PI / 180;
+        const auto rotation_matrix =
+            mpm::geometry::rotation_matrix(euler_angles);
+        node->assign_rotation_matrix(rotation_matrix);
+        const auto inverse_rotation_matrix = rotation_matrix.inverse();
+
+        // Apply general cohesion constraints
+        node->apply_cohesion_constraints(dt);
+
+        // Check applied constraints on acceleration in the global coordinates
+        acceleration << -0.027236821, -9.7942748, 0.;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE(node->acceleration(mpm::NodePhase::NSolid)(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
+
+        // Check the acceleration in local coordinates
+        acceleration << 4.873549628, -8.495709211, 0.;
+        for (unsigned i = 0; i < Dim; ++i) {
+          REQUIRE((inverse_rotation_matrix *
+                   node->acceleration(mpm::NodePhase::NSolid))(i) ==
+                  Approx(acceleration(i)).epsilon(Tolerance));
+        }
       }
     }
 

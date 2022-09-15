@@ -31,6 +31,8 @@ TEST_CASE("Hexahedron elements are checked", "[hex][element][3D]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(hex->nfunctions() == nfunctions);
+      REQUIRE(hex->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.125).epsilon(Tolerance));

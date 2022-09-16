@@ -1341,10 +1341,8 @@ inline Eigen::Matrix<double, 3, 3>
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     const auto& velocity = nodes_[i]->velocity(phase);
-    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
-    deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
-    deformation_gradient_rate(1, 0) += dn_dx(i, 0) * velocity[1] * dt;
-    deformation_gradient_rate(1, 1) += dn_dx(i, 1) * velocity[1] * dt;
+    deformation_gradient_rate.block(0, 0, 2, 2).noalias() +=
+        velocity * dn_dx.row(i) * dt;
   }
 
   for (unsigned i = 0; i < 2; ++i) {
@@ -1370,15 +1368,7 @@ inline Eigen::Matrix<double, 3, 3>
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     const auto& velocity = nodes_[i]->velocity(phase);
-    deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
-    deformation_gradient_rate(0, 1) += dn_dx(i, 1) * velocity[0] * dt;
-    deformation_gradient_rate(0, 2) += dn_dx(i, 2) * velocity[0] * dt;
-    deformation_gradient_rate(1, 0) += dn_dx(i, 0) * velocity[1] * dt;
-    deformation_gradient_rate(1, 1) += dn_dx(i, 1) * velocity[1] * dt;
-    deformation_gradient_rate(1, 2) += dn_dx(i, 2) * velocity[1] * dt;
-    deformation_gradient_rate(2, 0) += dn_dx(i, 0) * velocity[2] * dt;
-    deformation_gradient_rate(2, 1) += dn_dx(i, 1) * velocity[2] * dt;
-    deformation_gradient_rate(2, 2) += dn_dx(i, 2) * velocity[2] * dt;
+    deformation_gradient_rate.noalias() += velocity * dn_dx.row(i) * dt;
   }
 
   for (unsigned i = 0; i < 3; ++i) {

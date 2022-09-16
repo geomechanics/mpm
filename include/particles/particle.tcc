@@ -288,7 +288,6 @@ void mpm::Particle<Tdim>::initialise() {
   normal_.setZero();
   volume_ = std::numeric_limits<double>::max();
   deformation_gradient_.setIdentity();
-  velocity_gradient_.setZero();
 
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_["mass"] = [&]() { return mass(); };
@@ -592,15 +591,41 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 
+  // Initialise Mapping matrix if necessary
+  if (velocity_update == "tpic" || velocity_update == "apic") {
+    if (mapping_matrix_.rows() != Tdim) {
+      mapping_matrix_.resize(Tdim, Tdim);
+      mapping_matrix_.setZero();
+    }
+  }
+
+  // Shape tensor computation for APIC
+  Eigen::MatrixXd shape_tensor;
+  if (velocity_update == "apic") {
+    shape_tensor.resize(Tdim, Tdim);
+    shape_tensor.setZero();
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      const auto& branch_vector = nodes_[i]->coordinates() - this->coordinates_;
+      shape_tensor.noalias() +=
+          shapefn_[i] * branch_vector * branch_vector.transpose();
+    }
+  }
+
   // Map mass and momentum to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Initialise map velocity
     VectorDim map_velocity = velocity_;
 
-    // For TPIC add additional component
+    // For TPIC add additional components
     if (velocity_update == "tpic")
       map_velocity.noalias() +=
-          velocity_gradient_ * (nodes_[i]->coordinates() - this->coordinates_);
+          mapping_matrix_ * (nodes_[i]->coordinates() - this->coordinates_);
+    // For APIC add additional components
+    else if (velocity_update == "apic")
+      map_velocity.noalias() += mapping_matrix_ * shape_tensor.inverse() *
+                                (nodes_[i]->coordinates() - this->coordinates_);
 
+    // Map mass and momentum
     nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
                            mass_ * shapefn_[i]);
     nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
@@ -906,14 +931,18 @@ void mpm::Particle<Tdim>::compute_updated_position(
   else
     this->velocity_ = nodal_velocity;
 
+  // Additional processes for blend, tpic, and apic schemes
   // Blend update
   if (velocity_update == "blend")
     this->velocity_ = 0.95 * this->velocity_ + 0.05 * nodal_velocity;
-
-  // Update velocity gradient for next step map momentum for TPIC
-  if (velocity_update == "tpic")
-    velocity_gradient_ = this->compute_velocity_gradient(
+  // Assing mapping matrix as velocity gradient if TPIC is used
+  else if (velocity_update == "tpic")
+    mapping_matrix_ = this->compute_velocity_gradient(
         this->dn_dx_, mpm::ParticlePhase::SinglePhase);
+  // Assing mapping matrix as B-matrix if APIC is used
+  else if (velocity_update == "apic")
+    mapping_matrix_ = this->compute_apic_mapping_matrix(
+        this->shapefn_, mpm::ParticlePhase::SinglePhase);
 
   // New position  current position + velocity * dt
   this->coordinates_.noalias() += nodal_velocity * dt;
@@ -1423,4 +1452,29 @@ inline Eigen::Matrix<double, Tdim, Tdim>
     }
   }
   return velocity_gradient;
+}
+
+// Compute APIC mapping matrix
+template <unsigned Tdim>
+inline Eigen::Matrix<double, Tdim, Tdim>
+    mpm::Particle<Tdim>::compute_apic_mapping_matrix(
+        const Eigen::MatrixXd& shapefn, unsigned phase) noexcept {
+  // Initialise B matrix
+  Eigen::Matrix<double, Tdim, Tdim> b_matrix =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
+
+  // Compute B matrix
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& n_coord = nodes_[i]->coordinates();
+    const auto& velocity = nodes_[i]->velocity(phase);
+    b_matrix.noalias() +=
+        shapefn(i) * velocity * (n_coord - this->coordinates_).transpose();
+  }
+
+  for (unsigned i = 0; i < Tdim; ++i) {
+    for (unsigned j = 0; i < Tdim; ++i) {
+      if (std::fabs(b_matrix(i, j)) < 1.E-15) b_matrix(i, j) = 0.;
+    }
+  }
+  return b_matrix;
 }

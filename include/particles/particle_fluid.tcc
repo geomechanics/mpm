@@ -431,3 +431,12 @@ void mpm::FluidParticle<Tdim>::deserialize(
 
 #endif
 }
+
+// Compute updated position of the particle and kinematics
+template <unsigned Tdim>
+void mpm::FluidParticle<Tdim>::compute_updated_position(
+    double dt, const std::string& velocity_update) noexcept {
+  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update);
+
+  // Compute delta correction
+}

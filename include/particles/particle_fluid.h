@@ -41,6 +41,12 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
+  //! Compute updated position of the particle and kinematics
+  //! \param[in] dt Analysis time step
+  //! \param[in] velocity_update Method to update particle velocity
+  void compute_updated_position(
+      double dt, const std::string& velocity_update = "flip") noexcept override;
+
   //! Serialize
   //! \retval buffer Serialized buffer data
   std::vector<uint8_t> serialize() override;

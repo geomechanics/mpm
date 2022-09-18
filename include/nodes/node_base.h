@@ -406,6 +406,16 @@ class NodeBase {
   //! \ingroup MultiPhase
   virtual void compute_density() = 0;
 
+  //! Update gauss volume at the nodes from gauss quadrature
+  //! \ingroup MultiPhase
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] volume Volume from gauss quadrature
+  virtual void update_gauss_volume(bool update, double volume) noexcept = 0;
+
+  //! Return gauss volume at a given node
+  //! \ingroup MultiPhase
+  virtual double gauss_volume() const = 0;
+
   //! Assign free surface
   //! \ingroup MultiPhase
   virtual void assign_free_surface(bool free_surface) = 0;

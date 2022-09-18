@@ -422,6 +422,16 @@ class Node : public NodeBase<Tdim> {
   //! \ingroup MultiPhase
   void compute_density() override;
 
+  //! Update gauss volume at the nodes from gauss quadrature
+  //! \ingroup MultiPhase
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] volume Volume from gauss quadrature
+  void update_gauss_volume(bool update, double volume) noexcept override;
+
+  //! Return gauss volume at a given node
+  //! \ingroup MultiPhase
+  double gauss_volume() const override { return gauss_volume_; }
+
   //! Assign free surface
   //! \ingroup MultiPhase
   void assign_free_surface(bool free_surface) override {
@@ -693,6 +703,8 @@ class Node : public NodeBase<Tdim> {
   Eigen::Matrix<double, Tdim, Tnphases> correction_force_;
   //! Drag force
   Eigen::Matrix<double, Tdim, 1> drag_force_coefficient_;
+  //! Gauss volume (volume of the element computed from gauss point)
+  double gauss_volume_;
   /**@}*/
 
   /**

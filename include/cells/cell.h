@@ -301,6 +301,10 @@ class Cell {
   //! \param[in] phase to map volume
   void map_cell_volume_to_nodes(unsigned phase);
 
+  //! Map gauss quadrature volume to the nodes
+  //! \ingroup MultiPhase
+  void map_cell_gauss_volume_to_nodes();
+
   //! Initialize local elemental matrices
   //! \ingroup MultiPhase
   bool initialise_element_matrix();

@@ -15,6 +15,19 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_density() {
   }
 }
 
+//! Update gauss volume at the nodes from gauss point
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::update_gauss_volume(
+    bool update, double volume) noexcept {
+  // Decide to update or assign
+  const double factor = (update == true) ? 1. : 0.;
+
+  // Update/assign volume
+  node_mutex_.lock();
+  gauss_volume_ = gauss_volume_ * factor + volume;
+  node_mutex_.unlock();
+}
+
 //! Initialise two-phase nodal properties
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_twophase() noexcept {

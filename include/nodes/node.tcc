@@ -64,7 +64,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_mass(bool update, unsigned phase,
   node_mutex_.unlock();
 }
 
-//! Update volume at the nodes from particle
+//! Update volume at the nodes from particle or cell
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::update_volume(bool update, unsigned phase,
                                                     double volume) noexcept {

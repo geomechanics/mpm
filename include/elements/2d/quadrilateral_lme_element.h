@@ -2,6 +2,7 @@
 #define MPM_LME_ELEMENT_H
 
 #include "quadrilateral_element.h"
+#include <petsctao.h>
 
 namespace mpm {
 
@@ -214,6 +215,35 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
   bool anisotropy_{false};
   //! Nodal coordinates vector (n_connectivity_ x Tdim)
   Eigen::MatrixXd nodal_coordinates_;
+
+  typedef struct {
+  PetscInt N_a;
+  PetscScalar beta;
+  const PetscScalar *l_a;
+  PetscScalar *p_a;
+} LME_ctx;
+
+ //! Evaluates the function and corresponding gradient.
+ //! \param[in] tao the Tao context
+ //! \param[in,out] lambda  Lagrange multiplier
+ //! \param[out] log_Z
+ //! \param[out] r
+ //! \param[in] logZ_ctx
+ //! \retval PetscErrorCode
+ PetscErrorCode __function_gradient_log_Z(Tao tao, Vec lambda,
+                                                PetscScalar *log_Z, Vec r,
+                                                void *logZ_ctx) override;
+
+ //! Evaluates the function hessian
+ //! \param[in] tao the Tao context
+ //! \param[in,out] lambda  Lagrange multiplier
+ //! \param[out] H Hessian of the log(Z) functional
+ //! \param[out] Hpre Preconditioner of the Hessian
+ //! \param[in] logZ_ctx
+ //! \retval PetscErrorCode
+ PetscErrorCode __hessian_log_Z(Tao tao, Vec lambda, Mat H, Mat Hpre,
+                                      void *logZ_ctx) override;
+
 };
 
 }  // namespace mpm

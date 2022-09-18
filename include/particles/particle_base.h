@@ -428,6 +428,14 @@ class ParticleBase {
         "ParticleBase:: illegal operation!");
   };
 
+  //! Return projection parameter
+  virtual double projection_parameter() const {
+    throw std::runtime_error(
+        "Calling the base class function (projection_param) in "
+        "ParticleBase:: illegal operation!");
+    return 0;
+  };
+
   //! Map laplacian element matrix to cell (used in poisson equation LHS)
   virtual bool map_laplacian_to_cell() {
     throw std::runtime_error(
@@ -507,6 +515,11 @@ class ParticleBase {
   };
 
   //! Initialise particle pore pressure by watertable
+  //! \param[in] dir_v Vertical direction (Gravity direction) of the watertable
+  //! \param[in] dir_h Horizontal direction of the watertable
+  //! \param[in] gravity Gravity vector
+  //! \param[in] reference_points
+  //! (Horizontal coordinate of borehole + height of 0 pore pressure)
   virtual bool initialise_pore_pressure_watertable(
       const unsigned dir_v, const unsigned dir_h, const VectorDim& gravity,
       std::map<double, double>& reference_points) {

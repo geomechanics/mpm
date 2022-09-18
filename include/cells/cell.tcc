@@ -995,3 +995,19 @@ bool mpm::Cell<Tdim>::initialiase_nonlocal(
   }
   return status;
 }
+
+//! Return nodes id in a cell
+template <unsigned Tdim>
+std::set<mpm::Index> mpm::Cell<Tdim>::local_nodes_id() const {
+  std::set<mpm::Index> nodes_id_lists;
+  for (unsigned i = 0; i < this->nfunctions_local(); i++)
+    nodes_id_lists.insert(nodes_[i]->id());
+  return nodes_id_lists;
+}
+
+//! Return number of local shape functions, returns zero if the element type
+//! is not set.
+template <unsigned Tdim>
+unsigned mpm::Cell<Tdim>::nfunctions_local() const {
+  return (this->element_ != nullptr ? this->element_->nfunctions_local() : 0);
+};

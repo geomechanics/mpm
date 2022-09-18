@@ -48,6 +48,9 @@ class Element {
   //! Return number of shape functions
   virtual unsigned nfunctions() const = 0;
 
+  //! Return number of local shape functions
+  virtual unsigned nfunctions_local() const = 0;
+
   //! Evaluate shape functions at given local coordinates
   //! \param[in] xi given local coordinates
   //! \param[in] particle_size Particle size

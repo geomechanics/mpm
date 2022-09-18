@@ -111,10 +111,17 @@ class IOMesh {
           const std::string& acceleration_constraints_file) = 0;
 
   //! Read friction constraints file
-  //! \param[in] friction_constraints_file file name with frictions
+  //! \param[in] friction_constraints_file file name with friction values
   virtual std::vector<std::tuple<mpm::Index, unsigned, int, double>>
       read_friction_constraints(
           const std::string& friction_constraints_file) = 0;
+
+  //! Read cohesion constraints file
+  //! \param[in] cohesion_constraints_file file name with cohesion values
+  virtual std::vector<
+      std::tuple<mpm::Index, unsigned, int, double, double, int>>
+      read_cohesion_constraints(
+          const std::string& cohesion_constraints_file) = 0;
 
   //! Read forces file
   //! \param[in] forces_file file name with nodal concentrated force

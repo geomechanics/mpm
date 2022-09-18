@@ -243,6 +243,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Read and assign friction constraints
   this->nodal_frictional_constraints(mesh_props, mesh_io);
 
+  // Read and assign cohesion constraints
+  this->nodal_cohesional_constraints(mesh_props, mesh_io);
+
   // Read and assign pressure constraints
   this->nodal_pressure_constraints(mesh_props, mesh_io);
 
@@ -1113,9 +1116,9 @@ void mpm::MPMBase<Tdim>::nodal_frictional_constraints(
 
           // Set id
           int nset_id = constraints.at("nset_id").template get<int>();
-          // Direction
+          // Direction (normal)
           unsigned dir = constraints.at("dir").template get<unsigned>();
-          // Sign n
+          // Sign of normal direction
           int sign_n = constraints.at("sign_n").template get<int>();
           // Friction
           double friction = constraints.at("friction").template get<double>();
@@ -1135,6 +1138,64 @@ void mpm::MPMBase<Tdim>::nodal_frictional_constraints(
 
   } catch (std::exception& exception) {
     console_->warn("#{}: Friction conditions are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Nodal cohesional constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nodal_cohesional_constraints(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign cohesion constraints
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("cohesion_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+      // Iterate over cohesion constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["cohesion_constraints"]) {
+        // Cohesion constraints are specified in a file
+        if (constraints.find("file") != constraints.end()) {
+          std::string cohesion_constraints_file =
+              constraints.at("file").template get<std::string>();
+          bool cohesion_constraints =
+              constraints_->assign_nodal_cohesion_constraints(
+                  mesh_io->read_cohesion_constraints(
+                      io_->file_name(cohesion_constraints_file)));
+          if (!cohesion_constraints)
+            throw std::runtime_error(
+                "Cohesion constraints are not properly assigned");
+
+        } else {  // Entity sets
+
+          // Set id
+          int nset_id = constraints.at("nset_id").template get<int>();
+          // Direction (normal)
+          unsigned dir = constraints.at("dir").template get<unsigned>();
+          // Sign of normal direction
+          int sign_n = constraints.at("sign_n").template get<int>();
+          // Cohesion
+          double cohesion = constraints.at("cohesion").template get<double>();
+          // h_min
+          double h_min = constraints.at("h_min").template get<double>();
+          // nposition
+          int nposition = constraints.at("nposition").template get<int>();
+          // Add cohesion constraint to mesh
+          auto cohesion_constraint = std::make_shared<mpm::CohesionConstraint>(
+              nset_id, dir, sign_n, cohesion, h_min, nposition);
+          bool cohesion_constraints =
+              constraints_->assign_nodal_cohesional_constraint(
+                  nset_id, cohesion_constraint);
+          if (!cohesion_constraints)
+            throw std::runtime_error(
+                "Nodal cohesion constraint is not properly assigned");
+        }
+      }
+    } else
+      throw std::runtime_error("Cohesion constraints JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Cohesion conditions are undefined {} ", __LINE__,
                    exception.what());
   }
 }
@@ -1477,11 +1538,30 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
           reference_points.insert(std::make_pair<double, double>(
               static_cast<double>(position), static_cast<double>(h0)));
         }
+
+        // Read gravity
+        Eigen::Matrix<double, Tdim, 1> gravity =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        auto loads = io_->json_object("external_loading_conditions");
+        if (loads.contains("gravity")) {
+          if (loads.at("gravity").is_array() &&
+              loads.at("gravity").size() == gravity.size()) {
+            for (unsigned i = 0; i < gravity.size(); ++i) {
+              gravity[i] = loads.at("gravity").at(i);
+            }
+          } else {
+            throw std::runtime_error("Specified gravity dimension is invalid");
+          }
+        } else {
+          throw std::runtime_error(
+              "In order to use the option water table, \"gravity\" should be "
+              "specified in the \"external_loading_conditions\"! ");
+        }
+
         // Initialise particles pore pressures by watertable
         mesh_->iterate_over_particles(std::bind(
             &mpm::ParticleBase<Tdim>::initialise_pore_pressure_watertable,
-            std::placeholders::_1, dir_v, dir_h, this->gravity_,
-            reference_points));
+            std::placeholders::_1, dir_v, dir_h, gravity, reference_points));
       } else if (type == "isotropic") {
         const double pore_pressure =
             mesh_props["particles_pore_pressures"]["values"]

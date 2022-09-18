@@ -55,7 +55,7 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
       const auto& node_id = (*citr)->nodes_id();
       if ((*citr)->volume_fraction() < volume_tolerance) {
         candidate_cell = true;
-        for (const auto id : node_id) {
+        for (const auto id : (*citr)->local_nodes_id()) {
           map_nodes_[id]->assign_free_surface(true);
         }
       } else {
@@ -63,7 +63,8 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
         for (const auto neighbour_cell_id : (*citr)->neighbours()) {
           if (!map_cells_[neighbour_cell_id]->status()) {
             candidate_cell = true;
-            const auto& n_node_id = map_cells_[neighbour_cell_id]->nodes_id();
+            const auto& n_node_id =
+                map_cells_[neighbour_cell_id]->local_nodes_id();
 
             // Detect common node id
             std::set<mpm::Index> common_node_id;
@@ -191,7 +192,6 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
     // If secondary check is needed
     if (secondary_check) {
       // Construct scanning region
-      // TODO: spacing distance should be a function of porosity
       const double spacing_distance = smoothing_length;
       VectorDim t_coord = p_coord + spacing_distance * normal;
 
@@ -337,7 +337,7 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_density(double volume_tolerance) {
       if (!internal) {
         if ((*citr)->volume_fraction() < volume_tolerance) {
           cell_at_interface = true;
-          for (const auto id : node_id) {
+          for (const auto id : (*citr)->local_nodes_id()) {
             map_nodes_[id]->assign_free_surface(cell_at_interface);
           }
         } else {
@@ -345,7 +345,8 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_density(double volume_tolerance) {
             if (map_cells_[neighbour_cell_id]->volume_fraction() <
                 volume_tolerance) {
               cell_at_interface = true;
-              const auto& n_node_id = map_cells_[neighbour_cell_id]->nodes_id();
+              const auto& n_node_id =
+                  map_cells_[neighbour_cell_id]->local_nodes_id();
 
               // Detect common node id
               std::set<mpm::Index> common_node_id;

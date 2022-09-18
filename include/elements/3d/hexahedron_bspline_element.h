@@ -118,6 +118,9 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
   //! Return number of shape functions
   unsigned nfunctions() const override { return nconnectivity_; }
 
+  //! Return number of local shape functions
+  unsigned nfunctions_local() const override { return 8; }
+
   //! Assign nodal connectivity property for bspline elements
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   //! \param[in] nodal_properties Vector determining node type for each

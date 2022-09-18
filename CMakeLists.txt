@@ -276,6 +276,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/particles/particle_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_traction_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_fluid_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
@@ -288,6 +289,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_absorbing_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_acceleration_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_friction_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_cohesion_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_constraint_velocity_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_finite_strain_unitcell_test.cc

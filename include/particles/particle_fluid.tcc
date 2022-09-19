@@ -438,5 +438,23 @@ void mpm::FluidParticle<Tdim>::compute_updated_position(
     double dt, const std::string& velocity_update) noexcept {
   mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update);
 
+  // Interpolate error measures from node
+  double error_2 = 0;
+  Eigen::Matrix<double, Tdim, 1> error_grad =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const double& volume = nodes_[i]->volume(mpm::ParticlePhase::SinglePhase);
+    const double& gvolume = nodes_[i]->gauss_volume();
+    const double nodal_vol_error = std::max(0.0, volume - gvolume);
+    error_2 += shapefn_[i] * nodal_vol_error * nodal_vol_error;
+    error_grad.noalias() += this->dn_dx_.row(i).transpose() * nodal_vol_error;
+  }
+
   // Compute delta correction
+  Eigen::Matrix<double, Tdim, 1> delta_x = -error_2 * error_grad.normalized();
+
+  // New position
+  this->coordinates_.noalias() += delta_x;
+  // Update displacement
+  this->displacement_.noalias() += delta_x;
 }

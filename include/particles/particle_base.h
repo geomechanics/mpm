@@ -143,6 +143,9 @@ class ParticleBase {
   //! Update volume based on centre volumetric strain rate
   virtual void update_volume() noexcept = 0;
 
+  //! Map particle volume to nodes
+  virtual void map_volume_to_nodes() noexcept = 0;
+
   //! Return mass density
   virtual double mass_density() const = 0;
 

@@ -38,6 +38,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   correction_force_.setZero();
   status_ = false;
   solving_status_ = false;
+  gauss_volume_ = 0.;
   material_ids_.clear();
 }
 

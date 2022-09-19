@@ -124,6 +124,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Update volume based on centre volumetric strain rate
   void update_volume() noexcept override;
 
+  //! Map particle volume to nodes
+  void map_volume_to_nodes() noexcept override;
+
   //! Return mass density
   double mass_density() const override { return mass_density_; }
 

@@ -563,6 +563,20 @@ void mpm::Particle<Tdim>::update_volume() noexcept {
   this->mass_density_ = this->mass_density_ / (1. + dvolumetric_strain_);
 }
 
+//! Map particle volume to nodes
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_volume_to_nodes() noexcept {
+  // Check if particle mass is set
+  assert(volume_ != std::numeric_limits<double>::max());
+
+  // Map volume and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Map volume
+    nodes_[i]->update_volume(true, mpm::ParticlePhase::SinglePhase,
+                             volume_ * shapefn_[i]);
+  }
+}
+
 //! Return the approximate particle diameter
 template <unsigned Tdim>
 double mpm::Particle<Tdim>::diameter() const {

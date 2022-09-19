@@ -45,11 +45,15 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
   if (analysis_.find("pressure_smoothing") != analysis_.end())
     pressure_smoothing_ = analysis_["pressure_smoothing"].template get<bool>();
 
-  // Read settings for two-phase analysis
+  // Read settings for analysis
   if (analysis_.contains("scheme_settings")) {
     // Parameter to determine full and incremental projection
     if (analysis_["scheme_settings"].contains("beta"))
       beta_ = analysis_["scheme_settings"]["beta"].template get<double>();
+    //  Boolean to perform particle coordinate correction
+    if (analysis_["scheme_settings"].contains("delta_correction"))
+      delta_correction_ =
+          analysis_["scheme_settings"]["delta_correction"].template get<bool>();
   }
 
   // Initialise material
@@ -298,6 +302,9 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
                 Tdim>::compute_acceleration_velocity_semi_implicit_corrector,
             std::placeholders::_1, fluid, this->dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+    // Perform delta correction
+    if (delta_correction_) this->compute_delta_correction_measures();
 
     // Update particle position and kinematics
     mesh_->iterate_over_particles(
@@ -548,6 +555,61 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::compute_correction_force() {
     // Assign correction force
     mesh_->compute_nodal_correction_force(
         assembler_->correction_matrix(), assembler_->pressure_increment(), dt_);
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Compute particle delta correction measures
+template <unsigned Tdim>
+bool mpm::MPMSemiImplicitNavierStokes<
+    Tdim>::compute_delta_correction_measures() {
+  bool status = true;
+  try {
+    // Initialise MPI size
+    int mpi_size = 1;
+
+#ifdef USE_MPI
+    // Get number of MPI ranks
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+    // Reinitialize nodal volumes to zero
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::update_volume, std::placeholders::_1,
+                  false, mpm::ParticlePhase::SinglePhase, 0.0),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+    // Compute nodal gauss volume
+    mesh_->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::map_cell_gauss_volume_to_nodes,
+                  std::placeholders::_1));
+
+    // Compute nodal volume from particles
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::map_volume_to_nodes, std::placeholders::_1));
+
+#ifdef USE_MPI
+    // Run if there is more than a single MPI task
+    if (mpi_size > 1) {
+      // MPI all reduce nodal volume
+      mesh_->template nodal_halo_exchange<double, 1>(
+          std::bind(&mpm::NodeBase<Tdim>::volume, std::placeholders::_1,
+                    mpm::ParticlePhase::SinglePhase),
+          std::bind(&mpm::NodeBase<Tdim>::update_volume, std::placeholders::_1,
+                    false, mpm::ParticlePhase::SinglePhase,
+                    std::placeholders::_2));
+
+      // MPI all reduce nodal gauss volume
+      mesh_->template nodal_halo_exchange<double, 1>(
+          std::bind(&mpm::NodeBase<Tdim>::gauss_volume, std::placeholders::_1),
+          std::bind(&mpm::NodeBase<Tdim>::update_gauss_volume,
+                    std::placeholders::_1, false, std::placeholders::_2));
+    }
+#endif
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

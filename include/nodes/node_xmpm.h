@@ -53,77 +53,44 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \ingroup XMPM
   //! \param[in] the value of the nodal levelset_phi
   //! \param[in] dis_id the discontinuity id
-  void update_levelset_phi(double phi, int dis_id) {
-    node_mutex_.lock();
-    levelset_phi_[dis_id] += phi;
-    node_mutex_.unlock();
-  };
+  void update_levelset_phi(double phi, int dis_id) override;
 
   //! assign the nodal levelset values
   //! \ingroup XMPM
   //! \param[in] the value of the nodal levelset_phi
   //! \param[in] dis_id the discontinuity id
-  void assign_levelset_phi(double phi, int dis_id) {
-    node_mutex_.lock();
-    levelset_phi_[dis_id] = phi;
-    node_mutex_.unlock();
-  };
+  void assign_levelset_phi(double phi, int dis_id) override;
 
   //! Update the nodal enriched mass
   //! \ingroup XMPM
   //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] the value of the enriched mass
-  void update_mass_enrich(bool update, Eigen::Matrix<double, 3, 1> mass) {
-    // Decide to update or assign
-    const double factor = (update == true) ? 1. : 0.;
-
-    node_mutex_.lock();
-    mass_enrich_ = mass_enrich_ * factor + mass;
-    node_mutex_.unlock();
-  };
+  void update_mass_enrich(bool update,
+                          Eigen::Matrix<double, 3, 1> mass) override;
 
   //! Update the nodal enriched momentum
   //! \ingroup XMPM
   //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] the value of the enriched momentum
   void update_momentum_enrich(bool update,
-                              Eigen::Matrix<double, Tdim, 3> momentum) {
-    // Decide to update or assign
-    const double factor = (update == true) ? 1. : 0.;
-
-    node_mutex_.lock();
-    momentum_enrich_ = momentum_enrich_ * factor + momentum;
-    node_mutex_.unlock();
-  };
+                              Eigen::Matrix<double, Tdim, 3> momentum) override;
 
   //! Update the nodal enriched internal_force
   //! \ingroup XMPM
   //! \param[in] the value of the enriched momentum
-  virtual void update_internal_force_enrich(
-      Eigen::Matrix<double, Tdim, 3> internal_force) {
-    node_mutex_.lock();
-    internal_force_enrich_ += internal_force;
-    node_mutex_.unlock();
-  }
+  void update_internal_force_enrich(
+      Eigen::Matrix<double, Tdim, 3> internal_force) override;
 
   //! Update the nodal enriched external_force
   //! \ingroup XMPM
   //! \param[in] the value of the enriched external_force
-  virtual void update_external_force_enrich(
-      Eigen::Matrix<double, Tdim, 3> external_force) {
-    node_mutex_.lock();
-    external_force_enrich_ += external_force;
-    node_mutex_.unlock();
-  }
+  void update_external_force_enrich(
+      Eigen::Matrix<double, Tdim, 3> external_force) override;
 
   //! Update the nodal mass_h_
   //! \ingroup XMPM
   //! \param[in] the value of mass_h_
-  void update_mass_h(double mass_h) {
-    node_mutex_.lock();
-    mass_h_ += mass_h;
-    node_mutex_.unlock();
-  }
+  void update_mass_h(double mass_h) override;
 
   //! Initialise the nodal mass_h_
   //! \ingroup XMPM
@@ -257,11 +224,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \ingroup XMPM
   //! \param[in] the normal direction
   //! \param[in] dis_id the discontinuity id
-  void assign_normal(VectorDim normal, unsigned dis_id) {
-    node_mutex_.lock();
-    normal_[dis_id] = normal;
-    node_mutex_.unlock();
-  }
+  void assign_normal(VectorDim normal, unsigned dis_id) override;
 
   //! Reset the size of the discontinuity
   //! \param[in] the number of the discontinuity
@@ -312,19 +275,7 @@ class NodeXMPM : public Node<Tdim, Tdof, Tnphases> {
   //! \ingroup XMPM
   //! \param[in] the cohesion area
   //! \param[in] dis_id the discontinuity id
-  void update_cohesion_area(double cohesion_area, unsigned dis_id) {
-    if (enrich_type_ == mpm::NodeEnrichType::regular) return;
-
-    node_mutex_.lock();
-    if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
-        discontinuity_id_[0] == dis_id) {
-      cohesion_area_[0] += cohesion_area;
-    } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
-      if (discontinuity_id_[0] == dis_id) cohesion_area_[0] += cohesion_area;
-      if (discontinuity_id_[1] == dis_id) cohesion_area_[1] += cohesion_area;
-    }
-    node_mutex_.unlock();
-  }
+  void update_cohesion_area(double cohesion_area, unsigned dis_id) override;
 
   //! Return  connected cells
   //! \retval cells_ connected cells

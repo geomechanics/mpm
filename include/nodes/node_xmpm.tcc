@@ -486,7 +486,9 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::self_contact_discontinuity(
 //! Add a cell id
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::add_cell_id(Index id) {
+  node_mutex_.lock();
   cells_.emplace_back(id);
+  node_mutex_.unlock();
 }
 
 //! Assign whether the node is enriched
@@ -499,18 +501,117 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::assign_discontinuity_enrich(
       enrich_type_ = mpm::NodeEnrichType::single_enriched;
       discontinuity_id_[0] = dis_id;
     } else if (enrich_type_ == mpm::NodeEnrichType::single_enriched) {
-      enrich_type_ = mpm::NodeEnrichType::double_enriched;
-      discontinuity_id_[1] = dis_id;
+      if (discontinuity_id_[0] != dis_id) {
+        enrich_type_ = mpm::NodeEnrichType::double_enriched;
+        discontinuity_id_[1] = dis_id;
+      }
     } else {
       console_->error("Multiple discontinuities are detected at the node");
     }
   } else {
-    if (enrich_type_ == mpm::NodeEnrichType::single_enriched) {
+    if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
+        discontinuity_id_[0] == dis_id) {
       enrich_type_ = mpm::NodeEnrichType::regular;
 
     } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
       enrich_type_ = mpm::NodeEnrichType::single_enriched;
+      if (discontinuity_id_[0] == dis_id)
+        discontinuity_id_[0] = discontinuity_id_[1];
     }
+  }
+  node_mutex_.unlock();
+}
+
+//! Update the nodal levelset values
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::update_levelset_phi(double phi,
+                                                              int dis_id) {
+  node_mutex_.lock();
+  levelset_phi_[dis_id] += phi;
+  node_mutex_.unlock();
+};
+
+//! assign the nodal levelset values
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::assign_levelset_phi(double phi,
+                                                              int dis_id) {
+  node_mutex_.lock();
+  levelset_phi_[dis_id] = phi;
+  node_mutex_.unlock();
+};
+
+//! Update the nodal enriched mass
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::update_mass_enrich(
+    bool update, Eigen::Matrix<double, 3, 1> mass) {
+  // Decide to update or assign
+  const double factor = (update == true) ? 1. : 0.;
+
+  node_mutex_.lock();
+  mass_enrich_ = mass_enrich_ * factor + mass;
+  node_mutex_.unlock();
+};
+
+//! Update the nodal enriched momentum
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::update_momentum_enrich(
+    bool update, Eigen::Matrix<double, Tdim, 3> momentum) {
+  // Decide to update or assign
+  const double factor = (update == true) ? 1. : 0.;
+
+  node_mutex_.lock();
+  momentum_enrich_ = momentum_enrich_ * factor + momentum;
+  node_mutex_.unlock();
+};
+
+//! Update the nodal enriched internal_force
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::update_internal_force_enrich(
+    Eigen::Matrix<double, Tdim, 3> internal_force) {
+  node_mutex_.lock();
+  internal_force_enrich_ += internal_force;
+  node_mutex_.unlock();
+}
+
+//! Update the nodal enriched external_force
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::update_external_force_enrich(
+    Eigen::Matrix<double, Tdim, 3> external_force) {
+  node_mutex_.lock();
+  external_force_enrich_ += external_force;
+  node_mutex_.unlock();
+}
+
+//! Update the nodal mass_h_
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::update_mass_h(double mass_h) {
+  node_mutex_.lock();
+  mass_h_ += mass_h;
+  node_mutex_.unlock();
+}
+
+//! Assign normal at a given node
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::assign_normal(VectorDim normal,
+                                                        unsigned dis_id) {
+  node_mutex_.lock();
+  normal_[dis_id] = normal;
+  node_mutex_.unlock();
+}
+
+//! Update cohesion area
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::update_cohesion_area(
+    double cohesion_area, unsigned dis_id) {
+  if (enrich_type_ == mpm::NodeEnrichType::regular) return;
+
+  node_mutex_.lock();
+  if (enrich_type_ == mpm::NodeEnrichType::single_enriched &&
+      discontinuity_id_[0] == dis_id) {
+    cohesion_area_[0] += cohesion_area;
+  } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
+    if (discontinuity_id_[0] == dis_id) cohesion_area_[0] += cohesion_area;
+    if (discontinuity_id_[1] == dis_id) cohesion_area_[1] += cohesion_area;
   }
   node_mutex_.unlock();
 }

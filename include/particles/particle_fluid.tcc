@@ -452,8 +452,12 @@ void mpm::FluidParticle<Tdim>::compute_updated_position(
   error_grad *= 2.0 * this->volume_;
 
   // Compute delta correction
-  Eigen::Matrix<double, Tdim, 1> delta_x =
-      -error_2 / (error_grad.dot(error_grad)) * error_grad;
+  double denominator = error_grad.dot(error_grad);
+  if (denominator < std::numeric_limits<double>::epsilon())
+    denominator = std::numeric_limits<double>::epsilon();
+  Eigen::Matrix<double, Tdim, 1> delta_x = -error_2 / denominator * error_grad;
+
+  // Check minimum value of delta_x
   for (unsigned i = 0; i < Tdim; i++)
     if (std::fabs(delta_x[i]) < 1.E-15) delta_x[i] = 0.0;
 

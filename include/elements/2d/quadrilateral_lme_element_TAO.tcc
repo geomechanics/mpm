@@ -6,7 +6,7 @@
 typedef struct {
   PetscInt N_a;
   PetscScalar beta;
-  const PetscScalar *l_a;
+  const PetscScalar *distance;
   PetscScalar *p_a;
 } LME_ctx;
 
@@ -123,69 +123,60 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       unsigned it = 1;
       const unsigned max_it = 10;
 
-  PetscErrorCode STATUS = EXIT_SUCCESS;
-  PetscInt Ndim = NumberDimensions;
-  PetscScalar *p_a;
-  PetscMalloc(sizeof(PetscScalar) * N_a, &p_a);
+      PetscErrorCode STATUS = EXIT_SUCCESS;
 
-  /* Definition of some parameters */
-  LME_ctx user_ctx;
-  PetscInt MaxIter = max_iter_LME;
-  PetscInt NumIter;
+      /* Definition of some parameters */
+      LME_ctx user_ctx;
+      PetscInt MaxIter = max_iter_LME;
+      PetscInt NumIter;
 
-#if NumberDimensions == 2
-  const PetscInt ix[2] = {0, 1};
-#else
-  const PetscInt ix[3] = {0, 1, 2};
-#endif
+      const PetscInt ix[2] = {0, 1};
 
-  /* Create user-defined variable */
-  user_ctx.beta = Beta;
-  user_ctx.l_a = l_a;
-  user_ctx.N_a = N_a;
-  user_ctx.p_a = p_a;
+      /* Create user-defined variable */
+      user_ctx.beta = Beta;
+      user_ctx.distance = distance.value();
+      user_ctx.N_a = N_a;
+      user_ctx.p_a = p.value();
 
-  /* Create lagrange multiplier */
-  Vec lambda_aux;
-  VecCreate(PETSC_COMM_SELF, &lambda_aux);
-  VecSetSizes(lambda_aux, PETSC_DECIDE, Ndim);
-  VecSetFromOptions(lambda_aux);
-  VecSetValues(lambda_aux, Ndim, ix, lambda_tr, INSERT_VALUES);
-  VecAssemblyBegin(lambda_aux);
-  VecAssemblyEnd(lambda_aux);
+      /* Create lagrange multiplier */
+      Vec lambda_aux;
+      VecCreate(PETSC_COMM_SELF, &lambda_aux);
+      VecSetSizes(lambda_aux, PETSC_DECIDE, 2);
+      VecSetFromOptions(lambda_aux);
+      VecSetValues(lambda_aux, Ndim, ix, lambda_tr, INSERT_VALUES);
+      VecAssemblyBegin(lambda_aux);
+      VecAssemblyEnd(lambda_aux);
 
-  /* Create Hessian */
-  Mat H;
-  MatCreateSeqAIJ(PETSC_COMM_SELF, Ndim, Ndim, Ndim, NULL, &H);
-  MatSetOption(H, MAT_SYMMETRIC, PETSC_TRUE);
-  MatSetOption(H, MAT_SYMMETRIC, PETSC_TRUE);
-  MatSetFromOptions(H);
+      /* Create Hessian */
+      Mat H;
+      MatCreateSeqAIJ(PETSC_COMM_SELF, 2, 2, 2, NULL, &H);
+      MatSetOption(H, MAT_SYMMETRIC, PETSC_TRUE);
+      MatSetOption(H, MAT_SYMMETRIC, PETSC_TRUE);
+      MatSetFromOptions(H);
 
-  /* Create TAO solver with desired solution method */
-  Tao tao;
-  TaoCreate(PETSC_COMM_SELF, &tao);
-  TaoSetType(tao, TAONTL);
-  TaoSetFromOptions(tao);
+      /* Create TAO solver with desired solution method */
+      Tao tao;
+      TaoCreate(PETSC_COMM_SELF, &tao);
+      TaoSetType(tao, TAONTL);
+      TaoSetFromOptions(tao);
 
-  /* Set solution vec */
-  TaoSetSolution(tao, lambda_aux);
+      /* Set solution vec */
+      TaoSetSolution(tao, lambda_aux);
 
-  /* Set routines for function, gradient, hessian evaluation */
-  TaoSetObjectiveAndGradient(tao, NULL, __function_gradient_log_Z, &user_ctx);
-  TaoSetHessian(tao, H, H, __hessian_log_Z, &user_ctx);
+      /* Set routines for function, gradient, hessian evaluation */
+      TaoSetObjectiveAndGradient(tao, NULL, __function_gradient_log_Z, &user_ctx);
+      TaoSetHessian(tao, H, H, __hessian_log_Z, &user_ctx);
 
-  /* Solve the system */
-  TaoSolve(tao);
+      /* Solve the system */
+      TaoSolve(tao);
 
-  /* Update values of the lagrange multiplier */
-  VecGetValues(lambda_aux, Ndim, ix, lambda_tr);
+      /* Update values of the lagrange multiplier */
+      VecGetValues(lambda_aux, 2, ix, lambda_tr);
 
-  /* Destroy auxiliar variables */
-  TaoDestroy(&tao);
-  MatDestroy(&H);
-  VecDestroy(&lambda_aux);
-  PetscFree(p_a);
-
+      /* Destroy auxiliar variables */
+      TaoDestroy(&tao);
+      MatDestroy(&H);
+      VecDestroy(&lambda_aux);
     }
 
     // Assign shape function
@@ -470,17 +461,33 @@ static PetscErrorCode __function_gradient_log_Z(Tao tao, Vec lambda,
 
   /* Get constants */
   PetscInt Ndim = 2;
-  PetscScalar beta = ((LME_ctx *)logZ_ctx)->beta;
+  PetscScalar beta_ = ((LME_ctx *)logZ_ctx)->beta;
   PetscInt N_a = ((LME_ctx *)logZ_ctx)->N_a;
 
   /* Read auxiliar variables */
   PetscScalar *p_a = ((LME_ctx *)logZ_ctx)->p_a;
-  const PetscScalar *l_a = ((LME_ctx *)logZ_ctx)->l_a;
+  const PetscScalar *distance = ((LME_ctx *)logZ_ctx)->distance;
 
   PetscScalar *r_ptr;
   VecGetArray(r, &r_ptr);
   PetscScalar *lambda_ptr;
   VecGetArray(lambda, &lambda_ptr);
+
+  //! Reevaluate f, p, and r
+  //! Compute functional f in each connectivity
+  PetscScalar sum_exp_f = 0.;
+  for (unsigned int n = 0; n < this->nconnectivity_; ++n) {
+    if (distance(n) < this->support_radius_) {
+      f(n) = -beta_ * distance(n) * distance(n) + lambda.dot(rel_coordinates.col(n));
+      sum_exp_f += std::exp(f(n));
+    }
+  }
+
+  //! Compute p in each connectivity
+  for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+    if (distance(n) < this->support_radius_)
+      p(n) = std::exp(f(n)) / sum_exp_f;
+  }
 
   /* Compute partition function Z and the shape function p_a */
   PetscScalar Z = 0;

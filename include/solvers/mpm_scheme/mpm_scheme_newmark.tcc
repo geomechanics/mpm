@@ -37,7 +37,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
 //! Compute nodal kinematics - map mass, momentum and inertia to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
-    const std::string& velocity_update, unsigned phase) {
+    mpm::VelocityUpdate velocity_update, unsigned phase) {
   // Assign mass, momentum and inertia to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_inertia_to_nodes,
@@ -159,7 +159,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 // Update particle kinematics
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
-    const std::string& velocity_update, unsigned phase,
+    mpm::VelocityUpdate velocity_update, unsigned phase,
     const std::string& damping_type, double damping_factor, unsigned step,
     bool update_defgrad) {
 
@@ -187,7 +187,7 @@ inline void
 //! Postcompute nodal kinematics - map mass and momentum to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::postcompute_nodal_kinematics(
-    const std::string& velocity_update, unsigned phase) {}
+    mpm::VelocityUpdate velocity_update, unsigned phase) {}
 
 //! Stress update scheme
 template <unsigned Tdim>

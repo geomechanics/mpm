@@ -10,6 +10,19 @@
 #include "mpm_semi_implicit_twophase.h"
 
 namespace mpm {
+//! Velocity update type
+//! Flip: fluid-implicit-particle (acceleration update)
+//! Pic: particle-in-cell (velocity update)
+//! Blend: 95% flip and 5% pic
+//! Tpic: Taylor pic
+//! Apic: Affine pic
+std::map<std::string, mpm::VelocityUpdate> VelocityUpdateType = {
+    {"flip", mpm::VelocityUpdate::FLIP},
+    {"pic", mpm::VelocityUpdate::PIC},
+    {"blend", mpm::VelocityUpdate::Blend},
+    {"tpic", mpm::VelocityUpdate::TPIC},
+    {"apic", mpm::VelocityUpdate::APIC}};
+
 // 2D Explicit MPM
 static Register<mpm::MPM, mpm::MPMExplicit<2>, const std::shared_ptr<mpm::IO>&>
     mpm_explicit_2d("MPMExplicit2D");

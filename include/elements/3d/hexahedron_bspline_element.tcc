@@ -294,8 +294,8 @@ inline Eigen::Matrix<double, Tdim, Tdim>
         Eigen::Matrix<double, 3, 1>& particle_size,
         const Eigen::Matrix<double, 3, 3>& deformation_gradient) const {
   // Jacobian dx_i/dxi_j
-  return this->jacobian(xi, nodal_coordinates, particle_size,
-                        deformation_gradient);
+  return mpm::HexahedronElement<Tdim, 8>::jacobian(
+      xi, nodal_coordinates, particle_size, deformation_gradient);
 }
 //! Compute Bmatrix
 template <unsigned Tdim, unsigned Tpolynomial>

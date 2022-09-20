@@ -46,6 +46,9 @@ enum class VariableType { Scalar, Vector, Tensor };
 //! Cundall: Cundall damping
 enum class Damping { None, Cundall };
 
+//! Velocity update type
+extern std::map<std::string, mpm::VelocityUpdate> VelocityUpdateType;
+
 //! MPMBase class
 //! \brief A class that implements the fully base one phase mpm
 //! \details A Base MPM class
@@ -258,7 +261,7 @@ class MPMBase : public MPM {
   //! Interface scheme
   std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
   //! Velocity update method
-  std::string velocity_update_{"flip"};
+  mpm::VelocityUpdate velocity_update_{mpm::VelocityUpdate::FLIP};
   //! Gravity
   Eigen::Matrix<double, Tdim, 1> gravity_;
   //! Mesh object

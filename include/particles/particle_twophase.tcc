@@ -364,7 +364,7 @@ void mpm::TwoPhaseParticle<Tdim>::compute_mass() noexcept {
 //! Map particle mass and momentum to nodes
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::map_mass_momentum_to_nodes(
-    const std::string& velocity_update) noexcept {
+    mpm::VelocityUpdate velocity_update) noexcept {
   mpm::Particle<Tdim>::map_mass_momentum_to_nodes(velocity_update);
   this->map_liquid_mass_momentum_to_nodes();
 }
@@ -643,7 +643,7 @@ inline void mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force() noexcept {
 // liquid phase
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_position(
-    double dt, const std::string& velocity_update) noexcept {
+    double dt, mpm::VelocityUpdate velocity_update) noexcept {
   mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update);
   this->compute_updated_liquid_velocity(dt, velocity_update);
 }
@@ -679,11 +679,11 @@ bool mpm::TwoPhaseParticle<Tdim>::map_pressure_to_nodes(
 // Compute updated velocity of the liquid phase based on nodal velocity
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
-    double dt, const std::string& velocity_update) noexcept {
+    double dt, mpm::VelocityUpdate velocity_update) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
-  if (velocity_update == "flip") {
+  if (velocity_update == mpm::VelocityUpdate::FLIP) {
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
@@ -694,7 +694,7 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
 
     // Update particle velocity from interpolated nodal acceleration
     this->liquid_velocity_.noalias() += acceleration * dt;
-  } else if (velocity_update == "blend") {
+  } else if (velocity_update == mpm::VelocityUpdate::Blend) {
     // Get interpolated nodal acceleration and velocity
     Eigen::Matrix<double, Tdim, 1> velocity =
         Eigen::Matrix<double, Tdim, 1>::Zero();

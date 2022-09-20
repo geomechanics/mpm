@@ -181,9 +181,9 @@ TEST_CASE("Interface functions are checked", "[interface]") {
 
   // Compute displacements of next time step with dt = 0.05
   const double dt = 0.05;
-  particle1->compute_updated_position(dt, "flip");
-  particle2->compute_updated_position(dt, "flip");
-  particle3->compute_updated_position(dt, "flip");
+  particle1->compute_updated_position(dt, mpm::VelocityUpdate::FLIP);
+  particle2->compute_updated_position(dt, mpm::VelocityUpdate::FLIP);
+  particle3->compute_updated_position(dt, mpm::VelocityUpdate::FLIP);
 
   // Map multimaterial displacements to nodes
   particle1->map_multimaterial_displacements_to_nodes();

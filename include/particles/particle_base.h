@@ -155,7 +155,8 @@ class ParticleBase {
   //! Map particle mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   virtual void map_mass_momentum_to_nodes(
-      const std::string& velocity_update = "flip") noexcept = 0;
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept = 0;
 
   //! Map multimaterial properties to nodes
   virtual void map_multimaterial_mass_momentum_to_nodes() noexcept = 0;
@@ -293,7 +294,8 @@ class ParticleBase {
 
   //! Compute updated position
   virtual void compute_updated_position(
-      double dt, const std::string& velocity_update = "flip") noexcept = 0;
+      double dt, mpm::VelocityUpdate velocity_update =
+                     mpm::VelocityUpdate::FLIP) noexcept = 0;
 
   //! Return scalar data of particles
   //! \param[in] property Property string

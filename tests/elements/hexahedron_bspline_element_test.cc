@@ -1,5 +1,4 @@
 // hexahedron element test
-#include <iostream>
 #include <memory>
 
 #include "catch.hpp"

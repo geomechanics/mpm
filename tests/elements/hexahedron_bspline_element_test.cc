@@ -1585,6 +1585,16 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(46) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(47) == Approx(0).epsilon(Tolerance));
 
+          // Check linear reproduction property
+          Eigen::Matrix<double, Dim, 1> rep_coords;
+          rep_coords.setZero();
+          for (unsigned i = 0; i < shapefn.size(); i++) {
+            rep_coords.noalias() +=
+                shapefn(i) * nodal_coords.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(rep_coords(j) == Approx(coords(j)).epsilon(Tolerance));
+
           // Check gradient of shape functions
           auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 48);
@@ -1607,6 +1617,29 @@ TEST_CASE("Hexahedron bspline elements are checked",
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check zero gradient sum property
+          Eigen::Matrix<double, Dim, 1> grad_sum;
+          grad_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            grad_sum.noalias() += gradsf.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(grad_sum(j) == Approx(0.0).epsilon(Tolerance));
+
+          // Check identity tensor product property
+          Eigen::Matrix<double, Dim, Dim> identity =
+              Eigen::Matrix<double, Dim, Dim>::Identity();
+          Eigen::Matrix<double, Dim, Dim> identity_sum;
+          identity_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            identity_sum.noalias() +=
+                nodal_coords.row(i).transpose() * gradsf.row(i);
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            for (unsigned k = 0; k < Dim; k++)
+              REQUIRE(identity_sum(j, k) ==
+                      Approx(identity(j, k)).epsilon(Tolerance));
         }
 
         // Coordinates is (0.5,-0.5,0.5) after upgrade
@@ -1670,6 +1703,17 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(46) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(47) == Approx(0).epsilon(Tolerance));
 
+          // Check linear reproduction property
+          Eigen::Matrix<double, Dim, 1> rep_coords;
+          rep_coords.setZero();
+          for (unsigned i = 0; i < shapefn.size(); i++) {
+            rep_coords.noalias() +=
+                shapefn(i) * nodal_coords.row(i).transpose();
+          }
+          // FIXME: 3D reproduction fails
+          // for (unsigned j = 0; j < Dim; j++)
+          //   REQUIRE(rep_coords(j) == Approx(coords(j)).epsilon(Tolerance));
+
           // Check gradient of shape functions
           auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 48);
@@ -1696,6 +1740,29 @@ TEST_CASE("Hexahedron bspline elements are checked",
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check zero gradient sum property
+          Eigen::Matrix<double, Dim, 1> grad_sum;
+          grad_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            grad_sum.noalias() += gradsf.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(grad_sum(j) == Approx(0.0).epsilon(Tolerance));
+
+          // Check identity tensor product property
+          Eigen::Matrix<double, Dim, Dim> identity =
+              Eigen::Matrix<double, Dim, Dim>::Identity();
+          Eigen::Matrix<double, Dim, Dim> identity_sum;
+          identity_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            identity_sum.noalias() +=
+                nodal_coords.row(i).transpose() * gradsf.row(i);
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            for (unsigned k = 0; k < Dim; k++)
+              REQUIRE(identity_sum(j, k) ==
+                      Approx(identity(j, k)).epsilon(Tolerance));
         }
       }
     }
@@ -1953,6 +2020,16 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(34) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(35) == Approx(0).epsilon(Tolerance));
 
+          // Check linear reproduction property
+          Eigen::Matrix<double, Dim, 1> rep_coords;
+          rep_coords.setZero();
+          for (unsigned i = 0; i < shapefn.size(); i++) {
+            rep_coords.noalias() +=
+                shapefn(i) * nodal_coords.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(rep_coords(j) == Approx(coords(j)).epsilon(Tolerance));
+
           // Check gradient of shape functions
           auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 36);
@@ -1973,6 +2050,29 @@ TEST_CASE("Hexahedron bspline elements are checked",
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check zero gradient sum property
+          Eigen::Matrix<double, Dim, 1> grad_sum;
+          grad_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            grad_sum.noalias() += gradsf.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(grad_sum(j) == Approx(0.0).epsilon(Tolerance));
+
+          // Check identity tensor product property
+          Eigen::Matrix<double, Dim, Dim> identity =
+              Eigen::Matrix<double, Dim, Dim>::Identity();
+          Eigen::Matrix<double, Dim, Dim> identity_sum;
+          identity_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            identity_sum.noalias() +=
+                nodal_coords.row(i).transpose() * gradsf.row(i);
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            for (unsigned k = 0; k < Dim; k++)
+              REQUIRE(identity_sum(j, k) ==
+                      Approx(identity(j, k)).epsilon(Tolerance));
         }
 
         // Coordinates is (0.5,-0.5,0.5) after upgrade
@@ -2024,6 +2124,18 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(34) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(35) == Approx(0).epsilon(Tolerance));
 
+          // Check linear reproduction property
+          Eigen::Matrix<double, Dim, 1> rep_coords;
+          rep_coords.setZero();
+          for (unsigned i = 0; i < shapefn.size(); i++) {
+            rep_coords.noalias() +=
+                shapefn(i) * nodal_coords.row(i).transpose();
+          }
+
+          // FIXME: 3D reproduction fails
+          // for (unsigned j = 0; j < Dim; j++)
+          //   REQUIRE(rep_coords(j) == Approx(coords(j)).epsilon(Tolerance));
+
           // Check gradient of shape functions
           auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 36);
@@ -2046,6 +2158,29 @@ TEST_CASE("Hexahedron bspline elements are checked",
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check zero gradient sum property
+          Eigen::Matrix<double, Dim, 1> grad_sum;
+          grad_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            grad_sum.noalias() += gradsf.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(grad_sum(j) == Approx(0.0).epsilon(Tolerance));
+
+          // Check identity tensor product property
+          Eigen::Matrix<double, Dim, Dim> identity =
+              Eigen::Matrix<double, Dim, Dim>::Identity();
+          Eigen::Matrix<double, Dim, Dim> identity_sum;
+          identity_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            identity_sum.noalias() +=
+                nodal_coords.row(i).transpose() * gradsf.row(i);
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            for (unsigned k = 0; k < Dim; k++)
+              REQUIRE(identity_sum(j, k) ==
+                      Approx(identity(j, k)).epsilon(Tolerance));
         }
       }
     }
@@ -2262,6 +2397,16 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(25) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(26) == Approx(0).epsilon(Tolerance));
 
+          // Check linear reproduction property
+          Eigen::Matrix<double, Dim, 1> rep_coords;
+          rep_coords.setZero();
+          for (unsigned i = 0; i < shapefn.size(); i++) {
+            rep_coords.noalias() +=
+                shapefn(i) * nodal_coords.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(rep_coords(j) == Approx(coords(j)).epsilon(Tolerance));
+
           // Check gradient of shape functions
           auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 27);
@@ -2281,6 +2426,29 @@ TEST_CASE("Hexahedron bspline elements are checked",
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check zero gradient sum property
+          Eigen::Matrix<double, Dim, 1> grad_sum;
+          grad_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            grad_sum.noalias() += gradsf.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(grad_sum(j) == Approx(0.0).epsilon(Tolerance));
+
+          // Check identity tensor product property
+          Eigen::Matrix<double, Dim, Dim> identity =
+              Eigen::Matrix<double, Dim, Dim>::Identity();
+          Eigen::Matrix<double, Dim, Dim> identity_sum;
+          identity_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            identity_sum.noalias() +=
+                nodal_coords.row(i).transpose() * gradsf.row(i);
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            for (unsigned k = 0; k < Dim; k++)
+              REQUIRE(identity_sum(j, k) ==
+                      Approx(identity(j, k)).epsilon(Tolerance));
         }
 
         // Coordinates is (0.5,-0.5,0.5) after upgrade
@@ -2323,6 +2491,18 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(25) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(26) == Approx(0).epsilon(Tolerance));
 
+          // Check linear reproduction property
+          Eigen::Matrix<double, Dim, 1> rep_coords;
+          rep_coords.setZero();
+          for (unsigned i = 0; i < shapefn.size(); i++) {
+            rep_coords.noalias() +=
+                shapefn(i) * nodal_coords.row(i).transpose();
+          }
+
+          // FIXME: 3D reproduction fails
+          // for (unsigned j = 0; j < Dim; j++)
+          //   REQUIRE(rep_coords(j) == Approx(coords(j)).epsilon(Tolerance));
+
           // Check gradient of shape functions
           auto gradsf = hex->grad_shapefn(coords, zero, zero_matrix);
           REQUIRE(gradsf.rows() == 27);
@@ -2342,6 +2522,29 @@ TEST_CASE("Hexahedron bspline elements are checked",
             for (unsigned j = 0; j < gradsf.cols(); ++j)
               REQUIRE(gradsf(i, j) ==
                       Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+          // Check zero gradient sum property
+          Eigen::Matrix<double, Dim, 1> grad_sum;
+          grad_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            grad_sum.noalias() += gradsf.row(i).transpose();
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            REQUIRE(grad_sum(j) == Approx(0.0).epsilon(Tolerance));
+
+          // Check identity tensor product property
+          Eigen::Matrix<double, Dim, Dim> identity =
+              Eigen::Matrix<double, Dim, Dim>::Identity();
+          Eigen::Matrix<double, Dim, Dim> identity_sum;
+          identity_sum.setZero();
+          for (unsigned i = 0; i < gradsf.rows(); i++) {
+            identity_sum.noalias() +=
+                nodal_coords.row(i).transpose() * gradsf.row(i);
+          }
+          for (unsigned j = 0; j < Dim; j++)
+            for (unsigned k = 0; k < Dim; k++)
+              REQUIRE(identity_sum(j, k) ==
+                      Approx(identity(j, k)).epsilon(Tolerance));
         }
       }
     }

@@ -42,7 +42,7 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
 //! Compute nodal kinematics - map mass and momentum to nodes
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
-    const std::string& velocity_update, unsigned phase) {
+    mpm::VelocityUpdate velocity_update, unsigned phase) {
   // Assign mass and momentum to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
@@ -192,7 +192,7 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 // Compute particle kinematics
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
-    const std::string& velocity_update, unsigned phase,
+    mpm::VelocityUpdate velocity_update, unsigned phase,
     const std::string& damping_type, double damping_factor, unsigned step,
     bool update_defgrad) {
 

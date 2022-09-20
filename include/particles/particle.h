@@ -133,7 +133,8 @@ class Particle : public ParticleBase<Tdim> {
   //! Map particle mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   void map_mass_momentum_to_nodes(
-      const std::string& velocity_update = "flip") noexcept override;
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Map multimaterial properties to nodes
   void map_multimaterial_mass_momentum_to_nodes() noexcept override;
@@ -236,7 +237,8 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
   void compute_updated_position(
-      double dt, const std::string& velocity_update = "flip") noexcept override;
+      double dt, mpm::VelocityUpdate velocity_update =
+                     mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Assign material history variables
   //! \param[in] state_vars State variables

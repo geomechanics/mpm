@@ -24,7 +24,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! Compute nodal kinematics - map mass, momentum and inertia to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  inline void compute_nodal_kinematics(const std::string& velocity_update,
+  inline void compute_nodal_kinematics(mpm::VelocityUpdate velocity_update,
                                        unsigned phase) override;
 
   //! Compute stress and strain
@@ -51,7 +51,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
   //! \param[in] update_defgrad Update deformation gradient
-  inline void compute_particle_kinematics(const std::string& velocity_update,
+  inline void compute_particle_kinematics(mpm::VelocityUpdate velocity_update,
                                           unsigned phase,
                                           const std::string& damping_type,
                                           double damping_factor, unsigned step,
@@ -60,7 +60,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  inline void postcompute_nodal_kinematics(const std::string& velocity_update,
+  inline void postcompute_nodal_kinematics(mpm::VelocityUpdate velocity_update,
                                            unsigned phase) override;
 
   //! Stress update scheme

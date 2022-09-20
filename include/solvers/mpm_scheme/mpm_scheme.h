@@ -25,7 +25,7 @@ class MPMScheme {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   virtual inline void compute_nodal_kinematics(
-      const std::string& velocity_update, unsigned phase);
+      mpm::VelocityUpdate velocity_update, unsigned phase);
 
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
@@ -69,7 +69,7 @@ class MPMScheme {
   //! \param[in] damping_factor Value of critical damping
   //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
-      const std::string& velocity_update, unsigned phase,
+      mpm::VelocityUpdate velocity_update, unsigned phase,
       const std::string& damping_type, double damping_factor, unsigned step,
       bool update_defgrad);
 
@@ -77,7 +77,7 @@ class MPMScheme {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   virtual inline void postcompute_nodal_kinematics(
-      const std::string& velocity_update, unsigned phase) = 0;
+      mpm::VelocityUpdate velocity_update, unsigned phase) = 0;
 
   //! Compute particle location
   //! \param[in] locate_particles Flag to enable locate particles, if set to

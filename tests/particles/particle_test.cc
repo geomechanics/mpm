@@ -1244,7 +1244,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location from nodal velocity
-    REQUIRE_NOTHROW(particle->compute_updated_position(dt, "pic"));
+    REQUIRE_NOTHROW(
+        particle->compute_updated_position(dt, mpm::VelocityUpdate::PIC));
     // Check particle velocity
     velocity << 0., 0.894;
     for (unsigned i = 0; i < velocity.size(); ++i)
@@ -2880,7 +2881,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location based on nodal velocity
-    REQUIRE_NOTHROW(particle->compute_updated_position(dt, "pic"));
+    REQUIRE_NOTHROW(
+        particle->compute_updated_position(dt, mpm::VelocityUpdate::PIC));
     // Check particle velocity
     velocity << 0., 5.875, 10.769;
     for (unsigned i = 0; i < velocity.size(); ++i)

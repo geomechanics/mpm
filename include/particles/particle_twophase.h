@@ -72,7 +72,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map particle mass and momentum to nodes (both solid and liquid)
   //! \param[in] velocity_update Method to update nodal velocity
   void map_mass_momentum_to_nodes(
-      const std::string& velocity_update = "flip") noexcept override;
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
@@ -89,7 +90,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
   void compute_updated_position(
-      double dt, const std::string& velocity_update = "flip") noexcept override;
+      double dt, mpm::VelocityUpdate velocity_update =
+                     mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Assign velocity to the particle liquid phase
   //! \param[in] velocity A vector of particle liquid phase velocity
@@ -236,7 +238,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! \param[in] dt Analysis time step
   //! \retval status Compute status
   virtual void compute_updated_liquid_velocity(
-      double dt, const std::string& velocity_update = "flip") noexcept;
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP) noexcept;
 
  protected:
   //! particle id

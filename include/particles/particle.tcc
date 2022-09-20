@@ -587,12 +587,13 @@ void mpm::Particle<Tdim>::compute_mass() noexcept {
 //! Map particle mass and momentum to nodes
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
-    const std::string& velocity_update) noexcept {
+    mpm::VelocityUpdate velocity_update) noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 
   // Initialise Mapping matrix if necessary
-  if (velocity_update == "tpic" || velocity_update == "apic") {
+  if (velocity_update == mpm::VelocityUpdate::TPIC ||
+      velocity_update == mpm::VelocityUpdate::APIC) {
     if (mapping_matrix_.rows() != Tdim) {
       mapping_matrix_.resize(Tdim, Tdim);
       mapping_matrix_.setZero();
@@ -601,7 +602,7 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
 
   // Shape tensor computation for APIC
   Eigen::MatrixXd shape_tensor;
-  if (velocity_update == "apic") {
+  if (velocity_update == mpm::VelocityUpdate::APIC) {
     shape_tensor.resize(Tdim, Tdim);
     shape_tensor.setZero();
     for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -617,11 +618,11 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
     VectorDim map_velocity = velocity_;
 
     // For TPIC add additional components
-    if (velocity_update == "tpic")
+    if (velocity_update == mpm::VelocityUpdate::TPIC)
       map_velocity.noalias() +=
           mapping_matrix_ * (nodes_[i]->coordinates() - this->coordinates_);
     // For APIC add additional components
-    else if (velocity_update == "apic")
+    else if (velocity_update == mpm::VelocityUpdate::APIC)
       map_velocity.noalias() += mapping_matrix_ * shape_tensor.inverse() *
                                 (nodes_[i]->coordinates() - this->coordinates_);
 
@@ -904,7 +905,7 @@ void mpm::Particle<Tdim>::map_traction_force() noexcept {
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(
-    double dt, const std::string& velocity_update) noexcept {
+    double dt, mpm::VelocityUpdate velocity_update) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
   // Get interpolated nodal velocity
@@ -916,7 +917,8 @@ void mpm::Particle<Tdim>::compute_updated_position(
         shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
 
   // Acceleration update
-  if (velocity_update == "flip" || velocity_update == "blend") {
+  if (velocity_update == mpm::VelocityUpdate::FLIP ||
+      velocity_update == mpm::VelocityUpdate::Blend) {
     // Get interpolated nodal acceleration
     Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
         Eigen::Matrix<double, Tdim, 1>::Zero();
@@ -933,14 +935,14 @@ void mpm::Particle<Tdim>::compute_updated_position(
 
   // Additional processes for blend, tpic, and apic schemes
   // Blend update
-  if (velocity_update == "blend")
+  if (velocity_update == mpm::VelocityUpdate::Blend)
     this->velocity_ = 0.95 * this->velocity_ + 0.05 * nodal_velocity;
   // Assing mapping matrix as velocity gradient if TPIC is used
-  else if (velocity_update == "tpic")
+  else if (velocity_update == mpm::VelocityUpdate::TPIC)
     mapping_matrix_ = this->compute_velocity_gradient(
         this->dn_dx_, mpm::ParticlePhase::SinglePhase);
   // Assing mapping matrix as B-matrix if APIC is used
-  else if (velocity_update == "apic")
+  else if (velocity_update == mpm::VelocityUpdate::APIC)
     mapping_matrix_ = this->compute_apic_mapping_matrix(
         this->shapefn_, mpm::ParticlePhase::SinglePhase);
 

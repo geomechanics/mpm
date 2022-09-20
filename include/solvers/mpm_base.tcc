@@ -63,20 +63,22 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
     }
 
     // Velocity update
+    std::string vel_update_type;
     try {
       if (analysis_["velocity_update"].is_boolean()) {
         bool v_update = analysis_["velocity_update"].template get<bool>();
-        velocity_update_ = (v_update) ? "pic" : "flip";
+        vel_update_type = (v_update) ? "pic" : "flip";
       } else
-        velocity_update_ =
+        vel_update_type =
             analysis_["velocity_update"].template get<std::string>();
     } catch (std::exception& exception) {
       console_->warn(
           "{} #{}: Velocity update method is not specified, using default "
           "as \'flip\'",
           __FILE__, __LINE__, exception.what());
-      velocity_update_ = "flip";
+      vel_update_type = "flip";
     }
+    velocity_update_ = VelocityUpdateType.at(vel_update_type);
 
     // Damping
     try {

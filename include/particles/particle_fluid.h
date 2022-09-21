@@ -45,7 +45,8 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
   void compute_updated_position(
-      double dt, const std::string& velocity_update = "flip") noexcept override;
+      double dt, mpm::VelocityUpdate velocity_update =
+                     mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Serialize
   //! \retval buffer Serialized buffer data

@@ -1158,7 +1158,8 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& mpm_scheme,
                          const std::string& file_name,
                          const std::string& free_surface_type,
-                         const std::string& linear_solver_type) {
+                         const std::string& linear_solver_type,
+                         const std::string& vel_update) {
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
@@ -1264,7 +1265,7 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
-        {"velocity_update", "apic"},
+        {"velocity_update", vel_update},
         {"locate_particles", true},
         {"pressure_smoothing", true},
         {"pore_pressure_smoothing", true},

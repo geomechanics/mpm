@@ -64,7 +64,8 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& mpm_scheme,
                          const std::string& file_name,
                          const std::string& free_surface_type = "none",
-                         const std::string& linear_solver_type = "none");
+                         const std::string& linear_solver_type = "none",
+                         const std::string& vel_update = "flip");
 
 // Write JSON Entity Set
 bool write_entity_set();

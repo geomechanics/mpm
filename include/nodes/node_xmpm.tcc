@@ -505,6 +505,10 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::assign_discontinuity_enrich(
         enrich_type_ = mpm::NodeEnrichType::double_enriched;
         discontinuity_id_[1] = dis_id;
       }
+    } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched &&
+               (discontinuity_id_[0] == dis_id ||
+                discontinuity_id_[1] == dis_id)) {
+      ;
     } else {
       console_->error("Multiple discontinuities are detected at the node");
     }
@@ -514,7 +518,8 @@ void mpm::NodeXMPM<Tdim, Tdof, Tnphases>::assign_discontinuity_enrich(
       enrich_type_ = mpm::NodeEnrichType::regular;
 
     } else if (enrich_type_ == mpm::NodeEnrichType::double_enriched) {
-      enrich_type_ = mpm::NodeEnrichType::single_enriched;
+      if (discontinuity_id_[0] == dis_id || discontinuity_id_[1] == dis_id)
+        enrich_type_ = mpm::NodeEnrichType::single_enriched;
       if (discontinuity_id_[0] == dis_id)
         discontinuity_id_[0] = discontinuity_id_[1];
     }

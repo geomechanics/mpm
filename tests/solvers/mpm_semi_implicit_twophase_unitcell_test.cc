@@ -20,9 +20,10 @@ TEST_CASE(
   const std::string mpm_scheme = "usf";
   const std::string fsd_type = "geometry";
   const std::string lin_solver_type = "IterativeEigen";
+  const std::string velocity_update = "apic";
   REQUIRE(mpm_test::write_json_unitcell_twophase(2, analysis, mpm_scheme, fname,
-                                                 fsd_type,
-                                                 lin_solver_type) == true);
+                                                 fsd_type, lin_solver_type,
+                                                 velocity_update) == true);
 
   // Write Mesh
   REQUIRE(mpm_test::write_mesh_2d_unitcell() == true);
@@ -83,9 +84,10 @@ TEST_CASE(
   const std::string mpm_scheme = "usf";
   const std::string fsd_type = "geometry";
   const std::string lin_solver_type = "IterativeEigen";
+  const std::string velocity_update = "flip";
   REQUIRE(mpm_test::write_json_unitcell_twophase(3, analysis, mpm_scheme, fname,
-                                                 fsd_type,
-                                                 lin_solver_type) == true);
+                                                 fsd_type, lin_solver_type,
+                                                 velocity_update) == true);
 
   // Write Mesh
   REQUIRE(mpm_test::write_mesh_3d_unitcell() == true);

@@ -61,6 +61,16 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
                            .at("verbosity")
                            .template get<unsigned>();
       }
+
+      // Milne device parameters
+      if (analysis_["scheme_settings"].contains("error_control"))
+        error_control_ = analysis_["scheme_settings"]
+                             .at("error_control")
+                             .template get<bool>();
+      if (analysis_["scheme_settings"].contains("milne_alpha"))
+        milne_alpha_ = analysis_["scheme_settings"]
+                           .at("milne_alpha")
+                           .template get<double>();
     }
 
     // Initialise convergence criteria
@@ -204,6 +214,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       convergence = residual_criterion_->check_convergence(
           assembler_->residual_force_rhs_vector(), true);
 
+    // Initialise error control
+    if (error_control_) this->initialise_error_control();
+
     // Iterations
     while (!convergence && current_iteration_ < max_iteration_) {
       // Initialisation of Newton-Raphson iteration
@@ -230,6 +243,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       if (convergence || current_iteration_ == max_iteration_)
         this->finalise_newton_raphson_iteration();
     }
+
+    // Apply Milne device
+    if (error_control_) this->finalise_error_control();
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);
@@ -515,4 +531,22 @@ void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
 
   // Particle stress, strain and volume
   mpm_scheme_->update_particle_stress_strain_volume();
+}
+
+// Initialise error control for Milne's device
+template <unsigned Tdim>
+void mpm::MPMImplicit<Tdim>::initialise_error_control() {
+  // Compute new nodal acceleration explicitly
+
+  // Perform trapezoidal rule to integrate velocity
+
+  // Compute Milne's delta
+}
+
+// Finalise error control for Milne's device
+template <unsigned Tdim>
+void mpm::MPMImplicit<Tdim>::finalise_error_control() {
+  // Compute Milne's estimator
+
+  // Perform time step modification
 }

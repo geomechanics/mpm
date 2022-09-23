@@ -65,6 +65,14 @@ class MPMImplicit : public MPMBase<Tdim> {
   //! Finalisation of Newton-Raphson iteration
   //! \ingroup Implicit
   void finalise_newton_raphson_iteration();
+
+  //! Initialise error control for Milne's device
+  //! \ingroup Implicit
+  void initialise_error_control();
+
+  //! Finalise error control for Milne's device
+  //! \ingroup Implicit
+  void finalise_error_control();
   /**@}*/
 
   //! Class private variables
@@ -152,6 +160,11 @@ class MPMImplicit : public MPMBase<Tdim> {
   std::shared_ptr<mpm::ConvergenceCriterionBase> disp_criterion_{nullptr};
   //! Newton-Raphson residual convergence
   std::shared_ptr<mpm::ConvergenceCriterionBase> residual_criterion_{nullptr};
+
+  //! Error control by Milne Device
+  bool error_control_{false};
+  //! Parameter alpha of Milne Device
+  double milne_alpha_{0.0001};
   /**@}*/
 
 };  // MPMImplicit class

@@ -362,6 +362,7 @@ class NodeBase {
 
   //! Update velocity and acceleration by Newmark scheme
   //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
   //! \param[in] newmark_beta Parameter beta of Newmark scheme
   //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
   //! \param[in] dt Time-step
@@ -369,6 +370,17 @@ class NodeBase {
                                                     double newmark_beta,
                                                     double newmark_gamma,
                                                     double dt) = 0;
+
+  //! Compute predictor displacement by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] newmark_beta Parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
+  //! \param[in] dt Time-step
+  virtual void compute_predictor_displacement_newmark(unsigned phase,
+                                                      double newmark_beta,
+                                                      double newmark_gamma,
+                                                      double dt) = 0;
 
   //! Assign displacement constraint for implicit solver
   //! Directions can take values between 0 and Dim * Nphases

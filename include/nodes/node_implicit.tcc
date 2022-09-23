@@ -5,6 +5,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise_implicit() noexcept {
   // Specific variables for implicit solver
   inertia_.setZero();
   displacement_.setZero();
+  predictor_displacement_.setZero();
 }
 
 //! Initialise nodal force during Newton-Raphson iteration
@@ -101,4 +102,60 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_displacement_increment(
     displacement_.col(phase)(i) +=
         displacement_increment(nactive_node * i + active_id_);
   }
+}
+
+//! Update displacement by explicit Newmark scheme
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::compute_predictor_displacement_newmark(
+    unsigned phase, double newmark_beta, double newmark_gamma, double dt) {
+  const double tolerance = 1.E-16;
+  //! Compute velocity and acceleration at the previous time step
+  VectorDim previous_velocity = VectorDim::Zero();
+  VectorDim previous_acceleration = VectorDim::Zero();
+  if (mass_(phase) > tolerance) {
+    previous_velocity = momentum_.col(phase) / mass_(phase);
+    previous_acceleration = inertia_.col(phase) / mass_(phase);
+  }
+
+  // Compute new acceleration explicitly
+  VectorDim explicit_acceleration =
+      (this->external_force_.col(phase) + this->internal_force_.col(phase)) /
+      this->mass_(phase);
+
+  // Compute new displacement using Newmark
+  predictor_displacement_.col(phase).noalias() +=
+      dt * previous_velocity +
+      dt * dt / 2.0 *
+          ((1 - 2.0 * newmark_beta) * previous_acceleration +
+           2.0 * newmark_beta * explicit_acceleration);
+
+  try {
+    // Loop over displacement constraint
+    for (const auto& constraint : this->displacement_constraints_) {
+      // Direction value in the constraint (0, Dim * Nphases)
+      const unsigned dir = constraint.first;
+      // Direction: dir % Tdim (modulus)
+      const auto direction = static_cast<unsigned>(dir % Tdim);
+      // Phase: Integer value of division (dir / Tdim)
+      const auto cphase = static_cast<unsigned>(dir / Tdim);
+      // Exit loop if phase is not the same
+      if (cphase != phase) continue;
+
+      if (!generic_boundary_constraints_) {
+        // Velocity constraints are applied on Cartesian boundaries
+        predictor_displacement_.col(phase)(direction) = constraint.second;
+      } else {
+        throw std::runtime_error(
+            "Rotational function to impose displacement boundary is not yet "
+            "available!");
+      }
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  }
+
+  // Check to see if value is below threshold
+  for (unsigned i = 0; i < predictor_displacement_.rows(); ++i)
+    if (std::abs(predictor_displacement_.col(phase)(i)) < 1.E-15)
+      predictor_displacement_.col(phase)(i) = 0.;
 }

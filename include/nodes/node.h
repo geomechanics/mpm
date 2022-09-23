@@ -367,12 +367,24 @@ class Node : public NodeBase<Tdim> {
 
   //! Update velocity and acceleration by Newmark scheme
   //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
   //! \param[in] newmark_beta Parameter beta of Newmark scheme
   //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
   //! \param[in] dt Time-step
   void update_velocity_acceleration_newmark(unsigned phase, double newmark_beta,
                                             double newmark_gamma,
                                             double dt) override;
+
+  //! Compute predictor displacement by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] newmark_beta Parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
+  //! \param[in] dt Time-step
+  void compute_predictor_displacement_newmark(unsigned phase,
+                                              double newmark_beta,
+                                              double newmark_gamma,
+                                              double dt) override;
 
   //! Assign displacement constraint for implicit solver
   //! Directions can take values between 0 and Dim * Nphases
@@ -671,6 +683,8 @@ class Node : public NodeBase<Tdim> {
   Eigen::Matrix<double, Tdim, Tnphases> inertia_;
   //! Displacement
   Eigen::Matrix<double, Tdim, Tnphases> displacement_;
+  //! Predictor Displacement
+  Eigen::Matrix<double, Tdim, Tnphases> predictor_displacement_;
   //! Displacement constraints
   std::map<unsigned, double> displacement_constraints_;
   //! Mathematical function for displacement
@@ -683,8 +697,6 @@ class Node : public NodeBase<Tdim> {
    */
   //! Free surface
   bool free_surface_{false};
-  //! Signed distance
-  double signed_distance_;
   //! Interpolated density
   Eigen::Matrix<double, 1, Tnphases> density_;
   //! p^(t+1) - beta * p^(t)

@@ -49,6 +49,10 @@ inline bool mpm::ConvergenceCriterionSolution::check_convergence(
 
     if (mpi_rank == 0 && this->verbosity_ >= 2)
       console_->info("Solution norm: {}.", solution_norm);
+
+    // Save convergence norm
+    convergence_norm_ = solution_norm;
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }

@@ -64,6 +64,8 @@ class ConvergenceCriterionResidual : public mpm::ConvergenceCriterionBase {
   using ConvergenceCriterionBase::global_active_dof_;
   //! Rank to Global mapper
   using ConvergenceCriterionBase::rank_global_mapper_;
+  //! Convergence norm
+  using ConvergenceCriterionBase::convergence_norm_;
   //! Initial residuals
   double initial_residual_norm_;
 };

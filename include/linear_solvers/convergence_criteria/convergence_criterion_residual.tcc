@@ -58,6 +58,10 @@ inline bool mpm::ConvergenceCriterionResidual::check_convergence(
       console_->info("Residual norm: {}.", residual_norm);
       console_->info("Relative residual norm: {}.", relative_residual_norm);
     }
+
+    // Save convergence norm
+    convergence_norm_ = residual_norm;
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }

@@ -86,6 +86,9 @@ class ConvergenceCriterionBase {
   virtual inline bool check_convergence(const Eigen::VectorXd& vector,
                                         bool save_settings = false) = 0;
 
+  //! Function to return convergence norm
+  double convergence_norm() const { return convergence_norm_; };
+
  protected:
   //! Logger
   std::shared_ptr<spdlog::logger> console_;
@@ -99,6 +102,8 @@ class ConvergenceCriterionBase {
   unsigned global_active_dof_;
   //! Rank to Global mapper
   std::vector<int> rank_global_mapper_;
+  //! Convergence norm
+  double convergence_norm_{std::numeric_limits<double>::max()};
 };
 }  // namespace mpm
 

@@ -165,6 +165,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   bool error_control_{false};
   //! Parameter alpha of Milne Device
   double milne_alpha_{0.0001};
+  //! Milne's delta
+  double milne_delta_{0.0};
   /**@}*/
 
 };  // MPMImplicit class

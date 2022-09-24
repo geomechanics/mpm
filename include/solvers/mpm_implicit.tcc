@@ -536,17 +536,67 @@ void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
 // Initialise error control for Milne's device
 template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::initialise_error_control() {
-  // Compute new nodal acceleration explicitly
+  // Initialise MPI rank and size
+  int mpi_size = 1;
 
-  // Perform trapezoidal rule to integrate velocity
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
 
-  // Compute Milne's delta
+  // Reinitialise equilibrium equation
+  this->reinitialise_system_equation();
+
+  // Recompute nodal forces without acceleration term
+  mpm_scheme_->compute_forces(gravity_, phase_, step_,
+                              set_node_concentrated_force_, false);
+
+  // Perform MPI Sum for shared nodes to compute explicit accelerations
+#ifdef USE_MPI
+  // Run if there is more than a single MPI task
+  if (mpi_size > 1) {
+    // MPI all reduce external force
+    mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+        std::bind(&mpm::NodeBase<Tdim>::external_force, std::placeholders::_1,
+                  phase_),
+        std::bind(&mpm::NodeBase<Tdim>::update_external_force,
+                  std::placeholders::_1, false, phase_, std::placeholders::_2));
+    // MPI all reduce internal force
+    mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+        std::bind(&mpm::NodeBase<Tdim>::internal_force, std::placeholders::_1,
+                  phase_),
+        std::bind(&mpm::NodeBase<Tdim>::update_internal_force,
+                  std::placeholders::_1, false, phase_, std::placeholders::_2));
+  }
+#endif
+
+  // Compute new nodal kinematics using explicit Newmark scheme
+  mesh_->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Tdim>::compute_predictor_displacement_newmark,
+                std::placeholders::_1, phase_, newmark_beta_, newmark_gamma_,
+                dt_),
+      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+  // Update Milne's delta
+  double residual_norm = residual_criterion_->convergence_norm();
+  milne_delta_ = std::max(milne_delta_, milne_alpha_ * residual_norm);
 }
 
 // Finalise error control for Milne's device
 template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::finalise_error_control() {
   // Compute Milne's estimator
+  double kappa = mesh_->compute_error_estimate_displacement_newmark();
 
   // Perform time step modification
+  double epsilon = dt_ * milne_delta_;
+  if (kappa < 0.1 * epsilon)
+    dt_ *= 2.0;
+  else if (kappa > epsilon)
+    dt_ *= 0.5;
+
+  // TODO: Send out new dt to scheme
+
+  // TODO: Need to modify function write outputs and time loop to check time
+  // other than output_steps_
 }

@@ -360,6 +360,11 @@ class NodeBase {
   //! \param[in] phase Index corresponding to the phase
   virtual VectorDim displacement(unsigned phase) const = 0;
 
+  //! Return the predictor displacement
+  //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
+  virtual VectorDim predictor_displacement(unsigned phase) const = 0;
+
   //! Update velocity and acceleration by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] phase Index corresponding to the phase

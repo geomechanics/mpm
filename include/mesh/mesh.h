@@ -524,6 +524,19 @@ class Mesh {
   void initialise_nodal_properties();
 
   /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+
+  //! Compute milne estimator newmark
+  //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
+  double compute_error_estimate_displacement_newmark(
+      unsigned phase = mpm::ParticlePhase::SinglePhase) const;
+
+  /**@}*/
+
+  /**
    * \defgroup MultiPhase Functions dealing with multi-phase MPM
    */
   /**@{*/
@@ -735,6 +748,7 @@ class Mesh {
 }  // namespace mpm
 
 #include "mesh.tcc"
+#include "mesh_implicit.tcc"
 #include "mesh_multiphase.tcc"
 
 #endif  // MPM_MESH_H_

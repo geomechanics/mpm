@@ -365,6 +365,13 @@ class Node : public NodeBase<Tdim> {
     return displacement_.col(phase);
   };
 
+  //! Return the predictor displacement at a given node for a given phase
+  //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
+  VectorDim predictor_displacement(unsigned phase) const override {
+    return predictor_displacement_.col(phase);
+  };
+
   //! Update velocity and acceleration by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] phase Index corresponding to the phase

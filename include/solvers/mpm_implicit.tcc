@@ -547,7 +547,7 @@ void mpm::MPMImplicit<Tdim>::initialise_error_control() {
   // Reinitialise equilibrium equation
   this->reinitialise_system_equation();
 
-  // Recompute nodal forces without acceleration term
+  // Recompute nodal forces without inertial term
   mpm_scheme_->compute_forces(gravity_, phase_, step_,
                               set_node_concentrated_force_, false);
 
@@ -585,15 +585,38 @@ void mpm::MPMImplicit<Tdim>::initialise_error_control() {
 // Finalise error control for Milne's device
 template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::finalise_error_control() {
+  // Initialise MPI rank and size
+  int mpi_rank = 0;
+  int mpi_size = 1;
+
+#ifdef USE_MPI
+  // Get MPI rank
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
   // Compute Milne's estimator
   double kappa = mesh_->compute_error_estimate_displacement_newmark();
 
   // Perform time step modification
-  double epsilon = dt_ * milne_delta_;
-  if (kappa < 0.1 * epsilon)
-    dt_ *= 2.0;
-  else if (kappa > epsilon)
-    dt_ *= 0.5;
+  if (mpi_rank == 0) {
+    double epsilon = dt_ * milne_delta_;
+    if (kappa < 0.1 * epsilon)
+      dt_ *= 2.0;
+    else if (kappa > epsilon)
+      dt_ *= 0.5;
+  }
+
+#ifdef USE_MPI
+  // Run if there is more than a single MPI task
+  if (mpi_size > 1) {
+    MPI_Bcast(&dt_, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  }
+#endif
+
+  // Send out new dt to scheme
+  mpm_scheme_->assign_time_step(dt_);
 
   // TODO: Send out new dt to scheme
 

@@ -83,6 +83,10 @@ class MPMScheme {
   //! \retval scheme Stress update scheme
   virtual inline std::string scheme() const = 0;
 
+  //! Reassign time step
+  //! \param[in] dt Time step to be assigned
+  virtual inline void assign_time_step(double dt) { dt_ = dt; };
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

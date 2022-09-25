@@ -27,19 +27,20 @@ double mpm::Mesh<Tdim>::compute_error_estimate_displacement_newmark(
   if (mpi_size > 1) {
 #if USE_PETSC
     // Substract half squared norm from domain shared nodes
-    double halo_nodes_norm = 0;
-#pragma omp parallel for schedule(runtime) reduction(+ : halo_nodes_norm)
+    double halo_nodes_norm_squared = 0;
+#pragma omp parallel for schedule(runtime) reduction(+ : halo_nodes_norm_squared)
     for (auto nitr = domain_shared_nodes_.cbegin();
          nitr != domain_shared_nodes_.cend(); ++nitr) {
-      const double nrank = double(domain_shared_nodes_[i]->mpi_ranks().size());
+      const double nrank = double((*nitr)->mpi_ranks().size());
       const auto& displacement = (*nitr)->displacement(phase);
       const auto& pred_displacement = (*nitr)->predictor_displacement(phase);
-      halo_nodes_norm += (nrank - 1.0) / nrank *
-                         (displacement - pred_displacement).squaredNorm();
+      halo_nodes_norm_squared +=
+          (nrank - 1.0) / nrank *
+          (displacement - pred_displacement).squaredNorm();
     }
 
-    // Substract the multiple count of domain shared nodes
-    kappa = kappa - halo_nodes_norm;
+    // Substract the multiple counts of domain shared nodes
+    kappa = kappa - halo_nodes_norm_squared;
 
     // MPI All reduce kappa
     double global_kappa;

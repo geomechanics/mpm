@@ -757,8 +757,6 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
         // Transform to local coordinate
         Eigen::Matrix<double, Tdim, Tnphases> local_acceleration =
             inverse_rotation_matrix * this->acceleration_;
-        Eigen::Matrix<double, Tdim, Tnphases> local_velocity =
-            inverse_rotation_matrix * this->velocity_;
         // Normal and tangential acceleration
         acc_n = local_acceleration(dir_n, phase);
         acc_t = local_acceleration(dir_t, phase);

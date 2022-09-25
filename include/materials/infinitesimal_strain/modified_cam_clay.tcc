@@ -529,7 +529,6 @@ void mpm::ModifiedCamClay<Tdim>::compute_df_dsigma(
   // Get MCC parameters
   const double m_theta = (*state_vars).at("m_theta");
   const double pc = (*state_vars).at("pc");
-  const double pcc = (*state_vars).at("pcc");
   const double pcd = (*state_vars).at("pcd");
   // Compute the deviatoric stress
   Vector6d dev_stress = stress;
@@ -538,8 +537,6 @@ void mpm::ModifiedCamClay<Tdim>::compute_df_dsigma(
   double df_dp = 2 * p - pc - pcd;
   // Compute dF / dq
   double df_dq = 2 * q / std::pow(m_theta, 2);
-  // Compute dF / dpc
-  double df_dpc = -(p + pcc);
   // Compute dp / dSigma
   Vector6d dp_dsigma = -mpm::materials::dp_dsigma();
   // Compute dq / dSigma

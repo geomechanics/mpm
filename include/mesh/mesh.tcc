@@ -463,9 +463,7 @@ mpm::Index mpm::Mesh<Tdim>::nparticles(const std::string& particle_type) const {
 template <unsigned Tdim>
 mpm::Index mpm::Mesh<Tdim>::ncells_rank(bool active_cells) {
   unsigned ncells_rank = 0;
-
   int mpi_rank = 0;
-  int mpi_size = 1;
 #ifdef USE_MPI
   // Get number of MPI ranks
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);

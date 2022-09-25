@@ -182,6 +182,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 #endif
 #endif
 
+    // Reset solver convergence
+    solver_convergence_ = true;
+
     // Inject particles
     mesh_->inject_particles(step_ * dt_);
 
@@ -463,10 +466,12 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
   bool status = true;
   try {
     // Solve matrix equation and assign solution to assembler
+    bool converged = true;
     assembler_->assign_displacement_increment(
         linear_solver_["displacement"]->solve(
             assembler_->stiffness_matrix(),
             assembler_->residual_force_rhs_vector(), solver_convergence_));
+    if (solver_convergence_) solver_convergence_ = converged;
 
     // Assign displacement increment to nodes
     mesh_->iterate_over_nodes_predicate(
@@ -596,8 +601,11 @@ void mpm::MPMImplicit<Tdim>::finalise_error_control() {
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 #endif
 
-  // Compute Milne's estimator
-  double kappa = mesh_->compute_error_estimate_displacement_newmark();
+  // Compute Milne's error estimator
+  const double kappa = mesh_->compute_error_estimate_displacement_newmark();
+
+  // Compute critical time step newmark
+  const double time_crit = mesh_->critical_time_step_newmark();
 
   // Perform time step modification
   double dt = dt_;
@@ -612,8 +620,7 @@ void mpm::MPMImplicit<Tdim>::finalise_error_control() {
     }
 
     // Check if dt is larger than the scheme's critical time step
-    const double time_crit = mesh_->critical_time_step_newmark();
-    if (dt > time_crit) dt *= 0.5;
+    if ((dt > time_crit) || (!solver_convergence_)) dt *= 0.5;
   }
 
 #ifdef USE_MPI

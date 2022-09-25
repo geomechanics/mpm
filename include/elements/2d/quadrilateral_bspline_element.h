@@ -187,9 +187,11 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   //! \param[in] nodal_properties Vector determining node type for each
   //! dimension
+  //! \param[in] kernel_correction Apply Kernel correction at the boundary
   void initialise_bspline_connectivity_properties(
       const Eigen::MatrixXd& nodal_coordinates,
-      const std::vector<std::vector<unsigned>>& nodal_properties) override;
+      const std::vector<std::vector<unsigned>>& nodal_properties,
+      bool kernel_correction = false) override;
 
   //! Return the degree of shape function
   mpm::ElementDegree degree() const override {
@@ -231,6 +233,11 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
     return BSplineKnotVector[node_type];
   }
 
+  //! Function to check if particle is lying on the region where kernel
+  //! correction is necessary
+  //! \param[in] xi given local coordinates
+  bool kernel_correction_region(const VectorDim& xi) const;
+
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Number of connectivity
@@ -243,6 +250,8 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   std::vector<std::vector<unsigned>> node_type_;
   //! BSpline knot vector for different node type
   std::vector<std::vector<double>> BSplineKnotVector;
+  //! Boolean to identify kernel correction
+  bool kernel_correction_{false};
 };
 
 }  // namespace mpm

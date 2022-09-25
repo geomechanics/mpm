@@ -1813,6 +1813,17 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                                  .template get<std::string>();
         assert(sf_type == "BSPLINE");
 
+        // Apply kernel correction
+        bool kernel_correction = true;
+        if (mesh_props["nonlocal_mesh_properties"].contains(
+                "kernel_correction")) {
+          kernel_correction =
+              mesh_props["nonlocal_mesh_properties"]["kernel_correction"]
+                  .template get<bool>();
+        }
+        nonlocal_properties.insert(std::pair<std::string, bool>(
+            "kernel_correction", kernel_correction));
+
         // Iterate over node type
         for (const auto& node_type :
              mesh_props["nonlocal_mesh_properties"]["node_types"]) {

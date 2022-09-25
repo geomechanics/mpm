@@ -767,6 +767,8 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     REQUIRE(bspline_cell->add_node(15, node15) == true);
     REQUIRE(bspline_cell->nnodes() == 16);
 
+    nonlocal_properties.insert(
+        std::pair<std::string, bool>("kernel_correction", true));
     REQUIRE(bspline_cell->initialiase_nonlocal(nonlocal_properties) == true);
     REQUIRE(bspline_cell->nfunctions_local() == 4);
 

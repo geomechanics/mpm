@@ -75,7 +75,9 @@ class MPMSemiImplicitNavierStokes : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::mesh_;
   //! Materials
   using mpm::MPMBase<Tdim>::materials_;
-  //! Nonlocal neighbourhood
+  //! Nonlocal cell neighbourhood
+  using mpm::MPMBase<Tdim>::cell_neighbourhood_;
+  //! Nonlocal node neighbourhood
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
   //! Pressure smoothing
   bool pressure_smoothing_{false};
@@ -90,7 +92,7 @@ class MPMSemiImplicitNavierStokes : public MPMBase<Tdim> {
   //! Method to detect free surface detection
   std::string free_surface_detection_;
   //! Volume tolerance for free surface
-  double volume_tolerance_{0};
+  double fs_vol_tolerance_{0.25};
 
 };  // MPMSemiImplicit class
 }  // namespace mpm

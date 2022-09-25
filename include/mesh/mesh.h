@@ -538,10 +538,12 @@ class Mesh {
   //! \ingroup MultiPhase
   //! \param[in] method Type of method to use
   //! \param[in] volume_tolerance for volume_fraction approach
+  //! \param[in] cell_neighbourhood for nonlocal free surface detection
   //! \retval status Status of compute_free_surface
   bool compute_free_surface(
       const std::string& method = "density",
-      double volume_tolerance = std::numeric_limits<unsigned>::epsilon());
+      double volume_tolerance = std::numeric_limits<unsigned>::epsilon(),
+      unsigned cell_neighbourhood = 0);
 
   //! Compute free surface by density method
   //! \ingroup MultiPhase
@@ -549,9 +551,11 @@ class Mesh {
   //! & Soga, 2017) and density ratio comparison (Hamad, 2015). This method is
   //! fast, but less accurate.
   //! \param[in] volume_tolerance for volume_fraction approach
+  //! \param[in] cell_neighbourhood for nonlocal free surface detection
   //! \retval status Status of compute_free_surface
   bool compute_free_surface_by_density(
-      double volume_tolerance = std::numeric_limits<unsigned>::epsilon());
+      double volume_tolerance = std::numeric_limits<unsigned>::epsilon(),
+      unsigned cell_neighbourhood = 0);
 
   //! Compute free surface by geometry method
   //! \ingroup MultiPhase
@@ -561,9 +565,11 @@ class Mesh {
   //! 2017), (2) Density comparison approach as (Hamad, 2015), and (3) Geometry
   //! based approach as (Marrone et al. 2010)
   //! \param[in] volume_tolerance for volume_fraction approach
+  //! \param[in] cell_neighbourhood for nonlocal free surface detection
   //! \retval status Status of compute_free_surface
   bool compute_free_surface_by_geometry(
-      double volume_tolerance = std::numeric_limits<unsigned>::epsilon());
+      double volume_tolerance = std::numeric_limits<unsigned>::epsilon(),
+      unsigned cell_neighbourhood = 0);
 
   //! \ingroup MultiPhase
   //! \retval id_set Set of free surface node ids

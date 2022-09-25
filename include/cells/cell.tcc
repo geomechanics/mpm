@@ -977,7 +977,8 @@ bool mpm::Cell<Tdim>::initialiase_nonlocal(
         nodal_properties[i] = nodes_[i]->nonlocal_node_type();
 
       this->element_->initialise_bspline_connectivity_properties(
-          this->nodal_coordinates_, nodal_properties);
+          this->nodal_coordinates_, nodal_properties,
+          nonlocal_properties.at("kernel_correction"));
     } else if (element_->shapefn_type() == mpm::ShapefnType::LME or
                element_->shapefn_type() == mpm::ShapefnType::ALME) {
       this->element_->initialise_lme_connectivity_properties(

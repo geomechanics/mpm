@@ -4,12 +4,9 @@ double mpm::Mesh<Tdim>::compute_error_estimate_displacement_newmark(
     unsigned phase) const {
 
   // Check mpi rank and size
-  int mpi_rank = 0;
   int mpi_size = 1;
 
 #ifdef USE_MPI
-  // Get MPI rank
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   // Get number of MPI ranks
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 #endif
@@ -23,7 +20,6 @@ double mpm::Mesh<Tdim>::compute_error_estimate_displacement_newmark(
     kappa += (displacement - pred_displacement).squaredNorm();
   }
 
-  // Perform norm computation: using PETSC Vector for parallel case
   if (mpi_size > 1) {
 #if USE_PETSC
     // Substract half squared norm from domain shared nodes
@@ -54,4 +50,41 @@ double mpm::Mesh<Tdim>::compute_error_estimate_displacement_newmark(
   kappa = std::sqrt(kappa);
 
   return kappa;
+}
+
+//! Compute newmark critical time step
+template <unsigned Tdim>
+double mpm::Mesh<Tdim>::critical_time_step_newmark(unsigned phase) const {
+
+  // Check mpi rank and size
+  int mpi_size = 1;
+
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  // Compute average mesh size
+  double h = this->compute_average_cell_size();
+
+  // Compute largest velocity magnitude
+  double v = 0.0;
+#pragma omp parallel for schedule(runtime) reduction(max : v)
+  for (auto nitr = this->nodes_.cbegin(); nitr != this->nodes_.cend(); ++nitr)
+    v = std::max(v, (*nitr)->velocity(phase).norm());
+
+  // Compute critical time step
+  double time_crit = h / v;
+
+  if (mpi_size > 1) {
+#if USE_PETSC
+    // MPI All reduce minimum time_crit
+    double global_time_crit;
+    MPI_Allreduce(&time_crit, &global_time_crit, 1, MPI_DOUBLE, MPI_MIN,
+                  MPI_COMM_WORLD);
+    time_crit = global_time_crit;
+#endif
+  }
+
+  return time_crit;
 }

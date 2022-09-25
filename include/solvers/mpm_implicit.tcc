@@ -600,25 +600,34 @@ void mpm::MPMImplicit<Tdim>::finalise_error_control() {
   double kappa = mesh_->compute_error_estimate_displacement_newmark();
 
   // Perform time step modification
+  double dt = dt_;
   if (mpi_rank == 0) {
-    double epsilon = dt_ * milne_delta_;
-    if (kappa < 0.1 * epsilon)
-      dt_ *= 2.0;
-    else if (kappa > epsilon)
-      dt_ *= 0.5;
+    // Check if at the end of the nonlinear solver, the convergence is achieved
+    if (solver_convergence_) {
+      double epsilon = dt * milne_delta_;
+      if (kappa < 0.1 * epsilon)
+        dt *= 2.0;
+      else if (kappa > epsilon)
+        dt *= 0.5;
+    }
+
+    // Check if dt is larger than the scheme's critical time step
+    const double time_crit = mesh_->critical_time_step_newmark();
+    if (dt > time_crit) dt *= 0.5;
   }
 
 #ifdef USE_MPI
   // Run if there is more than a single MPI task
   if (mpi_size > 1) {
-    MPI_Bcast(&dt_, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   }
 #endif
 
+  // Assign new time step
+  this->dt_ = dt;
+
   // Send out new dt to scheme
   mpm_scheme_->assign_time_step(dt_);
-
-  // TODO: Send out new dt to scheme
 
   // TODO: Need to modify function write outputs and time loop to check time
   // other than output_steps_

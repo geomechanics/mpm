@@ -534,6 +534,12 @@ class Mesh {
   double compute_error_estimate_displacement_newmark(
       unsigned phase = mpm::ParticlePhase::SinglePhase) const;
 
+  //! Compute critical time step for newmark
+  //! \ingroup Implicit
+  //! \param[in] phase Index corresponding to the phase
+  double critical_time_step_newmark(
+      unsigned phase = mpm::ParticlePhase::SinglePhase) const;
+
   /**@}*/
 
   /**

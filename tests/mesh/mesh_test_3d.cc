@@ -1508,6 +1508,55 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
                       set_id, friction_constraint) == false);
         }
 
+        SECTION("Check assign cohesion constraints to nodes") {
+          tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;
+          node_sets[0] = std::vector<mpm::Index>{0, 2};
+          node_sets[1] = std::vector<mpm::Index>{1, 3};
+
+          REQUIRE(mesh->create_node_sets(node_sets, true) == true);
+
+          //! Constraints object
+          auto constraints = std::make_shared<mpm::Constraints<Dim>>(mesh);
+
+          int set_id = 0;
+          int dir = 0;
+          int sign_n = -1;
+          double cohesion = 1000;
+          double h_min = 0.25;
+          int nposition = 1;
+          // Add cohesion constraint to mesh
+          auto cohesion_constraint = std::make_shared<mpm::CohesionConstraint>(
+              set_id, dir, sign_n, cohesion, h_min, nposition);
+          REQUIRE(constraints->assign_nodal_cohesional_constraint(
+                      set_id, cohesion_constraint) == true);
+
+          set_id = 1;
+          dir = 2;
+          sign_n = -1;
+          cohesion = 1000;
+          h_min = 0.25;
+          nposition = 2;
+          // Add cohesion constraint to mesh
+          cohesion_constraint = std::make_shared<mpm::CohesionConstraint>(
+              set_id, dir, sign_n, cohesion, h_min, nposition);
+          REQUIRE(constraints->assign_nodal_cohesional_constraint(
+                      set_id, cohesion_constraint) == true);
+
+          // Add cohesion constraint to all nodes in mesh
+          cohesion_constraint = std::make_shared<mpm::CohesionConstraint>(
+              1, dir, sign_n, cohesion, h_min, nposition);
+          REQUIRE(constraints->assign_nodal_cohesional_constraint(
+                      set_id, cohesion_constraint) == true);
+
+          // When constraints fail
+          dir = 3;
+          // Add cohesion constraint to mesh
+          cohesion_constraint = std::make_shared<mpm::CohesionConstraint>(
+              set_id, dir, sign_n, cohesion, h_min, nposition);
+          REQUIRE(constraints->assign_nodal_cohesional_constraint(
+                      set_id, cohesion_constraint) == false);
+        }
+
         // Test assign acceleration constraints to nodes
         SECTION("Check assign acceleration constraints to nodes") {
           // Vector of particle coordinates
@@ -1570,6 +1619,33 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
           friction_constraints.emplace_back(std::make_tuple(3, 3, -1, 0.0));
           REQUIRE(constraints->assign_nodal_friction_constraints(
                       friction_constraints) == false);
+        }
+
+        // Test assign cohesion constraints to nodes
+        SECTION("Check assign cohesion constraints to nodes") {
+          // Vector of particle coordinates
+          std::vector<
+              std::tuple<mpm::Index, unsigned, int, double, double, int>>
+              cohesion_constraints;
+          //! Constraints object
+          auto constraints = std::make_shared<mpm::Constraints<Dim>>(mesh);
+          // Constraint
+          cohesion_constraints.emplace_back(
+              std::make_tuple(0, 0, -1, 100, 0.25, 1));
+          cohesion_constraints.emplace_back(
+              std::make_tuple(1, 0, -1, 100, 0.25, 2));
+          cohesion_constraints.emplace_back(
+              std::make_tuple(2, 1, -1, 100, 0.25, 3));
+          cohesion_constraints.emplace_back(
+              std::make_tuple(3, 2, -1, 100, 0.25, 3));
+
+          REQUIRE(constraints->assign_nodal_cohesion_constraints(
+                      cohesion_constraints) == true);
+          // When constraints fail
+          cohesion_constraints.emplace_back(
+              std::make_tuple(3, 3, -1, 100, 0.25, 3));
+          REQUIRE(constraints->assign_nodal_cohesion_constraints(
+                      cohesion_constraints) == false);
         }
 
         // Test assign absorbing constraints to nodes

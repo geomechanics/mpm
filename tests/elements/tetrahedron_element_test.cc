@@ -31,6 +31,8 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(tet->nfunctions() == nfunctions);
+      REQUIRE(tet->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(1.0).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.0).epsilon(Tolerance));
@@ -67,6 +69,8 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
       auto shapefn = tet->shapefn(coords, zero, zero_matrix);
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(tet->nfunctions() == nfunctions);
+      REQUIRE(tet->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(0.0).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(1.0 / 3).epsilon(Tolerance));
@@ -103,6 +107,8 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(tet->nfunctions() == nfunctions);
+      REQUIRE(tet->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(1.0).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.0).epsilon(Tolerance));
@@ -121,6 +127,8 @@ TEST_CASE("Tetrahedron elements are checked", "[tet][element][3D]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == nfunctions);
+      REQUIRE(tet->nfunctions() == nfunctions);
+      REQUIRE(tet->nfunctions_local() == nfunctions);
 
       REQUIRE(shapefn(0) == Approx(1.0).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.0).epsilon(Tolerance));

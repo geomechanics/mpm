@@ -68,6 +68,8 @@ class MPMExplicitTwoPhase : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::damping_factor_;
   //! Locate particles
   using mpm::MPMBase<Tdim>::locate_particles_;
+  //! Nonlocal cell neighbourhood
+  using mpm::MPMBase<Tdim>::cell_neighbourhood_;
 
  private:
   //! Pressure smoothing
@@ -77,7 +79,7 @@ class MPMExplicitTwoPhase : public MPMBase<Tdim> {
   //! Compute free surface
   std::string free_surface_detection_;
   //! Volume tolerance for free surface
-  double volume_tolerance_{0.};
+  double fs_vol_tolerance_{0.25};
 
 };  // MPMExplicit class
 }  // namespace mpm

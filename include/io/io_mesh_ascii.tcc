@@ -667,16 +667,17 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double>>
             (line.find('!') == std::string::npos) && (line != "")) {
           // ID
           mpm::Index id;
-          // Direction
+          // Direction (normal)
           unsigned dir;
-          // Sign
-          int sign;
+          // Sign of normal direction
+          int sign_n;
           // Friction
           double friction;
           while (istream.good()) {
             // Read stream
-            istream >> id >> dir >> sign >> friction;
-            constraints.emplace_back(std::make_tuple(id, dir, sign, friction));
+            istream >> id >> dir >> sign_n >> friction;
+            constraints.emplace_back(
+                std::make_tuple(id, dir, sign_n, friction));
           }
         }
       }
@@ -686,6 +687,62 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double>>
     file.close();
   } catch (std::exception& exception) {
     console_->error("Read friction constraints: {}", exception.what());
+    file.close();
+  }
+  return constraints;
+}
+
+//! Return cohesion constraints of particles
+template <unsigned Tdim>
+std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
+    mpm::IOMeshAscii<Tdim>::read_cohesion_constraints(
+        const std::string& cohesion_constraints_file) {
+
+  // Nodal cohesion constraints
+  std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
+      constraints;
+  constraints.clear();
+
+  // input file stream
+  std::fstream file;
+  file.open(cohesion_constraints_file.c_str(), std::ios::in);
+
+  try {
+    if (file.is_open() && file.good()) {
+      // Line
+      std::string line;
+      while (std::getline(file, line)) {
+        boost::algorithm::trim(line);
+        std::istringstream istream(line);
+        // ignore comment lines (# or !) or blank lines
+        if ((line.find('#') == std::string::npos) &&
+            (line.find('!') == std::string::npos) && (line != "")) {
+          // ID
+          mpm::Index id;
+          // Direction (normal)
+          unsigned dir;
+          // Sign of normal direction
+          int sign_n;
+          // Cohesion
+          double cohesion;
+          // Cell height
+          double h_min;
+          // Node nposition
+          int nposition = 0;
+          while (istream.good()) {
+            // Read stream
+            istream >> id >> dir >> sign_n >> cohesion >> h_min >> nposition;
+            constraints.emplace_back(
+                std::make_tuple(id, dir, sign_n, cohesion, h_min, nposition));
+          }
+        }
+      }
+    } else {
+      throw std::runtime_error("File not open or not good!");
+    }
+    file.close();
+  } catch (std::exception& exception) {
+    console_->error("Read cohesion constraints: {}", exception.what());
     file.close();
   }
   return constraints;

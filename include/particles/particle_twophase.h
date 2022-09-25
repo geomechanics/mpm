@@ -175,6 +175,11 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
     this->projection_param_ = parameter;
   };
 
+  //! Return projection parameter
+  double projection_parameter() const override {
+    return this->projection_param_;
+  }
+
   //! Map drag matrix to cell assuming linear-darcy drag force
   bool map_drag_matrix_to_cell() override;
 
@@ -285,7 +290,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::particle_velocity_constraints_;
   //! Size of particle
   using Particle<Tdim>::pack_size_;
-  //! Size of particle
+  //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
 
   //! Liquid mass

@@ -31,6 +31,8 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == 3);
+      REQUIRE(tri->nfunctions() == 3);
+      REQUIRE(tri->nfunctions_local() == 3);
 
       REQUIRE(shapefn(0) == Approx(0.66666666666).epsilon(Tolerance));
       REQUIRE(shapefn(1) == Approx(0.16666666666).epsilon(Tolerance));
@@ -179,6 +181,8 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
 
           // Check shape function
           REQUIRE(shapefn.size() == 14);
+          REQUIRE(tri->nfunctions() == 14);
+          REQUIRE(tri->nfunctions_local() == 3);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
           REQUIRE(shapefn(0) == Approx(1. / 3.).epsilon(Tolerance));
@@ -286,6 +290,8 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == 108);
+      REQUIRE(tri->nfunctions() == 108);
+      REQUIRE(tri->nfunctions_local() == 3);
       REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
       Eigen::VectorXd shapefn_ans = Eigen::VectorXd::Constant(108, 1.0);
@@ -442,6 +448,8 @@ TEST_CASE("Triangle lme elements are checked", "[tri][element][2D][lme]") {
 
       // Check shape function
       REQUIRE(shapefn.size() == 108);
+      REQUIRE(tri->nfunctions() == 108);
+      REQUIRE(tri->nfunctions_local() == 3);
       REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
       // Compute gradient of shape functions

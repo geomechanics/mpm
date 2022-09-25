@@ -422,9 +422,78 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
     }
   }
 
+  SECTION("Check cohesion constraints file") {
+    // Vector of cohesion constraints
+    std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
+        cohesion_constraints;
+
+    // Constraint
+    cohesion_constraints.emplace_back(std::make_tuple(0, 0, -1, 100, 0.25, 1));
+    cohesion_constraints.emplace_back(std::make_tuple(1, 0, -1, 100, 0.25, 2));
+    cohesion_constraints.emplace_back(std::make_tuple(2, 1, -1, 100, 0.25, 2));
+    cohesion_constraints.emplace_back(std::make_tuple(3, 1, -1, 100, 0.25, 1));
+
+    // Dump constraints as an input file to be read
+    std::ofstream file;
+    file.open("cohesion-constraints-2d.txt");
+    // Write particle coordinates
+    for (const auto& cohesion_constraint : cohesion_constraints) {
+      file << std::get<0>(cohesion_constraint) << "\t";
+      file << std::get<1>(cohesion_constraint) << "\t";
+      file << std::get<2>(cohesion_constraint) << "\t";
+      file << std::get<3>(cohesion_constraint) << "\t";
+      file << std::get<4>(cohesion_constraint) << "\t";
+      file << std::get<5>(cohesion_constraint) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read cohesion constraints
+    SECTION("Check cohesion constraints") {
+      // Create a read_mesh object
+      auto read_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read constraints from a non-existant file
+      auto constraints = read_mesh->read_cohesion_constraints(
+          "cohesion-constraints-missing.txt");
+      // Check number of constraints
+      REQUIRE(constraints.size() == 0);
+
+      // Check constraints
+      constraints =
+          read_mesh->read_cohesion_constraints("cohesion-constraints-2d.txt");
+      // Check number of particles
+      REQUIRE(constraints.size() == cohesion_constraints.size());
+
+      // Check coordinates of nodes
+      for (unsigned i = 0; i < cohesion_constraints.size(); ++i) {
+        REQUIRE(
+            std::get<0>(constraints.at(i)) ==
+            Approx(std::get<0>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<1>(constraints.at(i)) ==
+            Approx(std::get<1>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<2>(constraints.at(i)) ==
+            Approx(std::get<2>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<3>(constraints.at(i)) ==
+            Approx(std::get<3>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<4>(constraints.at(i)) ==
+            Approx(std::get<4>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<5>(constraints.at(i)) ==
+            Approx(std::get<5>(cohesion_constraints.at(i))).epsilon(Tolerance));
+      }
+    }
+  }
+
   // Check nodal pressure constraints file
   SECTION("Check pressure constraints file") {
-    // Vector of friction constraints
+    // Vector of pressure constraints
     std::vector<std::tuple<mpm::Index, double>> pressure_constraints;
 
     // Pressure constraint
@@ -1301,9 +1370,78 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
     }
   }
 
+  SECTION("Check cohesion constraints file") {
+    // Vector of cohesion constraints
+    std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
+        cohesion_constraints;
+
+    // Constraint
+    cohesion_constraints.emplace_back(std::make_tuple(0, 1, -1, 100, 0.25, 1));
+    cohesion_constraints.emplace_back(std::make_tuple(1, 1, -1, 100, 0.25, 2));
+    cohesion_constraints.emplace_back(std::make_tuple(2, 1, -1, 100, 0.25, 3));
+    cohesion_constraints.emplace_back(std::make_tuple(3, 2, -1, 100, 0.25, 3));
+
+    // Dump constraints as an input file to be read
+    std::ofstream file;
+    file.open("cohesion-constraints-3d.txt");
+    // Write particle coordinates
+    for (const auto& cohesion_constraint : cohesion_constraints) {
+      file << std::get<0>(cohesion_constraint) << "\t";
+      file << std::get<1>(cohesion_constraint) << "\t";
+      file << std::get<2>(cohesion_constraint) << "\t";
+      file << std::get<3>(cohesion_constraint) << "\t";
+      file << std::get<4>(cohesion_constraint) << "\t";
+      file << std::get<5>(cohesion_constraint) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read cohesion constraints
+    SECTION("Check cohesion constraints") {
+      // Create a read_mesh object
+      auto read_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read constraints from a non-existant file
+      auto constraints = read_mesh->read_cohesion_constraints(
+          "cohesion-constraints-missing.txt");
+      // Check number of constraints
+      REQUIRE(constraints.size() == 0);
+
+      // Check constraints
+      constraints =
+          read_mesh->read_cohesion_constraints("cohesion-constraints-3d.txt");
+      // Check number of particles
+      REQUIRE(constraints.size() == cohesion_constraints.size());
+
+      // Check coordinates of nodes
+      for (unsigned i = 0; i < cohesion_constraints.size(); ++i) {
+        REQUIRE(
+            std::get<0>(constraints.at(i)) ==
+            Approx(std::get<0>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<1>(constraints.at(i)) ==
+            Approx(std::get<1>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<2>(constraints.at(i)) ==
+            Approx(std::get<2>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<3>(constraints.at(i)) ==
+            Approx(std::get<3>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<4>(constraints.at(i)) ==
+            Approx(std::get<4>(cohesion_constraints.at(i))).epsilon(Tolerance));
+        REQUIRE(
+            std::get<5>(constraints.at(i)) ==
+            Approx(std::get<5>(cohesion_constraints.at(i))).epsilon(Tolerance));
+      }
+    }
+  }
+
   // Check nodal pressure constraints file
   SECTION("Check pressure constraints file") {
-    // Vector of friction constraints
+    // Vector of pressure constraints
     std::vector<std::tuple<mpm::Index, double>> pressure_constraints;
 
     // Pressure constraint

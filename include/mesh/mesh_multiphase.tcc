@@ -1,25 +1,29 @@
 //! Compute free surface cells, nodes, and particles
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::compute_free_surface(const std::string& method,
-                                           double volume_tolerance) {
+                                           double volume_tolerance,
+                                           unsigned cell_neighbourhood) {
   if (method == "density") {
-    return this->compute_free_surface_by_density(volume_tolerance);
+    return this->compute_free_surface_by_density(volume_tolerance,
+                                                 cell_neighbourhood);
   } else if (method == "geometry") {
-    return this->compute_free_surface_by_geometry(volume_tolerance);
+    return this->compute_free_surface_by_geometry(volume_tolerance,
+                                                  cell_neighbourhood);
   } else {
     console_->info(
         "The selected free-surface computation method: {}\n is not "
         "available. "
         "Using density approach as default method.",
         method);
-    return this->compute_free_surface_by_density(volume_tolerance);
+    return this->compute_free_surface_by_density(volume_tolerance,
+                                                 cell_neighbourhood);
   }
 }
 
 //! Compute free surface cells, nodes, and particles by density and geometry
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
-    double volume_tolerance) {
+    double volume_tolerance, unsigned cell_neighbourhood) {
   bool status = true;
 
   // Reset free surface cell and particles
@@ -44,6 +48,24 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
   // Compute and assign volume fraction to each cell
   this->compute_cell_vol_fraction();
 
+  // Recursive lambda function to check neighbours
+  auto fs_neighbour_check =
+      [&](const std::shared_ptr<mpm::Cell<Tdim>>& cell_ptr,
+          unsigned neighbourhood, auto&& fs_neighbour_check) {
+        if (neighbourhood == 0) {
+          if (cell_ptr->volume_fraction() < volume_tolerance)
+            for (const auto id : cell_ptr->local_nodes_id()) {
+              map_nodes_[id]->assign_free_surface(true);
+            }
+          return;
+        } else {
+          for (const auto neighbour_cell_id : cell_ptr->neighbours())
+            fs_neighbour_check(map_cells_[neighbour_cell_id], neighbourhood - 1,
+                               fs_neighbour_check);
+        }
+        return;
+      };
+
   // First, we detect the cell with possible free surfaces
   // Compute boundary cells and nodes based on geometry
   std::set<mpm::Index> free_surface_candidate_cells;
@@ -55,15 +77,14 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
       const auto& node_id = (*citr)->nodes_id();
       if ((*citr)->volume_fraction() < volume_tolerance) {
         candidate_cell = true;
-        for (const auto id : node_id) {
-          map_nodes_[id]->assign_free_surface(true);
-        }
+        fs_neighbour_check((*citr), cell_neighbourhood, fs_neighbour_check);
       } else {
         // Loop over neighbouring cells
         for (const auto neighbour_cell_id : (*citr)->neighbours()) {
           if (!map_cells_[neighbour_cell_id]->status()) {
             candidate_cell = true;
-            const auto& n_node_id = map_cells_[neighbour_cell_id]->nodes_id();
+            const auto& n_node_id =
+                map_cells_[neighbour_cell_id]->local_nodes_id();
 
             // Detect common node id
             std::set<mpm::Index> common_node_id;
@@ -191,7 +212,6 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
     // If secondary check is needed
     if (secondary_check) {
       // Construct scanning region
-      // TODO: spacing distance should be a function of porosity
       const double spacing_distance = smoothing_length;
       VectorDim t_coord = p_coord + spacing_distance * normal;
 
@@ -231,7 +251,8 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_geometry(
 
 //! Compute free surface cells, nodes, and particles by density
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::compute_free_surface_by_density(double volume_tolerance) {
+bool mpm::Mesh<Tdim>::compute_free_surface_by_density(
+    double volume_tolerance, unsigned cell_neighbourhood) {
   bool status = true;
 
   // Get number of MPI ranks
@@ -309,6 +330,25 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_density(double volume_tolerance) {
   }
 #endif
 
+  // Recursive lambda function to check neighbours
+  auto fs_neighbour_check =
+      [&](const std::shared_ptr<mpm::Cell<Tdim>>& cell_ptr,
+          unsigned neighbourhood, auto&& fs_neighbour_check) {
+        if (neighbourhood == 0) {
+          if (cell_ptr->volume_fraction() < volume_tolerance) {
+            for (const auto id : cell_ptr->local_nodes_id()) {
+              map_nodes_[id]->assign_free_surface(true);
+            }
+          }
+          return;
+        } else {
+          for (const auto neighbour_cell_id : cell_ptr->neighbours())
+            fs_neighbour_check(map_cells_[neighbour_cell_id], neighbourhood - 1,
+                               fs_neighbour_check);
+        }
+        return;
+      };
+
 #pragma omp parallel for schedule(runtime)
   // Compute boundary cells and nodes based on geometry
   for (auto citr = this->cells_.cbegin(); citr != this->cells_.cend(); ++citr) {
@@ -337,15 +377,14 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_density(double volume_tolerance) {
       if (!internal) {
         if ((*citr)->volume_fraction() < volume_tolerance) {
           cell_at_interface = true;
-          for (const auto id : node_id) {
-            map_nodes_[id]->assign_free_surface(cell_at_interface);
-          }
+          fs_neighbour_check((*citr), cell_neighbourhood, fs_neighbour_check);
         } else {
           for (const auto neighbour_cell_id : (*citr)->neighbours()) {
             if (map_cells_[neighbour_cell_id]->volume_fraction() <
                 volume_tolerance) {
               cell_at_interface = true;
-              const auto& n_node_id = map_cells_[neighbour_cell_id]->nodes_id();
+              const auto& n_node_id =
+                  map_cells_[neighbour_cell_id]->local_nodes_id();
 
               // Detect common node id
               std::set<mpm::Index> common_node_id;

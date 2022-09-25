@@ -1,3 +1,4 @@
+#include <chrono>
 #include <limits>
 
 #include "catch.hpp"
@@ -6,19 +7,18 @@
 #include "logger.h"
 #include "material.h"
 #include "particle.h"
-#include "particle_twophase.h"
-#include "pod_particle_twophase.h"
-#include "pod_particle_xmpm.h"
+#include "particle_fluid.h"
+#include "pod_particle.h"
 
 //! \brief Check particle class for serialization and deserialization
-TEST_CASE("Twophase particle is checked for serialization and deserialization",
-          "[particle][3D][serialize][2Phase]") {
+TEST_CASE("Fluid particle is checked for serialization and deserialization",
+          "[particle][3D][serialize][fluid]") {
   // Dimension
   const unsigned Dim = 3;
 
   // Logger
   std::unique_ptr<spdlog::logger> console_ = std::make_unique<spdlog::logger>(
-      "particle_serialize_deserialize_twophase_test", mpm::stdout_sink);
+      "particle_serialize_deserialize_fluid_test", mpm::stdout_sink);
 
   // Check initialise particle from POD file
   SECTION("Check initialise particle POD") {
@@ -29,37 +29,23 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     pcoords.setZero();
 
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
-        std::make_shared<mpm::TwoPhaseParticle<Dim>>(id, pcoords);
+        std::make_shared<mpm::FluidParticle<Dim>>(id, pcoords);
 
-    // Assign material
-    unsigned solid_mid = 1;
-    unsigned liquid_mid = 2;
     // Initialise material
-    Json jsolid_material;
-    Json jliquid_material;
-    jsolid_material["density"] = 1000.;
-    jsolid_material["youngs_modulus"] = 1.0E+7;
-    jsolid_material["poisson_ratio"] = 0.3;
-    jsolid_material["porosity"] = 0.3;
-    jsolid_material["k_x"] = 0.001;
-    jsolid_material["k_y"] = 0.001;
-    jsolid_material["k_z"] = 0.001;
-    jsolid_material["intrinsic_permeability"] = true;
-    jliquid_material["density"] = 1000.;
-    jliquid_material["bulk_modulus"] = 2.0E9;
-    jliquid_material["dynamic_viscosity"] = 8.90E-4;
+    Json jmaterial;
+    jmaterial["density"] = 1000.;
+    jmaterial["bulk_modulus"] = 2.E9;
+    jmaterial["dynamic_viscosity"] = 8.9E-4;
+    jmaterial["incompressible"] = true;
+    unsigned mid = 1;
 
-    auto solid_material =
+    auto material =
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
-            "LinearElastic3D", std::move(solid_mid), jsolid_material);
-    auto liquid_material =
-        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
-            "Newtonian3D", std::move(liquid_mid), jliquid_material);
+            "Newtonian3D", std::move(mid), jmaterial);
     std::vector<std::shared_ptr<mpm::Material<Dim>>> materials;
-    materials.emplace_back(solid_material);
-    materials.emplace_back(liquid_material);
+    materials.emplace_back(material);
 
-    mpm::PODParticleTwoPhase h5_particle;
+    mpm::PODParticle h5_particle;
     h5_particle.id = 13;
     h5_particle.mass = 501.5;
 
@@ -111,8 +97,8 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     h5_particle.gamma_yz = strain[4];
     h5_particle.gamma_xz = strain[5];
 
-    Eigen::Matrix<double, 3, 3> deformation_gradient;
-    deformation_gradient << 1.0, -2.0, 3.0, -4.0, 5.0, -6.0, -7.0, 8.0, -9.0;
+    Eigen::Matrix<double, 3, 3> deformation_gradient =
+        Eigen::Matrix<double, 3, 3>::Identity();
     h5_particle.defgrad_00 = deformation_gradient(0, 0);
     h5_particle.defgrad_01 = deformation_gradient(0, 1);
     h5_particle.defgrad_02 = deformation_gradient(0, 2);
@@ -131,35 +117,15 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
 
     h5_particle.material_id = 1;
 
-    h5_particle.nstate_vars = 0;
+    h5_particle.nstate_vars = 1;
 
-    for (unsigned i = 0; i < h5_particle.nstate_vars; ++i)
-      h5_particle.svars[i] = 0.;
+    h5_particle.svars[0] = 1000.0;
 
-    h5_particle.liquid_mass = 100.1;
-
-    Eigen::Vector3d liquid_velocity;
-    liquid_velocity << 5.5, 2.1, 4.2;
-    h5_particle.liquid_velocity_x = liquid_velocity[0];
-    h5_particle.liquid_velocity_y = liquid_velocity[1];
-    h5_particle.liquid_velocity_z = liquid_velocity[2];
-
-    h5_particle.porosity = 0.33;
-
-    h5_particle.liquid_saturation = 1.;
-
-    h5_particle.liquid_material_id = 2;
-
-    h5_particle.nliquid_state_vars = 1;
-
-    for (unsigned i = 0; i < h5_particle.nliquid_state_vars; ++i)
-      h5_particle.liquid_svars[i] = 0.;
-
-    // Reinitialise particle from POD data
+    // Reinitialise particle from HDF5 data
     REQUIRE(particle->initialise_particle(h5_particle, materials) == true);
 
     // Assign projection parameter
-    particle->assign_projection_parameter(0.0);
+    particle->assign_projection_parameter(1.0);
 
     // Serialize particle
     auto buffer = particle->serialize();
@@ -167,7 +133,7 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
 
     // Deserialize particle
     std::shared_ptr<mpm::ParticleBase<Dim>> rparticle =
-        std::make_shared<mpm::TwoPhaseParticle<Dim>>(id, pcoords);
+        std::make_shared<mpm::FluidParticle<Dim>>(id, pcoords);
 
     REQUIRE_NOTHROW(rparticle->deserialize(buffer, materials));
 
@@ -179,6 +145,8 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     REQUIRE(particle->volume() == rparticle->volume());
     // Check particle mass density
     REQUIRE(particle->mass_density() == rparticle->mass_density());
+    // Check particle pressure
+    REQUIRE(particle->pressure() == rparticle->pressure());
     // Check particle status
     REQUIRE(particle->status() == rparticle->status());
     // Check particle projection parameter
@@ -242,32 +210,15 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
     // Check material id
     REQUIRE(particle->material_id() == rparticle->material_id());
 
-    // Check liquid mass
-    REQUIRE(particle->liquid_mass() == rparticle->liquid_mass());
-
-    // Check liquid velocity
-    auto pliquid_velocity = rparticle->liquid_velocity();
-    REQUIRE(pliquid_velocity.size() == Dim);
-    for (unsigned i = 0; i < Dim; ++i)
-      REQUIRE(pliquid_velocity(i) ==
-              Approx(liquid_velocity(i)).epsilon(Tolerance));
-
-    // Check porosity
-    REQUIRE(particle->porosity() == rparticle->porosity());
-
-    // Check liquid material id
-    REQUIRE(particle->material_id(mpm::ParticlePhase::Liquid) ==
-            rparticle->material_id(mpm::ParticlePhase::Liquid));
+    // Check state variable size
+    REQUIRE(particle->state_variables().size() ==
+            rparticle->state_variables().size());
 
     // Check state variables
-    for (unsigned phase = 0; phase < materials.size(); phase++) {
-      REQUIRE(particle->state_variables(phase).size() ==
-              rparticle->state_variables(phase).size());
-      auto state_variables = materials[phase]->state_variables();
-      for (const auto& state_var : state_variables) {
-        REQUIRE(particle->state_variable(state_var, phase) ==
-                rparticle->state_variable(state_var, phase));
-      }
+    auto state_variables = material->state_variables();
+    for (const auto& state_var : state_variables) {
+      REQUIRE(particle->state_variable(state_var) ==
+              rparticle->state_variable(state_var));
     }
 
     SECTION("Performance benchmarks") {
@@ -281,7 +232,7 @@ TEST_CASE("Twophase particle is checked for serialization and deserialization",
         auto buffer = particle->serialize();
         // Deserialize particle
         std::shared_ptr<mpm::ParticleBase<Dim>> rparticle =
-            std::make_shared<mpm::TwoPhaseParticle<Dim>>(id, pcoords);
+            std::make_shared<mpm::FluidParticle<Dim>>(id, pcoords);
 
         REQUIRE_NOTHROW(rparticle->deserialize(buffer, materials));
       }

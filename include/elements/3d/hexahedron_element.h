@@ -126,6 +126,9 @@ class HexahedronElement : public Element<Tdim> {
   //! Return number of functions
   unsigned nfunctions() const override { return Tnfunctions; }
 
+  //! Return number of local shape functions
+  unsigned nfunctions_local() const override { return Tnfunctions; }
+
   //! Evaluate shape functions at given local coordinates
   //! \param[in] xi given local coordinates
   //! \param[in] particle_size Particle size
@@ -266,9 +269,11 @@ class HexahedronElement : public Element<Tdim> {
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
   //! \param[in] nodal_properties Vector determining node type for each
   //! dimension
+  //! \param[in] kernel_correction Apply Kernel correction at the boundary
   void initialise_bspline_connectivity_properties(
       const Eigen::MatrixXd& nodal_coordinates,
-      const std::vector<std::vector<unsigned>>& nodal_properties) override;
+      const std::vector<std::vector<unsigned>>& nodal_properties,
+      bool kernel_correction = false) override;
 
   //! Assign nodal connectivity property for LME elements
   //! \param[in] beta Coldness function of the system in the range of [0,inf)

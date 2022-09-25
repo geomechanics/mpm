@@ -3362,6 +3362,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     // Specific functions for TwoPhaseParticle.
     // Expecting throws if called from Particle.
     REQUIRE_THROWS(particle->assign_projection_parameter(1));
+    REQUIRE_THROWS(particle->projection_parameter());
     REQUIRE_THROWS(particle->map_laplacian_to_cell());
     REQUIRE_THROWS(particle->map_poisson_right_to_cell());
     REQUIRE_THROWS(particle->map_correction_matrix_to_cell());

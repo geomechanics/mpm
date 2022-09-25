@@ -122,6 +122,9 @@ class QuadrilateralGIMPElement : public QuadrilateralElement<2, 4> {
   //! Return number of shape functions
   unsigned nfunctions() const override { return Tnfunctions; }
 
+  //! Return number of local shape functions
+  unsigned nfunctions_local() const override { return 4; }
+
   //! Return if natural coordinates can be evaluates
   bool isvalid_natural_coordinates_analytical() const override { return false; }
 

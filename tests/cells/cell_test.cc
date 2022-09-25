@@ -735,6 +735,10 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     REQUIRE(cell->upgrade_status(4) == false);
     REQUIRE(cell->initialiase_nonlocal(nonlocal_properties) == false);
     REQUIRE_THROWS(cell->assign_nonlocal_elementptr(bspline_element));
+    REQUIRE(cell->nfunctions_local() == 4);
+
+    const auto& local_node_id = cell->local_nodes_id();
+    REQUIRE(local_node_id.size() == 4);
 
     // nonlocal functions - test successful bspline
     // BSPLINE
@@ -763,7 +767,13 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     REQUIRE(bspline_cell->add_node(15, node15) == true);
     REQUIRE(bspline_cell->nnodes() == 16);
 
+    nonlocal_properties.insert(
+        std::pair<std::string, bool>("kernel_correction", true));
     REQUIRE(bspline_cell->initialiase_nonlocal(nonlocal_properties) == true);
+    REQUIRE(bspline_cell->nfunctions_local() == 4);
+
+    const auto& bspline_local_node_id = bspline_cell->local_nodes_id();
+    REQUIRE(bspline_local_node_id.size() == 4);
 
     // LME
     auto lme_cell =
@@ -799,6 +809,10 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
     nonlocal_properties.insert(
         std::pair<std::string, double>("support_radius", r));
     REQUIRE(lme_cell->initialiase_nonlocal(nonlocal_properties) == true);
+    REQUIRE(lme_cell->nfunctions_local() == 4);
+
+    const auto& lme_local_node_id = lme_cell->local_nodes_id();
+    REQUIRE(lme_local_node_id.size() == 4);
   }
 }
 

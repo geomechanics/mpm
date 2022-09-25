@@ -51,6 +51,8 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
   double rel_tolerance = 1.E-5;
   // Tolerance
   const double Tolerance = 1.E-6;
+  // Convergence boolean
+  bool converged;
 
   SECTION("Eigen solver") {
     // Construct Eigen solver
@@ -72,7 +74,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       b << 6.0, 3.0, -9.0;
 
       // Solve
-      auto x_eigen = eigen_matrix_solver->solve(A, b);
+      auto x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
       // Check
       REQUIRE(x_eigen(0) == Approx(2.).epsilon(Tolerance));
@@ -86,19 +88,19 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         // Solve lscg
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("lscg"));
         x_eigen.setZero();
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Solve bicgstab
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("bicgstab"));
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Solve cg
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("cg"));
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Verbosity 3
         REQUIRE_NOTHROW(eigen_matrix_solver->set_verbosity(3));
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
       }
     }
 
@@ -108,7 +110,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       const auto& b = CreateRandomRHSVector(5);
 
       // Solve
-      const auto& x_eigen = eigen_matrix_solver->solve(A, b);
+      const auto& x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
       // Check
       REQUIRE(x_eigen(0) == Approx(0.0120451).epsilon(Tolerance));
@@ -126,7 +128,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       const auto& b = CreateRandomRHSVector(dim, 1);
 
       // Solve
-      auto x_eigen = eigen_matrix_solver->solve(A, b);
+      auto x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
       // Check vector
       Eigen::VectorXd check(dim);
@@ -151,7 +153,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
 
         // Solve
         x_eigen.setZero();
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -165,7 +167,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(eigen_matrix_solver->set_max_iteration(120));
 
         // Solve
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         for (unsigned i = 0; i < dim; i++)
           REQUIRE(x_eigen(i) == Approx(check(i)).epsilon(Tolerance));
@@ -174,7 +176,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("error"));
 
         // Solve but x is zero size
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
         REQUIRE(x_eigen.size() == 0);
       }
 
@@ -189,7 +191,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
 
         // Solve
         x_eigen.setZero();
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -199,7 +201,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(eigen_matrix_solver->set_max_iteration(100));
 
         // Solve
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -211,7 +213,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(eigen_matrix_solver->set_max_iteration(150));
 
         // Solve
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -226,15 +228,15 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         // Solve cg
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("cg"));
         x_eigen.setZero();
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Solve lscg
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("lscg"));
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Solve bicgstab
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("bicgstab"));
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
       }
     }
   }
@@ -259,7 +261,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       b << 6.0, 3.0, -9.0;
 
       // Solve
-      auto x_eigen = eigen_matrix_solver->solve(A, b);
+      auto x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
       // Check
       REQUIRE(x_eigen(0) == Approx(2.).epsilon(Tolerance));
@@ -273,15 +275,15 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         // Solve ldlt "SimplicialLDLT"
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("ldlt"));
         x_eigen.setZero();
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Solve lu "SparseLU"
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("lu"));
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Verbosity 3
         REQUIRE_NOTHROW(eigen_matrix_solver->set_verbosity(3));
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
       }
     }
 
@@ -291,7 +293,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       const auto& b = CreateRandomRHSVector(5);
 
       // Solve
-      const auto& x_eigen = eigen_matrix_solver->solve(A, b);
+      const auto& x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
       // Check
       REQUIRE(x_eigen(0) == Approx(0.0120451).epsilon(Tolerance));
@@ -309,7 +311,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       const auto& b = CreateRandomRHSVector(dim, 1);
 
       // Solve
-      auto x_eigen = eigen_matrix_solver->solve(A, b);
+      auto x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
       // Check vector
       Eigen::VectorXd check(dim);
@@ -334,7 +336,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
 
         // Solve
         x_eigen.setZero();
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -344,7 +346,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(eigen_matrix_solver->set_sub_solver_type("error"));
 
         // Solve but x is zero size
-        x_eigen = eigen_matrix_solver->solve(A, b);
+        x_eigen = eigen_matrix_solver->solve(A, b, converged);
         REQUIRE(x_eigen.size() == 0);
       }
     }
@@ -374,7 +376,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       b << 6.0, 3.0, -9.0;
 
       // Solve
-      auto x_eigen = petsc_matrix_solver->solve(A, b);
+      auto x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
       // Check
       REQUIRE(x_eigen(0) == Approx(2.).epsilon(Tolerance));
@@ -387,7 +389,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
 
         // Solve
         x_eigen.setZero();
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
       }
     }
 
@@ -401,7 +403,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       const auto& b = CreateRandomRHSVector(5);
 
       // Solve
-      const auto& x_eigen = petsc_matrix_solver->solve(A, b);
+      const auto& x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
       // Check
       REQUIRE(x_eigen(0) == Approx(0.0120451).epsilon(Tolerance));
@@ -424,7 +426,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
       const auto& b = CreateRandomRHSVector(dim, 1);
 
       // Solve
-      auto x_eigen = petsc_matrix_solver->solve(A, b);
+      auto x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
       // Check vector
       Eigen::VectorXd check(dim);
@@ -449,7 +451,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
 
         // Solve
         x_eigen.setZero();
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -459,7 +461,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(petsc_matrix_solver->set_sub_solver_type("bicgstab"));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         for (unsigned i = 0; i < dim; i++)
           REQUIRE(x_eigen(i) == Approx(check(i)).epsilon(Tolerance));
@@ -468,14 +470,14 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(petsc_matrix_solver->set_sub_solver_type("lsqr"));
 
         // Solve - expected to diverge
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Change to error - unavailable subsolver type (set to gmres)
         REQUIRE_NOTHROW(petsc_matrix_solver->set_sub_solver_type("error"));
         REQUIRE_NOTHROW(petsc_matrix_solver->set_verbosity(1));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         for (unsigned i = 0; i < dim; i++)
           REQUIRE(x_eigen(i) == Approx(check(i)).epsilon(Tolerance));
@@ -487,14 +489,14 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
 
         // Solve - expected diverge
         x_eigen.setZero();
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Change to block jacobi
         REQUIRE_NOTHROW(
             petsc_matrix_solver->set_preconditioner_type("bjacobi"));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -505,13 +507,13 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
             petsc_matrix_solver->set_preconditioner_type("pbjacobi"));
 
         // Solve - expected diverge
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Change to additive Schwarz method
         REQUIRE_NOTHROW(petsc_matrix_solver->set_preconditioner_type("asm"));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -522,13 +524,13 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
             petsc_matrix_solver->set_preconditioner_type("eisenstat"));
 
         // Solve - expected diverge
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Change to icc
         REQUIRE_NOTHROW(petsc_matrix_solver->set_preconditioner_type("icc"));
 
         // Solve - expected diverge
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
       }
 
       SECTION("PETSC CG convergence settings") {
@@ -537,7 +539,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
 
         // Solve
         x_eigen.setZero();
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -548,7 +550,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
             std::numeric_limits<double>::epsilon()));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -559,7 +561,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
             std::numeric_limits<double>::epsilon()));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -569,7 +571,7 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
         REQUIRE_NOTHROW(petsc_matrix_solver->set_abs_tolerance(1.e-7));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)
@@ -580,14 +582,14 @@ TEST_CASE("Linear solver test", "[linear_solver]") {
             std::numeric_limits<double>::epsilon()));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Set abs_tolerance - expecting faster convergence (default div_tol
         // is 1.e5)
         REQUIRE_NOTHROW(petsc_matrix_solver->set_div_tolerance(1.e1));
 
         // Solve
-        x_eigen = petsc_matrix_solver->solve(A, b);
+        x_eigen = petsc_matrix_solver->solve(A, b, converged);
 
         // Check
         for (unsigned i = 0; i < dim; i++)

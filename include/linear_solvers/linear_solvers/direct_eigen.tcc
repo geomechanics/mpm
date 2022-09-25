@@ -1,8 +1,10 @@
 //! Conjugate Gradient with default initial guess
 template <typename Traits>
 Eigen::VectorXd mpm::DirectEigen<Traits>::solve(
-    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b) {
+    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b,
+    bool& converged) {
   Eigen::VectorXd x;
+  converged = true;
   try {
 
     // Solver start
@@ -24,6 +26,7 @@ Eigen::VectorXd mpm::DirectEigen<Traits>::solve(
       x = solver.solve(b);
 
       if (solver.info() != Eigen::Success) {
+        converged = false;
         throw std::runtime_error("Fail to solve linear systems!\n");
       }
     } else if (sub_solver_type_ == "ldlt") {
@@ -35,6 +38,7 @@ Eigen::VectorXd mpm::DirectEigen<Traits>::solve(
       x = solver.solve(b);
 
       if (solver.info() != Eigen::Success) {
+        converged = false;
         throw std::runtime_error("Fail to solve linear systems!\n");
       }
     } else {

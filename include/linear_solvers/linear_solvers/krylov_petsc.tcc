@@ -1,9 +1,11 @@
 //! Conjugate Gradient with default initial guess
 template <typename Traits>
 Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
-    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b) {
+    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b,
+    bool& converged) {
   //! Initialize solution vector x
   Eigen::VectorXd x(b.size());
+  converged = true;
   try {
 #if USE_PETSC
 
@@ -135,6 +137,7 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
                   "DIVERGED, try to modify the preconditioner, set tolerance "
                   "and maximum iteration.\n",
                   sub_solver_type_.c_str(), preconditioner_type_.c_str());
+      converged = false;
     }
 
     // Scatter and gather for cloning procedure

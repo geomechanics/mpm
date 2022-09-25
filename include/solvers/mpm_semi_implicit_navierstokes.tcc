@@ -498,8 +498,10 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::compute_poisson_equation() {
 #endif
 
     // Solve matrix equation and assign solution to assembler
+    bool converged;
     assembler_->assign_pressure_increment(linear_solver_["pressure"]->solve(
-        assembler_->laplacian_matrix(), assembler_->poisson_rhs_vector()));
+        assembler_->laplacian_matrix(), assembler_->poisson_rhs_vector(),
+        converged));
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

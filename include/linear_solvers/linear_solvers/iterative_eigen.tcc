@@ -1,8 +1,10 @@
 //! Conjugate Gradient with default initial guess
 template <typename Traits>
 Eigen::VectorXd mpm::IterativeEigen<Traits>::solve(
-    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b) {
+    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b,
+    bool& converged) {
   Eigen::VectorXd x;
+  converged = true;
   try {
 
     // Solver start
@@ -31,6 +33,7 @@ Eigen::VectorXd mpm::IterativeEigen<Traits>::solve(
       }
 
       if (solver.info() != Eigen::Success) {
+        converged = false;
         throw std::runtime_error("Fail to solve linear systems!\n");
       }
 
@@ -49,6 +52,7 @@ Eigen::VectorXd mpm::IterativeEigen<Traits>::solve(
       }
 
       if (solver.info() != Eigen::Success) {
+        converged = false;
         throw std::runtime_error("Fail to solve linear systems!\n");
       }
 
@@ -67,6 +71,7 @@ Eigen::VectorXd mpm::IterativeEigen<Traits>::solve(
       }
 
       if (solver.info() != Eigen::Success) {
+        converged = false;
         throw std::runtime_error("Fail to solve linear systems!\n");
       }
     } else {

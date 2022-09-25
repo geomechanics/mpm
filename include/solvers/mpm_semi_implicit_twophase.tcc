@@ -632,10 +632,11 @@ bool mpm::MPMSemiImplicitTwoPhase<
     // Compute matrix equation of each direction
     for (unsigned dir = 0; dir < Tdim; ++dir) {
       // Solve equation 1 to compute intermediate acceleration
+      bool converged;
       assembler_->assign_intermediate_acceleration(
           dir, linear_solver_["acceleration"]->solve(
                    assembler_->predictor_lhs_matrix(dir),
-                   assembler_->predictor_rhs_vector().col(dir)));
+                   assembler_->predictor_rhs_vector().col(dir), converged));
     }
 
     // Update intermediate acceleration and velocity of solid phase
@@ -703,8 +704,10 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::compute_poisson_equation() {
 #endif
 
     // Solve matrix equation and assign solution to assembler
+    bool converged;
     assembler_->assign_pressure_increment(linear_solver_["pressure"]->solve(
-        assembler_->laplacian_matrix(), assembler_->poisson_rhs_vector()));
+        assembler_->laplacian_matrix(), assembler_->poisson_rhs_vector(),
+        converged));
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

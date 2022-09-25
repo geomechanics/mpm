@@ -25,7 +25,7 @@ class SolverBase {
 
   //! Matrix solver with default initial guess
   virtual Eigen::VectorXd solve(const Eigen::SparseMatrix<double>& A,
-                                const Eigen::VectorXd& b) = 0;
+                                const Eigen::VectorXd& b, bool& converged) = 0;
 
   //! Assign global active dof
   virtual void assign_global_active_dof(unsigned global_active_dof) = 0;

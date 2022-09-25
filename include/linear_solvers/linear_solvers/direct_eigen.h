@@ -31,7 +31,7 @@ class DirectEigen : public SolverBase<Traits> {
 
   //! Matrix solver
   Eigen::VectorXd solve(const Eigen::SparseMatrix<double>& A,
-                        const Eigen::VectorXd& b) override;
+                        const Eigen::VectorXd& b, bool& converged) override;
 
   //! Return the type of solver
   std::string solver_type() const { return "EigenDirectSolver"; }

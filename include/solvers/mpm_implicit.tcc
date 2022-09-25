@@ -466,7 +466,7 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
     assembler_->assign_displacement_increment(
         linear_solver_["displacement"]->solve(
             assembler_->stiffness_matrix(),
-            assembler_->residual_force_rhs_vector()));
+            assembler_->residual_force_rhs_vector(), solver_convergence_));
 
     // Assign displacement increment to nodes
     mesh_->iterate_over_nodes_predicate(

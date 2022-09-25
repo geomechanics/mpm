@@ -167,6 +167,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   double milne_alpha_{0.0001};
   //! Milne's delta
   double milne_delta_{0.0};
+  //! Solver convergence
+  bool solver_convergence_{true};
   /**@}*/
 
 };  // MPMImplicit class

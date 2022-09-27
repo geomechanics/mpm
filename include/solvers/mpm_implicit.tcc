@@ -169,10 +169,16 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     throw std::runtime_error("Initialisation of matrix failed");
   }
 
+  // Simulation time
+  double total_time = 0.0;
+  double target_time = nsteps_ * dt_;
+
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
   for (; step_ < nsteps_; ++step_) {
-    if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
+    if (mpi_rank == 0)
+      console_->info("Step: {} of {}, Time: {}s of {}s.\n", step_, nsteps_,
+                     total_time, target_time);
 
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
@@ -183,7 +189,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 #endif
 
     // Reset solver convergence
-    solver_convergence_ = true;
+    if (error_control_) solver_convergence_ = true;
 
     // Inject particles
     mesh_->inject_particles(step_ * dt_);
@@ -247,7 +253,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
         this->finalise_newton_raphson_iteration();
     }
 
-    // Apply Milne device
+    // Finalise error control
     if (error_control_) this->finalise_error_control();
 
     // Locate particles
@@ -261,7 +267,12 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 #endif
 
     // Write outputs
+    // TODO: Need to modify function write outputs to check exact time
     this->write_outputs(this->step_ + 1);
+
+    // Time update
+    total_time += this->dt_;
+    if (error_control_ && (total_time > target_time)) break;
   }
   auto solver_end = std::chrono::steady_clock::now();
   console_->info("Rank {}, Implicit {} solver duration: {} ms", mpi_rank,
@@ -471,7 +482,7 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
         linear_solver_["displacement"]->solve(
             assembler_->stiffness_matrix(),
             assembler_->residual_force_rhs_vector(), solver_convergence_));
-    if (solver_convergence_) solver_convergence_ = converged;
+    if (error_control_ && solver_convergence_) solver_convergence_ = converged;
 
     // Assign displacement increment to nodes
     mesh_->iterate_over_nodes_predicate(
@@ -635,7 +646,4 @@ void mpm::MPMImplicit<Tdim>::finalise_error_control() {
 
   // Send out new dt to scheme
   mpm_scheme_->assign_time_step(dt_);
-
-  // TODO: Need to modify function write outputs and time loop to check time
-  // other than output_steps_
 }

@@ -74,6 +74,8 @@ double mpm::Mesh<Tdim>::critical_time_step_newmark(unsigned phase) const {
     v = std::max(v, (*nitr)->velocity(phase).norm());
 
   // Compute critical time step
+  if (v < std::numeric_limits<double>::epsilon())
+    v = std::numeric_limits<double>::epsilon();
   double time_crit = h / v;
 
   if (mpi_size > 1) {

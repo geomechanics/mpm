@@ -756,6 +756,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
   std::vector<unsigned> material_id{{0}};
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  bool error_control = false;
 
   // 3D
   if (dim == 3) {
@@ -769,6 +770,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
     gravity.clear();
     gravity = {0., 0., -9.81};
     entity_set_name = "entity_sets_1";
+    error_control = true;
   }
 
   Json json_file = {
@@ -839,7 +841,9 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
           {"displacement_tolerance", 1.0e-10},
           {"residual_tolerance", 1.0e-10},
           {"relative_residual_tolerance", 1.0e-6},
-          {"verbosity", 0}}},
+          {"verbosity", 0},
+          {"error_control", error_control},
+          {"milne_alpha", 0.0001}}},
         {"locate_particles", true},
         {"pressure_smoothing", true},
         {"dt", 0.0001},
@@ -980,7 +984,8 @@ bool write_json_implicit_finite_strain(unsigned dim, bool resume,
           {"displacement_tolerance", 1.0e-10},
           {"residual_tolerance", 1.0e-10},
           {"relative_residual_tolerance", 1.0e-6},
-          {"verbosity", 0}}},
+          {"verbosity", 0},
+          {"error_control", false}}},
         {"locate_particles", true},
         {"pressure_smoothing", true},
         {"dt", 0.0001},

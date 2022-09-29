@@ -123,6 +123,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   this->initialise_mesh();
 
   // Check point resume
+  // TODO: Resume for Milne Device is not yet implemented
   if (resume) {
     bool check_resume = this->checkpoint_resume();
     if (!check_resume) resume = false;

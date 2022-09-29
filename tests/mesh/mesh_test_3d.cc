@@ -1790,6 +1790,32 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
           REQUIRE(mesh_fail->compute_nodal_rotation_matrices(euler_angles) ==
                   false);
         }
+
+        // Test implicit newmark mesh functions
+        SECTION("Check implicit newmark mesh functions") {
+          REQUIRE(mesh->nparticles() == 16);
+
+          // Locate particles in a mesh
+          auto particles = mesh->locate_particles_mesh();
+          REQUIRE(particles.size() == 0);
+          mesh->iterate_over_particles(std::bind(
+              &mpm::ParticleBase<Dim>::compute_shapefn, std::placeholders::_1));
+
+          // Compute volume
+          mesh->iterate_over_particles(std::bind(
+              &mpm::ParticleBase<Dim>::compute_volume, std::placeholders::_1));
+
+          // Map mass momentum inertia
+          mesh->iterate_over_particles(std::bind(
+              &mpm::ParticleBase<Dim>::map_mass_momentum_inertia_to_nodes,
+              std::placeholders::_1));
+
+          // Compute error estimate displacement newmark without any forces
+          mesh->compute_error_estimate_displacement_newmark();
+
+          // Compute critical time step newmark
+          mesh->critical_time_step_newmark();
+        }
       }
     }
   }

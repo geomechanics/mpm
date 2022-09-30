@@ -38,10 +38,10 @@ typedef struct PODParticle {
   double defgrad_00, defgrad_01, defgrad_02;
   double defgrad_10, defgrad_11, defgrad_12;
   double defgrad_20, defgrad_21, defgrad_22;
-  // Index
-  mpm::Index cell_id;
   // Status
   bool status;
+  // Index
+  mpm::Index cell_id;
   // Material id
   unsigned material_id;
   // Number of state variables

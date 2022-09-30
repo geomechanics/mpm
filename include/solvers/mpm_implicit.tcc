@@ -113,6 +113,12 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       analysis_["resume"].find("repartition") != analysis_["resume"].end())
     repartition = analysis_["resume"]["repartition"].template get<bool>();
 
+  // Check if resume total time is provided
+  double resume_time = 0.0;
+  if (analysis_.find("resume") != analysis_.end() &&
+      analysis_["resume"].find("time") != analysis_["resume"].end())
+    resume_time = analysis_["resume"]["time"].template get<double>();
+
   // Pressure smoothing
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
 
@@ -123,7 +129,6 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   this->initialise_mesh();
 
   // Check point resume
-  // TODO: Resume for Milne Device is not yet implemented
   if (resume) {
     bool check_resume = this->checkpoint_resume();
     if (!check_resume) resume = false;
@@ -172,6 +177,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
   // Simulation time
   double total_time = 0.0;
+  if (resume) total_time = resume_time;
   double target_time = nsteps_ * dt_;
 
   auto solver_begin = std::chrono::steady_clock::now();

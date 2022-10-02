@@ -852,7 +852,8 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
-          {"step", 5}}},
+          {"step", 2},
+          {"step", 0.0006}}},
         {"linear_solver",
          {{"assembler_type", assembler_type},
           {"solver_settings",
@@ -869,7 +870,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
        {{"path", "results/"},
         {"vtk", {"stresses", "strains", "velocity"}},
         {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
-        {"output_steps", 5}}}};
+        {"output_steps", 2}}}};
 
   // Dump JSON as an input file to be read
   std::ofstream file;

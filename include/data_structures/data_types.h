@@ -44,10 +44,11 @@ enum class Position { None, Corner, Edge, Face };
 //! Velocity update type
 //! Flip: fluid-implicit-particle (acceleration update)
 //! Pic: particle-in-cell (velocity update)
-//! Blend: 95% flip and 5% pic
+//! Flip99: 99% flip and 1% pic
+//! Flip95: 95% flip and 5% pic
 //! Tpic: Taylor pic
 //! Apic: Affine pic
-enum class VelocityUpdate { FLIP, PIC, Blend, TPIC, APIC };
+enum class VelocityUpdate { FLIP, PIC, FLIP99, FLIP95, TPIC, APIC };
 
 }  // namespace mpm
 

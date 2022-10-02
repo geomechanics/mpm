@@ -234,12 +234,33 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map liquid advection force
   virtual void map_liquid_advection_force() noexcept;
 
+  /**
+   * \defgroup AdvancedMapping Functions dealing with advance mapping scheme of
+   * MPM
+   */
+  /**@{*/
   //! Compute updated velocity of the particle based on nodal velocity
+  //! \ingroup AdvancedMapping
   //! \param[in] dt Analysis time step
-  //! \retval status Compute status
   virtual void compute_updated_liquid_velocity(
       double dt,
       mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP) noexcept;
+
+  //! Compute updated velocity of the particle based on nodal velocity assuming
+  //! FLIP scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  //! \param[in] alpha Blending FLIP-PIC coefficient
+  virtual void compute_updated_liquid_velocity_flip(
+      double dt, double alpha = 1.0) noexcept;
+
+  //! Compute updated velocity of the particle based on nodal velocity assuming
+  //! PIC scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  virtual void compute_updated_liquid_velocity_pic(double dt) noexcept;
+
+  /**@}*/
 
  protected:
   //! particle id

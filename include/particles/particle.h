@@ -512,6 +512,38 @@ class Particle : public ParticleBase<Tdim> {
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
   /**@}*/
 
+  /**
+   * \defgroup AdvancedMapping Functions dealing with advance mapping scheme of
+   * MPM
+   */
+  /**@{*/
+  //! Map particle mass and momentum to nodes for affine transformation
+  //! \ingroup AdvancedMapping
+  virtual void map_mass_momentum_to_nodes_affine() noexcept;
+
+  //! Map particle mass and momentum to nodes for approximate taylor expansion
+  //! \ingroup AdvancedMapping
+  virtual void map_mass_momentum_to_nodes_taylor() noexcept;
+
+  //! Compute updated position of the particle assuming FLIP scheme
+  //! \param[in] dt Analysis time step
+  //! \param[in] alpha Blending FLIP-PIC coefficient
+  void compute_updated_position_flip(double dt, double alpha = 1.0) noexcept;
+
+  //! Compute updated position of the particle assuming PIC scheme
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_pic(double dt) noexcept;
+
+  //! Compute updated position of the particle assuming APIC scheme
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_apic(double dt) noexcept;
+
+  //! Compute updated position of the particle assuming TPIC scheme
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_tpic(double dt) noexcept;
+
+  /**@}*/
+
   //! particle id
   using ParticleBase<Tdim>::id_;
   //! coordinates

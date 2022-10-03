@@ -17,7 +17,7 @@ TEST_CASE("MPM 2D Explicit USL TwoPhase implementation is checked",
   const std::string fname = "mpm-explicit-twophase-usl";
   const std::string analysis = "MPMExplicitTwoPhase2D";
   const std::string mpm_scheme = "usl";
-  const std::string vel_update = "blend";
+  const std::string vel_update = "flip95";
   const bool resume = false;
   REQUIRE(mpm_test::write_json_twophase(2, resume, analysis, mpm_scheme, fname,
                                         vel_update) == true);
@@ -75,7 +75,7 @@ TEST_CASE("MPM 2D Explicit USL TwoPhase implementation is checked",
     const std::string fname = "mpm-explicit-twophase-usl";
     const std::string analysis = "MPMExplicitTwoPhase2D";
     const std::string mpm_scheme = "usl";
-    const std::string vel_update = "blend";
+    const std::string vel_update = "flip95";
     const bool resume = true;
     REQUIRE(mpm_test::write_json_twophase(2, resume, analysis, mpm_scheme,
                                           fname, vel_update) == true);
@@ -123,7 +123,7 @@ TEST_CASE("MPM 3D Explicit USL TwoPhase implementation is checked",
   const std::string fname = "mpm-explicit-twophase-usl";
   const std::string analysis = "MPMExplicitTwoPhase3D";
   const std::string mpm_scheme = "usl";
-  const std::string vel_update = "blend";
+  const std::string vel_update = "flip95";
   const bool resume = false;
   REQUIRE(mpm_test::write_json_twophase(3, resume, analysis, mpm_scheme, fname,
                                         vel_update) == true);
@@ -178,7 +178,7 @@ TEST_CASE("MPM 3D Explicit USL TwoPhase implementation is checked",
     const std::string fname = "mpm-explicit-twophase-usl";
     const std::string analysis = "MPMExplicitTwoPhase3D";
     const std::string mpm_scheme = "usl";
-    const std::string vel_update = "blend";
+    const std::string vel_update = "flip95";
     const bool resume = true;
     REQUIRE(mpm_test::write_json_twophase(3, resume, analysis, mpm_scheme,
                                           fname, vel_update) == true);

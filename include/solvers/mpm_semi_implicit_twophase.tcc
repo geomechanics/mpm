@@ -559,8 +559,8 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::initialise_matrix() {
     }
 
 #ifdef USE_MPI
-    if ((free_surface_detection_ != "density" ||
-         free_surface_detection_ != "none") &&
+    if (!(free_surface_detection_ == "density" ||
+          free_surface_detection_ == "none") &&
         mpi_size > 1) {
       console_->warn(
           "The free-surface detection in MPI setting is automatically set to "

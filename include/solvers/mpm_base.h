@@ -123,6 +123,11 @@ class MPMBase : public MPM {
   void write_partio(mpm::Index step, mpm::Index max_steps) override;
 #endif
 
+  //! Get total simulation time
+  double total_time(mpm::Index step) const override {
+    return step * this->dt_;
+  };
+
  private:
   //! Return if a mesh will be isoparametric or not
   //! \retval isoparametric Status of mesh type

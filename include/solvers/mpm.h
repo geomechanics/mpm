@@ -86,6 +86,9 @@ class MPM {
   virtual void write_partio(mpm::Index step, mpm::Index max_steps) = 0;
 #endif
 
+  //! Get total simulation time
+  virtual double total_time(mpm::Index step) const = 0;
+
   //! A unique id for the analysis
   std::string uuid_;
   //! Time step size

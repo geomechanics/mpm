@@ -74,10 +74,11 @@ class VtkWriter {
   //! \param[in] mpi_size Number of MPI tasks
   //! \param[in] step Current time step
   //! \param[in] max_steps Maximum number of steps in the simulation
+  //! \param[in] total_time Physical time snapshot
   //! \param[in] ncomponents Number of components to write
   void write_parallel_vtk(const std::string& filename,
                           const std::string& attribute, int mpi_size,
-                          unsigned step, unsigned max_steps,
+                          unsigned step, unsigned max_steps, double total_time,
                           unsigned ncomponents = 3);
 
  private:

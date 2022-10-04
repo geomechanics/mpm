@@ -51,8 +51,9 @@ TEST_CASE("VTK Writer is checked", "[vtk][writer]") {
     int mpi_size = 2;
     unsigned step = 1000;
     unsigned max_steps = 10000;
+    double total_time = 1.0;
     vtk_writer->write_parallel_vtk(parallel_vtk_file, attribute, mpi_size, step,
-                                   max_steps);
+                                   max_steps, total_time);
 
     // Check file data
     std::string ppolydata =
@@ -98,8 +99,9 @@ TEST_CASE("VTK Writer is checked", "[vtk][writer]") {
     int mpi_size = 2;
     unsigned step = 1000;
     unsigned max_steps = 10000;
+    double total_time = 1.0;
     vtk_writer->write_parallel_vtk(parallel_vtk_file, attribute, mpi_size, step,
-                                   max_steps, 1);
+                                   max_steps, total_time, 1);
 
     // Check file data
     std::string ppolydata =

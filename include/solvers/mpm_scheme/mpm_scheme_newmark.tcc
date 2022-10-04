@@ -159,7 +159,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 // Update particle kinematics
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase,
+    mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
     const std::string& damping_type, double damping_factor, unsigned step,
     bool update_defgrad) {
 

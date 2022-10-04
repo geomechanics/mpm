@@ -307,9 +307,9 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
     if (delta_correction_) this->compute_delta_correction_measures();
 
     // Update particle position and kinematics
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
-                  std::placeholders::_1, this->dt_, velocity_update_));
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::compute_updated_position,
+        std::placeholders::_1, this->dt_, velocity_update_, blending_ratio_));
 
     // Apply particle velocity constraints
     mesh_->apply_particle_velocity_constraints();

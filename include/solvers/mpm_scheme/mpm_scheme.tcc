@@ -192,7 +192,7 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 // Compute particle kinematics
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase,
+    mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
     const std::string& damping_type, double damping_factor, unsigned step,
     bool update_defgrad) {
 
@@ -215,7 +215,7 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
-                std::placeholders::_1, dt_, velocity_update));
+                std::placeholders::_1, dt_, velocity_update, blending_ratio));
 
   // Iterate over each particle to update deformation gradient
   if (update_defgrad)

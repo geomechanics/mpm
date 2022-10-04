@@ -961,16 +961,11 @@ void mpm::Particle<Tdim>::map_traction_force() noexcept {
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(
-    double dt, mpm::VelocityUpdate velocity_update) noexcept {
+    double dt, mpm::VelocityUpdate velocity_update,
+    double blending_ratio) noexcept {
   switch (velocity_update) {
     case mpm::VelocityUpdate::FLIP:
-      this->compute_updated_position_flip(dt);
-      break;
-    case mpm::VelocityUpdate::FLIP99:
-      this->compute_updated_position_flip(dt, 0.99);
-      break;
-    case mpm::VelocityUpdate::FLIP95:
-      this->compute_updated_position_flip(dt, 0.95);
+      this->compute_updated_position_flip(dt, blending_ratio);
       break;
     case mpm::VelocityUpdate::PIC:
       this->compute_updated_position_pic(dt);
@@ -982,15 +977,15 @@ void mpm::Particle<Tdim>::compute_updated_position(
       this->compute_updated_position_tpic(dt);
       break;
     default:
-      this->compute_updated_position_flip(dt);
+      this->compute_updated_position_flip(dt, blending_ratio);
       break;
   }
 }
 
 // Compute updated position of the particle assuming FLIP scheme
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_updated_position_flip(double dt,
-                                                        double alpha) noexcept {
+void mpm::Particle<Tdim>::compute_updated_position_flip(
+    double dt, double blending_ratio) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
   // Get interpolated nodal velocity
@@ -1011,7 +1006,8 @@ void mpm::Particle<Tdim>::compute_updated_position_flip(double dt,
   // Update particle velocity from interpolated nodal acceleration
   this->velocity_.noalias() += nodal_acceleration * dt;
   // If intermediate scheme is considered
-  this->velocity_ = alpha * this->velocity_ + (1.0 - alpha) * nodal_velocity;
+  this->velocity_ = blending_ratio * this->velocity_ +
+                    (1.0 - blending_ratio) * nodal_velocity;
 
   // New position  current position + velocity * dt
   this->coordinates_.noalias() += nodal_velocity * dt;

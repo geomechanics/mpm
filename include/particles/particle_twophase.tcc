@@ -643,9 +643,11 @@ inline void mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force() noexcept {
 // liquid phase
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_position(
-    double dt, mpm::VelocityUpdate velocity_update) noexcept {
-  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update);
-  this->compute_updated_liquid_velocity(dt, velocity_update);
+    double dt, mpm::VelocityUpdate velocity_update,
+    double blending_ratio) noexcept {
+  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update,
+                                                blending_ratio);
+  this->compute_updated_liquid_velocity(dt, velocity_update, blending_ratio);
 }
 
 //! Map particle pressure to nodes
@@ -679,16 +681,11 @@ bool mpm::TwoPhaseParticle<Tdim>::map_pressure_to_nodes(
 // Compute updated velocity of the liquid phase based on nodal velocity
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
-    double dt, mpm::VelocityUpdate velocity_update) noexcept {
+    double dt, mpm::VelocityUpdate velocity_update,
+    double blending_ratio) noexcept {
   switch (velocity_update) {
     case mpm::VelocityUpdate::FLIP:
-      this->compute_updated_liquid_velocity_flip(dt);
-      break;
-    case mpm::VelocityUpdate::FLIP99:
-      this->compute_updated_liquid_velocity_flip(dt, 0.99);
-      break;
-    case mpm::VelocityUpdate::FLIP95:
-      this->compute_updated_liquid_velocity_flip(dt, 0.95);
+      this->compute_updated_liquid_velocity_flip(dt, blending_ratio);
       break;
     case mpm::VelocityUpdate::PIC:
       this->compute_updated_liquid_velocity_pic(dt);
@@ -700,7 +697,7 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
       this->compute_updated_liquid_velocity_pic(dt);
       break;
     default:
-      this->compute_updated_liquid_velocity_flip(dt);
+      this->compute_updated_liquid_velocity_flip(dt, blending_ratio);
       break;
   }
 }
@@ -709,7 +706,7 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
 // FLIP scheme
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity_flip(
-    double dt, double alpha) noexcept {
+    double dt, double blending_ratio) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
@@ -729,8 +726,8 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity_flip(
   // Update particle velocity from both interpolated nodal acceleration and
   // velocity
   this->liquid_velocity_.noalias() += acceleration * dt;
-  this->liquid_velocity_ =
-      alpha * this->liquid_velocity_ + (1.0 - alpha) * velocity;
+  this->liquid_velocity_ = blending_ratio * this->liquid_velocity_ +
+                           (1.0 - blending_ratio) * velocity;
 }
 
 // Compute updated velocity of the liquid phase based on nodal velocity assuming

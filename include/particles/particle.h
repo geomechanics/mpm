@@ -239,9 +239,11 @@ class Particle : public ParticleBase<Tdim> {
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   void compute_updated_position(
-      double dt, mpm::VelocityUpdate velocity_update =
-                     mpm::VelocityUpdate::FLIP) noexcept override;
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept override;
 
   //! Assign material history variables
   //! \param[in] state_vars State variables
@@ -530,8 +532,9 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute updated position of the particle assuming FLIP scheme
   //! \param[in] dt Analysis time step
-  //! \param[in] alpha Blending FLIP-PIC coefficient
-  void compute_updated_position_flip(double dt, double alpha = 1.0) noexcept;
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  void compute_updated_position_flip(double dt,
+                                     double blending_ratio = 1.0) noexcept;
 
   //! Compute updated position of the particle assuming PIC scheme
   //! \param[in] dt Analysis time step

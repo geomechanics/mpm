@@ -31,9 +31,7 @@ class MPMImplicit : public MPMBase<Tdim> {
   //! Class protected functions
  protected:
   //! Get total simulation time
-  double total_time(mpm::Index step) const override {
-    return this->total_time_;
-  };
+  double time(mpm::Index step) const override { return this->time_; };
 
   //! Class private functions
  private:
@@ -176,8 +174,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   double milne_delta_{0.0};
   //! Solver convergence
   bool solver_convergence_{true};
-  //! Solver convergence
-  double total_time_{0.0};
+  //! Current simulation time
+  double time_{0.0};
   /**@}*/
 
 };  // MPMImplicit class

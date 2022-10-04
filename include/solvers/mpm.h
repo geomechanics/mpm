@@ -87,7 +87,7 @@ class MPM {
 #endif
 
   //! Get total simulation time
-  virtual double total_time(mpm::Index step) const = 0;
+  virtual double time(mpm::Index step) const = 0;
 
   //! A unique id for the analysis
   std::string uuid_;

@@ -124,9 +124,7 @@ class MPMBase : public MPM {
 #endif
 
   //! Get total simulation time
-  double total_time(mpm::Index step) const override {
-    return step * this->dt_;
-  };
+  double time(mpm::Index step) const override { return step * this->dt_; };
 
  private:
   //! Return if a mesh will be isoparametric or not

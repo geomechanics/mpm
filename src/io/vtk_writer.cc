@@ -224,7 +224,7 @@ void VtkWriter::write_mesh(
 void VtkWriter::write_parallel_vtk(const std::string& filename,
                                    const std::string& attribute, int mpi_size,
                                    unsigned step, unsigned max_steps,
-                                   double total_time, unsigned ncomponents) {
+                                   double time, unsigned ncomponents) {
 
   // If the number of components is 1, set as scalar or vector / tensor
   std::string data_type;
@@ -299,7 +299,7 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
 
   if (boost::filesystem::exists(file_check)) {
     group_vtk.open(group_filename, std::fstream::app);
-    group_data = "\t<DataSet timestep=\"" + std::to_string(total_time) +
+    group_data = "\t<DataSet timestep=\"" + std::to_string(time) +
                  "\" file=\"./" + group_parts_file.str() + "\"/>\n";
     group_vtk << group_data;
   } else {
@@ -307,7 +307,7 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
     group_data =
         "<?xml version=\"1.0\"?>\n<VTKFile type=\"Collection\" version=\"0.1\" "
         "byte_order=\"LittleEndian\">\n<Collection>\n\t<DataSet timestep=\"" +
-        std::to_string(total_time) + "\" file=\"./" + group_parts_file.str() +
+        std::to_string(time) + "\" file=\"./" + group_parts_file.str() +
         "\"/>\n";
     group_vtk << group_data;
   }

@@ -543,7 +543,7 @@ template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
 
   // Get total simulation time
-  double total_time = this->total_time(step);
+  double time = this->time(step);
 
   // VTK PolyData writer
   auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates());
@@ -590,7 +590,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                .string();
 
       vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps, total_time, 1);
+                                     max_steps, time, 1);
     }
 #endif
   }
@@ -611,7 +611,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                .string();
 
       vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps, total_time, 3);
+                                     max_steps, time, 3);
     }
 #endif
   }
@@ -632,7 +632,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                .string();
 
       vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps, total_time, 9);
+                                     max_steps, time, 9);
     }
 #endif
   }
@@ -658,8 +658,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
                                  .string();
         unsigned ncomponents = 1;
         vtk_writer->write_parallel_vtk(parallel_file, phase_attribute, mpi_size,
-                                       step, max_steps, total_time,
-                                       ncomponents);
+                                       step, max_steps, time, ncomponents);
       }
 #endif
     }

@@ -176,16 +176,15 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   }
 
   // Simulation time
-  double total_time_ = 0.0;
-  if (resume) total_time_ = resume_time;
-  double target_time = nsteps_ * dt_;
+  if (resume) time_ = resume_time;
+  double max_time = nsteps_ * dt_;
 
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
   for (; step_ < nsteps_; ++step_) {
     if (mpi_rank == 0)
       console_->info("Step: {} of {}, Time: {}s of {}s.\n", step_, nsteps_,
-                     total_time_, target_time);
+                     time_, max_time);
 
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
@@ -273,13 +272,14 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 #endif
 #endif
 
+    // Time update
+    time_ += this->dt_;
+
     // Write outputs
-    // TODO: Need to modify function write outputs to check exact time
     this->write_outputs(this->step_ + 1);
 
-    // Time update
-    total_time_ += this->dt_;
-    if (error_control_ && (total_time_ > target_time)) break;
+    // Exit loop if your time reach the target time
+    if (error_control_ && (time_ > max_time)) break;
   }
   auto solver_end = std::chrono::steady_clock::now();
   console_->info("Rank {}, Implicit {} solver duration: {} ms", mpi_rank,

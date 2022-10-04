@@ -13,15 +13,11 @@ namespace mpm {
 //! Velocity update type
 //! Flip: fluid-implicit-particle (acceleration update)
 //! Pic: particle-in-cell (velocity update)
-//! Flip99: 99% flip and 1% pic
-//! Flip95: 95% flip and 5% pic
 //! Tpic: Taylor pic
 //! Apic: Affine pic
 std::map<std::string, mpm::VelocityUpdate> VelocityUpdateType = {
     {"flip", mpm::VelocityUpdate::FLIP},
     {"pic", mpm::VelocityUpdate::PIC},
-    {"flip99", mpm::VelocityUpdate::FLIP99},
-    {"flip95", mpm::VelocityUpdate::FLIP95},
     {"tpic", mpm::VelocityUpdate::TPIC},
     {"apic", mpm::VelocityUpdate::APIC}};
 

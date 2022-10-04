@@ -47,12 +47,13 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
 
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC blending ratio
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
   //! \param[in] update_defgrad Update deformation gradient
   inline void compute_particle_kinematics(mpm::VelocityUpdate velocity_update,
-                                          unsigned phase,
+                                          double blending_ratio, unsigned phase,
                                           const std::string& damping_type,
                                           double damping_factor, unsigned step,
                                           bool update_defgrad) override;

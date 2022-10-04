@@ -435,8 +435,10 @@ void mpm::FluidParticle<Tdim>::deserialize(
 // Compute updated position of the particle and kinematics
 template <unsigned Tdim>
 void mpm::FluidParticle<Tdim>::compute_updated_position(
-    double dt, mpm::VelocityUpdate velocity_update) noexcept {
-  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update);
+    double dt, mpm::VelocityUpdate velocity_update,
+    double blending_ratio) noexcept {
+  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update,
+                                                blending_ratio);
 
   // Interpolate error measures from node
   double error_2 = 0;

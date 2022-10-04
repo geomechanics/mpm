@@ -282,7 +282,6 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
 
   // Write parallel grouping VTK file
   std::string output_path = filename.substr(0, filename.find_last_of("\\/"));
-  std::ofstream group_vtk;
   std::string group_filename = output_path + "/" + attribute + ".pvd";
   std::string group_data;
 
@@ -298,11 +297,30 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
   boost::filesystem::path file_check(group_filename);
 
   if (boost::filesystem::exists(file_check)) {
-    group_vtk.open(group_filename, std::fstream::app);
+    // First read vtk
+    std::fstream read_vtk;
+    read_vtk.open(group_filename);
+
+    // Read every lines and store as vector
+    std::vector<std::string> lines;
+    std::string line;
+    while (getline(read_vtk, line)) lines.push_back(line);
+    read_vtk.close();
+
+    // Output new file
+    std::ofstream group_vtk;
+    group_vtk.open(group_filename);
+    const unsigned lines_size = lines.size() - 2;
+    for (int i = 0; i < lines_size; i++) group_vtk << lines[i] << "\n";
     group_data = "\t<DataSet timestep=\"" + std::to_string(time) +
                  "\" file=\"./" + group_parts_file.str() + "\"/>\n";
     group_vtk << group_data;
+    std::string closing = "</Collection>\n</VTKFile>";
+    group_vtk << closing;
+    group_vtk.close();
   } else {
+    // Output new file
+    std::ofstream group_vtk;
     group_vtk.open(group_filename);
     group_data =
         "<?xml version=\"1.0\"?>\n<VTKFile type=\"Collection\" version=\"0.1\" "
@@ -310,14 +328,10 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
         std::to_string(time) + "\" file=\"./" + group_parts_file.str() +
         "\"/>\n";
     group_vtk << group_data;
-  }
-
-  if (step == max_steps - 1) {
     std::string closing = "</Collection>\n</VTKFile>";
     group_vtk << closing;
+    group_vtk.close();
   }
-
-  group_vtk.close();
 }
 
 #endif

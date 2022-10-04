@@ -296,7 +296,7 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
 
   boost::filesystem::path file_check(group_filename);
 
-  if (boost::filesystem::exists(file_check)) {
+  if (boost::filesystem::exists(file_check) && step != 0) {
     // First read vtk
     std::fstream read_vtk;
     read_vtk.open(group_filename);

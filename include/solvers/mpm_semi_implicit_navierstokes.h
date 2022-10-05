@@ -44,7 +44,9 @@ class MPMSemiImplicitNavierStokes : public MPMBase<Tdim> {
   bool compute_correction_force();
 
   //! Compute delta correction error measures
-  bool compute_delta_correction_measures();
+  //! \param[in] delta_correction Boolean which define if delta correction
+  //! should be performed
+  bool compute_delta_correction_measures(bool delta_correction);
 
   //! Class private variables
  private:

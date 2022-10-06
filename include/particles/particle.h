@@ -239,9 +239,11 @@ class Particle : public ParticleBase<Tdim> {
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   void compute_updated_position(
-      double dt, mpm::VelocityUpdate velocity_update =
-                     mpm::VelocityUpdate::FLIP) noexcept override;
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept override;
 
   //! Assign material history variables
   //! \param[in] state_vars State variables
@@ -477,13 +479,6 @@ class Particle : public ParticleBase<Tdim> {
   inline Eigen::Matrix<double, Tdim, Tdim> compute_velocity_gradient(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
 
-  //! Compute APIC B-Matrix
-  //! \param[in] shapefn Shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval velocity gradient increment at particle inside a cell
-  inline Eigen::Matrix<double, Tdim, Tdim> compute_apic_mapping_matrix(
-      const Eigen::MatrixXd& shapefn, unsigned phase) noexcept;
-
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -513,6 +508,63 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter beta of Newmark scheme
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
+  /**@}*/
+
+  /**
+   * \defgroup AdvancedMapping Functions dealing with advance mapping scheme of
+   * MPM
+   */
+  /**@{*/
+  //! Map particle mass and momentum to nodes for affine transformation
+  //! \ingroup AdvancedMapping
+  virtual void map_mass_momentum_to_nodes_affine() noexcept;
+
+  //! Map particle mass and momentum to nodes for approximate taylor expansion
+  //! \ingroup AdvancedMapping
+  virtual void map_mass_momentum_to_nodes_taylor() noexcept;
+
+  //! Compute updated position of the particle assuming FLIP scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  void compute_updated_position_flip(double dt,
+                                     double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated position of the particle assuming PIC scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_pic(double dt) noexcept;
+
+  //! Compute updated position of the particle assuming ASFLIP scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  void compute_updated_position_asflip(double dt,
+                                       double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated position of the particle assuming APIC scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_apic(double dt) noexcept;
+
+  //! Compute updated position of the particle assuming TPIC scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_tpic(double dt) noexcept;
+
+  //! Compute APIC B-Matrix
+  //! \ingroup AdvancedMapping
+  //! \param[in] shapefn Shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval velocity gradient increment at particle inside a cell
+  inline Eigen::Matrix<double, Tdim, Tdim> compute_apic_mapping_matrix(
+      const Eigen::MatrixXd& shapefn, unsigned phase) noexcept;
+
+  //! Compute ASFLIP beta parameter
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt time increment
+  inline double compute_asflip_beta(double dt) noexcept;
+
   /**@}*/
 
   //! particle id

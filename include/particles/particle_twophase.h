@@ -89,9 +89,11 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! liquid phase
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   void compute_updated_position(
-      double dt, mpm::VelocityUpdate velocity_update =
-                     mpm::VelocityUpdate::FLIP) noexcept override;
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept override;
 
   //! Assign velocity to the particle liquid phase
   //! \param[in] velocity A vector of particle liquid phase velocity
@@ -234,12 +236,35 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map liquid advection force
   virtual void map_liquid_advection_force() noexcept;
 
+  /**
+   * \defgroup AdvancedMapping Functions dealing with advance mapping scheme of
+   * MPM
+   */
+  /**@{*/
   //! Compute updated velocity of the particle based on nodal velocity
+  //! \ingroup AdvancedMapping
   //! \param[in] dt Analysis time step
-  //! \retval status Compute status
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   virtual void compute_updated_liquid_velocity(
       double dt,
-      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP) noexcept;
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated velocity of the particle based on nodal velocity assuming
+  //! FLIP scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  virtual void compute_updated_liquid_velocity_flip(
+      double dt, double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated velocity of the particle based on nodal velocity assuming
+  //! PIC scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  virtual void compute_updated_liquid_velocity_pic(double dt) noexcept;
+
+  /**@}*/
 
  protected:
   //! particle id

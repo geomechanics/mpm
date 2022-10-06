@@ -88,8 +88,8 @@ bool mpm::MPMExplicitTwoPhase<Tdim>::solve() {
   }
 
 #ifdef USE_MPI
-  if ((free_surface_detection_ != "density" ||
-       free_surface_detection_ != "none") &&
+  if (!(free_surface_detection_ == "density" ||
+        free_surface_detection_ == "none") &&
       mpi_size > 1) {
     console_->warn(
         "The free-surface detection in MPI setting is automatically set to "
@@ -357,9 +357,9 @@ bool mpm::MPMExplicitTwoPhase<Tdim>::solve() {
           std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
     // Update particle position and kinematics
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
-                  std::placeholders::_1, this->dt_, velocity_update_));
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::compute_updated_position,
+        std::placeholders::_1, this->dt_, velocity_update_, blending_ratio_));
 
     // Apply particle velocity constraints
     mesh_->apply_particle_velocity_constraints();

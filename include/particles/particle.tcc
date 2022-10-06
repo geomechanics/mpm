@@ -607,6 +607,9 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
     case mpm::VelocityUpdate::APIC:
       this->map_mass_momentum_to_nodes_affine();
       break;
+    case mpm::VelocityUpdate::ASFLIP:
+      this->map_mass_momentum_to_nodes_affine();
+      break;
     case mpm::VelocityUpdate::TPIC:
       this->map_mass_momentum_to_nodes_taylor();
       break;
@@ -970,6 +973,9 @@ void mpm::Particle<Tdim>::compute_updated_position(
     case mpm::VelocityUpdate::PIC:
       this->compute_updated_position_pic(dt);
       break;
+    case mpm::VelocityUpdate::ASFLIP:
+      this->compute_updated_position_asflip(dt, blending_ratio);
+      break;
     case mpm::VelocityUpdate::APIC:
       this->compute_updated_position_apic(dt);
       break;
@@ -988,20 +994,19 @@ void mpm::Particle<Tdim>::compute_updated_position_flip(
     double dt, double blending_ratio) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
-  // Get interpolated nodal velocity
+
+  // Get interpolated nodal velocity and acceleration
   Eigen::Matrix<double, Tdim, 1> nodal_velocity =
       Eigen::Matrix<double, Tdim, 1>::Zero();
-
-  for (unsigned i = 0; i < nodes_.size(); ++i)
-    nodal_velocity.noalias() +=
-        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
-
-  // Get interpolated nodal acceleration
   Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
       Eigen::Matrix<double, Tdim, 1>::Zero();
-  for (unsigned i = 0; i < nodes_.size(); ++i)
+
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodal_velocity.noalias() +=
+        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
     nodal_acceleration.noalias() +=
         shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
+  }
 
   // Update particle velocity from interpolated nodal acceleration
   this->velocity_.noalias() += nodal_acceleration * dt;
@@ -1034,6 +1039,50 @@ void mpm::Particle<Tdim>::compute_updated_position_pic(double dt) noexcept {
   this->coordinates_.noalias() += nodal_velocity * dt;
   // Update displacement (displacement is initialized from zero)
   this->displacement_.noalias() += nodal_velocity * dt;
+}
+
+// Compute updated position of the particle assuming ASFLIP scheme
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::compute_updated_position_asflip(
+    double dt, double blending_ratio) noexcept {
+  // Check if particle has a valid cell ptr
+  assert(cell_ != nullptr);
+
+  // Compute auxiliary mapping matrix
+  mapping_matrix_ = this->compute_apic_mapping_matrix(
+      this->shapefn_, mpm::ParticlePhase::SinglePhase);
+
+  // Get interpolated nodal velocity and acceleration
+  Eigen::Matrix<double, Tdim, 1> nodal_velocity =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodal_velocity.noalias() +=
+        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+    nodal_acceleration.noalias() +=
+        shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
+  }
+
+  // Compute particle ASFLIP beta parameter
+  const double beta = this->compute_asflip_beta(dt);
+
+  // Update particle velocity from interpolated nodal acceleration
+  const auto flip_velocity = this->velocity_ + nodal_acceleration * dt;
+  // If intermediate scheme is considered
+  this->velocity_ =
+      blending_ratio * flip_velocity + (1.0 - blending_ratio) * nodal_velocity;
+
+  // Compute separable velocity in particle
+  const auto separable_velocity =
+      beta * blending_ratio * flip_velocity +
+      (1.0 - beta * blending_ratio) * nodal_velocity;
+
+  // New position  current position + velocity * dt
+  this->coordinates_.noalias() += separable_velocity * dt;
+  // Update displacement (displacement is initialized from zero)
+  this->displacement_.noalias() += separable_velocity * dt;
 }
 
 // Compute updated position of the particle assuming APIC scheme
@@ -1591,4 +1640,26 @@ inline Eigen::Matrix<double, Tdim, Tdim>
     }
   }
   return b_matrix;
+}
+
+//! Compute ASFLIP beta parameter
+template <unsigned Tdim>
+inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
+  double beta = 1.0;
+  // Check if particle is located nearby imposed boundary
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity_constraints = nodes_[i]->velocity_constraints();
+    if (velocity_constraints.size() > 0) {
+      beta = 0.0;
+      break;
+    }
+  }
+
+  // Check if the incremental Jacobian is in compressive mode
+  const auto def_grad_increment = this->compute_deformation_gradient_increment(
+      this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
+  const double J = def_grad_increment.determinant();
+  if (J < 1.0) beta = 0.0;
+
+  return beta;
 }

@@ -92,7 +92,9 @@ mpm::dense_map mpm::MohrCoulombSFD<Tdim>::initialise_state_variables() {
                                // Theta
                                {"theta", 0.},
                                // Plastic deviatoric strain
-                               {"pdstrain", 0.}};
+                               {"pdstrain", 0.},
+                               // Material ID
+                               {"material_id", this->id_}};
   return state_vars;
 }
 
@@ -100,7 +102,8 @@ mpm::dense_map mpm::MohrCoulombSFD<Tdim>::initialise_state_variables() {
 template <unsigned Tdim>
 std::vector<std::string> mpm::MohrCoulombSFD<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
-      "phi", "psi", "cohesion", "epsilon", "rho", "theta", "pdstrain"};
+      "phi", "psi",   "cohesion", "epsilon",
+      "rho", "theta", "pdstrain", "material_id"};
   return state_vars;
 }
 

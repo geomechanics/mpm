@@ -44,9 +44,11 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! Compute updated position of the particle and kinematics
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   void compute_updated_position(
-      double dt, mpm::VelocityUpdate velocity_update =
-                     mpm::VelocityUpdate::FLIP) noexcept override;
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept override;
 
   //! Serialize
   //! \retval buffer Serialized buffer data

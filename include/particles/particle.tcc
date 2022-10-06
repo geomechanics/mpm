@@ -968,9 +968,6 @@ void mpm::Particle<Tdim>::compute_updated_position(
     case mpm::VelocityUpdate::TPIC:
       this->compute_updated_position_tpic(dt);
       break;
-    default:
-      this->compute_updated_position_flip(dt, blending_ratio);
-      break;
   }
 }
 

@@ -696,9 +696,6 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
     case mpm::VelocityUpdate::TPIC:
       this->compute_updated_liquid_velocity_pic(dt);
       break;
-    default:
-      this->compute_updated_liquid_velocity_flip(dt, blending_ratio);
-      break;
   }
 }
 

@@ -140,6 +140,8 @@ class FluidParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::volume_;
   //! Size of particle
   using Particle<Tdim>::pack_size_;
+  //! Mapping matrix
+  using Particle<Tdim>::mapping_matrix_;
   //! Projection parameter for semi-implicit update
   double projection_param_{0.0};
   //! Pressure constraint

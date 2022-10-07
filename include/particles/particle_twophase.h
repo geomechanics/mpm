@@ -323,6 +323,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::pack_size_;
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
+  //! Mapping matrix
+  using Particle<Tdim>::mapping_matrix_;
 
   //! Liquid mass
   double liquid_mass_;

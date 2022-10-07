@@ -107,6 +107,23 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->deformation_gradient_(2, 1) = particle.defgrad_21;
   this->deformation_gradient_(2, 2) = particle.defgrad_22;
 
+  // Mapping matrix
+  bool initialise_mapping = particle.initialise_mapping_matrix;
+  if (initialise_mapping) {
+    Eigen::Matrix3d mapping;
+    mapping << particle.mapping_matrix_00, particle.mapping_matrix_01,
+        particle.mapping_matrix_02, particle.mapping_matrix_10,
+        particle.mapping_matrix_11, particle.mapping_matrix_12,
+        particle.mapping_matrix_20, particle.mapping_matrix_21,
+        particle.mapping_matrix_22;
+
+    if (mapping_matrix_.cols() != Tdim) mapping_matrix_.resize(Tdim, Tdim);
+
+    for (unsigned i = 0; i < Tdim; ++i)
+      for (unsigned j = 0; j < Tdim; ++j)
+        this->mapping_matrix_(i, j) = mapping(i, j);
+  }
+
   // Status
   this->status_ = particle.status;
 
@@ -192,6 +209,14 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
 
   Eigen::Matrix<double, 3, 3> defgrad = this->deformation_gradient_;
 
+  // Mapping matrix
+  Eigen::Matrix<double, 3, 3> mapping = Eigen::Matrix<double, 3, 3>::Zero();
+  bool initialise_mapping = (this->mapping_matrix_.size() != 0);
+  if (initialise_mapping)
+    for (unsigned i = 0; i < Tdim; ++i)
+      for (unsigned j = 0; j < Tdim; ++j)
+        mapping(i, j) = this->mapping_matrix_(i, j);
+
   particle_data->id = this->id();
   particle_data->mass = this->mass();
   particle_data->volume = this->volume();
@@ -244,6 +269,17 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   particle_data->defgrad_20 = defgrad(2, 0);
   particle_data->defgrad_21 = defgrad(2, 1);
   particle_data->defgrad_22 = defgrad(2, 2);
+
+  particle_data->initialise_mapping_matrix = initialise_mapping;
+  particle_data->mapping_matrix_00 = mapping(0, 0);
+  particle_data->mapping_matrix_01 = mapping(0, 1);
+  particle_data->mapping_matrix_02 = mapping(0, 2);
+  particle_data->mapping_matrix_10 = mapping(1, 0);
+  particle_data->mapping_matrix_11 = mapping(1, 1);
+  particle_data->mapping_matrix_12 = mapping(1, 2);
+  particle_data->mapping_matrix_20 = mapping(2, 0);
+  particle_data->mapping_matrix_21 = mapping(2, 1);
+  particle_data->mapping_matrix_22 = mapping(2, 2);
 
   particle_data->status = this->status();
 

@@ -186,6 +186,8 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   double m_dilation_{0.};
   //! Parameter for modulus
   double m_modulus_{0.};
+  //! Flag to force stress ratio to converge to critical state
+  bool force_critical_state_{false};
   //! Default tolerance
   double tolerance_{std::numeric_limits<double>::epsilon()};
   //! Failure state map

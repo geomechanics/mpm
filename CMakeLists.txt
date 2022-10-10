@@ -317,6 +317,12 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_musl_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_musl_unitcell_test.cc
   )
   add_executable(mpmtest_unit ${mpm_src} ${test_src_unit})
   add_executable(mpmtest_small ${mpm_src} ${test_src_small})

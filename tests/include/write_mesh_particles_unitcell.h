@@ -9,6 +9,11 @@ bool write_json_unitcell(unsigned dim, const std::string& analysis,
                          const std::string& mpm_scheme,
                          const std::string& file_name);
 
+// Write JSON Configuration file for xmpm
+bool write_json_xmpm_unitcell(unsigned dim, const std::string& analysis,
+                              const std::string& mpm_scheme,
+                              const std::string& file_name);
+
 // Write JSON Configuration file for finite strain
 bool write_json_unitcell_finite_strain(unsigned dim,
                                        const std::string& analysis,
@@ -48,5 +53,8 @@ bool write_particles_2d_unitcell();
 bool write_mesh_3d_unitcell();
 // Write particles file in 3D
 bool write_particles_3d_unitcell();
+
+// Write discontinuity file in 3D
+bool write_discontinuity_3d_unitcell();
 
 }  // namespace mpm_test

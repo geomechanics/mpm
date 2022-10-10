@@ -17,9 +17,6 @@ TEST_CASE("XMPM 3D Explicit implementation is checked",
   const std::string fname = "xmpm-explicit-usf";
   const std::string analysis = "XMPMExplicit3D";
   const std::string mpm_scheme = "usf";
-  const bool resume = false;
-  REQUIRE(mpm_test::write_json_xmpm(3, resume, analysis, mpm_scheme, fname) ==
-          true);
 
   // Write JSON Entity Sets file
   REQUIRE(mpm_test::write_entity_set() == true);
@@ -42,6 +39,9 @@ TEST_CASE("XMPM 3D Explicit implementation is checked",
   // clang-format on
 
   SECTION("Check initialisation") {
+    const bool resume = false;
+    REQUIRE(mpm_test::write_json_xmpm(3, resume, analysis, mpm_scheme, fname) ==
+            true);
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
     // Run explicit XMPM
@@ -69,25 +69,5 @@ TEST_CASE("XMPM 3D Explicit implementation is checked",
     REQUIRE(mpm->solve() == true);
     // Test check point restart
     REQUIRE(mpm->checkpoint_resume() == false);
-  }
-
-  SECTION("Check resume") {
-    // Write JSON file
-    const std::string fname = "xmpm-explicit-usf";
-    const std::string analysis = "XMPMExplicit3D";
-    const std::string mpm_scheme = "usf";
-    bool resume = true;
-    REQUIRE(mpm_test::write_json_xmpm(3, resume, analysis, mpm_scheme, fname) ==
-            true);
-
-    // Create an IO object
-    auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit XMPM
-    auto mpm = std::make_unique<mpm::XMPMExplicit<Dim>>(std::move(io));
-
-    // Test check point restart
-    REQUIRE(mpm->checkpoint_resume() == true);
-    // Solve
-    REQUIRE(mpm->solve() == true);
   }
 }

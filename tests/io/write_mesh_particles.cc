@@ -739,13 +739,13 @@ bool write_json_finite_strain(unsigned dim, bool resume,
 
 // Write JSON Configuration file for xmpm
 bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
-                     const std::string& stress_update,
+                     const std::string& mpm_scheme,
                      const std::string& file_name) {
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
   auto particle_type = "P2DXMPM";
-  auto node_type = "N2D";
+  auto node_type = "N2DXMPM";
   auto cell_type = "ED2Q4";
   auto io_type = "Ascii2D";
   auto discontinuity_file = "discontinuity-2d.txt";
@@ -759,7 +759,7 @@ bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
   if (dim == 3) {
     dimension = "3d";
     particle_type = "P3DXMPM";
-    node_type = "N3D";
+    node_type = "N3DXMPM";
     cell_type = "ED3H8";
     io_type = "Ascii3D";
     material = "LinearElastic3D";
@@ -778,12 +778,10 @@ bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
         {"isoparametric", false},
         {"node_type", node_type},
         {"boundary_conditions",
-         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}},
-          {"friction_constraints", {{"file", "friction-constraints.txt"}}}}},
+         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}}}},
         {"cell_type", cell_type}}},
       {"particles",
-       {{{"group_id", 0},
-         {"generator",
+       {{{"generator",
           {{"type", "file"},
            {"material_id", material_id},
            {"pset_id", 0},
@@ -791,12 +789,7 @@ bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
            {"particle_type", particle_type},
            {"check_duplicates", true},
            {"location", "particles-" + dimension + ".txt"}}}}}},
-      {"discontinuity",
-       {{{"id", 0},
-         {"type", "tri3d"},
-         {"io_type", "Ascii3D"},
-         {"file", discontinuity_file},
-         {"frictional_coefficient", 0.3}}}},
+      {"discontinuity", {{"initiation", false}, {"maximum_num", 2}}},
       {"materials",
        {{{"id", 0},
          {"type", material},
@@ -829,18 +822,17 @@ bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
          {"fxvalues", fxvalues}}}},
       {"analysis",
        {{"type", analysis},
-        {"stress_update", stress_update},
+        {"mpm_scheme", mpm_scheme},
         {"locate_particles", true},
         {"dt", 0.001},
         {"uuid", file_name + "-" + dimension},
         {"nsteps", 10},
-        {"boundary_friction", 0.5},
         {"resume",
          {{"resume", resume},
           {"uuid", file_name + "-" + dimension},
           {"step", 5}}},
-        {"damping", {{"type", "Cundall"}, {"damping_ratio", 0.02}}},
-        {"newmark", {{"newmark", true}, {"gamma", 0.5}, {"beta", 0.25}}}}},
+        {"damping", {{"type", "Cundall"}, {"damping_factor", 0.02}}},
+        {"newmark", {{"beta", 0.25}, {"gamma", 0.5}}}}},
       {"post_processing",
        {{"path", "results/"},
         {"vtk", {"stresses", "strains", "velocities"}},

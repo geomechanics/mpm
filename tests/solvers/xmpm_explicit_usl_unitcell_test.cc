@@ -7,63 +7,6 @@ using Json = nlohmann::json;
 #include "write_mesh_particles_unitcell.h"
 #include "xmpm_explicit.h"
 
-// Check XMPM Explicit USL
-TEST_CASE("XMPM 2D Explicit USL implementation is checked in unitcells",
-          "[XMPM][2D][USL][Explicit][1Phase][unitcell]") {
-  // Dimension
-  const unsigned Dim = 2;
-
-  // Write JSON file
-  const std::string fname = "xmpm-explicit-usl";
-  const std::string analysis = "XMPMExplicit2D";
-  const std::string mpm_scheme = "usl";
-  REQUIRE(mpm_test::write_json_unitcell(2, analysis, mpm_scheme, fname) ==
-          true);
-
-  // Write Mesh
-  REQUIRE(mpm_test::write_mesh_2d_unitcell() == true);
-
-  // Write Particles
-  REQUIRE(mpm_test::write_particles_2d_unitcell() == true);
-
-  // Assign argc and argv to input arguments of XMPM
-  int argc = 5;
-  // clang-format off
-  char* argv[] = {(char*)"./mpm",
-                  (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"xmpm-explicit-usl-2d-unitcell.json"};
-  // clang-format on
-
-  SECTION("Check initialisation") {
-    // Create an IO object
-    auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit XMPM
-    auto mpm = std::make_unique<mpm::XMPMExplicit<Dim>>(std::move(io));
-
-    // Initialise materials
-    REQUIRE_NOTHROW(mpm->initialise_materials());
-
-    // Initialise mesh and particles
-    REQUIRE_NOTHROW(mpm->initialise_mesh());
-    REQUIRE_NOTHROW(mpm->initialise_particles());
-
-    // Initialise external loading
-    REQUIRE_NOTHROW(mpm->initialise_loads());
-
-    // Renitialise materials
-    REQUIRE_THROWS(mpm->initialise_materials());
-  }
-
-  SECTION("Check solver") {
-    // Create an IO object
-    auto io = std::make_unique<mpm::IO>(argc, argv);
-    // Run explicit XMPM
-    auto mpm = std::make_unique<mpm::XMPMExplicit<Dim>>(std::move(io));
-    // Solve
-    REQUIRE(mpm->solve() == true);
-  }
-}
-
 // Check XMPM Explicit
 TEST_CASE("XMPM 3D Explicit USL implementation is checked in unitcells",
           "[XMPM][3D][Explicit][USL][1Phase][unitcell]") {
@@ -74,7 +17,8 @@ TEST_CASE("XMPM 3D Explicit USL implementation is checked in unitcells",
   const std::string fname = "xmpm-explicit-usl";
   const std::string analysis = "XMPMExplicit3D";
   const std::string mpm_scheme = "usl";
-  REQUIRE(mpm_test::write_json_unitcell(3, analysis, mpm_scheme, fname) ==
+
+  REQUIRE(mpm_test::write_json_xmpm_unitcell(3, analysis, mpm_scheme, fname) ==
           true);
 
   // Write Mesh
@@ -82,6 +26,9 @@ TEST_CASE("XMPM 3D Explicit USL implementation is checked in unitcells",
 
   // Write Particles
   REQUIRE(mpm_test::write_particles_3d_unitcell() == true);
+
+  // Write discontinuity
+  REQUIRE(mpm_test::write_discontinuity_3d_unitcell() == true);
 
   // Assign argc and argv to input arguments of XMPM
   int argc = 5;
@@ -103,6 +50,9 @@ TEST_CASE("XMPM 3D Explicit USL implementation is checked in unitcells",
     // Initialise mesh and particles
     REQUIRE_NOTHROW(mpm->initialise_mesh());
     REQUIRE_NOTHROW(mpm->initialise_particles());
+
+    // Initialise discontinuities
+    REQUIRE_NOTHROW(mpm->initialise_discontinuity());
 
     // Initialise external loading
     REQUIRE_NOTHROW(mpm->initialise_loads());

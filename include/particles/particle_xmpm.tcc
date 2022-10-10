@@ -368,65 +368,6 @@ void mpm::ParticleXMPM<Tdim>::map_traction_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::ParticleXMPM<1>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 1, 1> force;
-    force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
-
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-
-    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
-    auto discontinuity_id = nodes_[i]->discontinuity_id();
-    Eigen::Matrix<double, 1, 3> internal_force;
-    internal_force.setZero();
-    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
-      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
-    } else if (nodes_[i]->enrich_type() ==
-               mpm::NodeEnrichType::double_enriched) {
-      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
-      internal_force.col(1) = sgn(levelset_phi_[discontinuity_id[1]]) * force;
-      internal_force.col(2) = sgn(levelset_phi_[discontinuity_id[0]]) *
-                              sgn(levelset_phi_[discontinuity_id[1]]) * force;
-    }
-    nodes_[i]->update_internal_force_enrich(internal_force);
-  }
-}
-
-//! Map internal force
-template <>
-inline void mpm::ParticleXMPM<2>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 2, 1> force;
-    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
-    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
-
-    force *= -1. * this->volume_;
-
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
-
-    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::regular) continue;
-    auto discontinuity_id = nodes_[i]->discontinuity_id();
-    Eigen::Matrix<double, 2, 3> internal_force;
-    internal_force.setZero();
-    if (nodes_[i]->enrich_type() == mpm::NodeEnrichType::single_enriched) {
-      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
-    } else if (nodes_[i]->enrich_type() ==
-               mpm::NodeEnrichType::double_enriched) {
-      internal_force.col(0) = sgn(levelset_phi_[discontinuity_id[0]]) * force;
-      internal_force.col(1) = sgn(levelset_phi_[discontinuity_id[1]]) * force;
-      internal_force.col(2) = sgn(levelset_phi_[discontinuity_id[0]]) *
-                              sgn(levelset_phi_[discontinuity_id[1]]) * force;
-    }
-    nodes_[i]->update_internal_force_enrich(internal_force);
-  }
-}
-
-//! Map internal force
-template <>
 inline void mpm::ParticleXMPM<3>::map_internal_force() noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {

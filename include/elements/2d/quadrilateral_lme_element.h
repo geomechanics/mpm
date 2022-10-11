@@ -218,16 +218,14 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
   //! Nodal coordinates vector (n_connectivity_ x Tdim)
   Eigen::MatrixXd nodal_coordinates_;
 
-  typedef struct {
-  PetscInt N_a;
-  PetscScalar beta;
-  const PetscScalar *l_a;
-  PetscScalar *p_a;
-} LME_ctx;
-
 };
 
 }  // namespace mpm
+
+#if USE_PETSC
+#include "quadrilateral_lme_element_TAO.tcc"
+#else
 #include "quadrilateral_lme_element.tcc"
+#endif //
 
 #endif  // MPM_LME_ELEMENT_H

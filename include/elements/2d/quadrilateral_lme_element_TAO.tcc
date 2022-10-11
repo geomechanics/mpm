@@ -451,6 +451,7 @@ inline Eigen::Matrix<double, Tdim, 1>
   return xi;
 }
 
+/*****************************************************/
 
 static PetscErrorCode __function_gradient_log_Z(Tao tao, Vec lambda,
                                                 PetscScalar *log_Z, Vec r,
@@ -520,6 +521,8 @@ static PetscErrorCode __function_gradient_log_Z(Tao tao, Vec lambda,
 
 } 
 
+/*****************************************************/
+
 static PetscErrorCode __hessian_log_Z(Tao tao, Vec lambda, Mat H, Mat Hpre,
                                       void *logZ_ctx) {
 
@@ -568,3 +571,5 @@ static PetscErrorCode __hessian_log_Z(Tao tao, Vec lambda, Mat H, Mat Hpre,
 
   return STATUS;
 }
+
+/*****************************************************/

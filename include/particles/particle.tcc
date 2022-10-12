@@ -1585,7 +1585,7 @@ inline Eigen::Matrix<double, 3, 3>
   }
 
   for (unsigned i = 0; i < 2; ++i) {
-    for (unsigned j = 0; i < 2; ++i) {
+    for (unsigned j = 0; j < 2; ++j) {
       if (i != j && std::fabs(deformation_gradient_rate(i, j)) < 1.E-15)
         deformation_gradient_rate(i, j) = 0.;
       if (i == j && std::fabs(deformation_gradient_rate(i, j) - 1.) < 1.E-15)
@@ -1611,7 +1611,7 @@ inline Eigen::Matrix<double, 3, 3>
   }
 
   for (unsigned i = 0; i < 3; ++i) {
-    for (unsigned j = 0; i < 3; ++i) {
+    for (unsigned j = 0; j < 3; ++j) {
       if (i != j && std::fabs(deformation_gradient_rate(i, j)) < 1.E-15)
         deformation_gradient_rate(i, j) = 0.;
       if (i == j && std::fabs(deformation_gradient_rate(i, j) - 1.) < 1.E-15)
@@ -1656,7 +1656,7 @@ inline Eigen::Matrix<double, Tdim, Tdim>
   }
 
   for (unsigned i = 0; i < Tdim; ++i) {
-    for (unsigned j = 0; i < Tdim; ++i) {
+    for (unsigned j = 0; j < Tdim; ++j) {
       if (std::fabs(velocity_gradient(i, j)) < 1.E-15)
         velocity_gradient(i, j) = 0.;
     }
@@ -1682,7 +1682,7 @@ inline Eigen::Matrix<double, Tdim, Tdim>
   }
 
   for (unsigned i = 0; i < Tdim; ++i) {
-    for (unsigned j = 0; i < Tdim; ++i) {
+    for (unsigned j = 0; j < Tdim; ++j) {
       if (std::fabs(b_matrix(i, j)) < 1.E-15) b_matrix(i, j) = 0.;
     }
   }

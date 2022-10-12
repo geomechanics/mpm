@@ -1068,7 +1068,7 @@ void mpm::Particle<Tdim>::compute_updated_position_asflip(
   assert(cell_ != nullptr);
 
   // Compute auxiliary mapping matrix
-  mapping_matrix_ = this->compute_apic_mapping_matrix(
+  mapping_matrix_ = this->compute_affine_mapping_matrix(
       this->shapefn_, mpm::ParticlePhase::SinglePhase);
 
   // Get interpolated nodal velocity and acceleration
@@ -1111,7 +1111,7 @@ void mpm::Particle<Tdim>::compute_updated_position_apic(double dt) noexcept {
   assert(cell_ != nullptr);
 
   // Compute auxiliary mapping matrix
-  mapping_matrix_ = this->compute_apic_mapping_matrix(
+  mapping_matrix_ = this->compute_affine_mapping_matrix(
       this->shapefn_, mpm::ParticlePhase::SinglePhase);
 
   // Perform PIC update
@@ -1664,10 +1664,10 @@ inline Eigen::Matrix<double, Tdim, Tdim>
   return velocity_gradient;
 }
 
-// Compute APIC mapping matrix
+//! Compute Affine B-Matrix for all the affine scheme
 template <unsigned Tdim>
 inline Eigen::Matrix<double, Tdim, Tdim>
-    mpm::Particle<Tdim>::compute_apic_mapping_matrix(
+    mpm::Particle<Tdim>::compute_affine_mapping_matrix(
         const Eigen::MatrixXd& shapefn, unsigned phase) noexcept {
   // Initialise B matrix
   Eigen::Matrix<double, Tdim, Tdim> b_matrix =

@@ -512,6 +512,10 @@ class Particle : public ParticleBase<Tdim> {
    * MPM
    */
   /**@{*/
+  //! Return mapping matrix
+  //! \ingroup AdvancedMapping
+  Eigen::MatrixXd mapping_matrix() const override { return mapping_matrix_; }
+
   //! Map particle mass and momentum to nodes for affine transformation
   //! \ingroup AdvancedMapping
   virtual void map_mass_momentum_to_nodes_affine() noexcept;

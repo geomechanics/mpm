@@ -217,7 +217,6 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
   bool anisotropy_{false};
   //! Nodal coordinates vector (n_connectivity_ x Tdim)
   Eigen::MatrixXd nodal_coordinates_;
-
 };
 
 }  // namespace mpm
@@ -226,6 +225,6 @@ class QuadrilateralLMEElement : public QuadrilateralElement<2, 4> {
 #include "quadrilateral_lme_element_TAO.tcc"
 #else
 #include "quadrilateral_lme_element.tcc"
-#endif //
+#endif  //
 
 #endif  // MPM_LME_ELEMENT_H

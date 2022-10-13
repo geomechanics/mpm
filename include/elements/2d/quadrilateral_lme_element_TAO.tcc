@@ -1,36 +1,37 @@
 
-#include <petsctao.h>
 #include <petscmat.h>
+#include <petsctao.h>
 
 // Auxiliar functions to compute the shape functions
 typedef struct {
   PetscInt N_a;
   PetscScalar beta;
-  const PetscScalar *distance;
-  PetscScalar *p_a;
+  PetscScalar R_a;
+  PetscScalar * rel_coordinates;
+  PetscScalar * distance;
+  PetscScalar * p;
 } LME_ctx;
 
- //! Evaluates the function and corresponding gradient.
- //! \param[in] tao the Tao context
- //! \param[in,out] lambda  Lagrange multiplier
- //! \param[out] log_Z
- //! \param[out] r
- //! \param[in] logZ_ctx
- //! \retval PetscErrorCode
+//! Evaluates the function and corresponding gradient.
+//! \param[in] tao the Tao context
+//! \param[in,out] lambda  Lagrange multiplier
+//! \param[out] log_Z
+//! \param[out] r
+//! \param[in] logZ_ctx
+//! \retval PetscErrorCode
 static PetscErrorCode __function_gradient_log_Z(Tao tao, Vec lambda,
-                                                PetscScalar *log_Z, Vec r,
-                                                void *logZ_ctx);
+                                                PetscScalar* log_Z, Vec r,
+                                                void* logZ_ctx);
 
- //! Evaluates the function hessian
- //! \param[in] tao the Tao context
- //! \param[in,out] lambda  Lagrange multiplier
- //! \param[out] H Hessian of the log(Z) functional
- //! \param[out] Hpre Preconditioner of the Hessian
- //! \param[in] logZ_ctx
- //! \retval PetscErrorCode
+//! Evaluates the function hessian
+//! \param[in] tao the Tao context
+//! \param[in,out] lambda  Lagrange multiplier
+//! \param[out] H Hessian of the log(Z) functional
+//! \param[out] Hpre Preconditioner of the Hessian
+//! \param[in] logZ_ctx
+//! \retval PetscErrorCode
 static PetscErrorCode __hessian_log_Z(Tao tao, Vec lambda, Mat H, Mat Hpre,
-                                      void *logZ_ctx);
-
+                                      void* logZ_ctx);
 
 //! Assign nodal connectivity property for LME elements
 template <unsigned Tdim>
@@ -39,7 +40,7 @@ void mpm::QuadrilateralLMEElement<Tdim>::initialise_lme_connectivity_properties(
     const Eigen::MatrixXd& nodal_coordinates) {
   this->nconnectivity_ = nodal_coordinates.rows();
   this->nodal_coordinates_ = nodal_coordinates;
-  this->beta_ = beta;
+  this->beta_ = beta_;
   this->anisotropy_ = anisotropy;
   this->support_radius_ = radius;
 }
@@ -70,7 +71,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Create relative coordinate vector
-    const auto& rel_coordinates =
+    Eigen::VectorXd rel_coordinates =
         (-nodal_coordinates_.transpose()).colwise() + pcoord;
 
     //! Create metric tensor
@@ -116,34 +117,31 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       r.noalias() += p(n) * (rel_coordinates.col(n));
     }
 
-    //! Begin regularized Newton-Raphson iteration
+    //! Begin Newton-Raphson iteration
     const double tolerance = 1.e-12;
     if (r.norm() > tolerance) {
-      bool convergence = false;
-      unsigned it = 1;
-      const unsigned max_it = 10;
-
-      PetscErrorCode STATUS = EXIT_SUCCESS;
 
       /* Definition of some parameters */
       LME_ctx user_ctx;
-      PetscInt MaxIter = max_iter_LME;
-      PetscInt NumIter;
+      PetscInt MaxIter = 10;
 
       const PetscInt ix[2] = {0, 1};
 
       /* Create user-defined variable */
-      user_ctx.beta = Beta;
-      user_ctx.distance = distance.value();
-      user_ctx.N_a = N_a;
-      user_ctx.p_a = p.value();
+      user_ctx.beta = this->beta_;
+      user_ctx.distance = distance.data();
+      user_ctx.rel_coordinates = rel_coordinates.data(); 
+      user_ctx.R_a = this->support_radius_;
+      user_ctx.N_a = this->nconnectivity_;
+      user_ctx.p = p.data();
 
       /* Create lagrange multiplier */
+      Eigen::Vector2d lambda = Eigen::Vector2d::Zero();
       Vec lambda_aux;
       VecCreate(PETSC_COMM_SELF, &lambda_aux);
       VecSetSizes(lambda_aux, PETSC_DECIDE, 2);
       VecSetFromOptions(lambda_aux);
-      VecSetValues(lambda_aux, Ndim, ix, lambda_tr, INSERT_VALUES);
+      VecSetValues(lambda_aux, Tdim, ix, lambda.data(), INSERT_VALUES);
       VecAssemblyBegin(lambda_aux);
       VecAssemblyEnd(lambda_aux);
 
@@ -157,6 +155,7 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       /* Create TAO solver with desired solution method */
       Tao tao;
       TaoCreate(PETSC_COMM_SELF, &tao);
+      TaoSetMaximumIterations(tao, MaxIter);
       TaoSetType(tao, TAONTL);
       TaoSetFromOptions(tao);
 
@@ -164,14 +163,15 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       TaoSetSolution(tao, lambda_aux);
 
       /* Set routines for function, gradient, hessian evaluation */
-      TaoSetObjectiveAndGradient(tao, NULL, __function_gradient_log_Z, &user_ctx);
+      TaoSetObjectiveAndGradient(tao, NULL, __function_gradient_log_Z,
+                                 &user_ctx);
       TaoSetHessian(tao, H, H, __hessian_log_Z, &user_ctx);
 
       /* Solve the system */
       TaoSolve(tao);
 
       /* Update values of the lagrange multiplier */
-      VecGetValues(lambda_aux, 2, ix, lambda_tr);
+      VecGetValues(lambda_aux, 2, ix, lambda.data());
 
       /* Destroy auxiliar variables */
       TaoDestroy(&tao);
@@ -213,7 +213,7 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
     //! Create relative coordinate vector
-    const auto& rel_coordinates =
+    Eigen::VectorXd rel_coordinates =
         (-nodal_coordinates_.transpose()).colwise() + pcoord;
 
     //! Create metric tensor
@@ -272,51 +272,63 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
     //! Begin Newton-Raphson iteration
     const double tolerance = 1.e-12;
     if (r.norm() > tolerance) {
-      bool convergence = false;
-      unsigned it = 1;
-      unsigned max_it = 10;
-      while (!convergence) {
-        //! Compute Delta lambda
-        const auto& dlambda = J.inverse() * (-r);
-        lambda = lambda + dlambda;
 
-        //! Reevaluate f, p, and r
-        //! Compute functional f in each connectivity
-        sum_exp_f = 0.;
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          if (distance(n) < this->support_radius_) {
-            f(n) = -beta_ * distance(n) * distance(n) +
-                   lambda.dot(rel_coordinates.col(n));
-            sum_exp_f += std::exp(f(n));
-          }
-        }
+      /* Definition of some parameters */
+      LME_ctx user_ctx;
+      PetscInt MaxIter = 10;
 
-        //! Compute p in each connectivity
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          if (distance(n) < this->support_radius_)
-            p(n) = std::exp(f(n)) / sum_exp_f;
-        }
+      const PetscInt ix[2] = {0, 1};
 
-        //! Compute vector r
-        r.setZero();
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          r.noalias() += p(n) * (rel_coordinates.col(n));
-        }
+      /* Create user-defined variable */
+      user_ctx.beta = this->beta_;
+      user_ctx.distance = distance.data();
+      user_ctx.rel_coordinates = rel_coordinates.data(); 
+      user_ctx.R_a = this->support_radius_;
+      user_ctx.N_a = this->nconnectivity_;
+      user_ctx.p = p.data();
 
-        //! Compute matrix J
-        J = -r * r.transpose();
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          J.noalias() += p(n) * ((rel_coordinates.col(n)) *
-                                 (rel_coordinates.col(n)).transpose());
-        }
+      /* Create lagrange multiplier */
+      Eigen::Vector2d lambda = Eigen::Vector2d::Zero();
+      Vec lambda_aux;
+      VecCreate(PETSC_COMM_SELF, &lambda_aux);
+      VecSetSizes(lambda_aux, PETSC_DECIDE, 2);
+      VecSetFromOptions(lambda_aux);
+      VecSetValues(lambda_aux, Tdim, ix, lambda.data(), INSERT_VALUES);
+      VecAssemblyBegin(lambda_aux);
+      VecAssemblyEnd(lambda_aux);
 
-        //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
-        J.diagonal().array() += r.norm();
+      /* Create Hessian */
+      Mat H;
+      MatCreateSeqAIJ(PETSC_COMM_SELF, 2, 2, 2, NULL, &H);
+      MatSetOption(H, MAT_SYMMETRIC, PETSC_TRUE);
+      MatSetOption(H, MAT_SYMMETRIC, PETSC_TRUE);
+      MatSetFromOptions(H);
 
-        //! Check convergence
-        if (r.norm() <= tolerance || it == max_it) convergence = true;
-        it++;
-      }
+      /* Create TAO solver with desired solution method */
+      Tao tao;
+      TaoCreate(PETSC_COMM_SELF, &tao);
+      TaoSetMaximumIterations(tao, MaxIter);
+      TaoSetType(tao, TAONTL);
+      TaoSetFromOptions(tao);
+
+      /* Set solution vec */
+      TaoSetSolution(tao, lambda_aux);
+
+      /* Set routines for function, gradient, hessian evaluation */
+      TaoSetObjectiveAndGradient(tao, NULL, __function_gradient_log_Z,
+                                 &user_ctx);
+      TaoSetHessian(tao, H, H, __hessian_log_Z, &user_ctx);
+
+      /* Solve the system */
+      TaoSolve(tao);
+
+      /* Update values of the lagrange multiplier */
+      VecGetValues(lambda_aux, 2, ix, lambda.data());
+
+      /* Destroy auxiliar variables */
+      TaoDestroy(&tao);
+      MatDestroy(&H);
+      VecDestroy(&lambda_aux);
     }
 
     // Compute shape function gradient
@@ -454,95 +466,91 @@ inline Eigen::Matrix<double, Tdim, 1>
 /*****************************************************/
 
 static PetscErrorCode __function_gradient_log_Z(Tao tao, Vec lambda,
-                                                PetscScalar *log_Z, Vec r,
-                                                void *logZ_ctx) const {
+                                                PetscScalar* logZ, 
+                                                Vec grad_logZ,
+                                                void* logZ_ctx) {
 
   /* Definition of some parameters */
   PetscErrorCode STATUS = EXIT_SUCCESS;
 
   /* Get constants */
   PetscInt Ndim = 2;
-  PetscScalar beta_ = ((LME_ctx *)logZ_ctx)->beta;
-  PetscInt N_a = ((LME_ctx *)logZ_ctx)->N_a;
+  PetscScalar beta = ((LME_ctx*)logZ_ctx)->beta;
+  PetscScalar R_a = ((LME_ctx*)logZ_ctx)->R_a;
+  PetscInt N_a = ((LME_ctx*)logZ_ctx)->N_a;
 
   /* Read auxiliar variables */
-  PetscScalar *p_a = ((LME_ctx *)logZ_ctx)->p_a;
-  const PetscScalar *distance = ((LME_ctx *)logZ_ctx)->distance;
+  PetscScalar * p = ((LME_ctx*)logZ_ctx)->p;
+  PetscScalar * distance = ((LME_ctx*)logZ_ctx)->distance;
+  const PetscScalar* l_a = ((LME_ctx*)logZ_ctx)->rel_coordinates;
 
-  PetscScalar *r_ptr;
-  VecGetArray(r, &r_ptr);
-  PetscScalar *lambda_ptr;
+  PetscScalar * r_ptr;
+  VecGetArray(grad_logZ, &r_ptr);
+  PetscScalar * lambda_ptr;
   VecGetArray(lambda, &lambda_ptr);
 
   //! Reevaluate f, p, and r
   //! Compute functional f in each connectivity
-  PetscScalar sum_exp_f = 0.;
-  for (unsigned int n = 0; n < this->nconnectivity_; ++n) {
-    if (distance(n) < this->support_radius_) {
-      f(n) = -beta_ * distance(n) * distance(n) + lambda.dot(rel_coordinates.col(n));
-      sum_exp_f += std::exp(f(n));
+  Eigen::VectorXd f = Eigen::VectorXd::Constant(N_a, 0.0);
+  PetscScalar Z = 0.;
+  for (unsigned int n = 0; n < N_a; ++n) {
+    if (distance[n] < R_a) {
+      for (PetscInt i = 0; i < Ndim; i++)
+      {      
+        f[n] = -beta * distance[n] * distance[n] +
+              lambda_ptr[i]*(l_a[n*2 + i]);
+        Z += std::exp(f[n]);
+      }
     }
   }
 
-  //! Compute p in each connectivity
-  for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-    if (distance(n) < this->support_radius_)
-      p(n) = std::exp(f(n)) / sum_exp_f;
-  }
-
-  /* Compute partition function Z and the shape function p_a */
-  PetscScalar Z = 0;
-  for (PetscInt a = 0; a < N_a; a++) {
-    p_a[a] = exp(__eval_f_a(&l_a[a * Ndim], lambda_ptr, beta));
-    Z += p_a[a];
-  }
-
-  /* Divide by Z and get the final value of the shape function */
+  //! Divide by Z and get the final value of the shape function
   PetscScalar Z_m1 = 1.0 / Z;
 
-  for (PetscInt a = 0; a < N_a; a++) {
-    p_a[a] *= Z_m1;
+  //! Compute p in each connectivity
+  for (unsigned n = 0; n < N_a; ++n) {
+    if (distance[n] < R_a) p[n] = std::exp(f[n]) * Z_m1;
   }
 
-  /* Evaluate objective function */
-  *log_Z = log(Z);
+  //! Evaluate objective function 
+  *logZ = std::log(Z);
 
-  /* Compute the gradient */
-  for (int i = 0; i < Ndim; i++) {
-    r_ptr[i] = 0.0;
-    for (int a = 0; a < N_a; a++) {
-      r_ptr[i] += p_a[a] * l_a[a * Ndim + i];
+  //! Compute vector r
+  for (unsigned n = 0; n < N_a; ++n) {
+    for (PetscInt i = 0; i < Ndim; i++) {
+      r_ptr[i] += p[n] * l_a[n*2 + i];
     }
   }
 
-  /* Restore auxiliar pointer */
-  VecRestoreArray(r, &r_ptr);
+  //! Restore auxiliar pointer 
+  VecRestoreArray(grad_logZ, &r_ptr);
   VecRestoreArray(lambda, &lambda_ptr);
 
-} 
+  return STATUS;
+}
 
 /*****************************************************/
 
 static PetscErrorCode __hessian_log_Z(Tao tao, Vec lambda, Mat H, Mat Hpre,
-                                      void *logZ_ctx) {
+                                      void* logZ_ctx) {
 
   /* Definition of some parameters */
   PetscErrorCode STATUS = EXIT_SUCCESS;
 
   /* Get constants */
   PetscInt Ndim = 2;
-  PetscInt N_a = ((LME_ctx *)logZ_ctx)->N_a;
+  PetscInt N_a = ((LME_ctx*)logZ_ctx)->N_a;
   PetscScalar H_a[4] = {0.0, 0.0, 0.0, 0.0};
   const PetscInt idx[2] = {0, 1};
 
   /* Read auxiliar variables */
-  PetscScalar *p_a = ((LME_ctx *)logZ_ctx)->p_a;
-  const PetscScalar *l_a = ((LME_ctx *)logZ_ctx)->l_a;
+  PetscScalar* p_a = ((LME_ctx*)logZ_ctx)->p;
+  const PetscScalar* l_a = ((LME_ctx*)logZ_ctx)->rel_coordinates;
 
   /* Get the value of the gradient of log(Z) */
   Vec r;
   TaoGetGradient(tao, &r, NULL, NULL);
-  const PetscScalar *r_ptr;
+  const PetscScalar* r_ptr;
   VecGetArrayRead(r, &r_ptr);
 
   /* Fill the Hessian */

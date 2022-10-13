@@ -42,7 +42,7 @@ option(MPM_BUILD_TESTING "enable testing for mpm" ON)
 option(HALO_EXCHANGE "Enable halo exchange" OFF)
 
 # PETSC
-option(USE_PETSC "Use PETSC solver library" OFF)
+option(USE_PETSC "Use PETSC solver library" ON)
 
 # CMake Modules
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})

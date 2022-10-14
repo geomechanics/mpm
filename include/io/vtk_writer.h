@@ -81,6 +81,17 @@ class VtkWriter {
                           unsigned step, unsigned max_steps, double time,
                           unsigned ncomponents = 3);
 
+  //! Write time stamp in VTK
+  //! \param[in] filename Mesh PVTP file name
+  //! \param[in] attribute VTK data attribute to be written
+  //! \param[in] step Current time step
+  //! \param[in] max_steps Maximum number of steps in the simulation
+  //! \param[in] time Physical time snapshot
+  //! \param[in] serial Boolean to denote serial or parallel
+  void write_time_stamp(const std::string& filename,
+                        const std::string& attribute, unsigned step,
+                        unsigned max_steps, double time, bool serial = true);
+
  private:
   //! Vector of nodal coordinates
   vtkSmartPointer<vtkPoints> points_;

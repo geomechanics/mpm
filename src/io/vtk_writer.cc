@@ -281,6 +281,17 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
   pvtk.close();
 
   // Write parallel grouping VTK file
+  this->write_time_stamp(filename, attribute, step, max_steps, time, false);
+}
+
+//! Write Parallel VTK file
+void VtkWriter::write_time_stamp(const std::string& filename,
+                                 const std::string& attribute, unsigned step,
+                                 unsigned max_steps, double time, bool serial) {
+
+  std::string extension = (serial) ? ".vtp" : ".pvtp";
+
+  // Write parallel grouping VTK file
   std::string output_path = filename.substr(0, filename.find_last_of("\\/"));
   std::string group_filename = output_path + "/" + attribute + ".pvd";
   std::string group_data;
@@ -292,7 +303,7 @@ void VtkWriter::write_parallel_vtk(const std::string& filename,
   int digits = log10(max_steps) + 1;
   group_parts_file.width(digits);
   group_parts_file << step;
-  group_parts_file << ".pvtp";
+  group_parts_file << extension;
 
   boost::filesystem::path file_check(group_filename);
 

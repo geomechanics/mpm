@@ -582,6 +582,11 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
     vtk_writer->write_scalar_point_data(
         file, mesh_->particles_scalar_data(attribute), attribute);
 
+    // Write time stamp
+    if (mpi_rank == 0 && mpi_size == 1) {
+      vtk_writer->write_time_stamp(file, attribute, step, max_steps, time);
+    }
+
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
@@ -603,6 +608,11 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
     vtk_writer->write_vector_point_data(
         file, mesh_->particles_vector_data(attribute), attribute);
 
+    // Write time stamp
+    if (mpi_rank == 0 && mpi_size == 1) {
+      vtk_writer->write_time_stamp(file, attribute, step, max_steps, time);
+    }
+
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
@@ -623,6 +633,11 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
     vtk_writer->write_tensor_point_data(
         file, mesh_->template particles_tensor_data<6>(attribute), attribute);
+
+    // Write time stamp
+    if (mpi_rank == 0 && mpi_size == 1) {
+      vtk_writer->write_time_stamp(file, attribute, step, max_steps, time);
+    }
 
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
@@ -650,6 +665,13 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
       vtk_writer->write_scalar_point_data(
           file, mesh_->particles_statevars_data(attribute, phase_id),
           phase_attribute);
+
+      // Write time stamp
+      if (mpi_rank == 0 && mpi_size == 1) {
+        vtk_writer->write_time_stamp(file, phase_attribute, step, max_steps,
+                                     time);
+      }
+
       // Write a parallel MPI VTK container file
 #ifdef USE_MPI
       if (mpi_rank == 0 && mpi_size > 1) {

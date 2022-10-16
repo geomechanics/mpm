@@ -1266,7 +1266,7 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
                   std::placeholders::_1));
 
               // Compute error estimate displacement newmark without any forces
-              mesh->compute_error_estimate_displacement_newmark();
+              mesh->compute_error_estimate_newmark();
 
               // Compute critical time step newmark
               mesh->critical_time_step_newmark();

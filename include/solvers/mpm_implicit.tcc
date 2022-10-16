@@ -620,7 +620,7 @@ void mpm::MPMImplicit<Tdim>::finalise_error_control() {
 #endif
 
   // Compute Milne's error estimator
-  const double kappa = mesh_->compute_error_estimate_displacement_newmark();
+  const double kappa = mesh_->compute_error_estimate_newmark();
 
   // Compute critical time step newmark
   const double time_crit = mesh_->critical_time_step_newmark();

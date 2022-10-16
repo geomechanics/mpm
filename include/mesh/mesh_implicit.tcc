@@ -1,7 +1,6 @@
 //! Compute milne estimator newmark
 template <unsigned Tdim>
-double mpm::Mesh<Tdim>::compute_error_estimate_displacement_newmark(
-    unsigned phase) const {
+double mpm::Mesh<Tdim>::compute_error_estimate_newmark(unsigned phase) const {
 
   // Check mpi rank and size
   int mpi_size = 1;

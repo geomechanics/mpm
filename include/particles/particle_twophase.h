@@ -89,9 +89,11 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! liquid phase
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   void compute_updated_position(
-      double dt, mpm::VelocityUpdate velocity_update =
-                     mpm::VelocityUpdate::FLIP) noexcept override;
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept override;
 
   //! Assign velocity to the particle liquid phase
   //! \param[in] velocity A vector of particle liquid phase velocity
@@ -242,17 +244,19 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Compute updated velocity of the particle based on nodal velocity
   //! \ingroup AdvancedMapping
   //! \param[in] dt Analysis time step
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   virtual void compute_updated_liquid_velocity(
       double dt,
-      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP) noexcept;
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept;
 
   //! Compute updated velocity of the particle based on nodal velocity assuming
   //! FLIP scheme
   //! \ingroup AdvancedMapping
   //! \param[in] dt Analysis time step
-  //! \param[in] alpha Blending FLIP-PIC coefficient
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   virtual void compute_updated_liquid_velocity_flip(
-      double dt, double alpha = 1.0) noexcept;
+      double dt, double blending_ratio = 1.0) noexcept;
 
   //! Compute updated velocity of the particle based on nodal velocity assuming
   //! PIC scheme
@@ -319,6 +323,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::pack_size_;
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
+  //! Mapping matrix
+  using Particle<Tdim>::mapping_matrix_;
 
   //! Liquid mass
   double liquid_mass_;

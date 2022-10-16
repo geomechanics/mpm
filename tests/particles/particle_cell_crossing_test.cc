@@ -201,7 +201,7 @@ TEST_CASE("Particle cell crossing is checked for 2D case",
   // Iterate over each particle to compute updated position
   mesh->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Dim>::compute_updated_position,
-                std::placeholders::_1, dt, mpm::VelocityUpdate::FLIP));
+                std::placeholders::_1, dt, mpm::VelocityUpdate::FLIP, 1.0));
 
   // Locate particles in a mesh
   particles = mesh->locate_particles_mesh();
@@ -459,7 +459,7 @@ TEST_CASE("Particle cell crossing is checked for 3D case",
   // Iterate over each particle to compute updated position
   mesh->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Dim>::compute_updated_position,
-                std::placeholders::_1, dt, mpm::VelocityUpdate::FLIP));
+                std::placeholders::_1, dt, mpm::VelocityUpdate::FLIP, 1.0));
 
   // Locate particles in a mesh
   particles = mesh->locate_particles_mesh();

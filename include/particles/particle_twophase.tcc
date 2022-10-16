@@ -64,6 +64,16 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
 
   Eigen::Matrix<double, 6, 1> strain = this->strain_;
 
+  Eigen::Matrix<double, 3, 3> defgrad = this->deformation_gradient_;
+
+  // Mapping matrix
+  Eigen::Matrix<double, 3, 3> mapping = Eigen::Matrix<double, 3, 3>::Zero();
+  bool initialise_mapping = (this->mapping_matrix_.size() != 0);
+  if (initialise_mapping)
+    for (unsigned i = 0; i < Tdim; ++i)
+      for (unsigned j = 0; j < Tdim; ++j)
+        mapping(i, j) = this->mapping_matrix_(i, j);
+
   particle_data->id = this->id();
   particle_data->mass = this->mass();
   particle_data->volume = this->volume();
@@ -107,15 +117,26 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   particle_data->gamma_yz = strain[4];
   particle_data->gamma_xz = strain[5];
 
-  particle_data->defgrad_00 = deformation_gradient_(0, 0);
-  particle_data->defgrad_01 = deformation_gradient_(0, 1);
-  particle_data->defgrad_02 = deformation_gradient_(0, 2);
-  particle_data->defgrad_10 = deformation_gradient_(1, 0);
-  particle_data->defgrad_11 = deformation_gradient_(1, 1);
-  particle_data->defgrad_12 = deformation_gradient_(1, 2);
-  particle_data->defgrad_20 = deformation_gradient_(2, 0);
-  particle_data->defgrad_21 = deformation_gradient_(2, 1);
-  particle_data->defgrad_22 = deformation_gradient_(2, 2);
+  particle_data->defgrad_00 = defgrad(0, 0);
+  particle_data->defgrad_01 = defgrad(0, 1);
+  particle_data->defgrad_02 = defgrad(0, 2);
+  particle_data->defgrad_10 = defgrad(1, 0);
+  particle_data->defgrad_11 = defgrad(1, 1);
+  particle_data->defgrad_12 = defgrad(1, 2);
+  particle_data->defgrad_20 = defgrad(2, 0);
+  particle_data->defgrad_21 = defgrad(2, 1);
+  particle_data->defgrad_22 = defgrad(2, 2);
+
+  particle_data->initialise_mapping_matrix = initialise_mapping;
+  particle_data->mapping_matrix_00 = mapping(0, 0);
+  particle_data->mapping_matrix_01 = mapping(0, 1);
+  particle_data->mapping_matrix_02 = mapping(0, 2);
+  particle_data->mapping_matrix_10 = mapping(1, 0);
+  particle_data->mapping_matrix_11 = mapping(1, 1);
+  particle_data->mapping_matrix_12 = mapping(1, 2);
+  particle_data->mapping_matrix_20 = mapping(2, 0);
+  particle_data->mapping_matrix_21 = mapping(2, 1);
+  particle_data->mapping_matrix_22 = mapping(2, 2);
 
   particle_data->status = this->status();
 
@@ -643,9 +664,11 @@ inline void mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force() noexcept {
 // liquid phase
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_position(
-    double dt, mpm::VelocityUpdate velocity_update) noexcept {
-  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update);
-  this->compute_updated_liquid_velocity(dt, velocity_update);
+    double dt, mpm::VelocityUpdate velocity_update,
+    double blending_ratio) noexcept {
+  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update,
+                                                blending_ratio);
+  this->compute_updated_liquid_velocity(dt, velocity_update, blending_ratio);
 }
 
 //! Map particle pressure to nodes
@@ -679,16 +702,11 @@ bool mpm::TwoPhaseParticle<Tdim>::map_pressure_to_nodes(
 // Compute updated velocity of the liquid phase based on nodal velocity
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
-    double dt, mpm::VelocityUpdate velocity_update) noexcept {
+    double dt, mpm::VelocityUpdate velocity_update,
+    double blending_ratio) noexcept {
   switch (velocity_update) {
     case mpm::VelocityUpdate::FLIP:
-      this->compute_updated_liquid_velocity_flip(dt);
-      break;
-    case mpm::VelocityUpdate::FLIP99:
-      this->compute_updated_liquid_velocity_flip(dt, 0.99);
-      break;
-    case mpm::VelocityUpdate::FLIP95:
-      this->compute_updated_liquid_velocity_flip(dt, 0.95);
+      this->compute_updated_liquid_velocity_flip(dt, blending_ratio);
       break;
     case mpm::VelocityUpdate::PIC:
       this->compute_updated_liquid_velocity_pic(dt);
@@ -702,9 +720,6 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
     case mpm::VelocityUpdate::TPIC:
       this->compute_updated_liquid_velocity_pic(dt);
       break;
-    default:
-      this->compute_updated_liquid_velocity_flip(dt);
-      break;
   }
 }
 
@@ -712,7 +727,7 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
 // FLIP scheme
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity_flip(
-    double dt, double alpha) noexcept {
+    double dt, double blending_ratio) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
@@ -732,8 +747,8 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity_flip(
   // Update particle velocity from both interpolated nodal acceleration and
   // velocity
   this->liquid_velocity_.noalias() += acceleration * dt;
-  this->liquid_velocity_ =
-      alpha * this->liquid_velocity_ + (1.0 - alpha) * velocity;
+  this->liquid_velocity_ = blending_ratio * this->liquid_velocity_ +
+                           (1.0 - blending_ratio) * velocity;
 }
 
 // Compute updated velocity of the liquid phase based on nodal velocity assuming
@@ -1122,6 +1137,15 @@ std::vector<uint8_t> mpm::TwoPhaseParticle<Tdim>::serialize() {
   MPI_Pack(deformation_gradient_.data(), 9, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
 
+  // Mapping matrix
+  bool initialise_mapping = (this->mapping_matrix_.size() != 0);
+  MPI_Pack(&initialise_mapping, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+  if (initialise_mapping) {
+    MPI_Pack(mapping_matrix_.data(), Tdim * Tdim, MPI_DOUBLE, data_ptr,
+             data.size(), &position, MPI_COMM_WORLD);
+  }
+
   // Cell id
   MPI_Pack(&cell_id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -1261,6 +1285,16 @@ void mpm::TwoPhaseParticle<Tdim>::deserialize(
   // Deformation gradient
   MPI_Unpack(data_ptr, data.size(), &position, deformation_gradient_.data(), 9,
              MPI_DOUBLE, MPI_COMM_WORLD);
+
+  // Mapping matrix
+  bool initialise_mapping = false;
+  MPI_Unpack(data_ptr, data.size(), &position, &initialise_mapping, 1,
+             MPI_C_BOOL, MPI_COMM_WORLD);
+  if (initialise_mapping) {
+    if (mapping_matrix_.cols() != Tdim) mapping_matrix_.resize(Tdim, Tdim);
+    MPI_Unpack(data_ptr, data.size(), &position, mapping_matrix_.data(),
+               Tdim * Tdim, MPI_DOUBLE, MPI_COMM_WORLD);
+  }
 
   // cell id
   MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,

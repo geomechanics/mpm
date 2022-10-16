@@ -71,10 +71,27 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       } else
         vel_update_type =
             analysis_["velocity_update"].template get<std::string>();
+
+      // Check if blending_ratio is specified
+      if (analysis_.contains("velocity_update_settings") &&
+          analysis_["velocity_update_settings"].contains("blending_ratio")) {
+        blending_ratio_ = analysis_["velocity_update_settings"]
+                              .at("blending_ratio")
+                              .template get<double>();
+        // Check if blending ratio value is appropriately assigned
+        if (blending_ratio_ < 0. || blending_ratio_ > 1.) {
+          blending_ratio_ = 1.0;
+          console_->warn(
+              "{} #{}: FLIP-PIC Blending ratio is not properly assigned, using "
+              "default value as 1.0.",
+              __FILE__, __LINE__);
+        }
+      }
+
     } catch (std::exception& exception) {
       console_->warn(
-          "{} #{}: Velocity update method is not specified, using default "
-          "as \'flip\'",
+          "{} #{}: {} Velocity update method is not properly specified, using "
+          "default as \'flip\'",
           __FILE__, __LINE__, exception.what());
       vel_update_type = "flip";
     }

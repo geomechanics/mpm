@@ -262,6 +262,8 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
   //! Velocity update method
   mpm::VelocityUpdate velocity_update_{mpm::VelocityUpdate::FLIP};
+  //! FLIP-PIC blending ratio
+  double blending_ratio_{1.0};
   //! Gravity
   Eigen::Matrix<double, Tdim, 1> gravity_;
   //! Mesh object

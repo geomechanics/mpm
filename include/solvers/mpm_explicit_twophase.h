@@ -54,6 +54,8 @@ class MPMExplicitTwoPhase : public MPMBase<Tdim> {
 
   //! velocity update
   using mpm::MPMBase<Tdim>::velocity_update_;
+  //! FLIP-PIC blending ratio
+  using mpm::MPMBase<Tdim>::blending_ratio_;
   //! Gravity
   using mpm::MPMBase<Tdim>::gravity_;
   //! Mesh object

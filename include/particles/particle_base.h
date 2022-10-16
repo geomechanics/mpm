@@ -291,8 +291,9 @@ class ParticleBase {
 
   //! Compute updated position
   virtual void compute_updated_position(
-      double dt, mpm::VelocityUpdate velocity_update =
-                     mpm::VelocityUpdate::FLIP) noexcept = 0;
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept = 0;
 
   //! Return scalar data of particles
   //! \param[in] property Property string
@@ -422,6 +423,10 @@ class ParticleBase {
   //! each time step
   //! \ingroup Implicit
   virtual void initialise_constitutive_law() noexcept = 0;
+
+  //! Return mapping matrix
+  //! \ingroup AdvancedMapping
+  virtual Eigen::MatrixXd mapping_matrix() const = 0;
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle

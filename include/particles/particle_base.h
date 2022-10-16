@@ -427,6 +427,10 @@ class ParticleBase {
   //! \ingroup Implicit
   virtual void initialise_constitutive_law() noexcept = 0;
 
+  //! Return mapping matrix
+  //! \ingroup AdvancedMapping
+  virtual Eigen::MatrixXd mapping_matrix() const = 0;
+
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle
   //! \param[in] parameter parameter determining type of projection

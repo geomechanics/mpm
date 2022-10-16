@@ -400,7 +400,7 @@ inline Eigen::Matrix<double, 3, 3>
   }
 
   for (unsigned i = 0; i < 2; ++i) {
-    for (unsigned j = 0; i < 2; ++i) {
+    for (unsigned j = 0; j < 2; ++j) {
       if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
         deformation_gradient_increment(i, j) = 0.;
       if (i == j &&
@@ -427,7 +427,7 @@ inline Eigen::Matrix<double, 3, 3>
   }
 
   for (unsigned i = 0; i < 3; ++i) {
-    for (unsigned j = 0; i < 3; ++i) {
+    for (unsigned j = 0; j < 3; ++j) {
       if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
         deformation_gradient_increment(i, j) = 0.;
       if (i == j &&

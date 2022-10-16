@@ -515,6 +515,10 @@ class Particle : public ParticleBase<Tdim> {
    * MPM
    */
   /**@{*/
+  //! Return mapping matrix
+  //! \ingroup AdvancedMapping
+  Eigen::MatrixXd mapping_matrix() const override { return mapping_matrix_; }
+
   //! Map particle mass and momentum to nodes for affine transformation
   //! \ingroup AdvancedMapping
   virtual void map_mass_momentum_to_nodes_affine() noexcept;
@@ -552,12 +556,12 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt Analysis time step
   void compute_updated_position_tpic(double dt) noexcept;
 
-  //! Compute APIC B-Matrix
+  //! Compute Affine B-Matrix for all the affine scheme
   //! \ingroup AdvancedMapping
   //! \param[in] shapefn Shape function
   //! \param[in] phase Index to indicate phase
   //! \retval velocity gradient increment at particle inside a cell
-  inline Eigen::Matrix<double, Tdim, Tdim> compute_apic_mapping_matrix(
+  inline Eigen::Matrix<double, Tdim, Tdim> compute_affine_mapping_matrix(
       const Eigen::MatrixXd& shapefn, unsigned phase) noexcept;
 
   //! Compute ASFLIP beta parameter

@@ -711,6 +711,9 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
     case mpm::VelocityUpdate::PIC:
       this->compute_updated_liquid_velocity_pic(dt);
       break;
+    case mpm::VelocityUpdate::ASFLIP:
+      this->compute_updated_liquid_velocity_flip(dt, blending_ratio);
+      break;
     case mpm::VelocityUpdate::APIC:
       this->compute_updated_liquid_velocity_pic(dt);
       break;

@@ -110,6 +110,12 @@ class ParticleBase {
   virtual bool assign_cell_xi(const std::shared_ptr<Cell<Tdim>>& cellptr,
                               const Eigen::Matrix<double, Tdim, 1>& xi) = 0;
 
+  //! Assign block id
+  virtual bool assign_block_id(Index id) = 0;
+
+  //! Return block id
+  virtual Index block_id() const = 0;
+
   //! Assign cell id
   virtual bool assign_cell_id(Index id) = 0;
 
@@ -607,6 +613,8 @@ class ParticleBase {
   Index id_{std::numeric_limits<Index>::max()};
   //! coordinates
   VectorDim coordinates_;
+  //! Block id
+  Index block_id_{std::numeric_limits<Index>::max()};
   //! Cell id
   Index cell_id_{std::numeric_limits<Index>::max()};
   //! Status

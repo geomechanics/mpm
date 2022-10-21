@@ -186,6 +186,12 @@ class MPMBase : public MPM {
   //! \param[in] check Check duplicates
   void cell_entity_sets(const Json& mesh_prop, bool check);
 
+  //! Particles blocks
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_blocks(const Json& mesh_prop,
+                        const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   //! Particles cells
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle

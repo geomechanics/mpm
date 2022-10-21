@@ -1549,6 +1549,30 @@ bool mpm::Mesh<Tdim>::assign_particles_stresses_beginning(
   return status;
 }
 
+//! Assign particle blocks
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_blocks(
+    const std::vector<std::array<mpm::Index, 2>>& particles_blocks) {
+  bool status = true;
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign blocks");
+    for (const auto& particle_block : particles_blocks) {
+      // Particle id
+      mpm::Index pid = particle_block[0];
+      // Block id
+      mpm::Index bid = particle_block[1];
+
+      map_particles_[pid]->assign_block_id(bid);
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Assign particle cells
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_particles_cells(

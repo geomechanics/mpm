@@ -381,6 +381,11 @@ class Mesh {
       const std::vector<Eigen::Matrix<double, 6, 1>>&
           particle_stresses_beginning);
 
+  //! Assign particles blocks
+  //! \param[in] particles_blocks Particles and blocks
+  bool assign_particles_blocks(
+      const std::vector<std::array<mpm::Index, 2>>& particles_blocks);
+
   //! Assign particles cells
   //! \param[in] particles_cells Particles and cells
   bool assign_particles_cells(

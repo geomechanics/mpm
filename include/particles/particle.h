@@ -73,6 +73,16 @@ class Particle : public ParticleBase<Tdim> {
   //! Return reference location
   VectorDim reference_location() const override { return xi_; }
 
+  //! Assign block id
+  //! \param[in] id block id
+  bool assign_block_id(Index id) override {
+    block_id_ = id;
+    return true;
+  }
+
+  //! Return block id
+  Index block_id() const override { return block_id_; }
+
   //! Assign a cell to particle
   //! If point is in new cell, assign new cell and remove particle id from old
   //! cell. If point can't be found in the new cell, check if particle is still
@@ -519,6 +529,8 @@ class Particle : public ParticleBase<Tdim> {
   using ParticleBase<Tdim>::coordinates_;
   //! Reference coordinates (in a cell)
   using ParticleBase<Tdim>::xi_;
+  //! Cell id
+  using ParticleBase<Tdim>::block_id_;
   //! Cell
   using ParticleBase<Tdim>::cell_;
   //! Cell id

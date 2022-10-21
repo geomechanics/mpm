@@ -27,6 +27,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"mass", VariableType::Scalar},
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
+      {"block_id", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
@@ -360,6 +361,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
 
   // Read and assign particles cells
   this->particles_cells(mesh_props, particle_io);
+
+  // Read and assign particles blocks
+  this->particles_blocks(mesh_props, particle_io);
 
   // Locate particles in cell
   auto unlocatable_particles = mesh_->locate_particles_mesh();
@@ -1450,6 +1454,33 @@ void mpm::MPMBase<Tdim>::cell_entity_sets(const Json& mesh_props,
 
   } catch (std::exception& exception) {
     console_->warn("#{}: Cell entity sets are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Particles blocks
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_blocks(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("particle_blocks") != mesh_props.end()) {
+      std::string fparticles_blocks =
+          mesh_props["particle_blocks"].template get<std::string>();
+
+      if (!io_->file_name(fparticles_blocks).empty()) {
+        bool particles_blocks =
+            mesh_->assign_particles_blocks(particle_io->read_particles_cells(
+                io_->file_name(fparticles_blocks)));
+        if (!particles_blocks)
+          throw std::runtime_error(
+              "Particle blocks are not properly assigned to particles");
+      }
+    } else
+      throw std::runtime_error("Particle blocks JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle blocks are undefined {} ", __LINE__,
                    exception.what());
   }
 }

@@ -294,6 +294,7 @@ void mpm::Particle<Tdim>::initialise() {
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
+  this->scalar_properties_["block_id"] = [&]() { return block_id(); };
   this->vector_properties_["displacements"] = [&]() { return displacement(); };
   this->vector_properties_["velocities"] = [&]() { return velocity(); };
   this->vector_properties_["accelerations"] = [&]() { return acceleration(); };

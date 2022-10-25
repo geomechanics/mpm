@@ -113,6 +113,9 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
       std::bind(&mpm::ParticleBase<Tdim>::assign_projection_parameter,
                 std::placeholders::_1, beta_));
 
+  // Compute gauss volume in all nodes. Only perform operation once.
+  if (delta_correction_) this->compute_nodes_gauss_volume();
+
   // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
 
@@ -585,11 +588,6 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::compute_delta_correction_measures(
 
     // Map volume if delta correction is needed
     if (delta_correction) {
-      // Compute nodal gauss volume
-      mesh_->iterate_over_cells(
-          std::bind(&mpm::Cell<Tdim>::map_cell_gauss_volume_to_nodes,
-                    std::placeholders::_1));
-
       // Compute nodal volume from particles
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::map_volume_to_nodes,
@@ -605,13 +603,6 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::compute_delta_correction_measures(
             std::bind(&mpm::NodeBase<Tdim>::update_volume,
                       std::placeholders::_1, false,
                       mpm::ParticlePhase::SinglePhase, std::placeholders::_2));
-
-        // MPI all reduce nodal gauss volume
-        mesh_->template nodal_halo_exchange<double, 1>(
-            std::bind(&mpm::NodeBase<Tdim>::gauss_volume,
-                      std::placeholders::_1),
-            std::bind(&mpm::NodeBase<Tdim>::update_gauss_volume,
-                      std::placeholders::_1, false, std::placeholders::_2));
       }
 #endif
     }

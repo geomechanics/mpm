@@ -14,39 +14,34 @@ void mpm::Cell<Tdim>::map_cell_volume_to_nodes(unsigned phase) {
 
 //! Map gauss quadrature volume to the nodes
 template <unsigned Tdim>
-void mpm::Cell<Tdim>::map_cell_gauss_volume_to_nodes() {
-  if (this->status()) {
-    // Assign a default quadrature of 2
-    if (this->quadrature_ == nullptr) {
-      unsigned nquadrature = 2;
-      if (element_->degree() != mpm::ElementDegree::Linear) nquadrature = 3;
-      this->assign_quadrature(nquadrature);
-    }
+void mpm::Cell<Tdim>::map_cell_gauss_volume_to_nodes(unsigned nquadratures) {
+  // Assign a default quadrature of 2
+  if (this->quadrature_ == nullptr) {
+    this->assign_quadrature(nquadratures);
+  }
 
-    // Compute gauss quadrature position and weight
-    const auto quadratures = quadrature_->quadratures();
-    const auto g_weights = quadrature_->weights();
+  // Compute gauss quadrature position and weight
+  const auto quadratures = quadrature_->quadratures();
+  const auto g_weights = quadrature_->weights();
 
-    // Zeros
-    Eigen::Matrix<double, Tdim, 1> zeros =
-        Eigen::Matrix<double, Tdim, 1>::Zero();
+  // Zeros
+  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
 
-    // Identity
-    Eigen::Matrix<double, Tdim, Tdim> identity =
-        Eigen::Matrix<double, Tdim, Tdim>::Identity();
+  // Identity
+  Eigen::Matrix<double, Tdim, Tdim> identity =
+      Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
-    // Get local coordinates of gauss points and transform to global
-    for (unsigned i = 0; i < quadratures.cols(); ++i) {
-      const auto& lpoint = quadratures.col(i);
-      const double weight = g_weights[i];
-      const double jacobian =
-          (element_->jacobian(lpoint, nodal_coordinates_, zeros, identity))
-              .determinant();
-      const auto& g_shapefn = element_->shapefn(lpoint, zeros, identity);
+  // Get local coordinates of gauss points and transform to global
+  for (unsigned i = 0; i < quadratures.cols(); ++i) {
+    const auto& lpoint = quadratures.col(i);
+    const double weight = g_weights[i];
+    const double jacobian =
+        (element_->jacobian(lpoint, nodal_coordinates_, zeros, identity))
+            .determinant();
+    const auto& g_shapefn = element_->shapefn(lpoint, zeros, identity);
 
-      for (unsigned j = 0; j < nodes_.size(); ++j) {
-        nodes_[j]->update_gauss_volume(true, g_shapefn[j] * weight * jacobian);
-      }
+    for (unsigned j = 0; j < nodes_.size(); ++j) {
+      nodes_[j]->update_gauss_volume(true, g_shapefn[j] * weight * jacobian);
     }
   }
 }

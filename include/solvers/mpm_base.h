@@ -126,6 +126,9 @@ class MPMBase : public MPM {
   void write_partio(mpm::Index step, mpm::Index max_steps) override;
 #endif
 
+  //! Compute nodal gauss volume
+  void compute_nodes_gauss_volume();
+
  private:
   //! Return if a mesh will be isoparametric or not
   //! \retval isoparametric Status of mesh type

@@ -303,7 +303,8 @@ class Cell {
 
   //! Map gauss quadrature volume to the nodes
   //! \ingroup MultiPhase
-  void map_cell_gauss_volume_to_nodes();
+  //! \param[in] nquadratures number of gauss quadrature
+  void map_cell_gauss_volume_to_nodes(unsigned nquadratures = 2);
 
   //! Initialize local elemental matrices
   //! \ingroup MultiPhase

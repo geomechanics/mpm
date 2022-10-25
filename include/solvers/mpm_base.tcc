@@ -1927,3 +1927,30 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
                    __LINE__, exception.what());
   }
 }
+
+//! Compute gauss volume in node
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::compute_nodes_gauss_volume() {
+  int mpi_size = 1;
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  //! Compute nodal volume from gauss points
+  unsigned nquadratures = 2;
+  mesh_->iterate_over_cells(
+      std::bind(&mpm::Cell<Tdim>::map_cell_gauss_volume_to_nodes,
+                std::placeholders::_1, nquadratures));
+
+#ifdef USE_MPI
+  // Run if there is more than a single MPI task
+  if (mpi_size > 1) {
+    // MPI all reduce nodal volume
+    mesh_->template nodal_halo_exchange<double, 1>(
+        std::bind(&mpm::NodeBase<Tdim>::gauss_volume, std::placeholders::_1),
+        std::bind(&mpm::NodeBase<Tdim>::update_gauss_volume,
+                  std::placeholders::_1, false, std::placeholders::_2));
+  }
+#endif
+}

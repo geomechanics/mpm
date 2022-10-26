@@ -1942,15 +1942,4 @@ void mpm::MPMBase<Tdim>::compute_nodes_gauss_volume() {
   mesh_->iterate_over_cells(
       std::bind(&mpm::Cell<Tdim>::map_cell_gauss_volume_to_nodes,
                 std::placeholders::_1, nquadratures));
-
-#ifdef USE_MPI
-  // Run if there is more than a single MPI task
-  if (mpi_size > 1) {
-    // MPI all reduce nodal volume
-    mesh_->template nodal_halo_exchange<double, 1>(
-        std::bind(&mpm::NodeBase<Tdim>::gauss_volume, std::placeholders::_1),
-        std::bind(&mpm::NodeBase<Tdim>::update_gauss_volume,
-                  std::placeholders::_1, false, std::placeholders::_2));
-  }
-#endif
 }

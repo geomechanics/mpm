@@ -581,10 +581,9 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::compute_delta_correction_measures(
 #endif
 
     // Reinitialize nodal volumes to zero
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::update_volume, std::placeholders::_1,
-                  false, mpm::ParticlePhase::SinglePhase, 0.0),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    mesh_->iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::update_volume,
+                                        std::placeholders::_1, false,
+                                        mpm::ParticlePhase::SinglePhase, 0.0));
 
     // Map volume if delta correction is needed
     if (delta_correction) {

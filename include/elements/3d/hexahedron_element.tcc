@@ -271,7 +271,8 @@ inline Eigen::Matrix<double, Tdim, Tdim>
         const Eigen::Matrix<double, 3, 3>& deformation_gradient) const {
   // Get gradient shape functions
   const Eigen::MatrixXd grad_shapefn =
-      this->grad_shapefn(xi, particle_size, deformation_gradient);
+      mpm::HexahedronElement<Tdim, Tnfunctions>::grad_shapefn(
+          xi, particle_size, deformation_gradient);
   try {
     // Check if dimensions are correct
     if ((grad_shapefn.rows() != nodal_coordinates.rows()) ||

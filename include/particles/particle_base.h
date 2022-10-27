@@ -483,6 +483,23 @@ class ParticleBase {
     return 0;
   };
 
+  //! Function that returns the gradient of volume error for delta correction
+  virtual Eigen::Matrix<double, Tdim, 1> volume_error_gradient(
+      unsigned phase = mpm::NodePhase::NSinglePhase) const {
+    throw std::runtime_error(
+        "Calling the base class function (volume_error_gradient) in "
+        "ParticleBase:: illegal operation!");
+    return Eigen::Matrix<double, Tdim, 1>::Zero();
+  }
+
+  //! Apply delta correction to particle position and displacement
+  virtual void apply_delta_correction(
+      double step_length, unsigned phase = mpm::NodePhase::NSinglePhase) {
+    throw std::runtime_error(
+        "Calling the base class function (apply_delta_correction) in "
+        "ParticleBase:: illegal operation!");
+  }
+
   //! TwoPhase functions--------------------------------------------------------
   //! Update porosity
   //! \param[in] dt Analysis time step

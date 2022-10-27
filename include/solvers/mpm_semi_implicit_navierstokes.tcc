@@ -50,10 +50,22 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
     // Parameter to determine full and incremental projection
     if (analysis_["scheme_settings"].contains("beta"))
       beta_ = analysis_["scheme_settings"]["beta"].template get<double>();
-    //  Boolean to perform particle coordinate correction
+    // Boolean to perform particle coordinate correction
     if (analysis_["scheme_settings"].contains("delta_correction"))
       delta_correction_ =
           analysis_["scheme_settings"]["delta_correction"].template get<bool>();
+    // Number of delta correction step
+    if (delta_correction_ &&
+        analysis_["scheme_settings"].contains("delta_correction_iteration"))
+      delta_correction_iteration_ =
+          analysis_["scheme_settings"]["delta_correction_iteration"]
+              .template get<unsigned>();
+    // Tolerance
+    if (delta_correction_ && delta_correction_iteration_ > 1 &&
+        analysis_["scheme_settings"].contains("delta_correction_tolerance"))
+      delta_correction_tol_ =
+          analysis_["scheme_settings"]["delta_correction_tolerance"]
+              .template get<double>();
   }
 
   // Initialise material
@@ -306,13 +318,16 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
             std::placeholders::_1, fluid, this->dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
-    // Compute some necessary measures for delta correction
-    this->compute_delta_correction_measures(delta_correction_);
-
     // Update particle position and kinematics
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_updated_position,
         std::placeholders::_1, this->dt_, velocity_update_, blending_ratio_));
+
+    // Update particle position based on delta_correction
+    if (delta_correction_)
+      mesh_->apply_particle_delta_correction(delta_correction_iteration_,
+                                             delta_correction_tol_,
+                                             this->locate_particles_);
 
     // Apply particle velocity constraints
     mesh_->apply_particle_velocity_constraints();
@@ -559,52 +574,6 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::compute_correction_force() {
     mesh_->compute_nodal_correction_force(
         assembler_->correction_matrix(), assembler_->pressure_increment(), dt_);
 
-  } catch (std::exception& exception) {
-    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
-    status = false;
-  }
-  return status;
-}
-
-//! Compute particle delta correction measures
-template <unsigned Tdim>
-bool mpm::MPMSemiImplicitNavierStokes<Tdim>::compute_delta_correction_measures(
-    bool delta_correction) {
-  bool status = true;
-  try {
-    // Initialise MPI size
-    int mpi_size = 1;
-
-#ifdef USE_MPI
-    // Get number of MPI ranks
-    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
-#endif
-
-    // Reinitialize nodal volumes to zero
-    mesh_->iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::update_volume,
-                                        std::placeholders::_1, false,
-                                        mpm::ParticlePhase::SinglePhase, 0.0));
-
-    // Map volume if delta correction is needed
-    if (delta_correction) {
-      // Compute nodal volume from particles
-      mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::map_volume_to_nodes,
-                    std::placeholders::_1));
-
-#ifdef USE_MPI
-      // Run if there is more than a single MPI task
-      if (mpi_size > 1) {
-        // MPI all reduce nodal volume
-        mesh_->template nodal_halo_exchange<double, 1>(
-            std::bind(&mpm::NodeBase<Tdim>::volume, std::placeholders::_1,
-                      mpm::ParticlePhase::SinglePhase),
-            std::bind(&mpm::NodeBase<Tdim>::update_volume,
-                      std::placeholders::_1, false,
-                      mpm::ParticlePhase::SinglePhase, std::placeholders::_2));
-      }
-#endif
-    }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

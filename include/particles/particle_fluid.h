@@ -41,15 +41,6 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
-  //! Compute updated position of the particle and kinematics
-  //! \param[in] dt Analysis time step
-  //! \param[in] velocity_update Method to update particle velocity
-  //! \param[in] blending_ratio FLIP-PIC Blending ratio
-  void compute_updated_position(
-      double dt,
-      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
-      double blending_ratio = 1.0) noexcept override;
-
   //! Serialize
   //! \retval buffer Serialized buffer data
   std::vector<uint8_t> serialize() override;
@@ -92,6 +83,18 @@ class FluidParticle : public mpm::Particle<Tdim> {
   std::string type() const override {
     return (Tdim == 2) ? "P2DFLUID" : "P3DFLUID";
   }
+
+  //! Function that returns the gradient of volume error for delta correction
+  //! \param[in] phase Node phase id
+  Eigen::Matrix<double, Tdim, 1> volume_error_gradient(
+      unsigned phase = mpm::NodePhase::NSinglePhase) const override;
+
+  //! Apply delta correction to particle position and displacement
+  //! \param[in] step_length Nudging step length
+  //! \param[in] phase Node phase id
+  void apply_delta_correction(
+      double step_length,
+      unsigned phase = mpm::NodePhase::NSinglePhase) override;
 
  protected:
   //! Compute pack size

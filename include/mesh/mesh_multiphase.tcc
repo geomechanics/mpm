@@ -713,4 +713,205 @@ bool mpm::Mesh<Tdim>::compute_nodal_correction_force_twophase(
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }
   return status;
-};
+}
+
+//! Apply particle delta correction for positional nudging
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_particle_delta_correction(
+    unsigned niteration, double tolerance, bool locate_particles,
+    bool apply_phase_specific, unsigned particle_phase, unsigned node_phase) {
+  // Initialise MPI size
+  int mpi_size = 1;
+
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  // Compute nodal volume
+  // Reinitialize nodal volumes to zero
+  this->iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::update_volume,
+                                     std::placeholders::_1, false, node_phase,
+                                     0.0));
+
+  // Compute nodal volume from particles
+  this->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::map_volume_to_nodes, std::placeholders::_1));
+
+#ifdef USE_MPI
+  // Run if there is more than a single MPI task
+  if (mpi_size > 1) {
+    // MPI all reduce nodal volume
+    this->template nodal_halo_exchange<double, 1>(
+        std::bind(&mpm::NodeBase<Tdim>::volume, std::placeholders::_1,
+                  node_phase),
+        std::bind(&mpm::NodeBase<Tdim>::update_volume, std::placeholders::_1,
+                  false, node_phase, std::placeholders::_2));
+  }
+#endif
+
+  // Compute global error norm
+  double global_error_2 = this->compute_delta_correction_error_norm(node_phase);
+
+  // Compute global particle gradient norm
+  double global_error_grad_2 = this->compute_delta_correction_error_grad_norm(
+      particle_phase, node_phase);
+
+  // Perform iteration
+  unsigned it = 0;
+  while (global_error_2 > tolerance) {
+    // Compute nudging magnitude b_0
+    if (global_error_grad_2 < std::numeric_limits<double>::epsilon())
+      global_error_grad_2 = std::numeric_limits<double>::epsilon();
+    double b_0 = global_error_2 / global_error_grad_2;
+
+    // Apply delta correction to particle position
+    if (!apply_phase_specific)
+      this->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::apply_delta_correction,
+                    std::placeholders::_1, b_0, node_phase));
+
+    // Check iteration, exit if not needed
+    it++;
+    if (!(it < niteration)) break;
+
+    // Locate particle
+    auto unlocatable_particles = this->locate_particles_mesh();
+
+    if (!unlocatable_particles.empty() && locate_particles)
+      throw std::runtime_error(
+          "Particle outside the mesh domain in delta correction!");
+    // If unable to locate particles remove particles
+    if (!unlocatable_particles.empty() && !locate_particles)
+      for (const auto& remove_particle : unlocatable_particles)
+        this->remove_particle(remove_particle);
+
+#ifdef USE_MPI
+#ifdef USE_GRAPH_PARTITIONING
+    this->transfer_halo_particles();
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+#endif
+
+    // Recompute shape function and shape function gradient
+    this->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+    // Compute nodal volume
+    // Reinitialize nodal volumes to zero
+    this->iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::update_volume,
+                                       std::placeholders::_1, false, node_phase,
+                                       0.0));
+
+    // Compute nodal volume from particles
+    this->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::map_volume_to_nodes, std::placeholders::_1));
+
+#ifdef USE_MPI
+    // Run if there is more than a single MPI task
+    if (mpi_size > 1) {
+      // MPI all reduce nodal volume
+      this->template nodal_halo_exchange<double, 1>(
+          std::bind(&mpm::NodeBase<Tdim>::volume, std::placeholders::_1,
+                    node_phase),
+          std::bind(&mpm::NodeBase<Tdim>::update_volume, std::placeholders::_1,
+                    false, node_phase, std::placeholders::_2));
+    }
+#endif
+
+    // Compute global error norm
+    global_error_2 = this->compute_delta_correction_error_norm(node_phase);
+
+    // Compute global particle gradient norm
+    global_error_grad_2 = this->compute_delta_correction_error_grad_norm(
+        particle_phase, node_phase);
+  }
+}
+
+//! Compute global delta correction error norm
+template <unsigned Tdim>
+double mpm::Mesh<Tdim>::compute_delta_correction_error_norm(
+    unsigned node_phase) {
+
+  // Check mpi rank and size
+  int mpi_size = 1;
+
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  // Compute error norm
+  double error_2 = 0;
+#pragma omp parallel for schedule(runtime) reduction(+ : error_2)
+  for (auto nitr = this->nodes_.cbegin(); nitr != this->nodes_.cend(); ++nitr) {
+    const double& volume = (*nitr)->volume(node_phase);
+    const double& gvolume = (*nitr)->gauss_volume();
+    const double nodal_vol_error = std::max(0.0, volume - gvolume);
+    error_2 += nodal_vol_error * nodal_vol_error;
+  }
+
+  if (mpi_size > 1) {
+#if USE_PETSC
+    // Substract squared norm from domain shared nodes
+    double halo_nodes_error_2 = 0;
+#pragma omp parallel for schedule(runtime) reduction(+ : halo_nodes_error_2)
+    for (auto nitr = domain_shared_nodes_.cbegin();
+         nitr != domain_shared_nodes_.cend(); ++nitr) {
+      const double nrank = double((*nitr)->mpi_ranks().size());
+      const double& volume = (*nitr)->volume(node_phase);
+      const double& gvolume = (*nitr)->gauss_volume();
+      const double nodal_vol_error = std::max(0.0, volume - gvolume);
+      halo_nodes_error_2 +=
+          (nrank - 1.0) / nrank * nodal_vol_error * nodal_vol_error;
+    }
+
+    // Substract the multiple counts of domain shared nodes
+    error_2 = error_2 - halo_nodes_error_2;
+
+    // MPI All reduce error_2
+    double global_error_2;
+    MPI_Allreduce(&error_2, &global_error_2, 1, MPI_DOUBLE, MPI_SUM,
+                  MPI_COMM_WORLD);
+    error_2 = global_error_2;
+#endif
+  }
+
+  return error_2;
+}
+
+//! Compute global delta correction error gradient norm
+template <unsigned Tdim>
+double mpm::Mesh<Tdim>::compute_delta_correction_error_grad_norm(
+    unsigned particle_phase, unsigned node_phase) {
+
+  // Check mpi rank and size
+  int mpi_size = 1;
+
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  // Compute error gradient norm
+  double error_grad_2 = 0.0;
+#pragma omp parallel for schedule(runtime) reduction(+ : error_grad_2)
+  for (auto pitr = this->particles_.cbegin(); pitr != this->particles_.cend();
+       ++pitr) {
+    const Eigen::Matrix<double, Tdim, 1>& error_grad =
+        (*pitr)->volume_error_gradient(node_phase);
+    error_grad_2 += error_grad.dot(error_grad);
+  }
+
+  if (mpi_size > 1) {
+#if USE_PETSC
+    // MPI All reduce error_grad_2
+    double global_error_grad_2;
+    MPI_Allreduce(&error_grad_2, &global_error_grad_2, 1, MPI_DOUBLE, MPI_SUM,
+                  MPI_COMM_WORLD);
+    error_grad_2 = global_error_grad_2;
+#endif
+  }
+
+  return error_grad_2;
+}

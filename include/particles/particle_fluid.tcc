@@ -451,32 +451,36 @@ void mpm::FluidParticle<Tdim>::deserialize(
 #endif
 }
 
-// Compute updated position of the particle and kinematics
+//! Function that returns the gradient of volume error for delta correction
 template <unsigned Tdim>
-void mpm::FluidParticle<Tdim>::compute_updated_position(
-    double dt, mpm::VelocityUpdate velocity_update,
-    double blending_ratio) noexcept {
-  mpm::Particle<Tdim>::compute_updated_position(dt, velocity_update,
-                                                blending_ratio);
+Eigen::Matrix<double, Tdim, 1> mpm::FluidParticle<Tdim>::volume_error_gradient(
+    unsigned phase) const {
 
-  // Interpolate error measures from node
-  double error_2 = 0;
+  // Interpolate error gradient
   Eigen::Matrix<double, Tdim, 1> error_grad =
       Eigen::Matrix<double, Tdim, 1>::Zero();
+
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const double& volume = nodes_[i]->volume(mpm::ParticlePhase::SinglePhase);
+    const double& volume = nodes_[i]->volume(phase);
     const double& gvolume = nodes_[i]->gauss_volume();
     const double nodal_vol_error = std::max(0.0, volume - gvolume);
-    error_2 += shapefn_[i] * nodal_vol_error * nodal_vol_error;
     error_grad.noalias() += this->dn_dx_.row(i).transpose() * nodal_vol_error;
   }
   error_grad *= 2.0 * this->volume_;
 
+  return error_grad;
+}
+
+//! Apply delta correction to particle position and displacement
+template <unsigned Tdim>
+void mpm::FluidParticle<Tdim>::apply_delta_correction(double step_length,
+                                                      unsigned phase) {
+
+  // Interpolate error measures from node
+  const auto& error_grad = this->volume_error_gradient(phase);
+
   // Compute delta correction
-  double denominator = error_grad.dot(error_grad);
-  if (denominator < std::numeric_limits<double>::epsilon())
-    denominator = std::numeric_limits<double>::epsilon();
-  Eigen::Matrix<double, Tdim, 1> delta_x = -error_2 / denominator * error_grad;
+  Eigen::Matrix<double, Tdim, 1> delta_x = -step_length * error_grad;
 
   // Check minimum value of delta_x
   for (unsigned i = 0; i < Tdim; i++)

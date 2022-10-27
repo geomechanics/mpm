@@ -43,11 +43,6 @@ class MPMSemiImplicitNavierStokes : public MPMBase<Tdim> {
   //! Compute corrected velocity
   bool compute_correction_force();
 
-  //! Compute delta correction error measures
-  //! \param[in] delta_correction Boolean which define if delta correction
-  //! should be performed
-  bool compute_delta_correction_measures(bool delta_correction);
-
   //! Class private variables
  private:
   // Generate a unique id for the analysis
@@ -92,6 +87,10 @@ class MPMSemiImplicitNavierStokes : public MPMBase<Tdim> {
   double beta_{1};
   // Boolean to perform particle correction
   bool delta_correction_{true};
+  // Delta correction iteration
+  unsigned delta_correction_iteration_{1};
+  // Delta correction tolerance
+  double delta_correction_tol_{1.0e-10};
   //! Assembler object
   std::shared_ptr<mpm::AssemblerBase<Tdim>> assembler_;
   //! Linear solver object

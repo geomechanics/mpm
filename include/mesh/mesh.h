@@ -625,10 +625,38 @@ class Mesh {
       const Eigen::SparseMatrix<double>& correction_matrix,
       const Eigen::VectorXd& pressure_increment, double dt);
 
+  //! Apply particle delta correction for positional nudging
+  //! \ingroup MultiPhase
+  //! \param[in] niteration Maximum number of iteration for delta correction
+  //! \param[in] tolerance Tolerance for global volume error
+  //! \param[in] locate_particles Boolean that check the particle location
+  //! \param[in] apply_phase_specific Boolean to apply to particular
+  //! particle_phase. Default is false, which apply to all particles
+  //! \param[in] particle_phase Phase id of particle \param[in]
+  //! node_phase Phase id of node
+  void apply_particle_delta_correction(
+      unsigned niteration, double tolerance, bool locate_particles,
+      bool apply_phase_specific = false,
+      unsigned particle_phase = mpm::ParticlePhase::SinglePhase,
+      unsigned node_phase = mpm::NodePhase::NSinglePhase);
+
+  //! Compute global delta correction error norm
+  //! \ingroup MultiPhase
+  //! \param[in] node_phase Phase id of node
+  double compute_delta_correction_error_norm(unsigned node_phase);
+
+  //! Compute global delta correction error gradient norm
+  //! \ingroup MultiPhase
+  //! \param[in] particle_phase Phase id of particle
+  //! \param[in] node_phase Phase id of node
+  double compute_delta_correction_error_grad_norm(unsigned particle_phase,
+                                                  unsigned node_phase);
+
   /**@}*/
 
   /**
-   * \defgroup Nonlocal Functions dealing with MPM with nonlocal shape function
+   * \defgroup Nonlocal Functions dealing with MPM with nonlocal shape
+   * function
    */
   /**@{*/
 

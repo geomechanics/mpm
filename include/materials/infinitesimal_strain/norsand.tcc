@@ -36,6 +36,8 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
       e_min_ = material_properties["e_min"].template get<double>();
       // Maximum void ratio
       e_max_ = material_properties["e_max"].template get<double>();
+      // Set cap based on passed e_max and e_min values
+      cap_ = e_max_ - e_min_;
       // Crushing pressure
       crushing_pressure_ =
           material_properties["crushing_pressure"].template get<double>();
@@ -370,9 +372,8 @@ void mpm::NorSand<Tdim>::compute_image_parameters(mpm::dense_map* state_vars) {
   double factor = ((chi_image_ * N_ * std::fabs(psi_image)) / Mtc_);
 
   if (force_critical_state_) {
-    // Critical state coefficient reduction factor cap; motivated via maximum
-    // reasonable (e_max - e_min) being approximately 0.5
-    if (factor > 0.5) factor = 0.5;
+    // Critical state coefficient reduction factor cap
+    if (factor > cap_) factor = cap_;
 
     // Reduce critical state coefficient reduction factor to zero with as
     // pdstrain reaches 100%; this enforces that soil reaches critical state at

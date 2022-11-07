@@ -256,7 +256,7 @@ inline std::vector<Eigen::MatrixXd>
         VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
 
   // Get gradient shape functions
-  Eigen::MatrixXd grad_sf =
+  Eigen::MatrixXd grad_shapefn =
       this->grad_shapefn(xi, particle_size, deformation_gradient);
 
   // B-Matrix
@@ -265,7 +265,7 @@ inline std::vector<Eigen::MatrixXd>
 
   try {
     // Check if matrices dimensions are correct
-    if ((grad_sf.rows() != nodal_coordinates.rows()) ||
+    if ((grad_shapefn.rows() != nodal_coordinates.rows()) ||
         (xi.rows() != nodal_coordinates.cols()))
       throw std::runtime_error(
           "BMatrix - Jacobian calculation: Incorrect dimension of xi and "
@@ -274,14 +274,6 @@ inline std::vector<Eigen::MatrixXd>
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     return bmatrix;
   }
-
-  // Jacobian dx_i/dxi_j
-  Eigen::Matrix<double, Tdim, Tdim> jacobian =
-      (grad_sf.transpose() * nodal_coordinates);
-
-  // Gradient shapefn of the cell
-  // dN/dx = [J]^-1 * dN/dxi
-  Eigen::MatrixXd grad_shapefn = grad_sf * (jacobian.inverse()).transpose();
 
   for (unsigned i = 0; i < this->nconnectivity_; ++i) {
     Eigen::Matrix<double, 3, Tdim> bi;
@@ -312,25 +304,9 @@ inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::jacobian(
         const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
         VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
-
-  // Get gradient shape functions
-  const Eigen::MatrixXd grad_shapefn =
-      this->grad_shapefn(xi, particle_size, deformation_gradient);
-
-  try {
-    // Check if matrices dimensions are correct
-    if ((grad_shapefn.rows() != nodal_coordinates.rows()) ||
-        (xi.size() != nodal_coordinates.cols()))
-      throw std::runtime_error(
-          "Jacobian calculation: Incorrect dimension of xi and "
-          "nodal_coordinates");
-  } catch (std::exception& exception) {
-    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
-    return Eigen::Matrix<double, Tdim, Tdim>::Zero();
-  }
-
-  // Jacobian dx_i/dxi_j
-  return (grad_shapefn.transpose() * nodal_coordinates);
+  // Jacobian dx_i/dxi_j local
+  return this->jacobian_local(xi, nodal_coordinates.block(0, 0, 4, 2),
+                              particle_size, deformation_gradient);
 }
 
 //! Compute Jacobian local with particle size and deformation gradient

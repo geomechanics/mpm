@@ -181,10 +181,6 @@ bool mpm::FluidParticle<Tdim>::compute_updated_pressure() {
         state_variables_[mpm::ParticlePhase::SinglePhase].at("pressure") *
             projection_param_ +
         pressure_increment;
-
-    // Overwrite pressure if free surface
-    if (this->free_surface())
-      state_variables_[mpm::ParticlePhase::SinglePhase].at("pressure") = 0.0;
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

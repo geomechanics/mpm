@@ -14,53 +14,72 @@ mpm::MohrCoulombSFD<Tdim>::MohrCoulombSFD(unsigned id,
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
     // Softening status
-    softening_ = material_properties.at("softening").template get<bool>();
-    // SPT-N Bool
-    sptn_bool_ = material_properties.at("spt_n_bool").template get<bool>();
-    // SPT-N
-    if (sptn_bool_)
+    if (material_properties.find("softening") != material_properties.end())
+      softening_ = material_properties.at("softening").template get<bool>();
+    if (softening_) {
+      // Residual friction, dilation, and cohesion
+      phi_residual_ =
+          material_properties.at("residual_friction").template get<double>() *
+          M_PI / 180.;
+      psi_residual_ =
+          material_properties.at("residual_dilation").template get<double>() *
+          M_PI / 180.;
+      cohesion_residual_ =
+          material_properties.at("residual_cohesion").template get<double>();
+      // Peak plastic deviatoric strain
+      pdstrain_peak_ =
+          material_properties.at("peak_pdstrain").template get<double>();
+      // Residual plastic deviatoric strain
+      pdstrain_residual_ =
+          material_properties.at("residual_pdstrain").template get<double>();
+    }
+    // SPT-N Bool status
+    if (material_properties.find("spt_n_bool") != material_properties.end())
+      sptn_bool_ = material_properties.at("spt_n_bool").template get<bool>();
+    // Su_over_p status
+    if (material_properties.find("su_over_p_bool") != material_properties.end())
+      su_over_p_bool_ =
+          material_properties.at("su_over_p_bool").template get<bool>();
+    // Mohr-coulomb to tresca bool
+    if (material_properties.find("mc_to_tresca_bool") !=
+        material_properties.end())
+      mc_to_tresca_bool_ =
+          material_properties.at("mc_to_tresca_bool").template get<bool>();
+    if (sptn_bool_) {
+      // SPT-N
       sptn_ = material_properties.at("spt_n").template get<double>();
-    // Peak friction, dilation and cohesion
-    // phi_peak_ =
-    //     material_properties.at("friction").template get<double>() * M_PI /
-    //     180.;
-    // psi_peak_ =
-    //     material_properties.at("dilation").template get<double>() * M_PI /
-    //     180.;
+      // Zero friction and dilation
+      phi_peak_ = 0 * M_PI / 180.;
+      psi_peak_ = 0 * M_PI / 180.;
+    } else if (su_over_p_bool_) {
+      // Maximum su_over_p
+      su_over_pi_peak_ =
+          material_properties.at("su_over_p_peak").template get<double>();
+      // Residual su_over_p
+      su_over_pi_residual_ =
+          material_properties.at("su_over_p_residual").template get<double>();
+      // Zero friction and dilation
+      phi_peak_ = 0 * M_PI / 180.;
+      psi_peak_ = 0 * M_PI / 180.;
+    } else if (mc_to_tresca_bool_) {
+      phi_undrained_ =
+          material_properties.at("friction").template get<double>() * M_PI /
+          180.;
+      // Zero friction and dilation
+      phi_peak_ = 0 * M_PI / 180.;
+      psi_peak_ = 0 * M_PI / 180.;
+    } else {
+      // Peak friction, dilation and cohesion
+      phi_peak_ = material_properties.at("friction").template get<double>() *
+                  M_PI / 180.;
+      psi_peak_ = material_properties.at("dilation").template get<double>() *
+                  M_PI / 180.;
+    }
+    // Peak cohesion
     cohesion_peak_ = material_properties.at("cohesion").template get<double>();
-    // Peak su/pi
-    phi_peak_ = 0 * M_PI / 180.;
-    psi_peak_ = 0 * M_PI / 180.;
-    phi_undrained_ =
-        material_properties.at("undrained_friction").template get<double>() *
-        M_PI / 180.;
-    su_over_pi_peak_ =
-        material_properties.at("su_over_p_peak").template get<double>();
-    // Residual friction, dilation and cohesion
-    phi_residual_ =
-        material_properties.at("residual_friction").template get<double>() *
-        M_PI / 180.;
-    // psi_residual_ =
-    //     material_properties.at("residual_dilation").template get<double>() *
-    //     M_PI / 180.;
-    cohesion_residual_ =
-        material_properties.at("residual_cohesion").template get<double>();
-    phi_residual_ = 0 * M_PI / 180.;
-    psi_residual_ = 0 * M_PI / 180.;
-    su_over_pi_residual_ =
-        material_properties.at("su_over_p_residual").template get<double>();
-    // Peak plastic deviatoric strain
-    pdstrain_peak_ =
-        material_properties.at("peak_pdstrain").template get<double>();
-    // Residual plastic deviatoric strain
-    pdstrain_residual_ =
-        material_properties.at("residual_pdstrain").template get<double>();
     // Tensile strength
     tension_cutoff_ =
         material_properties.at("tension_cutoff").template get<double>();
-    // Su_over_p status
-    su_over_p_bool_ =
-        material_properties.at("su_over_p_bool").template get<bool>();
     // Properties
     properties_ = material_properties;
     // Bulk modulus
@@ -357,43 +376,45 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombSFD<Tdim>::compute_stress(
   const double pdstrain = (*state_vars).at("pdstrain");
 
   // Get stress beginning and compute p_beginning (compression positive)
-  const auto stress_beginning = ptr->stress_beginning();
-  double p_beginning =
-      -(stress_beginning(0) + stress_beginning(1) + stress_beginning(2)) / 3.0;
-  double sigma_v_beginning = -stress_beginning(1) / 101000;  // in atm
+  const auto bstress = ptr->stress_beginning();
+  const double p_beginning = -1. * (bstress(0) + bstress(1) + bstress(2)) / 3.;
 
   double adopted_cohesion_peak;
   double adopted_cohesion_residual;
-  double x_coord;
 
-  // Compute cohesion from su/p
+  // Check what type of strength to use
   if (su_over_p_bool_) {
-    adopted_cohesion_residual = su_over_pi_residual_ * p_beginning;
+    // Compute cohesion from su/p
     adopted_cohesion_peak = su_over_pi_peak_ * p_beginning;
+    adopted_cohesion_residual = su_over_pi_residual_ * p_beginning;
+    // Update state_vars cohesion
+    (*state_vars).at("cohesion") = adopted_cohesion_peak;
   } else if (sptn_bool_) {
-    // Weber 2015, change it to Pa
+    // Vertical effective stress Pa -> atm
+    const double sigma_v = -1. * bstress(1) / 101000.;
+    // Post-liquefied strength from Weber 2015, with atm -> Pa
     adopted_cohesion_residual =
-        (std::exp(0.1407 * sptn_ + 4.2399 * std::pow(sigma_v_beginning, 0.12)) -
+        (std::exp(0.1407 * sptn_ + 4.2399 * std::pow(sigma_v, 0.12)) -
          0.43991 * (std::pow(sptn_, 1.45) +
-                    0.2 * sptn_ * std::pow(sigma_v_beginning, 2.48) + 41.13)) *
+                    0.2 * sptn_ * std::pow(sigma_v, 2.48) + 41.13)) *
         47.880208;
     adopted_cohesion_peak = adopted_cohesion_residual;
-    // Reduce 1/2 for those materials beyond the upstream toe
-    // x_coord = ptr->coordinates()[0];
-    // if (x_coord < -104) {
-    //   adopted_cohesion_peak /= 2;
-    //   adopted_cohesion_residual /= 2;
-    // }
+    // Update state_vars cohesion
+    (*state_vars).at("cohesion") = adopted_cohesion_peak;
+  } else if (mc_to_tresca_bool_) {
+    // Undrained shear strength based on initial stresses
+    const double s = -1. * (bstress(0) + bstress(1)) / 2.;
+    const double shear_max =
+        sin(phi_undrained_) * (s + cohesion_peak_ / tan(phi_undrained_));
+    adopted_cohesion_peak = shear_max * cos(phi_undrained_);
+    adopted_cohesion_residual = adopted_cohesion_peak;
+    // Update state_vars cohesion
+    (*state_vars).at("cohesion") = adopted_cohesion_peak;
   } else {
-    // Undrained shear strength at initial stresses
-    adopted_cohesion_peak =
-        -stress_beginning(1) * tan(phi_undrained_) + cohesion_peak_;
-    adopted_cohesion_residual =
-        -stress_beginning(1) * tan(phi_undrained_) + cohesion_residual_;
+    // Classic Mohr-Coulomb
+    adopted_cohesion_peak = cohesion_peak_;
+    adopted_cohesion_residual = cohesion_residual_;
   }
-
-  // Update state_vars cohesion
-  (*state_vars).at("cohesion") = adopted_cohesion_peak;
 
   // Update MC parameters using a linear softening rule
   if (softening_ && pdstrain > pdstrain_peak_) {

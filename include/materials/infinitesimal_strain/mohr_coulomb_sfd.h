@@ -117,26 +117,28 @@ class MohrCoulombSFD : public Material<Tdim> {
   double phi_undrained_{std::numeric_limits<double>::max()};
   //! Maximum cohesion
   double cohesion_peak_{std::numeric_limits<double>::max()};
-  //! Maximum su_over_pi
-  double su_over_pi_peak_{std::numeric_limits<double>::max()};
   //! Residual friction angle phi
   double phi_residual_{std::numeric_limits<double>::max()};
   //! Residual dilation angle psi
   double psi_residual_{std::numeric_limits<double>::max()};
   //! Residual cohesion
   double cohesion_residual_{std::numeric_limits<double>::max()};
-  //! Maximum su_over_pi
-  double su_over_pi_residual_{std::numeric_limits<double>::max()};
   //! Peak plastic deviatoric strain
   double pdstrain_peak_{std::numeric_limits<double>::max()};
-  //! su_over_p_bool
-  bool su_over_p_bool_{false};
-  //! SPT-N
-  double sptn_{std::numeric_limits<double>::max()};
-  //! SPT-N bool
-  bool sptn_bool_{false};
   //! Residual plastic deviatoric strain
   double pdstrain_residual_{std::numeric_limits<double>::max()};
+  //! SPT-N bool
+  bool sptn_bool_{false};
+  //! SPT-N
+  double sptn_{std::numeric_limits<double>::max()};
+  //! su_over_p_bool
+  bool su_over_p_bool_{false};
+  //! Maximum su_over_p
+  double su_over_pi_peak_{std::numeric_limits<double>::max()};
+  //! Residual su_over_p
+  double su_over_pi_residual_{std::numeric_limits<double>::max()};
+  //! mc_to_tresca_ bool
+  bool mc_to_tresca_bool_{false};
   //! Tension cutoff
   double tension_cutoff_{std::numeric_limits<double>::max()};
   //! softening

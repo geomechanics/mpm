@@ -384,9 +384,9 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombSFD<Tdim>::compute_stress(
 
   // Check what type of strength to use
   if (su_over_p_bool_) {
-    // Compute cohesion from su/p
-    adopted_cohesion_peak = su_over_pi_peak_ * p_beginning;
-    adopted_cohesion_residual = su_over_pi_residual_ * p_beginning;
+    // Compute cohesion from su/sigma'v
+    adopted_cohesion_peak = su_over_pi_peak_ * (-1. * bstress(1));
+    adopted_cohesion_residual = su_over_pi_residual_ * (-1. * bstress(1));
     // Update state_vars cohesion
     (*state_vars).at("cohesion") = adopted_cohesion_peak;
   } else if (sptn_bool_) {

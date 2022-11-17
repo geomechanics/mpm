@@ -1852,4 +1852,99 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
     // Check nodal properties initialisation
     REQUIRE_NOTHROW(mesh->initialise_nodal_properties());
   }
+
+  //! Check discontinuity
+  //   SECTION("Check discontinuity") {
+  //     // Create the mesh
+  //     std::shared_ptr<mpm::Mesh<Dim>> mesh =
+  //     std::make_shared<mpm::Mesh<Dim>>(0);
+
+  //     // Define nodes
+  //     Eigen::Vector3d coords;
+  //     coords << 0, 0, 0;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node0 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(0, coords);
+
+  //     coords << 2, 0, 0;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node1 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(1, coords);
+
+  //     coords << 2, 2, 0;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node2 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(2, coords);
+
+  //     coords << 0, 2, 0;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node3 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(3, coords);
+
+  //     coords << 0, 0, 2;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node4 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(4, coords);
+
+  //     coords << 2, 0, 2;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node5 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(5, coords);
+
+  //     coords << 2, 2, 2;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node6 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(6, coords);
+
+  //     coords << 0, 2, 2;
+  //     std::shared_ptr<mpm::NodeBase<Dim>> node7 =
+  //         std::make_shared<mpm::Node<Dim, Dof, Nphases>>(7, coords);
+
+  //     // Add nodes 0 to 7 to the mesh
+  //     REQUIRE(mesh->add_node(node0) == true);
+  //     REQUIRE(mesh->add_node(node1) == true);
+  //     REQUIRE(mesh->add_node(node2) == true);
+  //     REQUIRE(mesh->add_node(node3) == true);
+  //     REQUIRE(mesh->add_node(node4) == true);
+  //     REQUIRE(mesh->add_node(node5) == true);
+  //     REQUIRE(mesh->add_node(node6) == true);
+  //     REQUIRE(mesh->add_node(node7) == true);
+
+  //     // Check nodal properties initialisation
+  //     REQUIRE_NOTHROW(mesh->initialise_nodal_properties());
+
+  //     // discontinuity
+  //     std::vector<Eigen::Matrix<double, Dim, 1>> points;
+  //     // point 0
+  //     coords << 0.5, 0.5, 1.;
+  //     points.emplace_back(coords);
+  //     // point 1
+  //     coords << 1.5, 0., 1.;
+  //     points.emplace_back(coords);
+  //     // point 2
+  //     coords << 1.5, 1.5, 1.;
+  //     points.emplace_back(coords);
+  //     std::vector<std::vector<mpm::Index>> surfs;
+  //     // surface 0
+  //     std::vector<mpm::Index> indices{0, 1, 2};
+  //     surfs.emplace_back(indices);
+
+  //     const std::string discontinuity_type = "tri3d";
+  //     // Get discontinuity id
+  //     int discontinuity_id = 0;
+  //     Json discontinuity_props;
+  //     // Create a new discontinuity surface from JSON object
+  //     auto discontinuity =
+  //         Factory<mpm::DiscontinuityBase<Dim>, unsigned, const
+  //         Json&>::instance()
+  //             ->create(discontinuity_type, std::move(discontinuity_id),
+  //                      discontinuity_props);
+
+  //     REQUIRE(discontinuity->initialise(points, surfs) == true);
+
+  //     //! discontinuities
+  //     std::map<unsigned, std::shared_ptr<mpm::DiscontinuityBase<Dim>>>
+  //         discontinuities;
+
+  //     discontinuities.insert(std::make_pair(discontinuity_id,
+  //     discontinuity)); REQUIRE_NOTHROW(mesh->locate_discontinuity());
+
+  //     double dt = 0.1;
+  //     REQUIRE_NOTHROW(mesh->compute_updated_position_discontinuity(dt));
+
+  //     REQUIRE_NOTHROW(mesh->compute_shapefn_discontinuity());
+  //   }
 }

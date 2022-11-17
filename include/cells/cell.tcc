@@ -51,6 +51,8 @@ bool mpm::Cell<Tdim>::initialise() {
       dn_dx_centroid_ = element_->dn_dx(xi_centroid, this->nodal_coordinates_,
                                         zero, identity_matrix);
 
+      dis_id_ = std::numeric_limits<unsigned>::max();
+
       status = true;
     } else {
       throw std::runtime_error(

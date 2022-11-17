@@ -8,6 +8,11 @@ namespace mpm_test {
 bool write_json(unsigned dim, bool resume, const std::string& analysis,
                 const std::string& mpm_scheme, const std::string& file_name);
 
+// Write JSON Configuration file for xmpm
+bool write_json_xmpm(unsigned dim, bool resume, const std::string& analysis,
+                     const std::string& mpm_scheme,
+                     const std::string& file_name);
+
 // Write JSON Configuration file for absorbing boundary
 bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,
@@ -65,7 +70,6 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& file_name,
                          const std::string& free_surface_type = "none",
                          const std::string& linear_solver_type = "none");
-
 // Write JSON Entity Set
 bool write_entity_set();
 
@@ -78,6 +82,8 @@ bool write_particles_2d();
 bool write_mesh_3d();
 // Write particles file in 3D
 bool write_particles_3d();
+// Write discontinuity file in 3D
+bool write_discontinuity_3d();
 
 // Write math function csv
 bool write_math_function();

@@ -327,6 +327,406 @@ class NodeBase {
   virtual void compute_multimaterial_normal_unit_vector() = 0;
 
   /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+  //! Initialise shared pointer to nodal properties pool for discontinuity
+  //! \param[in] prop_id Property id in the nodal property pool
+  //! \param[in] nodal_properties Shared pointer to nodal properties pool
+  virtual void initialise_discontinuity_property_handle(
+      unsigned prop_id, std::shared_ptr<mpm::NodalProperties> property_handle) {
+    throw std::runtime_error(
+        "Calling the base class function (discontinuity_property) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return data in the nodal discontinuity properties map at a specific index
+  //! \ingroup XMPM
+  //! \param[in] property Property name
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  virtual Eigen::MatrixXd discontinuity_property(const std::string& property,
+                                                 unsigned nprops = 1) {
+    throw std::runtime_error(
+        "Calling the base class function (discontinuity_property) in "
+        "NodeBase:: "
+        "illegal operation!");
+
+    return Eigen::Matrix<double, 1, 1>::Zero();
+  }
+
+  //! Assign whether the node is enriched
+  //! \ingroup XMPM
+  //! \param[in] discontinuity discontinuity_enrich: true or false
+  //! \param[in] discontinuity id
+  virtual void assign_discontinuity_enrich(bool discontinuity,
+                                           unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_discontinuity_enrich) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return whether the node is enriched
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  virtual bool discontinuity_enrich(unsigned dis_id) const {
+    throw std::runtime_error(
+        "Calling the base class function (discontinuity_enrich) in "
+        "NodeBase:: "
+        "illegal operation!");
+    return true;
+  }
+
+  //! Update nodal property at the nodes from particle for discontinuity
+  //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] property Property name
+  //! \param[in] property_value Property quantity from the particles in the cell
+  //! \param[in] discontinuity_id Id of the material within the property data
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  virtual void update_discontinuity_property(
+      bool update, const std::string& property,
+      const Eigen::MatrixXd& property_value, unsigned discontinuity_id,
+      unsigned nprops) {
+    throw std::runtime_error(
+        "Calling the base class function (update_discontinuity_property) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign nodal property at the nodes from particle for discontinuity
+  //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] property Property name
+  //! \param[in] property_value Property quantity from the particles in the cell
+  //! \param[in] discontinuity_id Id of the material within the property data
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  virtual void assign_discontinuity_property(
+      bool update, const std::string& property,
+      const Eigen::MatrixXd& property_value, unsigned discontinuity_id,
+      unsigned nprops) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_discontinuity_property) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Compute momentum for discontinuity
+  //! \ingroup XMPM
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  virtual bool compute_momentum_discontinuity(unsigned phase, double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (compute_momentum_discontinuity) in "
+        "NodeBase:: "
+        "illegal operation!");
+    return true;
+  }
+
+  //! Compute momentum for discontinuity with cundall damping factor
+  //! \ingroup XMPM
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Damping factor
+  virtual bool compute_momentum_discontinuity_cundall(unsigned phase, double dt,
+                                                      double damping_factor) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_momentum_discontinuity_cundall) in "
+        "NodeBase:: "
+        "illegal operation!");
+
+    return true;
+  }
+
+  //! Apply self-contact force of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] dt Time-step
+  virtual void self_contact_discontinuity(double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (self_contact_discontinuity) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return the discontinuity_prop_id
+  //! \ingroup XMPM
+  virtual unsigned discontinuity_prop_id() const {
+    throw std::runtime_error(
+        "Calling the base class function (discontinuity_prop_id) in "
+        "NodeBase:: "
+        "illegal operation!");
+    return 0;
+  }
+
+  //! Add a cell id
+  //! \ingroup XMPM
+  virtual void add_cell_id(Index id) {
+    throw std::runtime_error(
+        "Calling the base class function (add_cell_id) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return cells_
+  //! \ingroup XMPM
+  virtual std::vector<Index> cells() {
+    throw std::runtime_error(
+        "Calling the base class function (cells) in "
+        "NodeBase:: "
+        "illegal operation!");
+    std::vector<Index> cells;
+    return cells;
+  }
+
+  //! Update the nodal levelset values
+  //! \ingroup XMPM
+  //! \param[in] the value of the nodal levelset_phi
+  //! \param[in]the discontinuity id
+  virtual void update_levelset_phi(double phi, int dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (update_levelset_phi) in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched mass
+  //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] the value of the enriched mass
+  virtual void update_mass_enrich(bool update, Eigen::Matrix<double, 3, 1>) {
+    throw std::runtime_error(
+        "Calling the base class function update_mass_enriched in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched momentum
+  //! \ingroup XMPM
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] the value of the enriched momentum
+  virtual void update_momentum_enrich(bool update,
+                                      Eigen::Matrix<double, Tdim, 3> momenta) {
+    throw std::runtime_error(
+        "Calling the base class function update_momenta_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched internal_force
+  //! \ingroup XMPM
+  //! \param[in] the value of the enriched momentum
+  virtual void update_internal_force_enrich(
+      Eigen::Matrix<double, Tdim, 3> internal_force) {
+    throw std::runtime_error(
+        "Calling the base class function update_internal_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Update the nodal enriched external_force
+  //! \ingroup XMPM
+  //! \param[in] the value of the enriched external_force
+  virtual void update_external_force_enrich(
+      Eigen::Matrix<double, Tdim, 3> external_force) {
+    throw std::runtime_error(
+        "Calling the base class function update_external_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return mass_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual Eigen::Matrix<double, 3, 1> mass_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function mass_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+  //! Return momentum_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual Eigen::Matrix<double, Tdim, 3> momentum_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function momentum_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+  //! Return internal_force_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual Eigen::Matrix<double, Tdim, 3> internal_force_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function internal_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+  //! Return external_force_enrich_ at a given node for a given phase
+  //! \ingroup XMPM
+  virtual Eigen::Matrix<double, Tdim, 3> external_force_enrich() {
+    throw std::runtime_error(
+        "Calling the base class function external_force_enrich in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign the nodal levelset values
+  //! \ingroup XMPM
+  //! \param[in] the value of the nodal levelset_phi
+  //! \param[in] discontinuity id
+  virtual void assign_levelset_phi(double phi, int dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function assign_levelset_phi in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return the nodal levelset values
+  //! \ingroup XMPM
+  //! \param[in] the discontinuity_id
+  virtual double levelset_phi(int discontinuity_id) {
+    throw std::runtime_error(
+        "Calling the base class function levelset_phi in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+  //! Update the nodal mass_h_
+  //! \ingroup XMPM
+  //! \param[in] the value of mass_h_
+  virtual void update_mass_h(double mass_h) {
+    throw std::runtime_error(
+        "Calling the base class function update_mass_h in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Initialise the nodal mass_h_
+  //! \ingroup XMPM
+  virtual void initialise_mass_h() {
+    throw std::runtime_error(
+        "Calling the base class function initialise_mass_h in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Initialise the nodal mass
+  //! \param[in] phase Index corresponding to the phase
+  //! \ingroup XMPM
+  virtual void initialise_mass(unsigned phase) {
+    throw std::runtime_error(
+        "Calling the base class function initialise_mass in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Determine node type from mass and enriched mass
+  //! \param[in] the discontinuity_id
+  //! \ingroup XMPM
+  virtual void determine_node_type(int discontinuity_id) {
+    throw std::runtime_error(
+        "Calling the base class function determine_node_type in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Return the discontinuity id at nodes
+  //! \ingroup XMPM
+  //! \retval discontinuity_id_
+  virtual Eigen::Matrix<int, 2, 1> discontinuity_id() {
+    throw std::runtime_error(
+        "Calling the base class function discontinuity_id in "
+        "NodeBase:: "
+        "illegal operation!");
+    return Eigen::Matrix<int, 2, 1>::Zero();
+  }
+
+  //! Return enrich_type
+  //! \ingroup XMPM
+  //! \retval enrich_type_
+  virtual int enrich_type() {
+    throw std::runtime_error(
+        "Calling the base class function enrich_type in "
+        "NodeBase:: "
+        "illegal operation!");
+    return 0;
+  }
+
+  //! Return normal at a given node
+  //! \ingroup XMPM
+  //! \param[in] dis_id the discontinuity id
+  virtual VectorDim normal(unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function normal in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign normal at a given node
+  //! \ingroup XMPM
+  //! \param[in] dis_id the discontinuity id
+  virtual void assign_normal(VectorDim normal, unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function normal in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Reset the size of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] the number of the discontinuity
+  virtual void reset_discontinuity_size(int size) {
+    throw std::runtime_error(
+        "Calling the base class function reset_discontinuity_size in "
+        "NodeBase:: "
+        "illegal operation!");
+  };
+
+  //! Assign contact condition by contact distance
+  //! \ingroup XMPM
+  //! \param[in] the contact id
+  //! \param[in] contact or not
+  virtual void assign_contact(unsigned id, bool status) {
+    throw std::runtime_error(
+        "Calling the base class function assign_contact in "
+        "NodeBase:: "
+        "illegal operation!");
+  };
+
+  //! Assign friction coefficient
+  //! \ingroup XMPM
+  //! \param[in] the friction coefficient
+  //! \param[in] dis_id the discontinuity id
+  virtual void assign_friction_coef(double friction_coef, unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function assign_friction_coef in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign cohesion
+  //! \ingroup XMPM
+  //! \param[in] the cohesion
+  //! \param[in] dis_id the discontinuity id
+  virtual void assign_cohesion(double cohesion, unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function assign_cohesion in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  //! update cohesion area
+  //! \ingroup XMPM
+  //! \param[in] the cohesion area
+  //! \param[in] dis_id the discontinuity id
+  virtual void update_cohesion_area(double cohesion, unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function update_cohesion_area in "
+        "NodeBase:: "
+        "illegal operation!");
+  }
+
+  /**@}*/
+
+  /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/

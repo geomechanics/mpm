@@ -116,20 +116,11 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   void compute_dg_dpc(const mpm::dense_map* state_vars, const double pc_n,
                       const double p_trial, double* g_function, double* dg_dpc);
 
- protected:
-  //! material id
-  using Material<Tdim>::id_;
-  //! Material properties
-  using Material<Tdim>::properties_;
-  //! Logger
-  using Material<Tdim>::console_;
-
- private:
   //! Compute elastic tensor
   //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
   Eigen::Matrix<double, 6, 6> compute_elastic_tensor(
-      const Vector6d& stress, mpm::dense_map* state_vars);
+      const Vector6d& stress, mpm::dense_map* state_vars) override;
 
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
@@ -145,6 +136,15 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
                                           mpm::dense_map* state_vars,
                                           bool hardening = true) override;
 
+ protected:
+  //! material id
+  using Material<Tdim>::id_;
+  //! Material properties
+  using Material<Tdim>::properties_;
+  //! Logger
+  using Material<Tdim>::console_;
+
+ private:
   //! General parameters
   //! Density
   double density_{std::numeric_limits<double>::max()};

@@ -8,6 +8,7 @@
 #include "mpm_implicit.h"
 #include "mpm_semi_implicit_navierstokes.h"
 #include "mpm_semi_implicit_twophase.h"
+#include "xmpm_explicit.h"
 
 namespace mpm {
 // 2D Explicit MPM
@@ -55,5 +56,9 @@ static Register<mpm::MPM, mpm::MPMSemiImplicitTwoPhase<2>,
 static Register<mpm::MPM, mpm::MPMSemiImplicitTwoPhase<3>,
                 const std::shared_ptr<mpm::IO>&>
     mpm_semi_implicit_twophase_3d("MPMSemiImplicitTwoPhase3D");
+
+// 3D Explicit XMPM
+static Register<mpm::MPM, mpm::XMPMExplicit<3>, const std::shared_ptr<mpm::IO>&>
+    xmpm_explicit_3d("XMPMExplicit3D");
 
 }  // namespace mpm

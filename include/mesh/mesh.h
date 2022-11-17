@@ -28,6 +28,7 @@ using Json = nlohmann::json;
 #include "absorbing_constraint.h"
 #include "acceleration_constraint.h"
 #include "cell.h"
+#include "discontinuity_base.h"
 #include "factory.h"
 #include "friction_constraint.h"
 #include "function_base.h"
@@ -196,7 +197,7 @@ class Mesh {
   void iterate_over_cells(Toper oper);
 
   //! Find cell neighbours
-  void find_cell_neighbours();
+  void find_cell_neighbours(bool assign_to_nodes = false);
 
   //! Find global nparticles across MPI ranks / cell
   void find_nglobal_particles_cells();
@@ -524,6 +525,168 @@ class Mesh {
   void initialise_nodal_properties();
 
   /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+
+  //! Insert a new discontinuity
+  //! \ingroup XMPM
+  //! \param[in] discontinuity  of discontinuity
+  void insert_discontinuity(
+      const std::shared_ptr<mpm::DiscontinuityBase<Tdim>>& discontinuity);
+
+  //! Locate points of discontinuity in a cell
+  //! \ingroup XMPM
+  //! \param[in] dis_id discontinuity id
+  void locate_discontinuity(unsigned dis_id) {
+    discontinuity_[dis_id]->locate_discontinuity_mesh(cells_, map_cells_);
+  };
+
+  //! Update the discontinuity position
+  //! \ingroup XMPM
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_discontinuity(double dt);
+
+  //! Update the discontinuity position
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void compute_shapefn_discontinuity(unsigned dis_id) {
+    discontinuity_[dis_id]->compute_shapefn();
+  };
+
+  //! compute the normal vector of cells
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void compute_cell_normal_vector_discontinuity(unsigned dis_id);
+
+  //! compute the normal vector of enriched nodes at the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void compute_nodal_normal_vector_discontinuity(unsigned dis_id);
+
+  //! Initialize the level set function values
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void initialise_levelset_discontinuity(unsigned dis_id);
+
+  //! The evolution of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] dis_id the discontinuity id
+  void update_discontinuity(unsigned dis_id);
+
+  //! Find next tip element
+  //! \ingroup XMPM
+  //! \param[in] dis_id the discontinuity id
+  void find_next_tip_cells(unsigned dis_id);
+
+  // Initialize the cells in node
+  //! \ingroup XMPM
+  void add_cell_in_node();
+
+  //! Remove spurious potential tip element
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void remove_spurious_potential_tip_cells(unsigned dis_id);
+
+  //! Assign particles levelset values
+  //! \param[in] particles_levelset Particles and levelset values
+  //! \param[in] discontinuity id
+  void assign_particles_levelset(
+      const std::vector<std::tuple<mpm::Index, double>>& particles_levelset,
+      unsigned dis_id);
+
+  //! Assign nodal levelset values
+  //! \param[in] nodes_levelset Particles and levelset values
+  //! \param[in] discontinuity id
+  void assign_nodes_levelset(
+      const std::vector<std::tuple<mpm::Index, double>>& particles_levelset,
+      unsigned dis_id);
+
+  //! Assign node type as enrich
+  //! \ingroup XMPM
+  //! \param[in] dis_id discontinuity id
+  void assign_enrich_nodes(unsigned dis_id);
+
+  //! Assign self contact properties
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void assign_self_contact_property(unsigned dis_id);
+
+  //! Find all the nodes need to enriched
+  //! \ingroup XMPM
+  void update_node_enrich();
+
+  //! The function to initiate discontinuity
+  //! \ingroup XMPM
+  //! \param[in] maximum_pdstrain The critical value of the initiation
+  //! \param[in] shield_width only search the region outside the region
+  //! \param[in] maximum_num the maximum number of the discontinuity
+  //! \param[in] initiation_property initiation property of the discontinuity
+  //! \retval status Status of initiation
+  bool initiation_discontinuity(
+      double maximum_pdstrain, double shield_width, int maximum_num,
+      std::tuple<double, double, double, double, double, int, bool, bool>&
+          initiation_property);
+
+  //! The pre-process of discontinuity
+  //! \ingroup XMPM
+  void preprocess_discontinuity();
+
+  //! The post-process of discontinuity
+  //! \ingroup XMPM
+  void postprocess_discontinuity();
+
+  //! Adjust the nodal levelset_phi by mls
+  //! \ingroup XMPM
+  //! \param[in] dis_id discontinuity id
+  void modify_nodal_levelset_mls(unsigned dis_id);
+
+  //! Compute the distance between two sides of discontinuity
+  //! \ingroup XMPM
+  void selfcontact_detection();
+
+  //! Assign the level set values to the particles which just enter the crossed
+  //! \ingroup XMPM
+  //! \param[in] particle_levelset the way to initialise the discontinuity
+  //! \param[in] dis_id discontinuity id
+  void check_particle_levelset(bool particle_levelset, unsigned dis_id);
+
+  //! Read HDF5 particles for xmpm particle
+  //! \ingroup XMPM
+  //! \param[in] filename Name of HDF5 file to write particles data
+  //! \param[in] particle_type Particle type to be generated
+  //! \retval status Status of reading HDF5 output
+  bool read_particles_hdf5_xmpm(const std::string& filename,
+                                const std::string& particle_type);
+
+  //! Write HDF5 particles for xmpm particle
+  //! \ingroup XMPM
+  //! \param[in] filename Name of HDF5 file to write particles data
+  //! \retval status Status of writing HDF5 output
+  bool write_particles_hdf5_xmpm(const std::string& filename);
+
+  //! Return the number of the discontinuity
+  //! \ingroup XMPM
+  unsigned discontinuity_num() { return discontinuity_.size(); };
+
+  //! Determine enriched nodes by computing mass*h
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void determine_enriched_node_by_mass_h(unsigned dis_id);
+
+  //! Deal with the interaction between discontinuities
+  void interaction_discontinuity();
+
+  //! Adjust particle levelset values due to the interaction between
+  //! discontinuities
+  void adjust_particle_levelset_interaction();
+
+  // Return all the discontinuity points
+  const mpm::Vector<mpm::PointBase<Tdim>> discontinuity_points();
+
+  /**@}*/
+
+  /**
    * \defgroup MultiPhase Functions dealing with multi-phase MPM
    */
   /**@{*/
@@ -737,10 +900,19 @@ class Mesh {
   unsigned nhalo_nodes_{0};
   //! Maximum number of halo nodes
   unsigned ncomms_{0};
+  /**
+   * \defgroup XMPM Variables for XMPM
+   */
+  /**@{*/
+  //! discontinuity
+  std::vector<std::shared_ptr<mpm::DiscontinuityBase<Tdim>>> discontinuity_;
+  /**@}*/
+
 };  // Mesh class
 }  // namespace mpm
 
 #include "mesh.tcc"
 #include "mesh_multiphase.tcc"
+#include "mesh_xmpm.tcc"
 
 #endif  // MPM_MESH_H_

@@ -86,6 +86,11 @@ class IOMesh {
   virtual std::vector<std::tuple<mpm::Index, double>> read_particles_volumes(
       const std::string& volume_file) = 0;
 
+  //! Read levelset file for nodes or particles
+  //! \param[in] levelset_file file name with particle/nodes levelset values
+  virtual std::vector<std::tuple<mpm::Index, double>> read_id_levelset(
+      const std::string& levelset_file) = 0;
+
   //! Read particles cells file
   //! \param[in] particles_cells_file file name with particle cell ids
   virtual std::vector<std::array<mpm::Index, 2>> read_particles_cells(

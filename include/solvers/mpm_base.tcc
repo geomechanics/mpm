@@ -27,6 +27,10 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"mass", VariableType::Scalar},
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
+      // TODO: to do
+      {"levelsetf", VariableType::Scalar},
+      {"levelsets", VariableType::Scalar},
+      {"levelsett", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
@@ -133,6 +137,48 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   } else {
     console_->warn(
         "{} #{}: No VTK variables were specified, none will be generated",
+        __FILE__, __LINE__);
+  }
+
+  // Variable list for points
+  tsl::robin_map<std::string, VariableType> variables_point = {
+      // Scalar variables
+      {"discontinuity_id", VariableType::Scalar},
+      {"terminal_point", VariableType::Scalar},
+      // Vector variables
+      {"displacements", VariableType::Vector}
+      // Tensor variables
+  };
+
+  // VTK points variables
+  // Initialise container with empty vector
+  vtk_point_vars_.insert(
+      std::make_pair(mpm::VariableType::Scalar, std::vector<std::string>()));
+  vtk_point_vars_.insert(
+      std::make_pair(mpm::VariableType::Vector, std::vector<std::string>()));
+  vtk_point_vars_.insert(
+      std::make_pair(mpm::VariableType::Tensor, std::vector<std::string>()));
+
+  if ((post_process_.find("vtk_point") != post_process_.end()) &&
+      post_process_.at("vtk_point").is_array() &&
+      post_process_.at("vtk_point").size() > 0) {
+    // Iterate over vtk
+    for (unsigned i = 0; i < post_process_.at("vtk_point").size(); ++i) {
+      std::string attribute =
+          post_process_["vtk_point"][i].template get<std::string>();
+      if (variables_point.find(attribute) != variables_point.end())
+        vtk_point_vars_[variables_point.at(attribute)].emplace_back(attribute);
+      else {
+        console_->warn(
+            "{} #{}: VTK point variable '{}' was specified, but is not "
+            "available "
+            "in variable_point list",
+            __FILE__, __LINE__, attribute);
+      }
+    }
+  } else {
+    console_->warn(
+        "{} #{}: No VTK point variables were specified, none will be generated",
         __FILE__, __LINE__);
   }
 
@@ -272,7 +318,8 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
         "mpm::base::init_mesh(): Addition of cells to mesh failed");
 
   // Compute cell neighbours
-  mesh_->find_cell_neighbours();
+  bool assign_to_nodes = xmpm_;
+  mesh_->find_cell_neighbours(assign_to_nodes);
 
   // Read and assign cell sets
   this->cell_entity_sets(mesh_props, check_duplicates);
@@ -534,6 +581,8 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
       mesh_->write_particles_hdf5(particles_file);
     else if (attribute == "twophase_particles")
       mesh_->write_particles_hdf5_twophase(particles_file);
+    else if (attribute == "xmpm_particles")
+      mesh_->write_particles_hdf5_xmpm(particles_file);
   }
 }
 
@@ -659,6 +708,51 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
       }
 #endif
     }
+  }
+}
+
+//! Write VTK files for points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_point_vtk(
+    mpm::Index step, mpm::Index max_steps,
+    const mpm::Vector<PointBase<Tdim>>& points) {
+
+  // VTK PolyData writer
+  auto vtk_writer = std::make_unique<VtkWriter>(points_coordinates(points));
+
+  // Write input geometry to vtk file
+  const std::string extension = "_point.vtp";
+  const std::string attribute = "geometry";
+  auto meshfile =
+      io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+  vtk_writer->write_geometry(meshfile);
+
+  //! VTK scalar variables
+  for (const auto& attribute : vtk_point_vars_.at(mpm::VariableType::Scalar)) {
+    // Write scalar
+    auto file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+    vtk_writer->write_scalar_point_data(
+        file, points_scalar_data(attribute, points), attribute);
+  }
+
+  //! VTK vector variables
+  for (const auto& attribute : vtk_point_vars_.at(mpm::VariableType::Vector)) {
+    // Write vector
+    auto file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+    vtk_writer->write_vector_point_data(
+        file, points_vector_data(attribute, points), attribute);
+  }
+
+  //! VTK tensor variables
+  for (const auto& attribute : vtk_point_vars_.at(mpm::VariableType::Tensor)) {
+    // Write vector
+    auto file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+    vtk_writer->write_tensor_point_data(
+        file, this->template points_tensor_data<6>(attribute, points),
+        attribute);
   }
 }
 #endif
@@ -1902,4 +1996,75 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
     console_->warn("{} #{}: initialising nonlocal mesh failed! ", __FILE__,
                    __LINE__, exception.what());
   }
+}
+
+//! Return point coordinates
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::MPMBase<Tdim>::points_coordinates(
+    const mpm::Vector<PointBase<Tdim>>& points) {
+  std::vector<Eigen::Matrix<double, 3, 1>> point_coordinates;
+  for (auto pitr = points.cbegin(); pitr != points.cend(); pitr++) {
+    Eigen::Vector3d coordinates;
+    coordinates.setZero();
+    auto pcoords = (*pitr)->coordinates();
+    // Fill coordinates to the size of dimensions
+    for (unsigned i = 0; i < Tdim; ++i) coordinates(i) = pcoords(i);
+    point_coordinates.emplace_back(coordinates);
+  }
+  return point_coordinates;
+}
+
+//! Return point scalar data
+template <unsigned Tdim>
+std::vector<double> mpm::MPMBase<Tdim>::points_scalar_data(
+    const std::string& attribute,
+    const mpm::Vector<PointBase<Tdim>>& points) const {
+  std::vector<double> scalar_data;
+  scalar_data.reserve(points.size());
+  // Iterate over points and add scalar value to data
+  for (auto pitr = points.cbegin(); pitr != points.cend(); pitr++)
+    scalar_data.emplace_back((*pitr)->scalar_data(attribute));
+  return scalar_data;
+}
+
+//! Return point vector data
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::MPMBase<Tdim>::points_vector_data(
+    const std::string& attribute,
+    const mpm::Vector<PointBase<Tdim>>& points) const {
+  std::vector<Eigen::Matrix<double, 3, 1>> vector_data;
+  // Iterate over points
+  for (auto pitr = points.cbegin(); pitr != points.cend(); pitr++) {
+    Eigen::Matrix<double, 3, 1> data;
+    data.setZero();
+    auto pdata = (*pitr)->vector_data(attribute);
+    // Fill vector_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    vector_data.emplace_back(data);
+  }
+  return vector_data;
+}
+
+//! Return point tensor data
+template <unsigned Tdim>
+template <unsigned Tsize>
+std::vector<Eigen::Matrix<double, Tsize, 1>>
+    mpm::MPMBase<Tdim>::points_tensor_data(
+        const std::string& attribute,
+        const mpm::Vector<PointBase<Tdim>>& points) const {
+  std::vector<Eigen::Matrix<double, Tsize, 1>> tensor_data;
+  // Iterate over points
+  for (auto pitr = points.cbegin(); pitr != points.cend(); pitr++) {
+    Eigen::Matrix<double, Tsize, 1> data;
+    data.setZero();
+    auto pdata = (*pitr)->tensor_data(attribute);
+    // Fill tensor_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    tensor_data.emplace_back(data);
+  }
+  return tensor_data;
 }

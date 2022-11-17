@@ -116,12 +116,50 @@ class MPMBase : public MPM {
 #ifdef USE_VTK
   //! Write VTK files
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
+  //! Write VTK files for points
+  void write_point_vtk(mpm::Index step, mpm::Index max_steps,
+                       const mpm::Vector<PointBase<Tdim>>& points);
 #endif
 
 #ifdef USE_PARTIO
   //! Write PARTIO files
   void write_partio(mpm::Index step, mpm::Index max_steps) override;
 #endif
+
+  /**
+   * \defgroup Output for points
+   */
+  /**@{*/
+  //! Return coordinates of points
+  //! \param[in] points the list of points
+  std::vector<Eigen::Matrix<double, 3, 1>> points_coordinates(
+      const mpm::Vector<PointBase<Tdim>>& points);
+
+  //! Return point scalar data
+  //! \param[in] attribute Name of the scalar data attribute
+  //! \param[in] points the list of points
+  //! \retval scalar_data Vector containing scalar properties from points
+  std::vector<double> points_scalar_data(
+      const std::string& attribute,
+      const mpm::Vector<PointBase<Tdim>>& points) const;
+
+  //! Return points vector data
+  //! \param[in] attribute Name of the tensor data attribute
+  //! \param[in] points the list of points
+  //! \retval vector_data Vector containing vector properties from points
+  std::vector<Eigen::Matrix<double, 3, 1>> points_vector_data(
+      const std::string& attribute,
+      const mpm::Vector<PointBase<Tdim>>& points) const;
+
+  //! Return points tensor data
+  //! \param[in] attribute Name of the tensor data attribute
+  //! \param[in] points the list of points
+  //! \retval tensor_data Vector containing tensor properties from points
+  template <unsigned Tsize>
+  std::vector<Eigen::Matrix<double, Tsize, 1>> points_tensor_data(
+      const std::string& attribute,
+      const mpm::Vector<PointBase<Tdim>>& points) const;
+  /**@}*/
 
  private:
   //! Return if a mesh will be isoparametric or not
@@ -283,6 +321,10 @@ class MPMBase : public MPM {
   double damping_factor_{0.};
   //! Locate particles
   bool locate_particles_{true};
+  //! XMPM Solver
+  bool xmpm_{false};
+  //! VTK point variables
+  tsl::robin_map<mpm::VariableType, std::vector<std::string>> vtk_point_vars_;
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
   //! Boolean to update deformation gradient

@@ -592,7 +592,7 @@ class Node : public NodeBase<Tdim> {
   }
   /**@}*/
 
- private:
+ protected:
   //! Mutex
   SpinMutex node_mutex_;
   //! nodebase id

@@ -17,6 +17,7 @@
 #include "material.h"
 #include "pod_particle.h"
 #include "pod_particle_twophase.h"
+#include "pod_particle_xmpm.h"
 
 namespace mpm {
 
@@ -354,6 +355,139 @@ class ParticleBase {
   virtual void deserialize(
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) = 0;
+
+  /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+  //! set the level set function values
+  //! \ingroup XMPM
+  //! \param[in] phivalue Signed distance function
+  //! \param[in] discontinuity_id
+  virtual void assign_levelsetphi(double phivalue, int discontinuity_id) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_levelsetphi) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  };
+
+  //! Map particle volume to nodes
+  //! \ingroup XMPM
+  virtual void map_volume_to_nodes() noexcept = 0;
+
+  //! Map particle levelset to nodes
+  //! \ingroup XMPM
+  //! \param[in] discontinuity_id
+  virtual void map_levelset_to_nodes(unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (map_levelset_to_nodes) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  };
+
+  //! Map levelset from nodes to particles
+  //! \ingroup XMPM
+  //! \param[in] discontintuity id
+  virtual void map_levelset_to_particle(unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (map_levelset_to_particle) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  };
+
+  //! Compute displacement gradient of particle
+  //! \ingroup XMPM
+  //! \param[in] dt Analysis time step
+  virtual inline void compute_displacement_gradient(double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (compute_displacement_gradient) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  };
+
+  //! Detect the corresponding particle has levelset_values
+  virtual void check_levelset(unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (check_levelset) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  };
+
+  //! Return levelset values
+  //! \ingroup XMPM
+  virtual double levelset_phi(int discontinuity_id) {
+    throw std::runtime_error(
+        "Calling the base class function (levelset_phi) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  }
+
+  //! Compute the minimum eigenvalue of the acoustic tensor
+  //! \ingroup XMPM
+  //! \param[in] the normal direction of the previous discontinuity
+  //! \param[in] do the initiation detection loop
+  //! \param[in] dis_id the discontinuity id
+  //! \retval whether initiate or propagate
+  virtual bool minimum_acoustic_tensor(VectorDim& normal_cell, bool initiation,
+                                       unsigned dis_id = 0) {
+    throw std::runtime_error(
+        "Calling the base class function (minimum_acoustic_tensor) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  };
+
+  //! Map particle mass to nodes
+  //! \ingroup XMPM
+  virtual void map_mass_to_nodes() {
+    throw std::runtime_error(
+        "Calling the base class function (map_mass_to_nodes) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+  //! Map particle mass_h to nodes
+  //! \ingroup XMPM
+  //! \param[in] dis_id the discontinuity id
+  virtual void map_mass_h_to_nodes(unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (map_mass_h_to_nodes) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+  //! Reset the size of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] the number of the discontinuity
+  virtual void reset_discontinuity_size(int size) {
+    throw std::runtime_error(
+        "Calling the base class function (initialise_discontinuity_size) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Compute the maximum displacemnt gradient on the surface n
+  //! \param[in] vector_n normal vector of the surface
+  //! \retval the corresponding maximum displacement gradient
+  virtual double max_displacement_gradient(VectorDim vector_n) {
+    throw std::runtime_error(
+        "Calling the base class function (max_displacement_gradient) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+
+  //! Assign the levelset values of particles located on one side of the
+  //! discontinuity to zero
+  //! \param[in] side which side: true means the positive side
+  //! \param[in] stop_dis_id  the discontinuity id which the side belongs to
+  //! \param[in] dis_id assign the levelset of this discontinuity to zero
+  virtual void assign_oneside_levelset_zero(bool side, unsigned stop_dis_id,
+                                            unsigned dis_id) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_oneside_levelset_zero) in "
+        "ParticleBase:: "
+        "illegal operation!");
+  }
+  /**@}*/
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

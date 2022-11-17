@@ -14,6 +14,7 @@
 #include "io_mesh.h"
 #include "io_mesh_ascii.h"
 #include "mesh.h"
+#include "point_base.h"
 
 #ifdef USE_VTK
 #include "vtk_writer.h"

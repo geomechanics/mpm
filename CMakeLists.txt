@@ -171,8 +171,10 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/solvers/
   ${mpm_SOURCE_DIR}/include/solvers/mpm_scheme/
   ${mpm_SOURCE_DIR}/include/utilities/
+  ${mpm_SOURCE_DIR}/include/xmpm/
   ${mpm_SOURCE_DIR}/external/
   ${mpm_SOURCE_DIR}/tests/include/
+  ${mpm_SOURCE_DIR}/include/points/
 )
 
 # mpm executable
@@ -186,6 +188,7 @@ SET(mpm_src
   ${mpm_SOURCE_DIR}/src/geometry.cc
   ${mpm_SOURCE_DIR}/src/pod_particle.cc
   ${mpm_SOURCE_DIR}/src/pod_particle_twophase.cc
+  ${mpm_SOURCE_DIR}/src/pod_particle_xmpm.cc
   ${mpm_SOURCE_DIR}/src/io/io.cc
   ${mpm_SOURCE_DIR}/src/io/io_mesh.cc
   ${mpm_SOURCE_DIR}/src/io/logger.cc
@@ -198,6 +201,8 @@ SET(mpm_src
   ${mpm_SOURCE_DIR}/src/node.cc
   ${mpm_SOURCE_DIR}/src/particle.cc
   ${mpm_SOURCE_DIR}/src/quadrature.cc
+  ${mpm_SOURCE_DIR}/src/discontinuity.cc
+  ${mpm_SOURCE_DIR}/src/point.cc
 )
 add_executable(mpm ${mpm_SOURCE_DIR}/src/main.cc ${mpm_src} ${mpm_vtk})
 
@@ -299,6 +304,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usl_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_usl_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usf_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usf_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usl_test.cc
@@ -311,6 +317,12 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usf_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_usl_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_musl_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/xmpm_explicit_musl_unitcell_test.cc
   )
   add_executable(mpmtest_unit ${mpm_src} ${test_src_unit})
   add_executable(mpmtest_small ${mpm_src} ${test_src_small})

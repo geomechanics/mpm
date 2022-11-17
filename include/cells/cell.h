@@ -12,11 +12,13 @@
 #include "Eigen/LU"
 
 #include "affine_transform.h"
+#include "discontinuity_element.h"
 #include "element.h"
 #include "geometry.h"
 #include "logger.h"
 #include "map.h"
 #include "node_base.h"
+#include "node_xmpm.h"
 #include "quadrature.h"
 
 namespace mpm {
@@ -216,6 +218,172 @@ class Cell {
 
   //! Return previous mpi rank
   unsigned previous_mpirank() const;
+
+  /**
+   * \defgroup XMPM Functions dealing with XMPM
+   */
+  /**@{*/
+
+  //! Assign discontinuity element type
+  //! \ingroup XMPM
+  //! \param[in] the enriched type
+  //! \param[in] dis_id the discontinuity id
+  void assign_discontinuity_type(mpm::EnrichType type, unsigned dis_id);
+
+  //! Initialize discontinuity element properties
+  //! \ingroup XMPM
+  void initialise_element_properties_discontinuity();
+
+  //! Assign the normal direction of the discontinuity in the cell
+  //! \ingroup XMPM
+  //! \param[in] the normal direction
+  void assign_normal_discontinuity(VectorDim normal, unsigned dis_id);
+
+  //! Assign the constant parameters of the discontinuity in the cell
+  //! \ingroup XMPM
+  //! \param[in] the constant parameters
+  //! \param[in] dis_id the discontinuity id
+  void assign_d_discontinuity(double d, unsigned dis_id) {
+    this->discontinuity_element_[dis_id]->assign_d(d);
+  };
+
+  //! Assign the normal direction of the discontinuity in the cell
+  //! \ingroup XMPM
+  //! \param[in] the normal direction
+  //! \param[in] the plane constant
+  //! \param[in] dis_id the discontinuity id
+  void assign_normal_discontinuity(VectorDim normal, double d, unsigned dis_id);
+
+  //! Return the normal direction of the discontinuity in the cell
+  //! \ingroup XMPM
+  //! \retval the normal direction of the discontinuity
+  //! \param[in] the number of the discontinuity
+  VectorDim normal_discontinuity(unsigned dis_id) {
+    if (discontinuity_element_[dis_id] == nullptr)
+      return Eigen::Matrix<double, Tdim, 1>::Zero();
+    return discontinuity_element_[dis_id]->normal_discontinuity();
+  };
+
+  //! Return discontinuity element type
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  unsigned element_discontinuity_type(unsigned dis_id);
+
+  //! Find the potential tip element
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void find_potential_tip_cell(unsigned dis_id);
+
+  //! Determine tip element
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void find_tip_cell(unsigned dis_id);
+
+  //! Compute normal vector of discontinuity by the nodal level set values
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void compute_normal_vector_discontinuity(unsigned dis_id);
+
+  //! Compute the discontinuity plane by the nodal level set values
+  //! \ingroup XMPM
+  //! \param[in] true: compute by the enriched nodes
+  //! \param[in] discontinuity id
+  void compute_plane_discontinuity(bool enrich, unsigned dis_id);
+
+  //! Compute the discontinuity point: the average coordinates of the
+  //! \ingroup XMPM
+  //! \param[in] mark points list
+  //! \param[in] the id of the discontinuity
+  void compute_discontinuity_point(std::vector<VectorDim>& coordinates,
+                                   unsigned dis_id);
+
+  //! Return the product of the maximum and minimum nodal level set value
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  //! \retval the product of the maximum and minimum nodal level set value
+  double product_levelset(unsigned dis_id);
+
+  //! Return the constant value of the discontinuity plane
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  double d_discontinuity(unsigned dis_id) {
+    return this->discontinuity_element_[dis_id]->d_discontinuity();
+  }
+
+  //! Determine the celltype by the nodal level set
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void determine_crossed_cell(unsigned dis_id);
+
+  //! Compute the nodal level set values by plane equations
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void compute_nodal_levelset_equation(unsigned dis_id);
+
+  //! Compute the area of the discontinuity
+  //! \ingroup XMPM
+  void compute_area_discontinuity(unsigned dis_id);
+
+  //! Return the area of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  double discontinuity_area(unsigned dis_id) {
+    return this->discontinuity_element_[dis_id]->area();
+  }
+
+  //! Assign the area of the discontinuity to nodes
+  //! \ingroup XMPM
+  //! \param[in] discontinuity id
+  void assign_cohesion_area(unsigned dis_id);
+
+  //! Reset the size of the discontinuity
+  //! \ingroup XMPM
+  //! \param[in] the number of the discontinuity
+  void reset_discontinuity_size(int size) {
+    discontinuity_element_.resize(size, nullptr);
+  };
+
+  //! Assign interaction element type
+  //! \param[in] the interaction type
+  void assign_interaction_type(unsigned dis_id, mpm::InteractionType type) {
+    std::lock_guard<std::mutex> guard(cell_mutex_);
+    this->discontinuity_element_[dis_id]->assign_interaction_type(type);
+  }
+
+  //! Return interaction element type
+  //! \retval the interaction type
+  unsigned interaction_type(unsigned dis_id) {
+    if (discontinuity_element_[dis_id] == nullptr)
+      return mpm::InteractionType::Propagate;
+    return this->discontinuity_element_[dis_id]->interaction_type();
+  }
+
+  //! Return the maximum displacement
+  //! \param[in] the number of the discontinuity
+  //! \retval the maximum displacement
+  double max_dudx(unsigned dis_id) {
+    return this->discontinuity_element_[dis_id]->max_dudx();
+  }
+
+  //! Assign the maximum displacement
+  //! \param[in] max_dudx the maximum displacement
+  //! \param[in] the number of the discontinuity
+  void assign_max_dudx(double max_dudx, unsigned dis_id) {
+    this->discontinuity_element_[dis_id]->assign_max_dudx(max_dudx);
+  }
+
+  //! Return the discontinuity id which can propagates in this cell
+  //! \retval discontinuity id
+  unsigned dis_id() { return dis_id_; }
+
+  //! Assign the discontinuity id which can propagates in this cell
+  //! \param[in] dis_id discontinuity id
+  void assign_dis_id(unsigned dis_id) {
+    std::lock_guard<std::mutex> guard(cell_mutex_);
+    dis_id_ = dis_id;
+  }
+
+  /**@}*/
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -526,6 +694,17 @@ class Cell {
   std::vector<Eigen::MatrixXd> correction_matrix_twophase_;
   /**@}*/
 
+  /**
+   * \defgroup XMPM Variables for XMPM
+   */
+  /**@{*/
+  //! discontinuity element list
+  std::vector<std::shared_ptr<DiscontinuityElement<Tdim>>>
+      discontinuity_element_{nullptr};
+  //! discontinuity id which propagates normally in this cell
+  unsigned dis_id_;
+  /**@}*/
+
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
 };  // Cell class
@@ -534,5 +713,6 @@ class Cell {
 #include "cell.tcc"
 #include "cell_implicit.tcc"
 #include "cell_multiphase.tcc"
+#include "cell_xmpm.tcc"
 
 #endif  // MPM_CELL_H_

@@ -629,29 +629,31 @@ bool mpm::Mesh<Tdim>::compute_nodal_correction_force(
     //! Active node size
     const auto nactive_node = active_nodes_.size();
 
-    // Part of nodal correction force of one direction
-    Eigen::MatrixXd correction_force;
-    correction_force.resize(nactive_node, Tdim);
+    if (nactive_node > 0) {
+      // Part of nodal correction force of one direction
+      Eigen::MatrixXd correction_force;
+      correction_force.resize(nactive_node, Tdim);
 
-    // Iterate over each direction
-    for (unsigned i = 0; i < Tdim; ++i) {
-      correction_force.block(0, i, nactive_node, 1) =
-          -correction_matrix.block(0, nactive_node * i, nactive_node,
-                                   nactive_node) *
-          pressure_increment;
-    }
+      // Iterate over each direction
+      for (unsigned i = 0; i < Tdim; ++i) {
+        correction_force.block(0, i, nactive_node, 1) =
+            -correction_matrix.block(0, nactive_node * i, nactive_node,
+                                     nactive_node) *
+            pressure_increment;
+      }
 
 #pragma omp parallel for schedule(runtime)
-    // Iterate over each active node
-    for (auto nitr = active_nodes_.cbegin(); nitr != active_nodes_.cend();
-         ++nitr) {
-      unsigned active_id = (*nitr)->active_id();
-      VectorDim nodal_correction_force =
-          (correction_force.row(active_id)).transpose();
+      // Iterate over each active node
+      for (auto nitr = active_nodes_.cbegin(); nitr != active_nodes_.cend();
+           ++nitr) {
+        unsigned active_id = (*nitr)->active_id();
+        VectorDim nodal_correction_force =
+            (correction_force.row(active_id)).transpose();
 
-      // Compute correction force for each node
-      map_nodes_[(*nitr)->id()]->update_correction_force(
-          false, mpm::NodePhase::NSinglePhase, nodal_correction_force);
+        // Compute correction force for each node
+        map_nodes_[(*nitr)->id()]->update_correction_force(
+            false, mpm::NodePhase::NSinglePhase, nodal_correction_force);
+      }
     }
 
   } catch (std::exception& exception) {
@@ -670,43 +672,45 @@ bool mpm::Mesh<Tdim>::compute_nodal_correction_force_twophase(
     //! Active node size
     const auto nactive_node = active_nodes_.size();
 
-    // Part of nodal corrected force of one direction
-    Eigen::MatrixXd correction_force;
-    correction_force.resize(nactive_node * 2, Tdim);
+    if (nactive_node > 0) {
+      // Part of nodal corrected force of one direction
+      Eigen::MatrixXd correction_force;
+      correction_force.resize(nactive_node * 2, Tdim);
 
-    // Iterate over each direction
-    for (unsigned i = 0; i < Tdim; ++i) {
-      // Solid phase
-      correction_force.block(0, i, nactive_node, 1) =
-          -correction_matrix.block(0, nactive_node * i, nactive_node,
-                                   nactive_node) *
-          pressure_increment;
-      // Liquid phase
-      correction_force.block(nactive_node, i, nactive_node, 1) =
-          -correction_matrix.block(nactive_node, nactive_node * i, nactive_node,
-                                   nactive_node) *
-          pressure_increment;
-    }
+      // Iterate over each direction
+      for (unsigned i = 0; i < Tdim; ++i) {
+        // Solid phase
+        correction_force.block(0, i, nactive_node, 1) =
+            -correction_matrix.block(0, nactive_node * i, nactive_node,
+                                     nactive_node) *
+            pressure_increment;
+        // Liquid phase
+        correction_force.block(nactive_node, i, nactive_node, 1) =
+            -correction_matrix.block(nactive_node, nactive_node * i,
+                                     nactive_node, nactive_node) *
+            pressure_increment;
+      }
 
-    // Iterate over each active node
+      // Iterate over each active node
 #pragma omp parallel for schedule(runtime)
-    // Iterate over each active node
-    for (auto nitr = active_nodes_.cbegin(); nitr != active_nodes_.cend();
-         ++nitr) {
-      //! Active id
-      unsigned active_id = (*nitr)->active_id();
-      // Solid phase
-      VectorDim nodal_correction_force_solid =
-          (correction_force.row(active_id)).transpose();
-      // Liquid phase
-      VectorDim nodal_correction_force_liquid =
-          (correction_force.row(active_id + nactive_node)).transpose();
+      // Iterate over each active node
+      for (auto nitr = active_nodes_.cbegin(); nitr != active_nodes_.cend();
+           ++nitr) {
+        //! Active id
+        unsigned active_id = (*nitr)->active_id();
+        // Solid phase
+        VectorDim nodal_correction_force_solid =
+            (correction_force.row(active_id)).transpose();
+        // Liquid phase
+        VectorDim nodal_correction_force_liquid =
+            (correction_force.row(active_id + nactive_node)).transpose();
 
-      // Compute corrected force for each node
-      map_nodes_[(*nitr)->id()]->update_correction_force(
-          false, mpm::NodePhase::NSolid, nodal_correction_force_solid);
-      map_nodes_[(*nitr)->id()]->update_correction_force(
-          false, mpm::NodePhase::NLiquid, nodal_correction_force_liquid);
+        // Compute corrected force for each node
+        map_nodes_[(*nitr)->id()]->update_correction_force(
+            false, mpm::NodePhase::NSolid, nodal_correction_force_solid);
+        map_nodes_[(*nitr)->id()]->update_correction_force(
+            false, mpm::NodePhase::NLiquid, nodal_correction_force_liquid);
+      }
     }
 
   } catch (std::exception& exception) {

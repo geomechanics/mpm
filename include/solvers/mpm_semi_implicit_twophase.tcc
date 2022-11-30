@@ -179,7 +179,7 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     // Assign mass and momentum to nodes
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
-                  std::placeholders::_1));
+                  std::placeholders::_1, velocity_update_));
 
 #ifdef USE_MPI
     // Run if there is more than a single MPI task
@@ -408,9 +408,9 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     }
 
     // Update particle position and kinematics
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
-                  std::placeholders::_1, this->dt_, velocity_update_));
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::compute_updated_position,
+        std::placeholders::_1, this->dt_, velocity_update_, blending_ratio_));
 
     // Apply particle velocity constraints
     mesh_->apply_particle_velocity_constraints();

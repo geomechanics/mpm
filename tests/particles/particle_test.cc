@@ -336,6 +336,20 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
     h5_particle.defgrad_21 = deformation_gradient(2, 1);
     h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
+    Eigen::Matrix<double, 3, 3> mapping_matrix;
+    mapping_matrix << 0.115, -0.125, 0.135, 0.145, -0.155, 0.165, 0.145, -0.155,
+        0.165;
+    h5_particle.mapping_matrix_00 = mapping_matrix(0, 0);
+    h5_particle.mapping_matrix_01 = mapping_matrix(0, 1);
+    h5_particle.mapping_matrix_02 = mapping_matrix(0, 2);
+    h5_particle.mapping_matrix_10 = mapping_matrix(1, 0);
+    h5_particle.mapping_matrix_11 = mapping_matrix(1, 1);
+    h5_particle.mapping_matrix_12 = mapping_matrix(1, 2);
+    h5_particle.mapping_matrix_20 = mapping_matrix(2, 0);
+    h5_particle.mapping_matrix_21 = mapping_matrix(2, 1);
+    h5_particle.mapping_matrix_22 = mapping_matrix(2, 2);
+    h5_particle.initialise_mapping_matrix = true;
+
     h5_particle.status = true;
 
     h5_particle.cell_id = 1;
@@ -408,6 +422,14 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
       for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
         REQUIRE(pdef_grad(i, j) ==
                 Approx(deformation_gradient(i, j)).epsilon(Tolerance));
+
+    // Check mapping matrix
+    auto map = particle->mapping_matrix();
+    REQUIRE(Dim == map.rows());
+    REQUIRE(Dim == map.cols());
+    for (unsigned i = 0; i < map.rows(); ++i)
+      for (unsigned j = 0; j < map.cols(); ++j)
+        REQUIRE(mapping_matrix(i, j) == Approx(map(i, j)).epsilon(Tolerance));
 
     // Check cell id
     REQUIRE(particle->cell_id() == h5_particle.cell_id);
@@ -494,6 +516,19 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
             Approx(pod_test->defgrad_21).epsilon(Tolerance));
     REQUIRE(h5_particle.defgrad_22 ==
             Approx(pod_test->defgrad_22).epsilon(Tolerance));
+
+    REQUIRE(h5_particle.initialise_mapping_matrix ==
+            Approx(pod_test->initialise_mapping_matrix).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_00 ==
+            Approx(pod_test->mapping_matrix_00).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_01 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_02 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_10 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_11 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_12 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_20 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_21 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_22 == Approx(0.0).epsilon(Tolerance));
 
     REQUIRE(h5_particle.status == pod_test->status);
     REQUIRE(h5_particle.cell_id == pod_test->cell_id);
@@ -1244,7 +1279,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location from nodal velocity
-    REQUIRE_NOTHROW(particle->compute_updated_position(dt, true));
+    REQUIRE_NOTHROW(
+        particle->compute_updated_position(dt, mpm::VelocityUpdate::PIC));
     // Check particle velocity
     velocity << 0., 0.894;
     for (unsigned i = 0; i < velocity.size(); ++i)
@@ -1602,6 +1638,20 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     h5_particle.defgrad_21 = deformation_gradient(2, 1);
     h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
+    Eigen::Matrix<double, 3, 3> mapping_matrix;
+    mapping_matrix << 0.115, -0.125, 0.135, 0.145, -0.155, 0.165, 0.145, -0.155,
+        0.165;
+    h5_particle.mapping_matrix_00 = mapping_matrix(0, 0);
+    h5_particle.mapping_matrix_01 = mapping_matrix(0, 1);
+    h5_particle.mapping_matrix_02 = mapping_matrix(0, 2);
+    h5_particle.mapping_matrix_10 = mapping_matrix(1, 0);
+    h5_particle.mapping_matrix_11 = mapping_matrix(1, 1);
+    h5_particle.mapping_matrix_12 = mapping_matrix(1, 2);
+    h5_particle.mapping_matrix_20 = mapping_matrix(2, 0);
+    h5_particle.mapping_matrix_21 = mapping_matrix(2, 1);
+    h5_particle.mapping_matrix_22 = mapping_matrix(2, 2);
+    h5_particle.initialise_mapping_matrix = true;
+
     h5_particle.status = true;
 
     h5_particle.cell_id = 1;
@@ -1676,6 +1726,14 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
                 Approx(deformation_gradient(i, j)).epsilon(Tolerance));
       }
     }
+
+    // Check mapping matrix
+    auto map = particle->mapping_matrix();
+    REQUIRE(Dim == map.rows());
+    REQUIRE(Dim == map.cols());
+    for (unsigned i = 0; i < map.rows(); ++i)
+      for (unsigned j = 0; j < map.cols(); ++j)
+        REQUIRE(mapping_matrix(i, j) == Approx(map(i, j)).epsilon(Tolerance));
 
     // Check cell id
     REQUIRE(particle->cell_id() == h5_particle.cell_id);
@@ -1762,6 +1820,22 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
             Approx(pod_test->defgrad_21).epsilon(Tolerance));
     REQUIRE(h5_particle.defgrad_22 ==
             Approx(pod_test->defgrad_22).epsilon(Tolerance));
+
+    REQUIRE(h5_particle.initialise_mapping_matrix ==
+            Approx(pod_test->initialise_mapping_matrix).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_00 ==
+            Approx(pod_test->mapping_matrix_00).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_01 ==
+            Approx(pod_test->mapping_matrix_01).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_10 ==
+            Approx(pod_test->mapping_matrix_10).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_11 ==
+            Approx(pod_test->mapping_matrix_11).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_02 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_12 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_20 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_21 == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(pod_test->mapping_matrix_22 == Approx(0.0).epsilon(Tolerance));
 
     REQUIRE(h5_particle.status == pod_test->status);
     REQUIRE(h5_particle.cell_id == pod_test->cell_id);
@@ -2880,7 +2954,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location based on nodal velocity
-    REQUIRE_NOTHROW(particle->compute_updated_position(dt, true));
+    REQUIRE_NOTHROW(
+        particle->compute_updated_position(dt, mpm::VelocityUpdate::PIC));
     // Check particle velocity
     velocity << 0., 5.875, 10.769;
     for (unsigned i = 0; i < velocity.size(); ++i)
@@ -3083,6 +3158,20 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     h5_particle.defgrad_21 = deformation_gradient(2, 1);
     h5_particle.defgrad_22 = deformation_gradient(2, 2);
 
+    Eigen::Matrix<double, 3, 3> mapping_matrix;
+    mapping_matrix << 0.115, -0.125, 0.135, 0.145, -0.155, 0.165, 0.145, -0.155,
+        0.165;
+    h5_particle.mapping_matrix_00 = mapping_matrix(0, 0);
+    h5_particle.mapping_matrix_01 = mapping_matrix(0, 1);
+    h5_particle.mapping_matrix_02 = mapping_matrix(0, 2);
+    h5_particle.mapping_matrix_10 = mapping_matrix(1, 0);
+    h5_particle.mapping_matrix_11 = mapping_matrix(1, 1);
+    h5_particle.mapping_matrix_12 = mapping_matrix(1, 2);
+    h5_particle.mapping_matrix_20 = mapping_matrix(2, 0);
+    h5_particle.mapping_matrix_21 = mapping_matrix(2, 1);
+    h5_particle.mapping_matrix_22 = mapping_matrix(2, 2);
+    h5_particle.initialise_mapping_matrix = true;
+
     h5_particle.status = true;
 
     h5_particle.cell_id = 1;
@@ -3150,6 +3239,14 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
       for (unsigned j = 0; j < deformation_gradient.cols(); ++j)
         REQUIRE(pdef_grad(i, j) ==
                 Approx(deformation_gradient(i, j)).epsilon(Tolerance));
+
+    // Check mapping matrix
+    auto map = particle->mapping_matrix();
+    REQUIRE(Dim == map.rows());
+    REQUIRE(Dim == map.cols());
+    for (unsigned i = 0; i < map.rows(); ++i)
+      for (unsigned j = 0; j < map.cols(); ++j)
+        REQUIRE(mapping_matrix(i, j) == Approx(map(i, j)).epsilon(Tolerance));
 
     // Check cell id
     REQUIRE(particle->cell_id() == h5_particle.cell_id);
@@ -3236,6 +3333,27 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
             Approx(pod_test->defgrad_21).epsilon(Tolerance));
     REQUIRE(h5_particle.defgrad_22 ==
             Approx(pod_test->defgrad_22).epsilon(Tolerance));
+
+    REQUIRE(h5_particle.initialise_mapping_matrix ==
+            Approx(pod_test->initialise_mapping_matrix).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_00 ==
+            Approx(pod_test->mapping_matrix_00).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_01 ==
+            Approx(pod_test->mapping_matrix_01).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_02 ==
+            Approx(pod_test->mapping_matrix_02).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_10 ==
+            Approx(pod_test->mapping_matrix_10).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_11 ==
+            Approx(pod_test->mapping_matrix_11).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_12 ==
+            Approx(pod_test->mapping_matrix_12).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_20 ==
+            Approx(pod_test->mapping_matrix_20).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_21 ==
+            Approx(pod_test->mapping_matrix_21).epsilon(Tolerance));
+    REQUIRE(h5_particle.mapping_matrix_22 ==
+            Approx(pod_test->mapping_matrix_22).epsilon(Tolerance));
 
     REQUIRE(h5_particle.status == pod_test->status);
     REQUIRE(h5_particle.cell_id == pod_test->cell_id);

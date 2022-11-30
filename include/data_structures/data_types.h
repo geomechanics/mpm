@@ -41,6 +41,14 @@ inline double zero() {
 //! Face: Nodes on boundary faces
 enum class Position { None, Corner, Edge, Face };
 
+//! Velocity update type
+//! Flip: fluid-implicit-particle (acceleration update)
+//! Pic: particle-in-cell (velocity update)
+//! Asflip: Affine Separable flip
+//! Tpic: Taylor pic
+//! Apic: Affine pic
+enum class VelocityUpdate { FLIP, PIC, ASFLIP, TPIC, APIC };
+
 }  // namespace mpm
 
 #endif  // MPM_DATA_TYPES_H_

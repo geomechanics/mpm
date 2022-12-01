@@ -1,4 +1,5 @@
 // hexahedron element test
+#include <iostream>
 #include <memory>
 
 #include "catch.hpp"
@@ -462,8 +463,8 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
           Eigen::Matrix<double, Dim, Dim> jacobian;
           // clang-format off
           jacobian << 1., 0., 0.,
-                      0., 1., 0.,
-                      0., 0., 1;
+                      0., 0., 1.,
+                      0., -1., 0.;
           // clang-format on
 
           // Get Jacobian

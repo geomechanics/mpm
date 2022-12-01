@@ -395,14 +395,12 @@ inline Eigen::Matrix<double, 3, 3>
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     const auto& displacement = nodes_[i]->displacement(phase);
-    deformation_gradient_increment(0, 0) += displacement[0] * dn_dx(i, 0);
-    deformation_gradient_increment(0, 1) += displacement[0] * dn_dx(i, 1);
-    deformation_gradient_increment(1, 0) += displacement[1] * dn_dx(i, 0);
-    deformation_gradient_increment(1, 1) += displacement[1] * dn_dx(i, 1);
+    deformation_gradient_increment.block(0, 0, 2, 2).noalias() +=
+        displacement * dn_dx.row(i);
   }
 
   for (unsigned i = 0; i < 2; ++i) {
-    for (unsigned j = 0; i < 2; ++i) {
+    for (unsigned j = 0; j < 2; ++j) {
       if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
         deformation_gradient_increment(i, j) = 0.;
       if (i == j &&
@@ -425,19 +423,11 @@ inline Eigen::Matrix<double, 3, 3>
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     const auto& displacement = nodes_[i]->displacement(phase);
-    deformation_gradient_increment(0, 0) += displacement[0] * dn_dx(i, 0);
-    deformation_gradient_increment(0, 1) += displacement[0] * dn_dx(i, 1);
-    deformation_gradient_increment(0, 2) += displacement[0] * dn_dx(i, 2);
-    deformation_gradient_increment(1, 0) += displacement[1] * dn_dx(i, 0);
-    deformation_gradient_increment(1, 1) += displacement[1] * dn_dx(i, 1);
-    deformation_gradient_increment(1, 2) += displacement[1] * dn_dx(i, 2);
-    deformation_gradient_increment(2, 0) += displacement[2] * dn_dx(i, 0);
-    deformation_gradient_increment(2, 1) += displacement[2] * dn_dx(i, 1);
-    deformation_gradient_increment(2, 2) += displacement[2] * dn_dx(i, 2);
+    deformation_gradient_increment.noalias() += displacement * dn_dx.row(i);
   }
 
   for (unsigned i = 0; i < 3; ++i) {
-    for (unsigned j = 0; i < 3; ++i) {
+    for (unsigned j = 0; j < 3; ++j) {
       if (i != j && std::fabs(deformation_gradient_increment(i, j)) < 1.E-15)
         deformation_gradient_increment(i, j) = 0.;
       if (i == j &&

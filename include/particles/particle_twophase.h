@@ -70,7 +70,10 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   void compute_mass() noexcept override;
 
   //! Map particle mass and momentum to nodes (both solid and liquid)
-  void map_mass_momentum_to_nodes() noexcept override;
+  //! \param[in] velocity_update Method to update nodal velocity
+  void map_mass_momentum_to_nodes(
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
@@ -83,10 +86,14 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   inline void map_internal_force() noexcept override;
 
   //! Compute updated position of the particle and kinematics of both solid and
-  //! liquid phase \param[in] dt Analysis time step \param[in] velocity_update
-  //! Update particle velocity from nodal vel when true
-  void compute_updated_position(double dt,
-                                bool velocity_update = false) noexcept override;
+  //! liquid phase
+  //! \param[in] dt Analysis time step
+  //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  void compute_updated_position(
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept override;
 
   //! Assign velocity to the particle liquid phase
   //! \param[in] velocity A vector of particle liquid phase velocity
@@ -229,11 +236,35 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map liquid advection force
   virtual void map_liquid_advection_force() noexcept;
 
+  /**
+   * \defgroup AdvancedMapping Functions dealing with advance mapping scheme of
+   * MPM
+   */
+  /**@{*/
   //! Compute updated velocity of the particle based on nodal velocity
+  //! \ingroup AdvancedMapping
   //! \param[in] dt Analysis time step
-  //! \retval status Compute status
-  virtual void compute_updated_liquid_velocity(double dt,
-                                               bool velocity_update) noexcept;
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  virtual void compute_updated_liquid_velocity(
+      double dt,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated velocity of the particle based on nodal velocity assuming
+  //! FLIP scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  virtual void compute_updated_liquid_velocity_flip(
+      double dt, double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated velocity of the particle based on nodal velocity assuming
+  //! PIC scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  virtual void compute_updated_liquid_velocity_pic(double dt) noexcept;
+
+  /**@}*/
 
  protected:
   //! particle id
@@ -292,6 +323,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::pack_size_;
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
+  //! Mapping matrix
+  using Particle<Tdim>::mapping_matrix_;
 
   //! Liquid mass
   double liquid_mass_;

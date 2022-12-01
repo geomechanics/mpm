@@ -17,8 +17,9 @@ TEST_CASE("MPM 2D Explicit TwoPhase USL implementation is checked in unitcells",
   const std::string fname = "mpm-explicit-twophase-usl";
   const std::string analysis = "MPMExplicitTwoPhase2D";
   const std::string mpm_scheme = "usl";
-  REQUIRE(mpm_test::write_json_unitcell_twophase(2, analysis, mpm_scheme,
-                                                 fname) == true);
+  const std::string velocity_update = "flip";
+  REQUIRE(mpm_test::write_json_unitcell_twophase(2, analysis, mpm_scheme, fname,
+                                                 velocity_update) == true);
 
   // Write Mesh
   REQUIRE(mpm_test::write_mesh_2d_unitcell() == true);
@@ -74,8 +75,9 @@ TEST_CASE("MPM 3D Explicit TwoPhase USL implementation is checked in unitcells",
   const std::string fname = "mpm-explicit-twophase-usl";
   const std::string analysis = "MPMExplicitTwoPhase3D";
   const std::string mpm_scheme = "usl";
-  REQUIRE(mpm_test::write_json_unitcell_twophase(3, analysis, mpm_scheme,
-                                                 fname) == true);
+  const std::string velocity_update = "tpic";
+  REQUIRE(mpm_test::write_json_unitcell_twophase(3, analysis, mpm_scheme, fname,
+                                                 velocity_update) == true);
 
   // Write Mesh
   REQUIRE(mpm_test::write_mesh_3d_unitcell() == true);

@@ -22,8 +22,10 @@ class MPMScheme {
   virtual inline void initialise();
 
   //! Compute nodal kinematics - map mass and momentum to nodes
+  //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  virtual inline void compute_nodal_kinematics(unsigned phase);
+  virtual inline void compute_nodal_kinematics(
+      mpm::VelocityUpdate velocity_update, unsigned phase);
 
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
@@ -61,18 +63,22 @@ class MPMScheme {
   virtual inline void absorbing_boundary_properties();
 
   //! Compute acceleration velocity position
-  //! \param[in] velocity_update Velocity or acceleration update flag
+  //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC blending ratio
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
   //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
-      bool velocity_update, unsigned phase, const std::string& damping_type,
-      double damping_factor, unsigned step, bool update_defgrad);
+      mpm::VelocityUpdate velocity_update, double blending_ratio,
+      unsigned phase, const std::string& damping_type, double damping_factor,
+      unsigned step, bool update_defgrad);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
+  //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
-  virtual inline void postcompute_nodal_kinematics(unsigned phase) = 0;
+  virtual inline void postcompute_nodal_kinematics(
+      mpm::VelocityUpdate velocity_update, unsigned phase) = 0;
 
   //! Compute particle location
   //! \param[in] locate_particles Flag to enable locate particles, if set to

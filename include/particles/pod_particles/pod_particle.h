@@ -38,6 +38,11 @@ typedef struct PODParticle {
   double defgrad_00, defgrad_01, defgrad_02;
   double defgrad_10, defgrad_11, defgrad_12;
   double defgrad_20, defgrad_21, defgrad_22;
+  // Mapping matrix
+  bool initialise_mapping_matrix;
+  double mapping_matrix_00, mapping_matrix_01, mapping_matrix_02;
+  double mapping_matrix_10, mapping_matrix_11, mapping_matrix_12;
+  double mapping_matrix_20, mapping_matrix_21, mapping_matrix_22;
   // Status
   bool status;
   // Index
@@ -54,7 +59,7 @@ typedef struct PODParticle {
 
 namespace pod {
 namespace particle {
-const hsize_t NFIELDS = 64;
+const hsize_t NFIELDS = 74;
 
 const size_t dst_size = sizeof(PODParticle);
 

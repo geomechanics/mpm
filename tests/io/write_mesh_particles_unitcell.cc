@@ -87,6 +87,7 @@ bool write_json_unitcell(unsigned dim, const std::string& analysis,
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
+        {"velocity_update", "flip"},
         {"locate_particles", true},
         {"dt", 0.001},
         {"nsteps", 10},
@@ -548,6 +549,7 @@ bool write_json_unitcell_navierstokes(unsigned dim, const std::string& analysis,
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
+        {"velocity_update", "pic"},
         {"locate_particles", true},
         {"pressure_smoothing", false},
         {"pore_pressure_smoothing", false},
@@ -580,7 +582,8 @@ bool write_json_unitcell_twophase(unsigned dim, const std::string& analysis,
                                   const std::string& mpm_scheme,
                                   const std::string& file_name,
                                   const std::string& free_surface_type,
-                                  const std::string& linear_solver_type) {
+                                  const std::string& linear_solver_type,
+                                  const std::string& velocity_update) {
   // Make json object with input files
   // 2D
   std::string dimension = "2d";

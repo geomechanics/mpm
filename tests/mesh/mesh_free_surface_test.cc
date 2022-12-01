@@ -706,7 +706,7 @@ TEST_CASE("Mesh free surface 2D", "[MeshCell][2D][free_surface]") {
   // Assign mass and momentum to nodes
   mesh->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Dim>::map_mass_momentum_to_nodes,
-                std::placeholders::_1));
+                std::placeholders::_1, mpm::VelocityUpdate::FLIP));
 
   SECTION("Mesh check initial condition") {
 
@@ -1119,7 +1119,7 @@ TEST_CASE("Mesh free surface 3D", "[MeshCell][3D][free_surface]") {
   // Assign mass and momentum to nodes
   mesh->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Dim>::map_mass_momentum_to_nodes,
-                std::placeholders::_1));
+                std::placeholders::_1, mpm::VelocityUpdate::FLIP));
 
   // Check solutions
   std::set<mpm::Index> fsc = {31, 32, 33, 36, 37, 38, 41, 42, 43,

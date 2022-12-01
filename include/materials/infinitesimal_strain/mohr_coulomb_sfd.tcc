@@ -405,7 +405,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombSFD<Tdim>::compute_stress(
     // Undrained shear strength based on initial stresses
     const double s = -1. * (bstress(0) + bstress(1)) / 2.;
     const double shear_max =
-        sin(phi_undrained_) * (s + cohesion_peak_ / tan(phi_undrained_));
+        (sin(phi_undrained_) * s) + (cos(phi_undrained_) * cohesion_peak_);
     adopted_cohesion_peak = shear_max * cos(phi_undrained_);
     adopted_cohesion_residual = adopted_cohesion_peak;
     // Update state_vars cohesion

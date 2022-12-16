@@ -14,9 +14,6 @@
 #include "cell.h"
 #include "data_types.h"
 #include "function_base.h"
-#include "particle.h"
-#include "pod_particle.h"
-#include "pod_particle_twophase.h"
 
 namespace mpm {
 
@@ -117,6 +114,9 @@ class PointBase {
   //! \param[in] property Property string
   //! \retval data Tensor data of point property
   virtual Eigen::VectorXd tensor_data(const std::string& property) const;
+
+  //! Reinitialise point property
+  virtual void reinitialise(double dt) = 0;
 
   //! Compute updated position
   virtual void compute_updated_position(

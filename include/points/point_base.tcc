@@ -4,10 +4,10 @@ mpm::PointBase<Tdim>::PointBase(const VectorDim& coord) {
   // Check if the dimension is between 1 & 3
   static_assert((Tdim >= 1 && Tdim <= 3), "Invalid global dimension");
   coordinates_ = coord;
+  this->initialise();
   // Logger
   std::string logger = "point" + std::to_string(Tdim) + "d";
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
-  initialise();
 }
 
 //! Constructor with id and coordinates
@@ -150,12 +150,15 @@ void mpm::PointBase<Tdim>::compute_shapefn() noexcept {
   // Get element ptr of a cell
   const auto element = cell_->element_ptr();
 
-  // Zero matrix
-  const auto& zero = Eigen::Matrix<double, Tdim, 1>::Zero();
-
   // Compute shape function of the point
-  const auto& zero_natural_size = Eigen::Matrix<double, 1, Tdim>::Zero();
-  shapefn_ = element->shapefn(this->xi_, zero_natural_size, zero);
+  Eigen::Matrix<double, Tdim, 1> zero_natural_size =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+
+  // Identity matrix
+  const Eigen::Matrix<double, Tdim, Tdim> identity =
+      Eigen::Matrix<double, Tdim, Tdim>::Identity();
+
+  shapefn_ = element->shapefn(this->xi_, zero_natural_size, identity);
 }
 
 //! Return point scalar data

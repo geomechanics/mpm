@@ -55,10 +55,20 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   void reinitialise(double dt) override;
 
   //! Compute updated position
+  //! \param[in] dt Analysis time step
+  //! \param[in] velocity_update Method to update particle velocity
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
   void compute_updated_position(
       double dt,
       mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
       double blending_ratio = 1.0) noexcept override;
+
+  //! Map point stiffness matrix to cell
+  inline bool map_stiffness_matrix_to_cell() override;
+
+  //! Map enforcement boundary force to node
+  //! \param[in] phase Index corresponding to the phase
+  void map_boundary_force(unsigned phase) override;
 
  protected:
   //! point id
@@ -87,6 +97,8 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   VectorDim imposed_acceleration_;
   //! Area
   double area_{0.};
+  //! Penalty factor
+  double penalty_factor_{0.};
 
 };  // PointPenaltyDisplacement class
 }  // namespace mpm

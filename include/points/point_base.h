@@ -124,6 +124,22 @@ class PointBase {
       mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
       double blending_ratio = 1.0) noexcept = 0;
 
+  //! Map point stiffness matrix to cell
+  virtual inline bool map_stiffness_matrix_to_cell() {
+    throw std::runtime_error(
+        "Calling the base class function (map_stiffness_matrix_to_cell) in "
+        "PointBase:: illegal operation!");
+    return false;
+  };
+
+  //! Map enforcement boundary force to node
+  //! \param[in] phase Index corresponding to the phase
+  virtual void map_boundary_force(unsigned phase) {
+    throw std::runtime_error(
+        "Calling the base class function (map_boundary_force) in "
+        "PointBase:: illegal operation!");
+  };
+
  protected:
   //! pointBase id
   Index id_{std::numeric_limits<Index>::max()};

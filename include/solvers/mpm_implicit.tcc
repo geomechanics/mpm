@@ -401,7 +401,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     assembler_->assemble_residual_force_right();
 
     // Apply displacement constraints
-    assembler_->apply_displacement_constraints();
+    assembler_->apply_displacement_constraints(current_iteration_);
 
     // Assign rank global mapper to solver and convergence criteria (only
     // necessary at the initial iteration)

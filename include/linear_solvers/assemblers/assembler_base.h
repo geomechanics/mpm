@@ -148,7 +148,7 @@ class AssemblerBase {
 
   //! Apply displacement constraints to equilibrium equation
   //! \ingroup Implicit
-  virtual void apply_displacement_constraints() {
+  virtual void apply_displacement_constraints(unsigned iteration = 0) {
     throw std::runtime_error(
         "Calling the base class function (apply_displacement_constraints) in "
         "AssemblerBase:: illegal operation!");

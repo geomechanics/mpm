@@ -257,6 +257,16 @@ class Cell {
   //! \param[in] multiplier multiplier
   void compute_local_mass_matrix(const Eigen::VectorXd& shapefn, double pvolume,
                                  double multiplier = 1.0) noexcept;
+
+  //! Compute local penalty stiffness matrix (Used in equilibrium equation)
+  //! \ingroup Implicit
+  //! \param[in] penalty_stiffness local penalty stiffness matrix
+  //! contribution from boundary points
+  //! \param[in] parea point area
+  //! \param[in] multiplier multiplier
+  void compute_local_penalty_stiffness_matrix(
+      const Eigen::MatrixXd& penalty_stiffness, double parea,
+      double multiplier = 1.0) noexcept;
   /**@}*/
 
   /**

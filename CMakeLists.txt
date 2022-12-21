@@ -168,6 +168,7 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/particles/
   ${mpm_SOURCE_DIR}/include/particles/anti_locking
   ${mpm_SOURCE_DIR}/include/particles/pod_particles
+  ${mpm_SOURCE_DIR}/include/points
   ${mpm_SOURCE_DIR}/include/solvers/
   ${mpm_SOURCE_DIR}/include/solvers/mpm_scheme/
   ${mpm_SOURCE_DIR}/include/utilities/
@@ -197,6 +198,7 @@ SET(mpm_src
   ${mpm_SOURCE_DIR}/src/nodal_properties.cc
   ${mpm_SOURCE_DIR}/src/node.cc
   ${mpm_SOURCE_DIR}/src/particle.cc
+  ${mpm_SOURCE_DIR}/src/point.cc
   ${mpm_SOURCE_DIR}/src/quadrature.cc
 )
 add_executable(mpm ${mpm_SOURCE_DIR}/src/main.cc ${mpm_src} ${mpm_vtk})

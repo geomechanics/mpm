@@ -104,9 +104,7 @@ void mpm::PointPenaltyDisplacement<Tdim>::map_boundary_force(unsigned phase) {
   gap_function.setZero();
   for (unsigned i = 0; i < nodes_.size(); i++) {
     const auto& n_disp = nodes_[i]->displacement(phase);
-    for (unsigned j = 0; j < Tdim; j++) {
-      gap_function[Tdim * i + j] = (n_disp[j] - imposed_displacement_[j]);
-    }
+    gap_function.block(i * Tdim, 1, Tdim, 1) = n_disp - imposed_displacement_;
   }
 
   // Arrange shape function

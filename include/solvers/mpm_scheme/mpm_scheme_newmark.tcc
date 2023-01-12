@@ -7,6 +7,9 @@ mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
+  // Apply point velocity constraints
+  mesh_->apply_point_velocity_constraints();
+
 #pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
@@ -31,6 +34,20 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
           std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
                     std::placeholders::_1));
     }
+
+    // Spawn a task for points
+#pragma omp section
+    {
+      // Iterate over each point to compute shapefn
+      mesh_->iterate_over_points(std::bind(
+          &mpm::PointBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+      // Initialise material
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::initialise_property,
+                    std::placeholders::_1, dt_));
+    }
+
   }  // Wait to complete
 }
 
@@ -153,6 +170,15 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
     }
+
+#pragma omp section
+    {
+      // Spawn a task for boundary force
+      // Iterate over each point to compute nodal external force
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::map_boundary_force,
+                    std::placeholders::_1, phase));
+    }
   }  // Wait for tasks to finish
 }
 
@@ -173,6 +199,11 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
                   std::placeholders::_1, "displacement", dt_));
+
+  // Iterate over each point to compute updated position
+  mesh_->iterate_over_points(
+      std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
+                std::placeholders::_1, dt_));
 }
 
 // Update particle stress, strain and volume

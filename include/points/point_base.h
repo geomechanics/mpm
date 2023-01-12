@@ -115,14 +115,36 @@ class PointBase {
   //! \retval data Tensor data of point property
   virtual Eigen::VectorXd tensor_data(const std::string& property) const;
 
+  //! Assign area
+  //! \param[in] area Point area
+  virtual bool assign_area(double area);
+
+  //! Return area
+  virtual double area() const { return area_; }
+
   //! Reinitialise point property
-  virtual void reinitialise(double dt) = 0;
+  //! \param[in] dt Time step size
+  virtual void initialise_property(double dt) = 0;
 
   //! Compute updated position
-  virtual void compute_updated_position(
-      double dt,
-      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
-      double blending_ratio = 1.0) noexcept = 0;
+  virtual void compute_updated_position(double dt) noexcept = 0;
+
+  //! Assign penalty factor
+  //! \param[in] penalty_factor Point penalty factor
+  virtual void assign_penalty_factor(double penalty_factor) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_penalty_factor) in "
+        "PointBase:: illegal operation!");
+  };
+
+  //! Apply point velocity constraints
+  //! \param[in] dir Direction of point velocity constraint
+  //! \param[in] velocity Applied point velocity constraint
+  virtual void apply_point_velocity_constraints(unsigned dir, double velocity) {
+    throw std::runtime_error(
+        "Calling the base class function (apply_point_velocity_constraints) in "
+        "PointBase:: illegal operation!");
+  };
 
   //! Map point stiffness matrix to cell
   virtual inline bool map_stiffness_matrix_to_cell() {
@@ -168,6 +190,8 @@ class PointBase {
   //! Map of tensor properties
   tsl::robin_map<std::string, std::function<Eigen::VectorXd()>>
       tensor_properties_;
+  //! Area
+  double area_{0.};
 };  // PointBase class
 }  // namespace mpm
 

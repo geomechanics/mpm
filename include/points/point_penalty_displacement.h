@@ -52,16 +52,12 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   void initialise() override;
 
   //! Reinitialise point property
-  void reinitialise(double dt) override;
+  //! \param[in] dt Time step size
+  void initialise_property(double dt) override;
 
   //! Compute updated position
   //! \param[in] dt Analysis time step
-  //! \param[in] velocity_update Method to update particle velocity
-  //! \param[in] blending_ratio FLIP-PIC Blending ratio
-  void compute_updated_position(
-      double dt,
-      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
-      double blending_ratio = 1.0) noexcept override;
+  void compute_updated_position(double dt) noexcept override;
 
   //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell() override;
@@ -69,6 +65,17 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   //! Map enforcement boundary force to node
   //! \param[in] phase Index corresponding to the phase
   void map_boundary_force(unsigned phase) override;
+
+  //! Apply point velocity constraints
+  //! \param[in] dir Direction of point velocity constraint
+  //! \param[in] velocity Applied point velocity constraint
+  void apply_point_velocity_constraints(unsigned dir, double velocity) override;
+
+  //! Assign penalty factor
+  //! \param[in] penalty_factor Point penalty factor
+  void assign_penalty_factor(double penalty_factor) override {
+    penalty_factor_ = penalty_factor;
+  };
 
  protected:
   //! point id
@@ -87,6 +94,8 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   using PointBase<Tdim>::shapefn_;
   //! Displacement
   using PointBase<Tdim>::displacement_;
+  //! Area
+  using PointBase<Tdim>::area_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Imposed displacement
@@ -95,8 +104,6 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   VectorDim imposed_velocity_;
   //! Imposed acceleration
   VectorDim imposed_acceleration_;
-  //! Area
-  double area_{0.};
   //! Penalty factor
   double penalty_factor_{0.};
 

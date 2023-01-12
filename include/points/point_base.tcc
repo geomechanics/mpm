@@ -43,8 +43,11 @@ bool mpm::PointBase<Tdim>::compute_reference_location() noexcept {
 // Initialise point properties
 template <unsigned Tdim>
 void mpm::PointBase<Tdim>::initialise() {
+  area_ = std::numeric_limits<double>::max();
   displacement_.setZero();
+
   // Initialize scalar, vector, and tensor data properties
+  this->scalar_properties_["area"] = [&]() { return area(); };
   this->vector_properties_["displacements"] = [&]() { return displacement(); };
 }
 
@@ -191,4 +194,19 @@ inline Eigen::VectorXd mpm::PointBase<Tdim>::tensor_data(
              ? this->tensor_properties_.at(property)()
              : Eigen::Matrix<double, 6, 1>::Constant(
                    std::numeric_limits<double>::quiet_NaN());
+}
+
+// Assign area to the point
+template <unsigned Tdim>
+bool mpm::PointBase<Tdim>::assign_area(double area) {
+  bool status = true;
+  try {
+    if (area <= 0.)
+      throw std::runtime_error("Particle area cannot be negative");
+    this->area_ = area;
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
 }

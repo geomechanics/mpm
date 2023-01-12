@@ -41,7 +41,8 @@ void mpm::PointPenaltyDisplacement<Tdim>::initialise() {
 
 // Reinitialise point properties
 template <unsigned Tdim>
-void mpm::PointPenaltyDisplacement<Tdim>::reinitialise(double dt) {
+void mpm::PointPenaltyDisplacement<Tdim>::initialise_property(double dt) {
+  assert(area_ != std::numeric_limits<double>::max());
   // Convert imposition of velocity and acceleration to displacement
   // NOTE: This only consider translational velocity and acceleration: no
   // angular
@@ -49,11 +50,18 @@ void mpm::PointPenaltyDisplacement<Tdim>::reinitialise(double dt) {
       (imposed_velocity_ * dt) + (0.5 * imposed_acceleration_ * dt * dt);
 }
 
+//! Apply point velocity constraints
+template <unsigned Tdim>
+void mpm::PointPenaltyDisplacement<Tdim>::apply_point_velocity_constraints(
+    unsigned dir, double velocity) {
+  // Set particle velocity constraint
+  this->imposed_velocity_(dir) = velocity;
+}
+
 //! Compute updated position
 template <unsigned Tdim>
 void mpm::PointPenaltyDisplacement<Tdim>::compute_updated_position(
-    double dt, mpm::VelocityUpdate velocity_update,
-    double blending_ratio) noexcept {
+    double dt) noexcept {
   // Update position and displacements
   coordinates_.noalias() += imposed_displacement_;
   displacement_.noalias() += imposed_displacement_;

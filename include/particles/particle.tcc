@@ -310,7 +310,7 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::initialise() {
   displacement_.setZero();
   dstrain_.setZero();
-  mass_ = 0.;
+  mass_ = std::numeric_limits<double>::max();
   natural_size_.setZero();
   set_traction_ = false;
   size_.setZero();

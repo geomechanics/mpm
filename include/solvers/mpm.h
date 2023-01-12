@@ -49,6 +49,9 @@ class MPM {
   // Initialise particles
   virtual void initialise_particles() = 0;
 
+  // Initialise interface points
+  virtual void initialise_points() = 0;
+
   // Initialise materials
   virtual void initialise_materials() = 0;
 

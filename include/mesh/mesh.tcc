@@ -2423,8 +2423,8 @@ bool mpm::Mesh<Tdim>::generate_points(const std::shared_ptr<mpm::IO>& io,
           "Point generator type is not properly specified");
 
   } catch (std::exception& exception) {
-    console_->error("{}: #{} Generating particle failed! {}\n", __FILE__,
-                    __LINE__, exception.what());
+    console_->error("{}: #{} Generating point failed! {}\n", __FILE__, __LINE__,
+                    exception.what());
     status = false;
   }
   return status;

@@ -112,7 +112,7 @@ void mpm::PointPenaltyDisplacement<Tdim>::map_boundary_force(unsigned phase) {
   gap_function.setZero();
   for (unsigned i = 0; i < nodes_.size(); i++) {
     const auto& n_disp = nodes_[i]->displacement(phase);
-    gap_function.block(i * Tdim, 1, Tdim, 1) = n_disp - imposed_displacement_;
+    gap_function.segment(i * Tdim, Tdim) = n_disp - imposed_displacement_;
   }
 
   // Arrange shape function
@@ -133,5 +133,5 @@ void mpm::PointPenaltyDisplacement<Tdim>::map_boundary_force(unsigned phase) {
   // Compute nodal external forces
   for (unsigned i = 0; i < nodes_.size(); ++i)
     nodes_[i]->update_external_force(true, phase,
-                                     penalty_force.block(i * Tdim, 1, Tdim, 1));
+                                     penalty_force.segment(i * Tdim, Tdim));
 }

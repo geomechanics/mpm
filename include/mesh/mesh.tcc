@@ -988,6 +988,80 @@ void mpm::Mesh<Tdim>::transfer_nonrank_particles(
 #endif
 }
 
+//! Create points from coordinates
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_points(const std::string& point_type,
+                                    const std::vector<VectorDim>& coordinates,
+                                    unsigned pset_id, bool check_duplicates) {
+  bool status = true;
+  try {
+    // Points ids
+    std::vector<mpm::Index> pids;
+    // Check if point coordinates is empty
+    if (coordinates.empty())
+      throw std::runtime_error("List of coordinates is empty");
+    // Iterate over point coordinates
+    for (const auto& point_coordinates : coordinates) {
+      // Point id
+      mpm::Index pid = points_.size();
+      // Create point
+      auto point = Factory<mpm::PointBase<Tdim>, mpm::Index,
+                           const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                       ->create(point_type, static_cast<mpm::Index>(pid),
+                                point_coordinates);
+
+      // Add point to mesh and check
+      bool insert_status = this->add_point(point, check_duplicates);
+
+      // If insertion is successful
+      if (insert_status) {
+        pids.emplace_back(pid);
+      } else
+        throw std::runtime_error("Addition of point to mesh failed!");
+    }
+    // Add points to set
+    status = this->point_sets_
+                 .insert(std::pair<mpm::Index, std::vector<mpm::Index>>(pset_id,
+                                                                        pids))
+                 .second;
+    if (!status) throw std::runtime_error("Point set creation failed");
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Add a point pointer to the mesh
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::add_point(
+    const std::shared_ptr<mpm::PointBase<Tdim>>& point, bool checks) {
+  bool status = false;
+  try {
+    if (checks) {
+      // Add only if point can be located in any cell of the mesh
+      if (this->locate_point_cells(point)) {
+        status = points_.add(point, checks);
+        points_cell_ids_.insert(
+            std::pair<mpm::Index, mpm::Index>(point->id(), point->cell_id()));
+        map_points_.insert(point->id(), point);
+      } else {
+        throw std::runtime_error("Point not found in mesh");
+      }
+    } else {
+      status = points_.add(point, checks);
+      points_cell_ids_.insert(
+          std::pair<mpm::Index, mpm::Index>(point->id(), point->cell_id()));
+      map_points_.insert(point->id(), point);
+    }
+    if (!status) throw std::runtime_error("Point addition failed");
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Resume cell ranks and partitioned domain
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::resume_domain_cell_ranks() {
@@ -1149,6 +1223,61 @@ bool mpm::Mesh<Tdim>::locate_particle_cells(
   return status;
 }
 
+//! Locate points in a cell
+template <unsigned Tdim>
+std::vector<std::shared_ptr<mpm::PointBase<Tdim>>>
+    mpm::Mesh<Tdim>::locate_points_mesh() {
+
+  std::vector<std::shared_ptr<mpm::PointBase<Tdim>>> points;
+
+  std::for_each(
+      points_.cbegin(), points_.cend(),
+      [=, &points](const std::shared_ptr<mpm::PointBase<Tdim>>& point) {
+        // If point is not found in mesh add to a list of points
+        if (!this->locate_point_cells(point)) points.emplace_back(point);
+      });
+
+  return points;
+}
+
+//! Locate points in a cell
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::locate_point_cells(
+    const std::shared_ptr<mpm::PointBase<Tdim>>& point) {
+  // Check the current cell if it is not invalid
+  if (point->cell_id() != std::numeric_limits<mpm::Index>::max()) {
+    // If a cell id is present, but not a cell locate the cell from map
+    if (!point->cell_ptr()) point->assign_cell(map_cells_[point->cell_id()]);
+    if (point->compute_reference_location()) return true;
+
+    // Check if point is in any of its nearest neighbours
+    const auto neighbours = map_cells_[point->cell_id()]->neighbours();
+    Eigen::Matrix<double, Tdim, 1> xi;
+    Eigen::Matrix<double, Tdim, 1> coordinates = point->coordinates();
+    for (auto neighbour : neighbours) {
+      if (map_cells_[neighbour]->is_point_in_cell(coordinates, &xi)) {
+        point->assign_cell_xi(map_cells_[neighbour], xi);
+        return true;
+      }
+    }
+  }
+
+  bool status = false;
+#pragma omp parallel for schedule(runtime)
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+    // Check if point is already found, if so don't run for other cells
+    // Check if co-ordinates is within the cell, if true
+    // add point to cell
+    Eigen::Matrix<double, Tdim, 1> xi;
+    if (!status && (*citr)->is_point_in_cell(point->coordinates(), &xi)) {
+      point->assign_cell_xi(*citr, xi);
+      status = true;
+    }
+  }
+
+  return status;
+}
+
 //! Iterate over particles
 template <unsigned Tdim>
 template <typename Toper>
@@ -1183,6 +1312,33 @@ void mpm::Mesh<Tdim>::iterate_over_particle_set(int set_id, Toper oper) {
       unsigned pid = (*sitr);
       if (map_particles_.find(pid) != map_particles_.end())
         oper(map_particles_[pid]);
+    }
+  }
+}
+
+//! Iterate over points
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_points(Toper oper) {
+#pragma omp parallel for schedule(runtime)
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr)
+    oper(*pitr);
+}
+
+//! Iterate over point set
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_point_set(int set_id, Toper oper) {
+  // If set id is -1, use all points
+  if (set_id == -1) {
+    this->iterate_over_points(oper);
+  } else {
+    // Iterate over the point set
+    auto set = point_sets_.at(set_id);
+#pragma omp parallel for schedule(runtime)
+    for (auto sitr = set.begin(); sitr != set.cend(); ++sitr) {
+      unsigned pid = (*sitr);
+      if (map_points_.find(pid) != map_points_.end()) oper(map_points_[pid]);
     }
   }
 }
@@ -1305,6 +1461,34 @@ bool mpm::Mesh<Tdim>::assign_particles_volumes(
 
       if (!status)
         throw std::runtime_error("Cannot assign invalid particle volume");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign points area
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_points_areas(
+    const std::vector<std::tuple<mpm::Index, double>>& points_areas) {
+  bool status = true;
+  try {
+    if (!points_.size())
+      throw std::runtime_error(
+          "No points have been assigned in mesh, cannot assign area");
+
+    for (const auto& points_area : points_areas) {
+      // Point id
+      mpm::Index pid = std::get<0>(points_area);
+      // Area
+      double area = std::get<1>(points_area);
+
+      if (map_points_.find(pid) != map_points_.end())
+        status = map_points_[pid]->assign_area(area);
+
+      if (!status) throw std::runtime_error("Cannot assign invalid point area");
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -1461,6 +1645,52 @@ void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
     this->iterate_over_particle_set(
         set_id,
         std::bind(&mpm::ParticleBase<Tdim>::apply_particle_velocity_constraints,
+                  std::placeholders::_1, dir, velocity));
+  }
+}
+
+//! Create point velocity constraints
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
+    int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
+    double penalty_factor) {
+  bool status = true;
+  try {
+    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
+      // Create a point velocity constraint
+      if (constraint->dir() < Tdim)
+        point_velocity_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error("Invalid direction of velocity constraint");
+
+      // Assign penalty factor
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_penalty_factor,
+                            std::placeholders::_1, penalty_factor));
+    } else
+      throw std::runtime_error(
+          "No point set found to assign velocity constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply point velocity constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {
+  // Iterate over all point velocity constraints
+  for (const auto& pvelocity : point_velocity_constraints_) {
+    // If set id is -1, use all points
+    int set_id = pvelocity->setid();
+    unsigned dir = pvelocity->dir();
+    double velocity = pvelocity->velocity();
+
+    this->iterate_over_point_set(
+        set_id,
+        std::bind(&mpm::PointBase<Tdim>::apply_point_velocity_constraints,
                   std::placeholders::_1, dir, velocity));
   }
 }
@@ -1880,6 +2110,31 @@ bool mpm::Mesh<Tdim>::create_particle_sets(
   return status;
 }
 
+//! Create map of container of point in sets
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_sets(
+    const tsl::robin_map<mpm::Index, std::vector<mpm::Index>>& point_sets,
+    bool check_duplicates) {
+  bool status = false;
+  try {
+    // Create container for each point set
+    for (auto sitr = point_sets.begin(); sitr != point_sets.end(); ++sitr) {
+      // Create a container for the set
+      std::vector<mpm::Index> points((sitr->second).begin(),
+                                     (sitr->second).end());
+
+      // Create the map of the container
+      status = this->point_sets_
+                   .insert(std::pair<mpm::Index, std::vector<mpm::Index>>(
+                       sitr->first, points))
+                   .second;
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  }
+  return status;
+}
+
 //! Create map of container of nodes in sets
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::create_node_sets(
@@ -2143,6 +2398,66 @@ bool mpm::Mesh<Tdim>::read_particles_file(const std::shared_ptr<mpm::IO>& io,
                                        pset_id, check_duplicates);
 
   if (!status) throw std::runtime_error("Addition of particles to mesh failed");
+
+  return status;
+}
+
+//! Generate points
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::generate_points(const std::shared_ptr<mpm::IO>& io,
+                                      const Json& generator) {
+  bool status = true;
+  try {
+    // Point generator
+    const auto generator_type = generator["type"].template get<std::string>();
+
+    // Generate points from file
+    if (generator_type == "file") {
+      // Point set id
+      unsigned pset_id = generator["pset_id"].template get<unsigned>();
+      status = this->read_points_file(io, generator, pset_id);
+    }
+
+    else
+      throw std::runtime_error(
+          "Point generator type is not properly specified");
+
+  } catch (std::exception& exception) {
+    console_->error("{}: #{} Generating particle failed! {}\n", __FILE__,
+                    __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+// Read point file
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::read_points_file(const std::shared_ptr<mpm::IO>& io,
+                                       const Json& generator,
+                                       unsigned pset_id) {
+  // Point type
+  auto point_type = generator["point_type"].template get<std::string>();
+
+  // File location
+  auto file_loc =
+      io->file_name(generator["location"].template get<std::string>());
+
+  // Check duplicates
+  bool check_duplicates = generator["check_duplicates"].template get<bool>();
+
+  const std::string reader = generator["io_type"].template get<std::string>();
+
+  // Create a point reader
+  auto point_io = Factory<mpm::IOMesh<Tdim>>::instance()->create(reader);
+
+  // Get coordinates using read particles function
+  auto coords = point_io->read_particles(file_loc);
+
+  // Create points from coordinates
+  bool status =
+      this->create_points(point_type, coords, pset_id, check_duplicates);
+
+  if (!status) throw std::runtime_error("Addition of points to mesh failed");
 
   return status;
 }

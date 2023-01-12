@@ -142,6 +142,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
 
+    // Initialise points
+    this->initialise_points();
+
     // Domain decompose
     this->mpi_domain_decompose(initial_step);
   }
@@ -389,6 +392,10 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
                   std::placeholders::_1, newmark_beta_, dt_, quasi_static_));
+
+    mesh_->iterate_over_points(
+        std::bind(&mpm::PointBase<Tdim>::map_stiffness_matrix_to_cell,
+                  std::placeholders::_1));
 
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();

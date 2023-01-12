@@ -425,11 +425,6 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   // Read and assign particles velocity constraints
   this->particle_velocity_constraints();
 
-  console_->info("Rank {} Create particle sets: {} ms", mpi_rank,
-                 std::chrono::duration_cast<std::chrono::milliseconds>(
-                     particles_volume_end - particles_volume_begin)
-                     .count());
-
   // Material id update using particle sets
   try {
     auto material_sets = io_->json_object("material_sets");
@@ -484,6 +479,83 @@ void mpm::MPMBase<Tdim>::initialise_materials() {
   }
   // Copy materials to mesh
   mesh_->initialise_material_models(this->materials_);
+}
+
+// Initialise points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_points() {
+  // Initialise MPI rank and size
+  int mpi_rank = 0;
+  int mpi_size = 1;
+
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  // Get mesh properties
+  auto mesh_props = io_->json_object("mesh");
+  // Get Mesh reader from JSON object
+  const std::string io_type = mesh_props["io_type"].template get<std::string>();
+
+  // Check duplicates default set to true
+  bool check_duplicates = true;
+  if (mesh_props.find("check_duplicates") != mesh_props.end())
+    check_duplicates = mesh_props["check_duplicates"].template get<bool>();
+
+  auto points_gen_begin = std::chrono::steady_clock::now();
+
+  // Get points properties
+  auto json_points = io_->json_object("points");
+
+  for (const auto& json_point : json_points) {
+    // Generate points
+    bool gen_status = mesh_->generate_points(io_, json_point["generator"]);
+    if (!gen_status)
+      std::runtime_error("mpm::base::init_points() Generate points failed");
+  }
+
+  auto points_gen_end = std::chrono::steady_clock::now();
+  console_->info("Rank {} Generate points: {} ms", mpi_rank,
+                 std::chrono::duration_cast<std::chrono::milliseconds>(
+                     points_gen_end - points_gen_begin)
+                     .count());
+
+  auto points_locate_begin = std::chrono::steady_clock::now();
+
+  // Create a mesh reader
+  auto point_io = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  // Locate points in cell
+  auto unlocatable_points = mesh_->locate_points_mesh();
+
+  if (!unlocatable_points.empty())
+    throw std::runtime_error(
+        "mpm::base::init_points() Point outside the mesh domain");
+
+  auto points_locate_end = std::chrono::steady_clock::now();
+  console_->info("Rank {} Locate points: {} ms", mpi_rank,
+                 std::chrono::duration_cast<std::chrono::milliseconds>(
+                     points_locate_end - points_locate_begin)
+                     .count());
+
+  auto points_area_begin = std::chrono::steady_clock::now();
+
+  // Read and assign points areas
+  this->points_areas(mesh_props, point_io);
+
+  auto points_area_end = std::chrono::steady_clock::now();
+  console_->info("Rank {} Read areas: {} ms", mpi_rank,
+                 std::chrono::duration_cast<std::chrono::milliseconds>(
+                     points_area_end - points_area_begin)
+                     .count());
+
+  // Point entity sets
+  this->point_entity_sets(check_duplicates);
+
+  // Read and assign points velocity constraints
+  this->point_velocity_constraints();
 }
 
 //! Checkpoint resume
@@ -1608,6 +1680,73 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
   }
 }
 
+// Points areas
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::points_areas(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("points_areas") != mesh_props.end()) {
+      std::string fpoints_areas =
+          mesh_props["points_areas"].template get<std::string>();
+      if (!io_->file_name(fpoints_areas).empty()) {
+        bool points_areas = mesh_->assign_points_areas(
+            particle_io->read_particles_scalar_properties(
+                io_->file_name(fpoints_areas)));
+        if (!points_areas)
+          throw std::runtime_error("Point areas are not properly assigned");
+      }
+    } else
+      throw std::runtime_error("Points areas JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Points areas are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Point velocity constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_velocity_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  try {
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("points_velocity_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over velocity constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["points_velocity_constraints"]) {
+
+        // Set id
+        int pset_id = constraints.at("pset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Velocity
+        double velocity = constraints.at("velocity").template get<double>();
+        // Add velocity constraint to mesh
+        auto velocity_constraint =
+            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
+
+        // Penalty factor
+        double penalty_factor =
+            constraints.at("penalty_factor").template get<double>();
+
+        mesh_->create_point_velocity_constraint(pset_id, velocity_constraint,
+                                                penalty_factor);
+      }
+    } else
+      throw std::runtime_error("Point velocity constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point velocity constraints are undefined {} ",
+                   __LINE__, exception.what());
+  }
+}
+
 //! Particle entity sets
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::particle_entity_sets(bool check_duplicates) {
@@ -1631,6 +1770,32 @@ void mpm::MPMBase<Tdim>::particle_entity_sets(bool check_duplicates) {
 
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle sets are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+//! Point entity sets
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_entity_sets(bool check_duplicates) {
+  // Get mesh properties
+  auto mesh_props = io_->json_object("mesh");
+  // Read and assign point sets
+  try {
+    if (mesh_props.find("entity_sets") != mesh_props.end()) {
+      std::string entity_sets =
+          mesh_props["entity_sets"].template get<std::string>();
+      if (!io_->file_name(entity_sets).empty()) {
+        bool point_sets = mesh_->create_point_sets(
+            (io_->entity_sets(io_->file_name(entity_sets), "point_sets")),
+            check_duplicates);
+
+        if (!point_sets) throw std::runtime_error("Point set creation failed");
+      }
+    } else
+      throw std::runtime_error("Point entity set JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point sets are undefined {} ", __LINE__,
                    exception.what());
   }
 }

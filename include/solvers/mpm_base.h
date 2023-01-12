@@ -65,6 +65,9 @@ class MPMBase : public MPM {
   //! Initialise particles
   void initialise_particles() override;
 
+  //! Initialise interface points
+  void initialise_points() override;
+
   //! Initialise materials
   void initialise_materials() override;
 
@@ -96,8 +99,15 @@ class MPMBase : public MPM {
   //! \param[in] check Check duplicates
   void particle_entity_sets(bool check);
 
+  //! Point entity sets
+  //! \param[in] check Check duplicates
+  void point_entity_sets(bool check);
+
   //! Particle velocity constraints
   void particle_velocity_constraints();
+
+  //! Point velocity constraints
+  void point_velocity_constraints();
 
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
@@ -208,6 +218,12 @@ class MPMBase : public MPM {
   void particles_pore_pressures(
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
+  //! Points areas
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void points_areas(const Json& mesh_prop,
+                    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
   //! Initialise damping
   //! \param[in] damping_props Damping properties

@@ -132,6 +132,6 @@ void mpm::PointPenaltyDisplacement<Tdim>::map_boundary_force(unsigned phase) {
 
   // Compute nodal external forces
   for (unsigned i = 0; i < nodes_.size(); ++i)
-    nodes_[i]->update_external_force(true, phase,
-                                     penalty_force.segment(i * Tdim, Tdim));
+    nodes_[i]->update_external_force(
+        true, phase, -1.0 * penalty_force.segment(i * Tdim, Tdim));
 }

@@ -48,6 +48,10 @@ void mpm::PointPenaltyDisplacement<Tdim>::initialise_property(double dt) {
   // angular
   imposed_displacement_ =
       (imposed_velocity_ * dt) + (0.5 * imposed_acceleration_ * dt * dt);
+
+  for (unsigned i = 0; i < Tdim; ++i)
+    if (std::abs(imposed_displacement_(i)) < 1.E-15)
+      imposed_displacement_(i) = 0.;
 }
 
 //! Apply point velocity constraints

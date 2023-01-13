@@ -82,6 +82,12 @@ class MPM {
 #ifdef USE_VTK
   //! Write VTK files
   virtual void write_vtk(mpm::Index step, mpm::Index max_steps) = 0;
+
+  //! Write VTK files for material points
+  virtual void write_vtk_particles(mpm::Index step, mpm::Index max_steps) = 0;
+
+  //! Write VTK files for interface points
+  virtual void write_vtk_points(mpm::Index step, mpm::Index max_steps) = 0;
 #endif
 
 #ifdef USE_PARTIO

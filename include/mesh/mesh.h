@@ -346,6 +346,27 @@ class Mesh {
   std::vector<double> particles_statevars_data(
       const std::string& attribute, unsigned phase = mpm::ParticlePhase::Solid);
 
+  //! Return coordinates of points
+  std::vector<Eigen::Matrix<double, 3, 1>> point_coordinates();
+
+  //! Return points scalar data
+  //! \param[in] attribute Name of the scalar data attribute
+  //! \retval scalar_data Vector containing scalar properties from points
+  std::vector<double> points_scalar_data(const std::string& attribute) const;
+
+  //! Return points vector data
+  //! \param[in] attribute Name of the tensor data attribute
+  //! \retval vector_data Vector containing vector properties from points
+  std::vector<Eigen::Matrix<double, 3, 1>> points_vector_data(
+      const std::string& attribute) const;
+
+  //! Return points tensor data
+  //! \param[in] attribute Name of the tensor data attribute
+  //! \retval tensor_data Vector containing tensor properties from points
+  template <unsigned Tsize>
+  std::vector<Eigen::Matrix<double, Tsize, 1>> points_tensor_data(
+      const std::string& attribute) const;
+
   //! Compute and assign rotation matrix to nodes
   //! \param[in] euler_angles Map of node number and respective euler_angles
   bool compute_nodal_rotation_matrices(

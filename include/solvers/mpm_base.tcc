@@ -634,9 +634,19 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
 }
 
 #ifdef USE_VTK
+
 //! Write VTK files
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
+  //! Write VTK files for material and interface points
+  this->write_vtk_particles(step, max_steps);
+  this->write_vtk_points(step, max_steps);
+}
+
+//! Write VTK files for material points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_vtk_particles(mpm::Index step,
+                                             mpm::Index max_steps) {
 
   // VTK PolyData writer
   auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates());
@@ -755,6 +765,104 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
       }
 #endif
     }
+  }
+}
+
+//! Write VTK files for interface points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
+                                          mpm::Index max_steps) {
+
+  // VTK PolyData writer
+  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->point_coordinates());
+
+  // Write input geometry to vtk file
+  const std::string extension = ".vtp";
+  const std::string attribute = "geometry";
+  auto meshfile =
+      io_->output_file(attribute + "_point", extension, uuid_, step, max_steps)
+          .string();
+  vtk_writer->write_geometry(meshfile);
+
+  // MPI parallel vtk file
+  int mpi_rank = 0;
+  int mpi_size = 1;
+  bool write_mpi_rank = false;
+
+#ifdef USE_MPI
+  // Get MPI rank
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  //! VTK scalar variables
+  for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Scalar)) {
+    // Write scalar
+    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
+                                 max_steps)
+                    .string();
+    vtk_writer->write_scalar_point_data(
+        file, mesh_->points_scalar_data(attribute), attribute);
+
+    // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+    if (mpi_rank == 0 && mpi_size > 1) {
+      auto parallel_file =
+          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
+                           max_steps, write_mpi_rank)
+              .string();
+
+      vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
+                                     max_steps, 1);
+    }
+#endif
+  }
+
+  //! VTK vector variables
+  for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Vector)) {
+    // Write vector
+    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
+                                 max_steps)
+                    .string();
+    vtk_writer->write_vector_point_data(
+        file, mesh_->points_vector_data(attribute), attribute);
+
+    // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+    if (mpi_rank == 0 && mpi_size > 1) {
+      auto parallel_file =
+          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
+                           max_steps, write_mpi_rank)
+              .string();
+
+      vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
+                                     max_steps, 3);
+    }
+#endif
+  }
+
+  //! VTK tensor variables
+  for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Tensor)) {
+    // Write vector
+    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
+                                 max_steps)
+                    .string();
+    vtk_writer->write_tensor_point_data(
+        file, mesh_->template points_tensor_data<6>(attribute), attribute);
+
+    // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+    if (mpi_rank == 0 && mpi_size > 1) {
+      auto parallel_file =
+          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
+                           max_steps, write_mpi_rank)
+              .string();
+
+      vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
+                                     max_steps, 9);
+    }
+#endif
   }
 }
 #endif

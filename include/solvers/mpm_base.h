@@ -129,6 +129,12 @@ class MPMBase : public MPM {
 #ifdef USE_VTK
   //! Write VTK files
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
+
+  //! Write VTK files for material points
+  void write_vtk_particles(mpm::Index step, mpm::Index max_steps) override;
+
+  //! Write VTK files for interface points
+  void write_vtk_points(mpm::Index step, mpm::Index max_steps) override;
 #endif
 
 #ifdef USE_PARTIO

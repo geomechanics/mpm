@@ -1440,6 +1440,72 @@ std::vector<double> mpm::Mesh<Tdim>::particles_statevars_data(
   return statevars_data;
 }
 
+//! Return point coordinates
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::point_coordinates() {
+  std::vector<Eigen::Matrix<double, 3, 1>> point_coordinates;
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr) {
+    Eigen::Vector3d coordinates;
+    coordinates.setZero();
+    auto pcoords = (*pitr)->coordinates();
+    // Fill coordinates to the size of dimensions
+    for (unsigned i = 0; i < Tdim; ++i) coordinates(i) = pcoords(i);
+    point_coordinates.emplace_back(coordinates);
+  }
+  return point_coordinates;
+}
+
+//! Return point scalar data
+template <unsigned Tdim>
+std::vector<double> mpm::Mesh<Tdim>::points_scalar_data(
+    const std::string& attribute) const {
+  std::vector<double> scalar_data;
+  scalar_data.reserve(points_.size());
+  // Iterate over points and add scalar value to data
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr)
+    scalar_data.emplace_back((*pitr)->scalar_data(attribute));
+  return scalar_data;
+}
+
+//! Return point vector data
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::points_vector_data(
+    const std::string& attribute) const {
+  std::vector<Eigen::Matrix<double, 3, 1>> vector_data;
+  // Iterate over points
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr) {
+    Eigen::Matrix<double, 3, 1> data;
+    data.setZero();
+    auto pdata = (*pitr)->vector_data(attribute);
+    // Fill vector_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    vector_data.emplace_back(data);
+  }
+  return vector_data;
+}
+
+//! Return point tensor data
+template <unsigned Tdim>
+template <unsigned Tsize>
+std::vector<Eigen::Matrix<double, Tsize, 1>>
+    mpm::Mesh<Tdim>::points_tensor_data(const std::string& attribute) const {
+  std::vector<Eigen::Matrix<double, Tsize, 1>> tensor_data;
+  // Iterate over points
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr) {
+    Eigen::Matrix<double, Tsize, 1> data;
+    data.setZero();
+    auto pdata = (*pitr)->tensor_data(attribute);
+    // Fill tensor_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    tensor_data.emplace_back(data);
+  }
+  return tensor_data;
+}
+
 //! Assign particles volumes
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_particles_volumes(

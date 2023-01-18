@@ -54,6 +54,9 @@ class IO {
   //! Return json object
   Json json_object(const std::string& key) const;
 
+  //! Search json key
+  bool json_search(const std::string& key) const;
+
   //! Return post processing object
   Json post_processing() const;
 

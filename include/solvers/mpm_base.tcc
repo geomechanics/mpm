@@ -506,6 +506,9 @@ void mpm::MPMBase<Tdim>::initialise_points() {
 
   auto points_gen_begin = std::chrono::steady_clock::now();
 
+  // Check if "points" are specified
+  if (!(io_->json_search("points"))) return;
+
   // Get points properties
   auto json_points = io_->json_object("points");
 

@@ -484,6 +484,9 @@ void mpm::MPMBase<Tdim>::initialise_materials() {
 // Initialise points
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_points() {
+  // Check if "points" are specified
+  if (!(io_->json_search("points"))) return;
+
   // Initialise MPI rank and size
   int mpi_rank = 0;
   int mpi_size = 1;
@@ -505,9 +508,6 @@ void mpm::MPMBase<Tdim>::initialise_points() {
     check_duplicates = mesh_props["check_duplicates"].template get<bool>();
 
   auto points_gen_begin = std::chrono::steady_clock::now();
-
-  // Check if "points" are specified
-  if (!(io_->json_search("points"))) return;
 
   // Get points properties
   auto json_points = io_->json_object("points");
@@ -934,6 +934,9 @@ bool mpm::MPMBase<Tdim>::is_isoparametric() {
 //! Initialise loads
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_loads() {
+  // Check if "external_loading_conditions" are specified
+  if (!(io_->json_search("external_loading_conditions"))) return;
+
   auto loads = io_->json_object("external_loading_conditions");
   // Initialise gravity loading
   gravity_.setZero();

@@ -3,6 +3,7 @@ template <unsigned Tdim>
 mpm::PointPenaltyDisplacement<Tdim>::PointPenaltyDisplacement(
     Index id, const VectorDim& coord)
     : mpm::PointBase<Tdim>::PointBase(id, coord) {
+  this->initialise();
   // Clear cell ptr
   cell_ = nullptr;
   // Nodes
@@ -19,6 +20,7 @@ template <unsigned Tdim>
 mpm::PointPenaltyDisplacement<Tdim>::PointPenaltyDisplacement(
     Index id, const VectorDim& coord, bool status)
     : mpm::PointBase<Tdim>::PointBase(id, coord, status) {
+  this->initialise();
   // Clear cell ptr
   cell_ = nullptr;
   // Nodes

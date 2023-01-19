@@ -80,11 +80,17 @@ class Cell {
   //! \retval nglobal_particles_ Number of global particles of cell
   unsigned nglobal_particles() const { return nglobal_particles_; }
 
-  //! Return the status of a cell: active (if a particle is present)
-  bool status() const { return particles_.size(); }
+  //! Return the status of a cell: active (if a particle or a point is present)
+  bool status() const { return particles_.size() + points_.size(); }
 
   //! Return particles_
   std::vector<Index> particles() const { return particles_; }
+
+  //! Return the number of points
+  unsigned npoints() const { return points_.size(); }
+
+  //! Return point_
+  std::vector<Index> points() const { return points_; }
 
   //! Number of nodes
   unsigned nnodes() const { return nodes_.size(); }
@@ -144,6 +150,18 @@ class Cell {
 
   //! Clear all particle ids in the cell
   void clear_particle_ids() { particles_.clear(); }
+
+  //! Add an id of a point in the cell
+  //! \param[in] id Global id of a point
+  //! \retval status Return the successful addition of a point id
+  bool add_point_id(Index id);
+
+  //! Remove a point id from the cell (moved to a different cell / killed)
+  //! \param[in] id Global id of a point
+  void remove_point_id(Index id);
+
+  //! Clear all point ids in the cell
+  void clear_point_ids() { points_.clear(); }
 
   //! Compute the volume of the cell
   void compute_volume();
@@ -483,6 +501,8 @@ class Cell {
   std::vector<Index> particles_;
   //! Number of global nparticles
   unsigned nglobal_particles_{0};
+  //! points ids in cell
+  std::vector<Index> points_;
   //! Container of node pointers (local id, node pointer)
   std::vector<std::shared_ptr<NodeBase<Tdim>>> nodes_;
   //! Nodal coordinates

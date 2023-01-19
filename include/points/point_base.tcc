@@ -60,6 +60,8 @@ bool mpm::PointBase<Tdim>::assign_cell(
     Eigen::Matrix<double, Tdim, 1> xi;
     // Assign cell to the new cell ptr, if point can be found in new cell
     if (cellptr->is_point_in_cell(this->coordinates_, &xi)) {
+      // if a cell already exists remove point from that cell
+      if (cell_ != nullptr) cell_->remove_point_id(this->id_);
 
       cell_ = cellptr;
       cell_id_ = cellptr->id();
@@ -70,6 +72,7 @@ bool mpm::PointBase<Tdim>::assign_cell(
       // Compute reference location of particle
       bool xi_status = this->compute_reference_location();
       if (!xi_status) return false;
+      status = cell_->add_point_id(this->id());
     } else {
       throw std::runtime_error("Point cannot be found in cell!");
     }
@@ -89,6 +92,8 @@ bool mpm::PointBase<Tdim>::assign_cell_xi(
   try {
     // Assign cell to the new cell ptr, if point can be found in new cell
     if (cellptr != nullptr) {
+      // if a cell already exists remove point from that cell
+      if (cell_ != nullptr) cell_->remove_point_id(this->id_);
 
       cell_ = cellptr;
       cell_id_ = cellptr->id();
@@ -108,6 +113,8 @@ bool mpm::PointBase<Tdim>::assign_cell_xi(
         this->xi_ = xi;
       else
         return false;
+
+      status = cell_->add_point_id(this->id());
     } else {
       throw std::runtime_error("Point cannot be found in cell!");
     }

@@ -140,14 +140,19 @@ inline Eigen::VectorXd mpm::HexahedronLMEElement<Tdim>::shapefn(
         } else if ((lambda - olambda).norm() < tolerance) {
           convergence = true;
         } else if (it == max_it) {
+          //! Abort simulation if r.norm() is too big
+          if (r.norm() > 1.e-3)
+            throw std::runtime_error(
+                "LME shapefn: the LME Newton-Raphson iteration unable to "
+                "converge");
+
           //! Check condition number
           Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
           const double rcond =
               svd.singularValues()(svd.singularValues().size() - 1) /
               svd.singularValues()(0);
           if (rcond < 1E-8)
-            console_->warn("The LME Hessian matrix is singular!");
-
+            console_->warn("LME shapefn: the LME Hessian matrix is singular!");
           convergence = true;
         }
         it++;
@@ -296,13 +301,20 @@ inline Eigen::MatrixXd mpm::HexahedronLMEElement<Tdim>::grad_shapefn(
         } else if ((lambda - olambda).norm() < tolerance) {
           convergence = true;
         } else if (it == max_it) {
+          //! Abort simulation if r.norm() is too big
+          if (r.norm() > 1.e-3)
+            throw std::runtime_error(
+                "LME grad_shapefn: the LME Newton-Raphson iteration unable to "
+                "converge");
+
           //! Check condition number
           Eigen::JacobiSVD<Eigen::MatrixXd> svd(J);
           const double rcond =
               svd.singularValues()(svd.singularValues().size() - 1) /
               svd.singularValues()(0);
           if (rcond < 1E-8)
-            console_->warn("The LME Hessian matrix is singular!");
+            console_->warn(
+                "LME grad_shapefn: the LME Hessian matrix is singular!");
           convergence = true;
         }
         it++;

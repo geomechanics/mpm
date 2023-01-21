@@ -135,6 +135,8 @@ class HexahedronLMEElement : public HexahedronElement<3, 8> {
   double support_radius_;
   //! Anisotropy parameter
   bool anisotropy_{false};
+  //! Apply preconditioner
+  bool preconditioner_{false};
   //! Nodal coordinates vector (n_connectivity_ x Tdim)
   Eigen::MatrixXd nodal_coordinates_;
 };

@@ -8,6 +8,12 @@ void mpm::TriangleLMEElement<Tdim>::initialise_lme_connectivity_properties(
   this->beta_ = beta;
   this->anisotropy_ = anisotropy;
   this->support_radius_ = radius;
+
+  //! Uniform spacing length in 2D
+  const double spacing_length =
+      std::abs(nodal_coordinates(1, 0) - nodal_coordinates(0, 0));
+  const double gamma = beta * spacing_length * spacing_length;
+  if (gamma > 6.0) this->preconditioner_ = true;
 }
 
 //! Return shape functions of a Quadrilateral LME Element at a given
@@ -88,7 +94,7 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
     if (r.norm() > tolerance) {
       bool convergence = false;
       unsigned it = 1;
-      const unsigned max_it = 10;
+      const unsigned max_it = 100;
       while (!convergence) {
         //! Compute matrix J
         Eigen::Matrix2d J = -r * r.transpose();
@@ -96,6 +102,9 @@ inline Eigen::VectorXd mpm::TriangleLMEElement<Tdim>::shapefn(
           J.noalias() += p(n) * ((rel_coordinates.col(n)) *
                                  (rel_coordinates.col(n)).transpose());
         }
+
+        //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+        if (this->preconditioner_) J.diagonal().array() += r.norm();
 
         //! Compute Delta lambda
         const auto olambda = lambda;
@@ -233,12 +242,15 @@ inline Eigen::MatrixXd mpm::TriangleLMEElement<Tdim>::grad_shapefn(
                              (rel_coordinates.col(n)).transpose());
     }
 
+    //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+    if (this->preconditioner_) J.diagonal().array() += r.norm();
+
     //! Begin Newton-Raphson iteration
     const double tolerance = 1.e-12;
     if (r.norm() > tolerance) {
       bool convergence = false;
       unsigned it = 1;
-      unsigned max_it = 10;
+      unsigned max_it = 100;
       while (!convergence) {
         //! Compute Delta lambda
         const auto olambda = lambda;
@@ -274,6 +286,9 @@ inline Eigen::MatrixXd mpm::TriangleLMEElement<Tdim>::grad_shapefn(
           J.noalias() += p(n) * ((rel_coordinates.col(n)) *
                                  (rel_coordinates.col(n)).transpose());
         }
+
+        //! Add preconditioner for J (Mathieu Foca, PhD Thesis)
+        if (this->preconditioner_) J.diagonal().array() += r.norm();
 
         //! Check convergence
         if (r.norm() < tolerance) {

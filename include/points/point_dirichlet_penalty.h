@@ -1,5 +1,5 @@
-#ifndef MPM_POINT_PENALTY_DISPLACEMENT_H_
-#define MPM_POINT_PENALTY_DISPLACEMENT_H_
+#ifndef MPM_POINT_DIRICHLET_PENALTY_H_
+#define MPM_POINT_DIRICHLET_PENALTY_H_
 
 // MPI
 #ifdef USE_MPI
@@ -22,7 +22,7 @@ class Material;
 //! Point class to impose nonconforming displacement BC with penalty method
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class PointPenaltyDisplacement : public PointBase<Tdim> {
+class PointDirichletPenalty : public PointBase<Tdim> {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
@@ -30,23 +30,22 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   //! Constructor with id and coordinates
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
-  PointPenaltyDisplacement(Index id, const VectorDim& coord);
+  PointDirichletPenalty(Index id, const VectorDim& coord);
 
   //! Constructor with id, coordinates and status
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
   //! \param[in] status Point status (active / inactive)
-  PointPenaltyDisplacement(Index id, const VectorDim& coord, bool status);
+  PointDirichletPenalty(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~PointPenaltyDisplacement() override{};
+  ~PointDirichletPenalty() override{};
 
   //! Delete copy constructor
-  PointPenaltyDisplacement(const PointPenaltyDisplacement<Tdim>&) = delete;
+  PointDirichletPenalty(const PointDirichletPenalty<Tdim>&) = delete;
 
   //! Delete assignement operator
-  PointPenaltyDisplacement& operator=(const PointPenaltyDisplacement<Tdim>&) =
-      delete;
+  PointDirichletPenalty& operator=(const PointDirichletPenalty<Tdim>&) = delete;
 
   //! Initialise properties
   void initialise() override;
@@ -107,9 +106,9 @@ class PointPenaltyDisplacement : public PointBase<Tdim> {
   //! Penalty factor
   double penalty_factor_{0.};
 
-};  // PointPenaltyDisplacement class
+};  // PointDirichletPenalty class
 }  // namespace mpm
 
-#include "point_penalty_displacement.tcc"
+#include "point_dirichlet_penalty.tcc"
 
-#endif  // MPM_POINT_PENALTY_DISPLACEMENT_H__
+#endif  // MPM_POINT_DIRICHLET_PENALTY_H_

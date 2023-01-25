@@ -1,13 +1,13 @@
 #include "factory.h"
 #include "point_base.h"
-#include "point_penalty_displacement.h"
+#include "point_dirichlet_penalty.h"
 
-// PointPenaltyDisplacement2D (2 Dim)
-static Register<mpm::PointBase<2>, mpm::PointPenaltyDisplacement<2>, mpm::Index,
+// PointDirichletPenalty2D (2 Dim)
+static Register<mpm::PointBase<2>, mpm::PointDirichletPenalty<2>, mpm::Index,
                 const Eigen::Matrix<double, 2, 1>&>
-    point2dpenaltydisplacement("POINT2DPENALTYDISP");
+    point2ddirichletpenalty("POINT2DDIRPEN");
 
-// PointPenaltyDisplacement3D (3 Dim)
-static Register<mpm::PointBase<3>, mpm::PointPenaltyDisplacement<3>, mpm::Index,
+// PointDirichletPenalty3D (3 Dim)
+static Register<mpm::PointBase<3>, mpm::PointDirichletPenalty<3>, mpm::Index,
                 const Eigen::Matrix<double, 3, 1>&>
-    point3dpenaltydisplacement("POINT3DPENALTYDISP");
+    point3ddirichletpenalty("POINT2DDIRPEN");

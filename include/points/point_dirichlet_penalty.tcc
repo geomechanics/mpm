@@ -1,7 +1,7 @@
 //! Constructor with id and coordinates
 template <unsigned Tdim>
-mpm::PointPenaltyDisplacement<Tdim>::PointPenaltyDisplacement(
-    Index id, const VectorDim& coord)
+mpm::PointDirichletPenalty<Tdim>::PointDirichletPenalty(Index id,
+                                                        const VectorDim& coord)
     : mpm::PointBase<Tdim>::PointBase(id, coord) {
   this->initialise();
   // Clear cell ptr
@@ -10,15 +10,16 @@ mpm::PointPenaltyDisplacement<Tdim>::PointPenaltyDisplacement(
   nodes_.clear();
 
   // Logger
-  std::string logger = "PointPenaltyDisplacement" + std::to_string(Tdim) +
+  std::string logger = "PointDirichletPenalty" + std::to_string(Tdim) +
                        "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
 //! Constructor with id, coordinates and status
 template <unsigned Tdim>
-mpm::PointPenaltyDisplacement<Tdim>::PointPenaltyDisplacement(
-    Index id, const VectorDim& coord, bool status)
+mpm::PointDirichletPenalty<Tdim>::PointDirichletPenalty(Index id,
+                                                        const VectorDim& coord,
+                                                        bool status)
     : mpm::PointBase<Tdim>::PointBase(id, coord, status) {
   this->initialise();
   // Clear cell ptr
@@ -26,14 +27,14 @@ mpm::PointPenaltyDisplacement<Tdim>::PointPenaltyDisplacement(
   // Nodes
   nodes_.clear();
   // Logger
-  std::string logger = "PointPenaltyDisplacement" + std::to_string(Tdim) +
+  std::string logger = "PointDirichletPenalty" + std::to_string(Tdim) +
                        "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
 // Initialise point properties
 template <unsigned Tdim>
-void mpm::PointPenaltyDisplacement<Tdim>::initialise() {
+void mpm::PointDirichletPenalty<Tdim>::initialise() {
   mpm::PointBase<Tdim>::initialise();
 
   imposed_displacement_.setZero();
@@ -43,7 +44,7 @@ void mpm::PointPenaltyDisplacement<Tdim>::initialise() {
 
 // Reinitialise point properties
 template <unsigned Tdim>
-void mpm::PointPenaltyDisplacement<Tdim>::initialise_property(double dt) {
+void mpm::PointDirichletPenalty<Tdim>::initialise_property(double dt) {
   assert(area_ != std::numeric_limits<double>::max());
   // Convert imposition of velocity and acceleration to displacement
   // NOTE: This only consider translational velocity and acceleration: no
@@ -58,7 +59,7 @@ void mpm::PointPenaltyDisplacement<Tdim>::initialise_property(double dt) {
 
 //! Apply point velocity constraints
 template <unsigned Tdim>
-void mpm::PointPenaltyDisplacement<Tdim>::apply_point_velocity_constraints(
+void mpm::PointDirichletPenalty<Tdim>::apply_point_velocity_constraints(
     unsigned dir, double velocity) {
   // Set particle velocity constraint
   this->imposed_velocity_(dir) = velocity;
@@ -66,7 +67,7 @@ void mpm::PointPenaltyDisplacement<Tdim>::apply_point_velocity_constraints(
 
 //! Compute updated position
 template <unsigned Tdim>
-void mpm::PointPenaltyDisplacement<Tdim>::compute_updated_position(
+void mpm::PointDirichletPenalty<Tdim>::compute_updated_position(
     double dt) noexcept {
   // Update position and displacements
   coordinates_.noalias() += imposed_displacement_;
@@ -75,8 +76,7 @@ void mpm::PointPenaltyDisplacement<Tdim>::compute_updated_position(
 
 //! Map penalty stiffness matrix to cell
 template <unsigned Tdim>
-inline bool
-    mpm::PointPenaltyDisplacement<Tdim>::map_stiffness_matrix_to_cell() {
+inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {
   bool status = true;
   try {
     // Initialise stiffness matrix
@@ -111,7 +111,7 @@ inline bool
 
 //! Map enforcement force
 template <unsigned Tdim>
-void mpm::PointPenaltyDisplacement<Tdim>::map_boundary_force(unsigned phase) {
+void mpm::PointDirichletPenalty<Tdim>::map_boundary_force(unsigned phase) {
   // Calculate gap_function: nodal_displacement - imposed_displacement
   const unsigned matrix_size = nodes_.size() * Tdim;
   Eigen::VectorXd gap_function(matrix_size);

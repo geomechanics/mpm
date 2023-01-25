@@ -69,7 +69,7 @@ bool mpm::PointBase<Tdim>::assign_cell(
       nodes_.clear();
       nodes_ = cell_->nodes();
 
-      // Compute reference location of particle
+      // Compute reference location of point
       bool xi_status = this->compute_reference_location();
       if (!xi_status) return false;
       status = cell_->add_point_id(this->id());
@@ -152,6 +152,74 @@ void mpm::PointBase<Tdim>::remove_cell() {
   nodes_.clear();
 }
 
+//! Initialise point data from POD
+template <unsigned Tdim>
+bool mpm::PointBase<Tdim>::initialise_point(PODPoint& point) {
+
+  // Assign id
+  this->id_ = point.id;
+  // Area
+  this->area_ = point.area;
+
+  // Coordinates
+  Eigen::Vector3d coordinates;
+  coordinates << point.coord_x, point.coord_y, point.coord_z;
+  // Initialise coordinates
+  for (unsigned i = 0; i < Tdim; ++i) this->coordinates_(i) = coordinates(i);
+
+  // Displacement
+  Eigen::Vector3d displacement;
+  displacement << point.displacement_x, point.displacement_y,
+      point.displacement_z;
+  // Initialise displacement
+  for (unsigned i = 0; i < Tdim; ++i) this->displacement_(i) = displacement(i);
+
+  // Status
+  this->status_ = point.status;
+
+  // Cell id
+  this->cell_id_ = point.cell_id;
+  this->cell_ = nullptr;
+
+  // Clear nodes
+  this->nodes_.clear();
+
+  return true;
+}
+
+//! Return point data as POD
+template <unsigned Tdim>
+// cppcheck-suppress *
+std::shared_ptr<void> mpm::PointBase<Tdim>::pod() const {
+  // Initialise point data
+  auto point_data = std::make_shared<mpm::PODPoint>();
+
+  Eigen::Vector3d coordinates;
+  coordinates.setZero();
+  for (unsigned j = 0; j < Tdim; ++j) coordinates[j] = this->coordinates_[j];
+
+  Eigen::Vector3d displacement;
+  displacement.setZero();
+  for (unsigned j = 0; j < Tdim; ++j) displacement[j] = this->displacement_[j];
+
+  point_data->id = this->id();
+  point_data->area = this->area();
+
+  point_data->coord_x = coordinates[0];
+  point_data->coord_y = coordinates[1];
+  point_data->coord_z = coordinates[2];
+
+  point_data->displacement_x = displacement[0];
+  point_data->displacement_y = displacement[1];
+  point_data->displacement_z = displacement[2];
+
+  point_data->status = this->status();
+
+  point_data->cell_id = this->cell_id();
+
+  return point_data;
+}
+
 // Compute shape functions and gradients
 template <unsigned Tdim>
 void mpm::PointBase<Tdim>::compute_shapefn() noexcept {
@@ -208,8 +276,7 @@ template <unsigned Tdim>
 bool mpm::PointBase<Tdim>::assign_area(double area) {
   bool status = true;
   try {
-    if (area <= 0.)
-      throw std::runtime_error("Particle area cannot be negative");
+    if (area <= 0.) throw std::runtime_error("Point area cannot be negative");
     this->area_ = area;
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

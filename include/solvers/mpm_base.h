@@ -126,6 +126,12 @@ class MPMBase : public MPM {
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
 
+  //! Write HDF5 files for material points
+  void write_hdf5_particles(mpm::Index step, mpm::Index max_steps) override;
+
+  //! Write HDF5 files for interface points
+  void write_hdf5_points(mpm::Index step, mpm::Index max_steps) override;
+
 #ifdef USE_VTK
   //! Write VTK files
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
@@ -242,6 +248,9 @@ class MPMBase : public MPM {
   //! Initialise particle types
   void initialise_particle_types();
 
+  //! Initialise point types
+  void initialise_point_types();
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -294,6 +303,8 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::Constraints<Tdim>> constraints_;
   //! Particle types
   std::set<std::string> particle_types_;
+  //! Point types
+  std::set<std::string> point_types_;
   //! Materials
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Mathematical functions

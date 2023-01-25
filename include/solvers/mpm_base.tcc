@@ -327,6 +327,23 @@ void mpm::MPMBase<Tdim>::initialise_particle_types() {
   }
 }
 
+// Initialise point types
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_point_types() {
+  // Check if "points" are specified
+  if (!(io_->json_search("points"))) return;
+
+  // Get point properties
+  auto json_points = io_->json_object("points");
+
+  for (const auto& json_point : json_points) {
+    // Gather point types
+    auto point_type =
+        json_point["generator"]["point_type"].template get<std::string>();
+    point_types_.insert(point_type);
+  }
+}
+
 // Initialise particles
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_particles() {
@@ -519,6 +536,9 @@ void mpm::MPMBase<Tdim>::initialise_points() {
       std::runtime_error("mpm::base::init_points() Generate points failed");
   }
 
+  //! Gather point types
+  this->initialise_point_types();
+
   auto points_gen_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Generate points: {} ms", mpi_rank,
                  std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -571,8 +591,9 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 #endif
 
-    // Gather particle types
+    // Gather particle and point types
     this->initialise_particle_types();
+    this->initialise_point_types();
 
     if (!analysis_["resume"]["resume"].template get<bool>())
       throw std::runtime_error("Resume analysis option is disabled!");
@@ -605,6 +626,29 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     if (!unlocatable_particles.empty())
       throw std::runtime_error("Particle outside the mesh domain");
 
+    // Input point h5 file for resume
+    for (const auto ptype : point_types_) {
+      std::string attribute = mpm::PointPODTypeName.at(ptype);
+      std::string extension = ".h5";
+
+      auto points_file =
+          io_->output_file(attribute, extension, uuid_, step_, this->nsteps_)
+              .string();
+
+      // Load point information from file
+      mesh_->read_points_hdf5(points_file, attribute, ptype);
+    }
+
+    // Clear all point ids
+    mesh_->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::clear_point_ids, std::placeholders::_1));
+
+    // Locate points
+    auto unlocatable_points = mesh_->locate_points_mesh();
+
+    if (!unlocatable_points.empty())
+      throw std::runtime_error("Point outside the mesh domain");
+
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
 
@@ -620,6 +664,15 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
 //! Write HDF5 files
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
+  //! Write hdf5 files for material and interface points
+  this->write_hdf5_particles(step, max_steps);
+  this->write_hdf5_points(step, max_steps);
+}
+
+//! Write HDF5 files for material points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_hdf5_particles(mpm::Index step,
+                                              mpm::Index max_steps) {
   // Write hdf5 file for single phase particle
   for (const auto ptype : particle_types_) {
     std::string attribute = mpm::ParticlePODTypeName.at(ptype);
@@ -633,6 +686,22 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
       mesh_->write_particles_hdf5(particles_file);
     else if (attribute == "twophase_particles")
       mesh_->write_particles_hdf5_twophase(particles_file);
+  }
+}
+
+//! Write HDF5 files for interface points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_hdf5_points(mpm::Index step,
+                                           mpm::Index max_steps) {
+  for (const auto ptype : point_types_) {
+    std::string attribute = mpm::PointPODTypeName.at(ptype);
+    std::string extension = ".h5";
+
+    auto points_file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+
+    // Load point information from file
+    mesh_->write_points_hdf5(points_file);
   }
 }
 

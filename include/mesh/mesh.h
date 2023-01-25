@@ -278,6 +278,9 @@ class Mesh {
   //! \param[in] particle particle_type A string denoting particle type
   mpm::Index nparticles(const std::string& particle_type) const;
 
+  //! Number of points in the mesh
+  mpm::Index npoints() const { return points_.size(); }
+
   //! Locate particles in a cell
   //! Iterate over all cells in a mesh to find the cell in which particles
   //! are located.
@@ -511,6 +514,11 @@ class Mesh {
   //! \retval status Status of writing HDF5 output
   bool write_particles_hdf5_twophase(const std::string& filename);
 
+  //! Write HDF5 points
+  //! \param[in] filename Name of HDF5 file to write particles data
+  //! \retval status Status of writing HDF5 output
+  bool write_points_hdf5(const std::string& filename);
+
   //! Read HDF5 particles with type name
   //! \param[in] filename Name of HDF5 file to write particles data
   //! \param[in] typename Name of particle type name
@@ -537,6 +545,22 @@ class Mesh {
   //! Return HDF5 particles
   //! \retval particles_hdf5 Vector of HDF5 particles
   std::vector<mpm::PODParticle> particles_hdf5() const;
+
+  //! Read HDF5 points with type name
+  //! \param[in] filename Name of HDF5 file to write points data
+  //! \param[in] typename Name of point type name
+  //! \param[in] point_type Point type to be generated
+  //! \retval status Status of reading HDF5 output
+  bool read_points_hdf5(const std::string& filename,
+                        const std::string& type_name,
+                        const std::string& point_type);
+
+  //! Read HDF5 points
+  //! \param[in] filename Name of HDF5 file to write points data
+  //! \param[in] point_type Point type to be generated
+  //! \retval status Status of reading HDF5 output
+  bool read_points_hdf5(const std::string& filename,
+                        const std::string& point_type);
 
   //! Return nodal coordinates
   std::vector<Eigen::Matrix<double, 3, 1>> nodal_coordinates() const;

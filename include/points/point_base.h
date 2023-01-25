@@ -14,12 +14,14 @@
 #include "cell.h"
 #include "data_types.h"
 #include "function_base.h"
+#include "pod_point.h"
 
 namespace mpm {
 
-// Forward declaration of Material
-template <unsigned Tdim>
-class Material;
+//! Point type
+extern std::map<std::string, int> PointType;
+extern std::map<int, std::string> PointTypeName;
+extern std::map<std::string, std::string> PointPODTypeName;
 
 //! PointBase class
 //! \brief Base class that stores the information about PointBases
@@ -57,6 +59,18 @@ class PointBase {
 
   //! Return id of the pointBase
   Index id() const { return id_; }
+
+  //! Status
+  virtual bool status() const { return status_; }
+
+  //! Initialise point from POD data
+  //! \param[in] point POD data of point
+  //! \retval status Status of reading POD point
+  virtual bool initialise_point(PODPoint& point);
+
+  //! Return point data as POD
+  //! \retval point POD of the point
+  virtual std::shared_ptr<void> pod() const;
 
   //! Assign coordinates
   //! \param[in] coord Assign coord as coordinates of the pointBase

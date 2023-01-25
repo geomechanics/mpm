@@ -169,6 +169,7 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/particles/anti_locking
   ${mpm_SOURCE_DIR}/include/particles/pod_particles
   ${mpm_SOURCE_DIR}/include/points
+  ${mpm_SOURCE_DIR}/include/points/pod_points
   ${mpm_SOURCE_DIR}/include/solvers/
   ${mpm_SOURCE_DIR}/include/solvers/mpm_scheme/
   ${mpm_SOURCE_DIR}/include/utilities/
@@ -187,6 +188,7 @@ SET(mpm_src
   ${mpm_SOURCE_DIR}/src/geometry.cc
   ${mpm_SOURCE_DIR}/src/pod_particle.cc
   ${mpm_SOURCE_DIR}/src/pod_particle_twophase.cc
+  ${mpm_SOURCE_DIR}/src/pod_point.cc
   ${mpm_SOURCE_DIR}/src/io/io.cc
   ${mpm_SOURCE_DIR}/src/io/io_mesh.cc
   ${mpm_SOURCE_DIR}/src/io/logger.cc

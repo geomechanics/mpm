@@ -1003,12 +1003,14 @@ bool mpm::MPMBase<Tdim>::is_isoparametric() {
 //! Initialise loads
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_loads() {
+  //! Set gravity as zero
+  gravity_.setZero();
+
   // Check if "external_loading_conditions" are specified
   if (!(io_->json_search("external_loading_conditions"))) return;
 
   auto loads = io_->json_object("external_loading_conditions");
   // Initialise gravity loading
-  gravity_.setZero();
   if (loads.contains("gravity")) {
     if (loads.at("gravity").is_array() &&
         loads.at("gravity").size() == gravity_.size()) {

@@ -143,6 +143,17 @@ class PointBase {
   //! Compute updated position
   virtual void compute_updated_position(double dt) noexcept = 0;
 
+  //! Type of point
+  virtual std::string type() const = 0;
+
+  //! Serialize
+  //! \retval buffer Serialized buffer data
+  virtual std::vector<uint8_t> serialize();
+
+  //! Deserialize
+  //! \param[in] buffer Serialized buffer data
+  virtual void deserialize(const std::vector<uint8_t>& buffer);
+
   //! Assign penalty factor
   //! \param[in] penalty_factor Point penalty factor
   virtual void assign_penalty_factor(double penalty_factor) {
@@ -177,6 +188,11 @@ class PointBase {
   };
 
  protected:
+  //! Compute pack size
+  //! \retval pack size of serialized object
+  virtual int compute_pack_size() const;
+
+ protected:
   //! pointBase id
   Index id_{std::numeric_limits<Index>::max()};
   //! coordinates
@@ -206,6 +222,8 @@ class PointBase {
       tensor_properties_;
   //! Area
   double area_{0.};
+  //! Pack size
+  unsigned pack_size_{0};
 };  // PointBase class
 }  // namespace mpm
 

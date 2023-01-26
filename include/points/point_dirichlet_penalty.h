@@ -76,6 +76,11 @@ class PointDirichletPenalty : public PointBase<Tdim> {
     penalty_factor_ = penalty_factor;
   };
 
+  //! Type of point
+  std::string type() const override {
+    return (Tdim == 2) ? "POINT2DDIRPEN" : "POINT3DDIRPEN";
+  }
+
  protected:
   //! point id
   using PointBase<Tdim>::id_;

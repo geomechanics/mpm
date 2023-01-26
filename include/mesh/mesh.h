@@ -262,6 +262,20 @@ class Mesh {
   bool add_point(const std::shared_ptr<mpm::PointBase<Tdim>>& point,
                  bool checks = true);
 
+  //! Remove points from the mesh
+  //! \param[in] pids Vector of point ids
+  void remove_points(const std::vector<mpm::Index>& pids);
+
+  //! Remove all points in a cell in nonlocal rank
+  void remove_all_nonrank_points();
+
+  //! Transfer halo points to different ranks
+  void transfer_halo_points();
+
+  //! Transfer points to different ranks in nonlocal rank cells
+  //! \param[in] exchange_cells Vector of cell ids that needs exchange
+  void transfer_nonrank_points(const std::vector<mpm::Index>& exchange_cells);
+
   //! Resume cell ranks and partitioned domain
   void resume_domain_cell_ranks();
 

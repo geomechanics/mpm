@@ -134,6 +134,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     //! Particle entity sets and velocity constraints
     this->particle_entity_sets(false);
     this->particle_velocity_constraints();
+
     // Point entity sets and velocity constraints
     this->point_entity_sets(false);
     this->point_velocity_constraints();
@@ -243,6 +244,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
     mesh_->transfer_halo_particles();
+    mesh_->transfer_halo_points();
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 #endif

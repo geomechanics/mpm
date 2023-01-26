@@ -988,6 +988,293 @@ void mpm::Mesh<Tdim>::transfer_nonrank_particles(
 #endif
 }
 
+//! Remove points by id
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::remove_points(const std::vector<mpm::Index>& pids) {
+  if (!pids.empty()) {
+    // Get MPI rank
+    int mpi_size = 1;
+#ifdef USE_MPI
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+    for (auto& id : pids) {
+      map_points_[id]->remove_cell();
+      map_points_.remove(id);
+    }
+
+    // Get number of points to reserve size
+    unsigned npoints = this->npoints();
+    // Clear points and start a new element of points
+    points_.clear();
+    points_.reserve(static_cast<int>(npoints / mpi_size));
+    // Iterate over the map of points and add them to container
+    for (auto& point : map_points_) points_.add(point.second, false);
+  }
+}
+
+//! Remove all points in a cell given cell id
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::remove_all_nonrank_points() {
+  // Get MPI rank
+  int mpi_rank = 0;
+  int mpi_size = 1;
+#ifdef USE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+
+  // Remove associated cell for the point
+  for (auto citr = this->cells_.cbegin(); citr != this->cells_.cend(); ++citr) {
+    // If cell is non empty
+    if ((*citr)->points().size() != 0 && (*citr)->rank() != mpi_rank) {
+      auto pids = (*citr)->points();
+      // Remove points from map
+      for (auto& id : pids) {
+        map_points_[id]->remove_cell();
+        map_points_.remove(id);
+      }
+      (*citr)->clear_point_ids();
+    }
+  }
+
+  // Get number of points to reserve size
+  unsigned npoints = this->npoints();
+  // Clear points and start a new element of points
+  points_.clear();
+  points_.reserve(static_cast<int>(npoints / mpi_size));
+  // Iterate over the map of points and add them to container
+  for (auto& point : map_points_) points_.add(point.second, false);
+}
+
+//! Transfer all points in cells that are not in local rank
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::transfer_halo_points() {
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  int mpi_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  int mpi_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
+  if (mpi_size > 1) {
+    std::vector<MPI_Request> send_requests;
+    send_requests.reserve(ghost_cells_.size());
+
+    unsigned i = 0;
+    unsigned np = 0;
+    std::vector<mpm::Index> remove_pids;
+    // Iterate through the ghost cells and send points
+    for (auto citr = this->ghost_cells_.cbegin();
+         citr != this->ghost_cells_.cend(); ++citr, ++i) {
+
+      // Send number of points to receiver rank
+      auto point_ids = (*citr)->points();
+      unsigned npoints = point_ids.size();
+      MPI_Isend(&npoints, 1, MPI_UNSIGNED, (*citr)->rank(), 1, MPI_COMM_WORLD,
+                &send_requests[i]);
+    }
+
+    // Iterate through the ghost cells and send points
+    for (auto citr = this->ghost_cells_.cbegin();
+         citr != this->ghost_cells_.cend(); ++citr, ++i) {
+      // Send number of points to receiver rank
+      auto point_ids = (*citr)->points();
+      for (auto& id : point_ids) {
+        // Create a vector of serialized point
+        std::vector<uint8_t> buffer = map_points_[id]->serialize();
+        MPI_Send(buffer.data(), buffer.size(), MPI_UINT8_T, (*citr)->rank(), 0,
+                 MPI_COMM_WORLD);
+        ++np;
+        // Points to be removed from the current rank
+        remove_pids.emplace_back(id);
+      }
+      (*citr)->clear_point_ids();
+    }
+    // Remove all sent points
+    this->remove_points(remove_pids);
+
+    // Send complete
+    for (unsigned i = 0; i < this->ghost_cells_.size(); ++i)
+      MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
+
+    // Point id
+    mpm::Index pid = 0;
+    // Initial point coordinates
+    Eigen::Matrix<double, Tdim, 1> pcoordinates =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+
+    // Iterate through the local ghost cells and receive points
+    for (auto citr = this->local_ghost_cells_.cbegin();
+         citr != this->local_ghost_cells_.cend(); ++citr) {
+      std::vector<unsigned> neighbour_ranks =
+          ghost_cells_neighbour_ranks_[(*citr)->id()];
+      // Total number of points
+      std::vector<unsigned> nrank_points(neighbour_ranks.size(), 0);
+      for (unsigned i = 0; i < neighbour_ranks.size(); ++i)
+        MPI_Recv(&nrank_points[i], 1, MPI_UNSIGNED, neighbour_ranks[i], 1,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      // Receive number of points
+      unsigned nrecv_points =
+          std::accumulate(nrank_points.begin(), nrank_points.end(), 0);
+
+      for (unsigned j = 0; j < nrecv_points; ++j) {
+        // Retrieve information about the incoming message
+        MPI_Status status;
+        MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+
+        // Get buffer size
+        int size;
+        MPI_Get_count(&status, MPI_UINT8_T, &size);
+
+        // Allocate the buffer now that we know how many elements there are
+        std::vector<uint8_t> buffer;
+        buffer.resize(size);
+
+        // Finally receive the message
+        MPI_Recv(buffer.data(), size, MPI_UINT8_T, MPI_ANY_SOURCE, 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        uint8_t* bufptr = const_cast<uint8_t*>(&buffer[0]);
+        int position = 0;
+
+        // Get point type
+        int ptype;
+        MPI_Unpack(bufptr, buffer.size(), &position, &ptype, 1, MPI_INT,
+                   MPI_COMM_WORLD);
+        std::string point_type = mpm::PointTypeName.at(ptype);
+
+        // Create point
+        auto point = Factory<mpm::PointBase<Tdim>, mpm::Index,
+                             const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                         ->create(point_type, static_cast<mpm::Index>(pid),
+                                  pcoordinates);
+        point->deserialize(buffer);
+        // Add point to mesh
+        this->add_point(point, true);
+      }
+    }
+  }
+#endif
+}
+
+//! Transfer all points in cells that are not in local rank
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::transfer_nonrank_points(
+    const std::vector<mpm::Index>& exchange_cells) {
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  int mpi_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  int mpi_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
+  if (mpi_size > 1) {
+    std::vector<MPI_Request> send_requests;
+    send_requests.reserve(exchange_cells.size());
+    std::vector<MPI_Request> send_point_requests;
+    send_point_requests.reserve(exchange_cells.size() * 100);
+    unsigned nsend_requests = 0;
+    unsigned np = 0;
+    std::vector<mpm::Index> remove_pids;
+    // Iterate through the ghost cells and send points
+    for (auto cid : exchange_cells) {
+      // Get cell pointer
+      auto cell = map_cells_[cid];
+      // If the previous rank of cell is the current MPI rank,
+      // then send all points
+      if ((cell->rank() != cell->previous_mpirank()) &&
+          (cell->previous_mpirank() == mpi_rank)) {
+
+        // Send number of points to receiver rank
+        unsigned npoints = cell->npoints();
+        MPI_Ibsend(&npoints, 1, MPI_UNSIGNED, cell->rank(), 0, MPI_COMM_WORLD,
+                   &send_requests[nsend_requests]);
+
+        auto point_ids = cell->points();
+        for (auto& id : point_ids) {
+          // Create a vector of serialized point
+          std::vector<uint8_t> buffer = map_points_[id]->serialize();
+          MPI_Ibsend(buffer.data(), buffer.size(), MPI_UINT8_T, cell->rank(), 0,
+                     MPI_COMM_WORLD, &send_point_requests[np]);
+          ++np;
+
+          // Points to be removed from the current rank
+          remove_pids.emplace_back(id);
+        }
+        cell->clear_point_ids();
+        ++nsend_requests;
+      }
+    }
+    // Remove all sent points
+    this->remove_points(remove_pids);
+    // Send complete iterate only upto valid send requests
+    for (unsigned i = 0; i < nsend_requests; ++i)
+      MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
+    // Send points complete
+    for (unsigned i = 0; i < np; ++i)
+      MPI_Wait(&send_point_requests[i], MPI_STATUS_IGNORE);
+
+    // Point id
+    mpm::Index pid = 0;
+    // Initial point coordinates
+    Eigen::Matrix<double, Tdim, 1> pcoordinates =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+
+    // Iterate through the ghost cells and receive points
+    for (auto cid : exchange_cells) {
+      // Get cell pointer
+      auto cell = map_cells_[cid];
+      // If the current rank is the MPI rank receive points
+      if ((cell->rank() != cell->previous_mpirank()) &&
+          (cell->rank() == mpi_rank)) {
+        // Receive number of points
+        unsigned nrecv_points;
+        MPI_Recv(&nrecv_points, 1, MPI_UNSIGNED, cell->previous_mpirank(), 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        for (unsigned j = 0; j < nrecv_points; ++j) {
+          // Retrieve information about the incoming message
+          MPI_Status status;
+          MPI_Probe(cell->previous_mpirank(), 0, MPI_COMM_WORLD, &status);
+
+          // Get buffer size
+          int size;
+          MPI_Get_count(&status, MPI_UINT8_T, &size);
+
+          // Allocate the buffer now that we know how many elements there are
+          std::vector<uint8_t> buffer;
+          buffer.resize(size);
+
+          // Finally receive the message
+          MPI_Recv(buffer.data(), size, MPI_UINT8_T, cell->previous_mpirank(),
+                   0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+          uint8_t* bufptr = const_cast<uint8_t*>(&buffer[0]);
+          int position = 0;
+
+          // Get point type
+          int ptype;
+          MPI_Unpack(bufptr, buffer.size(), &position, &ptype, 1, MPI_INT,
+                     MPI_COMM_WORLD);
+          std::string point_type = mpm::PointTypeName.at(ptype);
+
+          // Create point
+          auto point =
+              Factory<mpm::PointBase<Tdim>, mpm::Index,
+                      const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                  ->create(point_type, static_cast<mpm::Index>(pid),
+                           pcoordinates);
+          point->deserialize(buffer);
+          // Add point to mesh
+          this->add_point(point, true);
+        }
+      }
+    }
+  }
+#endif
+}
+
 //! Create points from coordinates
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::create_points(const std::string& point_type,

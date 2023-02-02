@@ -15,6 +15,12 @@
 
 namespace mpm {
 
+//! Normal computation type
+//! Cartesian: assign normal following the imposition direction
+//! Assigned: assign normal via input file
+//! Automatic: automatically compute normal
+enum class NormalType { Cartesian, Assign, Automatic };
+
 // Forward declaration of Material
 template <unsigned Tdim>
 class Material;
@@ -71,9 +77,24 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   void apply_point_velocity_constraints(unsigned dir, double velocity) override;
 
   //! Assign penalty factor
-  //! \param[in] penalty_factor Point penalty factor
-  void assign_penalty_factor(double penalty_factor) override {
+  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
+  //! \param[in] penalty_factor Penalty factor
+  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
+  //! \param[in] normal_vector Normal vector
+  void assign_penalty_parameter(const std::string& constraint_type,
+                                double penalty_factor,
+                                const std::string& normal_type,
+                                const VectorDim& normal_vector) override {
     penalty_factor_ = penalty_factor;
+    if (constraint_type == "slip") slip_ = true;
+
+    if (normal_type == "cartesian")
+      normal_type_ = mpm::NormalType::Cartesian;
+    else if (normal_type == "assign")
+      normal_type_ = mpm::NormalType::Assign;
+    else if (normal_type == "auto")
+      normal_type_ = mpm::NormalType::Automatic;
+    normal_ = normal_vector;
   };
 
   //! Type of point
@@ -110,6 +131,12 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   VectorDim imposed_acceleration_;
   //! Penalty factor
   double penalty_factor_{0.};
+  //! Slip
+  bool slip_{false};
+  //! Way to obtain normal vector: 0 (Cartesian), 1 (Assign), 2 (Automatic)
+  mpm::NormalType normal_type_{mpm::NormalType::Cartesian};
+  //! Normal vector
+  VectorDim normal_;
 
 };  // PointDirichletPenalty class
 }  // namespace mpm

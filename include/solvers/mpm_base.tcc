@@ -1913,16 +1913,49 @@ void mpm::MPMBase<Tdim>::point_velocity_constraints() {
         unsigned dir = constraints.at("dir").template get<unsigned>();
         // Velocity
         double velocity = constraints.at("velocity").template get<double>();
-        // Add velocity constraint to mesh
-        auto velocity_constraint =
-            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
 
         // Penalty factor
         double penalty_factor =
             constraints.at("penalty_factor").template get<double>();
 
+        // Constraint type
+        std::string constraint_type = "fixed";
+        if (constraints.contains("constraint_type"))
+          constraint_type =
+              constraints.at("constraint_type").template get<std::string>();
+
+        // Normal vector
+        std::string normal_type = "cartesian";
+        if (constraints.contains("normal_type"))
+          normal_type =
+              constraints.at("normal_type").template get<std::string>();
+        Eigen::Matrix<double, Tdim, 1> normal =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        if (constraint_type != "fixed") {
+          if (constraints.contains("normal") &&
+              constraints.at("normal").is_array() &&
+              constraints.at("normal").size() == normal.size()) {
+            for (unsigned i = 0; i < normal.size(); ++i) {
+              normal[i] = constraints.at("normal").at(i);
+            }
+            normal_type = "assign";
+          }
+
+          if (normal_type == "auto") {
+            console_->error(
+                "#{}: Automatic normal computation has not been implemented. "
+                "Available options are \'cartesian\'(default) or \'assign\'.",
+                __LINE__);
+          }
+        }
+
+        // Add velocity constraint to mesh
+        auto velocity_constraint =
+            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
+
         mesh_->create_point_velocity_constraint(pset_id, velocity_constraint,
-                                                penalty_factor);
+                                                constraint_type, penalty_factor,
+                                                normal_type, normal);
       }
     } else
       throw std::runtime_error("Point velocity constraints JSON not found");

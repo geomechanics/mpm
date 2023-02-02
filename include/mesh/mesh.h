@@ -435,10 +435,14 @@ class Mesh {
   //! Create point velocity constraints
   //! \param[in] setid Node set id
   //! \param[in] constraint Velocity constraint
+  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
   //! \param[in] penalty_factor Penalty factor
+  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
+  //! \param[in] normal_vector Normal vector
   bool create_point_velocity_constraint(
       int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
-      double penalty_factor);
+      const std::string& constraint_type, double penalty_factor,
+      const std::string& normal_type, const VectorDim& normal_vector);
 
   //! Apply points velocity constraints
   void apply_point_velocity_constraints();

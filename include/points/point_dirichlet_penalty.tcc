@@ -40,6 +40,8 @@ void mpm::PointDirichletPenalty<Tdim>::initialise() {
   imposed_displacement_.setZero();
   imposed_velocity_.setZero();
   imposed_acceleration_.setZero();
+  slip_ = false;
+  normal_.setZero();
 }
 
 // Reinitialise point properties
@@ -63,6 +65,8 @@ void mpm::PointDirichletPenalty<Tdim>::apply_point_velocity_constraints(
     unsigned dir, double velocity) {
   // Set particle velocity constraint
   this->imposed_velocity_(dir) = velocity;
+  // Set normal vector
+  if (normal_type_ == mpm::NormalType::Cartesian) this->normal_(dir) = 1.0;
 }
 
 //! Compute updated position
@@ -84,13 +88,20 @@ inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {
     Eigen::MatrixXd penalty_stiffness(matrix_size, matrix_size);
     penalty_stiffness.setZero();
 
+    // Normal matrix
+    if (slip_) normal_.normalize();
+
     // Arrange shape function
     Eigen::MatrixXd shape_function(Tdim, matrix_size);
     shape_function.setZero();
     for (unsigned i = 0; i < nodes_.size(); i++) {
       if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
+        // Directional multiplier
+        Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
+        if (slip_) dir_multiplier = normal_;
+        // Arrange shape function
         for (unsigned int j = 0; j < Tdim; j++) {
-          shape_function(j, Tdim * i + j) = shapefn_[i];
+          shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
         }
       }
     }
@@ -121,13 +132,20 @@ void mpm::PointDirichletPenalty<Tdim>::map_boundary_force(unsigned phase) {
     gap_function.segment(i * Tdim, Tdim) = n_disp - imposed_displacement_;
   }
 
+  // Normal matrix
+  if (slip_) normal_.normalize();
+
   // Arrange shape function
   Eigen::MatrixXd shape_function(Tdim, matrix_size);
   shape_function.setZero();
   for (unsigned i = 0; i < nodes_.size(); i++) {
     if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
+      // Directional multiplier
+      Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
+      if (slip_) dir_multiplier = normal_;
+      // Arrange shape function
       for (unsigned int j = 0; j < Tdim; j++) {
-        shape_function(j, Tdim * i + j) = shapefn_[i];
+        shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
       }
     }
   }

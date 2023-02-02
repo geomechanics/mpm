@@ -155,10 +155,16 @@ class PointBase {
   virtual void deserialize(const std::vector<uint8_t>& buffer);
 
   //! Assign penalty factor
-  //! \param[in] penalty_factor Point penalty factor
-  virtual void assign_penalty_factor(double penalty_factor) {
+  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
+  //! \param[in] penalty_factor Penalty factor
+  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
+  //! \param[in] normal_vector Normal vector
+  virtual void assign_penalty_parameter(const std::string& constraint_type,
+                                        double penalty_factor,
+                                        const std::string& normal_type,
+                                        const VectorDim& normal_vector) {
     throw std::runtime_error(
-        "Calling the base class function (assign_penalty_factor) in "
+        "Calling the base class function (assign_penalty_parameter) in "
         "PointBase:: illegal operation!");
   };
 

@@ -41,6 +41,7 @@ void mpm::PointDirichletPenalty<Tdim>::initialise() {
   imposed_velocity_.setZero();
   imposed_acceleration_.setZero();
   slip_ = false;
+  contact_ = false;
   normal_.setZero();
 }
 
@@ -123,39 +124,60 @@ inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {
 //! Map enforcement force
 template <unsigned Tdim>
 void mpm::PointDirichletPenalty<Tdim>::map_boundary_force(unsigned phase) {
-  // Calculate gap_function: nodal_displacement - imposed_displacement
-  const unsigned matrix_size = nodes_.size() * Tdim;
-  Eigen::VectorXd gap_function(matrix_size);
-  gap_function.setZero();
-  for (unsigned i = 0; i < nodes_.size(); i++) {
-    const auto& n_disp = nodes_[i]->displacement(phase);
-    gap_function.segment(i * Tdim, Tdim) = n_disp - imposed_displacement_;
+  // Normalize vector
+  if (slip_ || contact_) normal_.normalize();
+
+  // Check contact: Check contact penetration: if <0 apply constraint,
+  // otherwise no
+  bool apply_constraints = true;
+  if (contact_) {
+    // NOTE: the unit_normal_vector is assumed always pointing outside the
+    // boundary
+    VectorDim field_displacement = VectorDim::Zero();
+    for (unsigned int i = 0; i < nodes_.size(); i++)
+      if (shapefn_[i] > std::numeric_limits<double>::epsilon())
+        field_displacement.noalias() +=
+            shapefn_[i] * nodes_[i]->displacement(phase);
+
+    const double penetration =
+        (field_displacement - imposed_displacement_).dot(normal_);
+
+    // If penetrates, apply constraint, otherwise no
+    if (penetration >= 0.0) apply_constraints = false;
   }
 
-  // Normal matrix
-  if (slip_) normal_.normalize();
+  if (apply_constraints) {
+    // Calculate gap_function: nodal_displacement - imposed_displacement
+    const unsigned matrix_size = nodes_.size() * Tdim;
+    Eigen::VectorXd gap_function(matrix_size);
+    gap_function.setZero();
+    for (unsigned i = 0; i < nodes_.size(); i++) {
+      const auto& n_disp = nodes_[i]->displacement(phase);
+      gap_function.segment(i * Tdim, Tdim) = n_disp - imposed_displacement_;
+    }
 
-  // Arrange shape function
-  Eigen::MatrixXd shape_function(Tdim, matrix_size);
-  shape_function.setZero();
-  for (unsigned i = 0; i < nodes_.size(); i++) {
-    if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
-      // Directional multiplier
-      Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
-      if (slip_) dir_multiplier = normal_;
-      // Arrange shape function
-      for (unsigned int j = 0; j < Tdim; j++) {
-        shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
+    // Arrange shape function
+    Eigen::MatrixXd shape_function(Tdim, matrix_size);
+    shape_function.setZero();
+    for (unsigned i = 0; i < nodes_.size(); i++) {
+      if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
+        // Directional multiplier
+        Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
+        if (slip_) dir_multiplier = normal_;
+        // Arrange shape function
+        for (unsigned int j = 0; j < Tdim; j++) {
+          shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
+        }
       }
     }
+
+    // Penalty force vector
+    const auto& penalty_force = shape_function.transpose() * shape_function *
+                                gap_function * area_ * penalty_factor_;
+
+    // Compute nodal external forces
+    for (unsigned i = 0; i < nodes_.size(); ++i)
+      nodes_[i]->update_external_force(
+          true, phase, -1.0 * penalty_force.segment(i * Tdim, Tdim));
   }
-
-  // Penalty force vector
-  const auto& penalty_force = shape_function.transpose() * shape_function *
-                              gap_function * area_ * penalty_factor_;
-
-  // Compute nodal external forces
-  for (unsigned i = 0; i < nodes_.size(); ++i)
-    nodes_[i]->update_external_force(
-        true, phase, -1.0 * penalty_force.segment(i * Tdim, Tdim));
 }

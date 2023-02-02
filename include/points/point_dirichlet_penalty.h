@@ -86,7 +86,10 @@ class PointDirichletPenalty : public PointBase<Tdim> {
                                 const std::string& normal_type,
                                 const VectorDim& normal_vector) override {
     penalty_factor_ = penalty_factor;
-    if (constraint_type == "slip") slip_ = true;
+    if ((constraint_type == "slip") || (constraint_type == "contact_slip"))
+      slip_ = true;
+    if ((constraint_type == "contact") || (constraint_type == "contact_slip"))
+      contact_ = true;
 
     if (normal_type == "cartesian")
       normal_type_ = mpm::NormalType::Cartesian;
@@ -133,6 +136,8 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   double penalty_factor_{0.};
   //! Slip
   bool slip_{false};
+  //! Contact boundary
+  bool contact_{false};
   //! Way to obtain normal vector: 0 (Cartesian), 1 (Assign), 2 (Automatic)
   mpm::NormalType normal_type_{mpm::NormalType::Cartesian};
   //! Normal vector

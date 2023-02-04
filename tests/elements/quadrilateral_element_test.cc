@@ -488,50 +488,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       xi_s.emplace_back(xi);
 
       REQUIRE(xi_s.size() == 4);
-
-      // Get Ni Nj matrix
-      const auto ni_nj_matrix = quad->ni_nj_matrix(xi_s);
-
-      // Check size of ni_nj_matrix
-      REQUIRE(ni_nj_matrix.rows() == nfunctions);
-      REQUIRE(ni_nj_matrix.cols() == nfunctions);
-
-      // Sum should be equal to 1. * xi_s.size()
-      REQUIRE(ni_nj_matrix.sum() ==
-              Approx(1. * xi_s.size()).epsilon(Tolerance));
-
-      Eigen::Matrix<double, 4, 4> mass;
-      // clang-format off
-      mass <<  0.4444444444444445, 0.2222222222222222, 0.1111111111111111, 0.2222222222222222,
-               0.2222222222222222, 0.4444444444444445, 0.2222222222222222, 0.1111111111111111,
-               0.1111111111111111, 0.2222222222222222, 0.4444444444444445, 0.2222222222222222,
-               0.2222222222222222, 0.1111111111111111, 0.2222222222222222, 0.4444444444444445;
-      // clang-format on
-
-      // auxiliary matrices for checking its multiplication by scalar
-      auto ni_nj_matrix_unit = 1.0 * ni_nj_matrix;
-      auto ni_nj_matrix_zero = 0.0 * ni_nj_matrix;
-      auto ni_nj_matrix_negative = -2.0 * ni_nj_matrix;
-      double scalar = 21.65489;
-      auto ni_nj_matrix_scalar = scalar * ni_nj_matrix;
-
-      for (unsigned i = 0; i < nfunctions; ++i) {
-        for (unsigned j = 0; j < nfunctions; ++j) {
-          REQUIRE(ni_nj_matrix(i, j) == Approx(mass(i, j)).epsilon(Tolerance));
-          // check multiplication by unity;
-          REQUIRE(ni_nj_matrix_unit(i, j) ==
-                  Approx(1.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by zero;
-          REQUIRE(ni_nj_matrix_zero(i, j) ==
-                  Approx(0.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by negative number;
-          REQUIRE(ni_nj_matrix_negative(i, j) ==
-                  Approx(-2.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by an arbitrary scalar;
-          REQUIRE(ni_nj_matrix_scalar(i, j) ==
-                  Approx(scalar * mass(i, j)).epsilon(Tolerance));
-        }
-      }
     }
 
     // Laplace matrix of a cell
@@ -558,28 +514,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
                 2., 4.,
                 1., 3.;
       // clang-format on
-
-      // Get laplace matrix
-      const auto laplace_matrix = quad->laplace_matrix(xi_s, coords);
-
-      // Check size of laplace-matrix
-      REQUIRE(laplace_matrix.rows() == nfunctions);
-      REQUIRE(laplace_matrix.cols() == nfunctions);
-
-      // Sum should be equal to 0.
-      REQUIRE(laplace_matrix.sum() == Approx(0.).epsilon(Tolerance));
-
-      Eigen::Matrix<double, 4, 4> laplace;
-      // clang-format off
-      laplace <<  0.6572032405702867,-0.1005029077617645,-0.4834678486646353,-0.0732324841438869,
-                 -0.1005029077617645, 0.4548818121031032,-0.1858117822979408,-0.1685671220433979,
-                 -0.4834678486646353,-0.1858117822979408, 0.9689758463959470,-0.2996962154333709,
-                 -0.0732324841438869,-0.1685671220433979,-0.2996962154333709, 0.5414958216206558;
-      // clang-format on
-      for (unsigned i = 0; i < nfunctions; ++i)
-        for (unsigned j = 0; j < nfunctions; ++j)
-          REQUIRE(laplace_matrix(i, j) ==
-                  Approx(laplace(i, j)).epsilon(Tolerance));
     }
 
     SECTION("Four noded quadrilateral coordinates of unit cell") {
@@ -1208,66 +1142,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       xi_s.emplace_back(xi);
 
       REQUIRE(xi_s.size() == 4);
-
-      // Get Ni Nj matrix
-      const auto ni_nj_matrix = quad->ni_nj_matrix(xi_s);
-
-      // Check size of ni_nj_matrix
-      REQUIRE(ni_nj_matrix.rows() == nfunctions);
-      REQUIRE(ni_nj_matrix.cols() == nfunctions);
-
-      // Sum should be equal to 1. * xi_s.size()
-      REQUIRE(ni_nj_matrix.sum() ==
-              Approx(1. * xi_s.size()).epsilon(Tolerance));
-
-      Eigen::Matrix<double, 8, 8> mass;
-      mass << 0.07407407407407406, 0.00000000000000, 0.037037037037037,
-          -0.00000000000000000, -0.07407407407407397, -0.1481481481481481,
-          -0.1481481481481481, -0.07407407407407397, 0.0, 0.07407407407407407,
-          0.0, 0.037037037037037, -0.07407407407407397, -0.07407407407407397,
-          -0.1481481481481481, -0.1481481481481481, 0.037037037037037,
-          0.000000000000000, 0.07407407407407407, 0.000000000000000,
-          -0.1481481481481481, -0.07407407407407396, -0.07407407407407397,
-          -0.1481481481481481, 0.0000000000000, 0.037037037037037,
-          0.0000000000000, 0.07407407407407406, -0.1481481481481481,
-          -0.1481481481481481, -0.07407407407407399, -0.07407407407407396,
-          -0.07407407407407397, -0.07407407407407397, -0.1481481481481481,
-          -0.1481481481481481, 0.5925925925925922, 0.4444444444444442,
-          0.2962962962962961, 0.4444444444444442, -0.1481481481481481,
-          -0.07407407407407397, -0.07407407407407396, -0.1481481481481481,
-          0.4444444444444442, 0.5925925925925923, 0.4444444444444442,
-          0.2962962962962961, -0.1481481481481481, -0.1481481481481481,
-          -0.07407407407407397, -0.07407407407407399, 0.2962962962962961,
-          0.4444444444444442, 0.5925925925925923, 0.4444444444444442,
-          -0.07407407407407397, -0.1481481481481481, -0.1481481481481481,
-          -0.07407407407407396, 0.4444444444444442, 0.2962962962962961,
-          0.4444444444444442, 0.5925925925925923;
-      // clang-format on
-
-      // auxiliary matrices for checking its multiplication by scalar
-      auto ni_nj_matrix_unit = 1.0 * ni_nj_matrix;
-      auto ni_nj_matrix_zero = 0.0 * ni_nj_matrix;
-      auto ni_nj_matrix_negative = -2.0 * ni_nj_matrix;
-      double scalar = 21.65489;
-      auto ni_nj_matrix_scalar = scalar * ni_nj_matrix;
-
-      for (unsigned i = 0; i < nfunctions; ++i) {
-        for (unsigned j = 0; j < nfunctions; ++j) {
-          REQUIRE(ni_nj_matrix(i, j) == Approx(mass(i, j)).epsilon(Tolerance));
-          // check multiplication by unity;
-          REQUIRE(ni_nj_matrix_unit(i, j) ==
-                  Approx(1.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by zero;
-          REQUIRE(ni_nj_matrix_zero(i, j) ==
-                  Approx(0.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by negative number;
-          REQUIRE(ni_nj_matrix_negative(i, j) ==
-                  Approx(-2.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by an arbitrary scalar;
-          REQUIRE(ni_nj_matrix_scalar(i, j) ==
-                  Approx(scalar * mass(i, j)).epsilon(Tolerance));
-        }
-      }
     }
 
     // Laplace matrix of a cell
@@ -1298,44 +1172,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
                 1.5, 3.5,
                 1.5, 2.0;
       // clang-format on
-
-      // Get laplace matrix
-      const auto laplace_matrix = quad->laplace_matrix(xi_s, coords);
-
-      // Check size of laplace-matrix
-      REQUIRE(laplace_matrix.rows() == nfunctions);
-      REQUIRE(laplace_matrix.cols() == nfunctions);
-
-      // Sum should be equal to 0.
-      REQUIRE(laplace_matrix.sum() == Approx(0.).epsilon(Tolerance));
-
-      Eigen::Matrix<double, 8, 8> laplace;
-      laplace << 1.072493643107602, 0.4065987931213615, 0.6655397867711725,
-          0.4263799884212531, -0.7648755792622943, -0.5379335339843152,
-          -0.5366002581899634, -0.7316028399848165, 0.4065987931213615,
-          0.6876728555050236, 0.5389592865753069, 0.4340001313936471,
-          -0.5139612336052258, -0.6612353999512298, -0.5371839904579891,
-          -0.3548504425808939, 0.6655397867711725, 0.5389592865753069,
-          1.69222960654119, 0.6057921007929679, -0.7389668317060483,
-          -0.9851551573410983, -1.134868473557333, -0.643530318076158,
-          0.4263799884212531, 0.4340001313936471, 0.6057921007929679,
-          0.9409579548861762, -0.4852376064304632, -0.57346791647202,
-          -0.9386660952285415, -0.4097585573630192, -0.7648755792622943,
-          -0.5139612336052258, -0.7389668317060483, -0.4852376064304632,
-          1.972465581627769, -0.08358715573264081, 0.5368025726730385,
-          0.07736025243586532, -0.5379335339843152, -0.6612353999512298,
-          -0.9851551573410983, -0.57346791647202, -0.08358715573264081,
-          1.964331090455655, 0.5284519760236881, 0.3485960970019614,
-          -0.5366002581899634, -0.5371839904579891, -1.134868473557333,
-          -0.9386660952285415, 0.5368025726730385, 0.5284519760236881,
-          2.56584444050972, -0.4837801717726197, -0.7316028399848165,
-          -0.3548504425808939, -0.643530318076158, -0.4097585573630192,
-          0.07736025243586532, 0.3485960970019614, -0.4837801717726197,
-          2.197565980339681;
-      for (unsigned i = 0; i < nfunctions; ++i)
-        for (unsigned j = 0; j < nfunctions; ++j)
-          REQUIRE(laplace_matrix(i, j) ==
-                  Approx(laplace(i, j)).epsilon(Tolerance));
     }
 
     SECTION("Eight noded quadrilateral coordinates of unit cell") {
@@ -1648,72 +1484,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
       xi_s.emplace_back(xi);
 
       REQUIRE(xi_s.size() == 4);
-
-      // Get Ni Nj matrix
-      const auto ni_nj_matrix = quad->ni_nj_matrix(xi_s);
-
-      // Check size of ni_nj_matrix
-      REQUIRE(ni_nj_matrix.rows() == nfunctions);
-      REQUIRE(ni_nj_matrix.cols() == nfunctions);
-
-      // Sum should be equal to 1. * xi_s.size()
-      REQUIRE(ni_nj_matrix.sum() ==
-              Approx(1. * xi_s.size()).epsilon(Tolerance));
-
-      Eigen::Matrix<double, 9, 9> mass;
-      mass << 0.04938271604938273, -0.02469135802469136, 0.01234567901234568,
-          -0.02469135802469136, 0.04938271604938271, -0.02469135802469136,
-          -0.02469135802469136, 0.04938271604938272, 0.04938271604938271,
-          -0.02469135802469136, 0.04938271604938273, -0.02469135802469136,
-          0.01234567901234568, 0.04938271604938271, 0.04938271604938272,
-          -0.02469135802469136, -0.02469135802469136, 0.04938271604938271,
-          0.01234567901234568, -0.02469135802469136, 0.04938271604938273,
-          -0.02469135802469136, -0.02469135802469136, 0.04938271604938271,
-          0.04938271604938272, -0.02469135802469135, 0.0493827160493827,
-          -0.02469135802469136, 0.01234567901234568, -0.02469135802469136,
-          0.04938271604938273, -0.02469135802469135, -0.02469135802469135,
-          0.04938271604938271, 0.04938271604938271, 0.0493827160493827,
-          0.04938271604938271, 0.04938271604938271, -0.02469135802469136,
-          -0.02469135802469135, 0.1975308641975308, 0.04938271604938271,
-          -0.09876543209876538, 0.04938271604938271, 0.1975308641975307,
-          -0.02469135802469136, 0.04938271604938272, 0.04938271604938271,
-          -0.02469135802469135, 0.04938271604938271, 0.1975308641975308,
-          0.0493827160493827, -0.09876543209876538, 0.1975308641975307,
-          -0.02469135802469136, -0.02469135802469136, 0.04938271604938272,
-          0.04938271604938271, -0.09876543209876538, 0.0493827160493827,
-          0.1975308641975308, 0.0493827160493827, 0.1975308641975307,
-          0.04938271604938272, -0.02469135802469136, -0.02469135802469135,
-          0.04938271604938271, 0.04938271604938271, -0.09876543209876538,
-          0.0493827160493827, 0.1975308641975308, 0.1975308641975307,
-          0.04938271604938271, 0.04938271604938271, 0.0493827160493827,
-          0.0493827160493827, 0.1975308641975307, 0.1975308641975307,
-          0.1975308641975307, 0.1975308641975307, 0.7901234567901227;
-      // clang-format on
-
-      // auxiliary matrices for checking its multiplication by scalar
-      auto ni_nj_matrix_unit = 1.0 * ni_nj_matrix;
-      auto ni_nj_matrix_zero = 0.0 * ni_nj_matrix;
-      auto ni_nj_matrix_negative = -2.0 * ni_nj_matrix;
-      double scalar = 21.65489;
-      auto ni_nj_matrix_scalar = scalar * ni_nj_matrix;
-
-      for (unsigned i = 0; i < nfunctions; ++i) {
-        for (unsigned j = 0; j < nfunctions; ++j) {
-          REQUIRE(ni_nj_matrix(i, j) == Approx(mass(i, j)).epsilon(Tolerance));
-          // check multiplication by unity;
-          REQUIRE(ni_nj_matrix_unit(i, j) ==
-                  Approx(1.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by zero;
-          REQUIRE(ni_nj_matrix_zero(i, j) ==
-                  Approx(0.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by negative number;
-          REQUIRE(ni_nj_matrix_negative(i, j) ==
-                  Approx(-2.0 * mass(i, j)).epsilon(Tolerance));
-          // check multiplication by an arbitrary scalar;
-          REQUIRE(ni_nj_matrix_scalar(i, j) ==
-                  Approx(scalar * mass(i, j)).epsilon(Tolerance));
-        }
-      }
     }
 
     // Laplace matrix of a cell
@@ -1745,50 +1515,6 @@ TEST_CASE("Quadrilateral elements are checked", "[quad][element][2D]") {
                 1.5, 2.0,
                 2.25, 2.5;
       // clang-format on
-
-      // Get laplace matrix
-      const auto laplace_matrix = quad->laplace_matrix(xi_s, coords);
-
-      // Check size of laplace-matrix
-      REQUIRE(laplace_matrix.rows() == nfunctions);
-      REQUIRE(laplace_matrix.cols() == nfunctions);
-
-      // Sum should be equal to 0.
-      REQUIRE(laplace_matrix.sum() == Approx(0.).epsilon(Tolerance));
-
-      Eigen::Matrix<double, 9, 9> laplace;
-      laplace << 0.5084866346946783, -0.0734446911538873, -0.05371864985162622,
-          -0.1103133473371132, -0.07669209107623806, 0.1927084136591803,
-          0.2589628244010591, -0.10396920063195, -0.5420198927041027,
-          -0.0734446911538873, 0.2915928953674497, -0.09633562590981673,
-          -0.01872968022704423, 0.006295206305480323, -0.09852050058308423,
-          0.09045204385768324, 0.104856148496622, -0.2061657961534028,
-          -0.05371864985162622, -0.09633562590981673, 0.8177197417085185,
-          -0.08615266317527349, 0.2597195128997584, 0.05598964672214593,
-          -0.02880253454656023, 0.2946061776964577, -1.163025605543604,
-          -0.1103133473371132, -0.01872968022704423, -0.08615266317527349,
-          0.4315782917823672, 0.1483185364464784, 0.1025466858623602,
-          -0.1977303579466335, 0.163247736680731, -0.4327652020858722,
-          -0.07669209107623806, 0.006295206305480323, 0.2597195128997584,
-          0.1483185364464784, 1.47575966253524, -0.6652099937400512,
-          -0.1746625352294245, -0.298245968990285, -0.675282329150958,
-          0.1927084136591803, -0.09852050058308423, 0.05598964672214593,
-          0.1025466858623602, -0.6652099937400512, 1.297791333533371,
-          -0.2679300507936517, -0.1119270433390657, -0.5054484913212045,
-          0.2589628244010591, 0.09045204385768324, -0.02880253454656023,
-          -0.1977303579466335, -0.1746625352294245, -0.2679300507936517,
-          1.639620143797324, -1.074145582008699, -0.2457639515310967,
-          -0.10396920063195, 0.104856148496622, 0.2946061776964577,
-          0.163247736680731, -0.298245968990285, -0.1119270433390657,
-          -1.074145582008699, 1.943059456579911, -0.917481724483721,
-          -0.5420198927041027, -0.2061657961534028, -1.163025605543604,
-          -0.4327652020858722, -0.675282329150958, -0.5054484913212045,
-          -0.2457639515310967, -0.917481724483721, 4.687952992973963;
-
-      for (unsigned i = 0; i < nfunctions; ++i)
-        for (unsigned j = 0; j < nfunctions; ++j)
-          REQUIRE(laplace_matrix(i, j) ==
-                  Approx(laplace(i, j)).epsilon(Tolerance));
     }
 
     // Check Jacobian

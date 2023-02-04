@@ -142,20 +142,6 @@ class TriangleElement : public Element<Tdim> {
       VectorDim& particle_size,
       const MatrixDim& deformation_gradient) const override;
 
-  //! Evaluate the Ni Nj matrix
-  //! \param[in] xi_s Vector of local coordinates
-  //! \retval ni_nj_matrix Ni Nj matrix
-  Eigen::MatrixXd ni_nj_matrix(
-      const std::vector<VectorDim>& xi_s) const override;
-
-  //! Evaluate the Laplace matrix at given local coordinates for a real cell
-  //! \param[in] xi_s Vector of local coordinates
-  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
-  //! \retval laplace_matrix Laplace matrix
-  Eigen::MatrixXd laplace_matrix(
-      const std::vector<VectorDim>& xi_s,
-      const Eigen::MatrixXd& nodal_coordinates) const override;
-
   //! Return the degree of shape function
   mpm::ElementDegree degree() const override;
 

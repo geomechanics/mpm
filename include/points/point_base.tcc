@@ -370,7 +370,7 @@ void mpm::PointBase<Tdim>::deserialize(const std::vector<uint8_t>& data) {
   int type;
   MPI_Unpack(data_ptr, data.size(), &position, &type, 1, MPI_INT,
              MPI_COMM_WORLD);
-  assert(type == ParticleType.at(this->type()));
+  assert(type == PointType.at(this->type()));
 
   // ID
   MPI_Unpack(data_ptr, data.size(), &position, &id_, 1, MPI_UNSIGNED_LONG_LONG,

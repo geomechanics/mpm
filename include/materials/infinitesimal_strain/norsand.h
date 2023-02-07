@@ -136,6 +136,8 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   //! Inline ternary function to check number not greater than one
   inline double check_one(double val) { return (val < 1.0 ? val : 1.0); }
 
+  //! Maximum reasonable (e_max - e_min) is 0.5 for M_image reduction
+  double cap_{0.5};
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Poisson ratio
@@ -186,6 +188,8 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   double m_dilation_{0.};
   //! Parameter for modulus
   double m_modulus_{0.};
+  //! Flag to force stress ratio to converge to critical state
+  bool force_critical_state_{false};
   //! Default tolerance
   double tolerance_{std::numeric_limits<double>::epsilon()};
   //! Failure state map

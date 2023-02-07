@@ -885,8 +885,8 @@ void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
                            max_steps, write_mpi_rank)
               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps, 1);
+      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
+                                     mpi_size, step, max_steps, 1);
     }
 #endif
   }
@@ -908,8 +908,8 @@ void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
                            max_steps, write_mpi_rank)
               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps, 3);
+      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
+                                     mpi_size, step, max_steps, 3);
     }
 #endif
   }
@@ -931,8 +931,8 @@ void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
                            max_steps, write_mpi_rank)
               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute, mpi_size, step,
-                                     max_steps, 9);
+      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
+                                     mpi_size, step, max_steps, 9);
     }
 #endif
   }

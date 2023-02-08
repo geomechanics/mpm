@@ -2090,13 +2090,13 @@ void mpm::MPMBase<Tdim>::mpi_domain_decompose(bool initial_step) {
     if (initial_step) mesh_->remove_all_nonrank_particles();
     // Transfer non-rank particles to appropriate cells
     else
-      mesh_->transfer_nonrank_particles(exchange_cells);
+      mesh_->transfer_nonrank_particles(exchange_cells[0]);
 
     // Delete all the points which is not in local task parititon
     if (initial_step) mesh_->remove_all_nonrank_points();
     // Transfer non-rank points to appropriate cells
     else
-      mesh_->transfer_nonrank_points(exchange_cells);
+      mesh_->transfer_nonrank_points(exchange_cells[1]);
 
 #endif
     auto mpi_domain_end = std::chrono::steady_clock::now();

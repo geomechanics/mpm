@@ -89,6 +89,14 @@ class Cell {
   //! Return the number of points
   unsigned npoints() const { return points_.size(); }
 
+  //! Assign global npoints
+  //! \param[in] npoints Number of global points of cell
+  void nglobal_points(unsigned npoints) { nglobal_points_ = npoints; }
+
+  //! nglobal points
+  //! \retval nglobal_points_ Number of global points of cell
+  unsigned nglobal_points() const { return nglobal_points_; }
+
   //! Return point_
   std::vector<Index> points() const { return points_; }
 
@@ -503,6 +511,8 @@ class Cell {
   unsigned nglobal_particles_{0};
   //! points ids in cell
   std::vector<Index> points_;
+  //! Number of global npoints
+  unsigned nglobal_points_{0};
   //! Container of node pointers (local id, node pointer)
   std::vector<std::shared_ptr<NodeBase<Tdim>>> nodes_;
   //! Nodal coordinates

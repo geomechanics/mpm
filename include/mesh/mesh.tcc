@@ -328,6 +328,13 @@ void mpm::Mesh<Tdim>::find_nglobal_particles_cells() {
     MPI_Bcast(&nparticles, 1, MPI_INT, (*citr)->rank(), MPI_COMM_WORLD);
     // Receive broadcast and update on all ranks
     (*citr)->nglobal_particles(nparticles);
+
+    int npoints;
+    // Determine the rank of the broadcast emitter process
+    if ((*citr)->rank() == mpi_rank) npoints = (*citr)->npoints();
+    MPI_Bcast(&npoints, 1, MPI_INT, (*citr)->rank(), MPI_COMM_WORLD);
+    // Receive broadcast and update on all ranks
+    (*citr)->nglobal_points(npoints);
   }
 #endif
 }
@@ -1052,7 +1059,7 @@ void mpm::Mesh<Tdim>::remove_all_nonrank_points() {
   unsigned npoints = this->npoints();
   // Clear points and start a new element of points
   points_.clear();
-  points_.reserve(static_cast<int>(npoints / mpi_size));
+  points_.reserve(static_cast<int>(npoints));
   // Iterate over the map of points and add them to container
   for (auto& point : map_points_) points_.add(point.second, false);
 }

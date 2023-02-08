@@ -225,3 +225,21 @@ template <unsigned Tdim>
 inline std::string mpm::MPMSchemeNewmark<Tdim>::scheme() const {
   return "Newmark";
 }
+
+// Locate particles and points
+template <unsigned Tdim>
+inline void mpm::MPMSchemeNewmark<Tdim>::locate_particles(
+    bool locate_particles) {
+  // Locate particles
+  mpm::MPMScheme<Tdim>::locate_particles(locate_particles);
+
+  // Locate points
+  auto unlocatable_points = mesh_->locate_points_mesh();
+
+  if (!unlocatable_points.empty() && locate_particles)
+    throw std::runtime_error("Point outside the mesh domain");
+  // If unable to locate points remove points
+  if (!unlocatable_points.empty() && !locate_particles)
+    for (const auto& remove_point : unlocatable_points)
+      mesh_->remove_point(remove_point);
+}

@@ -988,6 +988,17 @@ void mpm::Mesh<Tdim>::transfer_nonrank_particles(
 #endif
 }
 
+//! Remove a point pointer from the mesh
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::remove_point(
+    const std::shared_ptr<mpm::PointBase<Tdim>>& point) {
+  const mpm::Index id = point->id();
+  // Remove associated cell for the point
+  map_points_[id]->remove_cell();
+  // Remove a point if found in the container and map
+  return (points_.remove(point) && map_points_.remove(id));
+}
+
 //! Remove points by id
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::remove_points(const std::vector<mpm::Index>& pids) {

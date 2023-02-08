@@ -217,13 +217,13 @@ class Mesh {
   //! Add a particle to the mesh
   //! \param[in] particle A shared pointer to particle
   //! \param[in] checks Parameter to check duplicates and addition
-  //! \retval insertion_status Return the successful addition of a particle
+  //! \retval insertion_status Return the successful deletion of a particle
   bool add_particle(const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle,
                     bool checks = true);
 
   //! Remove a particle from the mesh
   //! \param[in] particle A shared pointer to particle
-  //! \retval insertion_status Return the successful addition of a particle
+  //! \retval insertion_status Return the successful deletion of a particle
   bool remove_particle(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
 
@@ -261,6 +261,11 @@ class Mesh {
   //! \retval insertion_status Return the successful addition of a point
   bool add_point(const std::shared_ptr<mpm::PointBase<Tdim>>& point,
                  bool checks = true);
+
+  //! Remove a point from the mesh
+  //! \param[in] point A shared pointer to point
+  //! \retval insertion_status Return the successful deletion of a point
+  bool remove_point(const std::shared_ptr<mpm::PointBase<Tdim>>& point);
 
   //! Remove points from the mesh
   //! \param[in] pids Vector of point ids

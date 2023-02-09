@@ -36,6 +36,8 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
       e_min_ = material_properties["e_min"].template get<double>();
       // Maximum void ratio
       e_max_ = material_properties["e_max"].template get<double>();
+      // Set cap based on passed e_max and e_min values
+      cap_ = e_max_ - e_min_;
       // Crushing pressure
       crushing_pressure_ =
           material_properties["crushing_pressure"].template get<double>();
@@ -83,6 +85,12 @@ mpm::NorSand<Tdim>::NorSand(unsigned id, const Json& material_properties)
       // Parameter for shear modulus
       m_modulus_ = material_properties.at("m_modulus").template get<double>();
     }
+
+    // Flag for forcing critical state stress ratio
+    if (material_properties.find("force_critical_state") !=
+        material_properties.end())
+      force_critical_state_ =
+          material_properties.at("force_critical_state").template get<bool>();
 
     // Default tolerance
     if (material_properties.find("tolerance") != material_properties.end())
@@ -258,7 +266,8 @@ Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elasto_plastic_tensor(
       (3. * std::pow(Mtc_, 2) * sin(3. / 2. * lode_angle)) / (2. * (3. + Mtc_));
 
   // Compute dtheta / dsigma
-  const Vector6d dtheta_dsigma = mpm::materials::dtheta_dsigma(stress_neg);
+  const Vector6d dtheta_dsigma =
+      -1. * mpm::materials::dtheta_dsigma(stress_neg);
 
   // dF_dsigma is in compression negative
   const Vector6d dF_dsigma =
@@ -359,13 +368,34 @@ void mpm::NorSand<Tdim>::compute_image_parameters(mpm::dense_map* state_vars) {
   const double psi_image = void_ratio - e_image;
   (*state_vars).at("psi_image") = psi_image;
 
+  // Critical state coefficient reduction factor
+  double factor = ((chi_image_ * N_ * std::fabs(psi_image)) / Mtc_);
+
+  if (force_critical_state_) {
+    // Critical state coefficient reduction factor cap
+    if (factor > cap_) factor = cap_;
+
+    // Reduce critical state coefficient reduction factor to zero with as
+    // pdstrain reaches 100%; this enforces that soil reaches critical state at
+    // very large plastic strains
+    const double pdstrain = (*state_vars).at("pdstrain");
+    const double pd_start = 0.50;
+    const double pd_end = 1.00;
+
+    if (pdstrain < pd_start) {
+      factor *= 1.;
+    } else if (pdstrain < pd_end) {
+      factor *= (1. - ((pdstrain - pd_start) / (pd_end - pd_start)));
+    } else {
+      factor = 0.;
+    }
+  }
+
   // Compute critical state coefficient image
-  (*state_vars).at("M_image") =
-      M_theta * (1. - ((chi_image_ * N_ * std::fabs(psi_image)) / Mtc_));
+  (*state_vars).at("M_image") = M_theta * (1. - factor);
 
   // Compute critical state coefficient image triaxial compression
-  (*state_vars).at("M_image_tc") =
-      Mtc_ * (1. - ((chi_image_ * N_ * std::fabs(psi_image)) / Mtc_));
+  (*state_vars).at("M_image_tc") = Mtc_ * (1. - factor);
 }
 
 //! Compute state parameters

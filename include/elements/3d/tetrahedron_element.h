@@ -112,6 +112,16 @@ class TetrahedronElement : public Element<Tdim> {
                         VectorDim& particle_size,
                         const MatrixDim& deformation_gradient) const override;
 
+  //! Return the local dN/dx at a given local coord
+  //! \param[in] xi given local coordinates
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  //! \param[in] particle_size Particle size
+  //! \param[in] deformation_gradient Deformation gradient
+  Eigen::MatrixXd dn_dx_local(
+      const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
+      VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const override;
+
   //! Evaluate the B matrix at given local coordinates for a real cell
   //! \param[in] xi given local coordinates
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell

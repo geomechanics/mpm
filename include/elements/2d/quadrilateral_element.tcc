@@ -308,6 +308,17 @@ inline Eigen::MatrixXd mpm::QuadrilateralElement<Tdim, Tnfunctions>::dn_dx(
   return grad_sf * (jacobian.inverse()).transpose();
 }
 
+//! Compute local dn_dx
+template <unsigned Tdim, unsigned Tnfunctions>
+inline Eigen::MatrixXd
+    mpm::QuadrilateralElement<Tdim, Tnfunctions>::dn_dx_local(
+        const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
+        VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
+  // Get gradient shape functions
+  return this->dn_dx(xi, nodal_coordinates, particle_size,
+                     deformation_gradient);
+}
+
 //! Return the B-matrix of a Quadrilateral Element at a given local
 //! coordinate for a real cell
 template <unsigned Tdim, unsigned Tnfunctions>

@@ -139,6 +139,16 @@ inline Eigen::MatrixXd mpm::TetrahedronElement<Tdim, Tnfunctions>::dn_dx(
   return grad_sf * (jacobian.inverse()).transpose();
 }
 
+//! Compute local dn_dx
+template <unsigned Tdim, unsigned Tnfunctions>
+inline Eigen::MatrixXd mpm::TetrahedronElement<Tdim, Tnfunctions>::dn_dx_local(
+    const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
+    VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
+  // Get gradient shape functions
+  return this->dn_dx(xi, nodal_coordinates, particle_size,
+                     deformation_gradient);
+}
+
 //! Compute Bmatrix
 template <unsigned Tdim, unsigned Tnfunctions>
 inline std::vector<Eigen::MatrixXd>

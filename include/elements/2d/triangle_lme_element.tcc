@@ -343,6 +343,31 @@ inline Eigen::MatrixXd mpm::TriangleLMEElement<Tdim>::dn_dx(
   return this->grad_shapefn(xi, lambda, deformation_gradient);
 }
 
+//! Compute local dn_dx
+template <unsigned Tdim>
+inline Eigen::MatrixXd mpm::TriangleLMEElement<Tdim>::dn_dx_local(
+    const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
+    VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
+  // Get gradient shape functions
+  Eigen::MatrixXd grad_sf = mpm::TriangleElement<Tdim, 3>::grad_shapefn(
+      xi, particle_size, deformation_gradient);
+
+  // Jacobian dx_i/dxi_j
+  Eigen::Matrix<double, Tdim, Tdim> jacobian =
+      (grad_sf.transpose() * nodal_coordinates.block(0, 0, 3, Tdim));
+
+  // Gradient shapefn of the cell
+  // dN/dx = [J]^-1 * dN/dxi
+  const Eigen::MatrixXd dn_dx = grad_sf * (jacobian.inverse()).transpose();
+
+  // Compute dN/dx local
+  Eigen::MatrixXd dn_dx_local(this->nconnectivity_, Tdim);
+  dn_dx_local.setZero();
+  dn_dx_local.block(0, 0, 3, Tdim) = dn_dx;
+
+  return dn_dx_local;
+}
+
 //! Return the B-matrix of a Quadrilateral Element at a given local
 //! coordinate for a real cell
 template <unsigned Tdim>

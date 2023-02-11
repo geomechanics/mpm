@@ -48,8 +48,8 @@ bool mpm::Cell<Tdim>::initialise() {
           Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
       // dN/dX at the centroid
-      dn_dx_centroid_ = element_->dn_dx(xi_centroid, this->nodal_coordinates_,
-                                        zero, identity_matrix);
+      dn_dx_centroid_ = element_->dn_dx_local(
+          xi_centroid, this->nodal_coordinates_, zero, identity_matrix);
 
       status = true;
     } else {

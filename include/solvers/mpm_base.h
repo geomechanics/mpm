@@ -113,6 +113,13 @@ class MPMBase : public MPM {
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
 
+  //! Particles stresses beginning
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_stresses_beginning(
+      const Json& mesh_prop,
+      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
 #ifdef USE_VTK
   //! Write VTK files
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
@@ -215,13 +222,6 @@ class MPMBase : public MPM {
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle
   void particles_pore_pressures(
-      const Json& mesh_prop,
-      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
-
-  //! Particles stresses beginning
-  //! \param[in] mesh_prop Mesh properties
-  //! \param[in] particle_io Particle IO handle
-  void particles_stresses_beginning(
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 

@@ -86,6 +86,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     //! Particle entity sets and velocity constraints
     this->particle_entity_sets(false);
     this->particle_velocity_constraints();
+    this->particles_stresses_beginning(
+        io_->json_object("mesh"),
+        Factory<mpm::IOMesh<Tdim>>::instance()->create("Ascii2D"));
   } else {
     // Initialise particles
     this->initialise_particles();

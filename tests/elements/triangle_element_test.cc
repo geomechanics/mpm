@@ -284,6 +284,15 @@ TEST_CASE("Triangle elements are checked", "[tri][element][2D]") {
         REQUIRE(dn_dx(i, 1) == Approx(gradsf(i, 1)).epsilon(Tolerance));
       }
 
+      // Check dN/dx local
+      auto dn_dx_local = tri->dn_dx_local(xi, coords, zero, zero_matrix);
+      REQUIRE(dn_dx_local.rows() == nfunctions);
+      REQUIRE(dn_dx_local.cols() == Dim);
+      for (unsigned i = 0; i < nfunctions; ++i) {
+        REQUIRE(dn_dx_local(i, 0) == Approx(gradsf(i, 0)).epsilon(Tolerance));
+        REQUIRE(dn_dx_local(i, 1) == Approx(gradsf(i, 1)).epsilon(Tolerance));
+      }
+
       // Check size of B-matrix
       REQUIRE(bmatrix.size() == nfunctions);
 

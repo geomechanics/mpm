@@ -451,6 +451,38 @@ TEST_CASE("Quadrilateral lme elements are checked",
       for (unsigned i = 0; i < gradsf.rows(); ++i)
         for (unsigned j = 0; j < gradsf.cols(); ++j)
           REQUIRE(gradsf(i, j) == Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+      // Check dN/dx
+      auto dndx = quad->dn_dx(coords, nodal_coords, zero, def_gradient);
+      REQUIRE(dndx.rows() == 100);
+      REQUIRE(dndx.cols() == Dim);
+
+      for (unsigned i = 0; i < dndx.rows(); ++i)
+        for (unsigned j = 0; j < dndx.cols(); ++j)
+          REQUIRE(dndx(i, j) == Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+      // Check dN/dx local
+      Eigen::Matrix<double, 100, Dim> dndx_local;
+      dndx_local << 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0;
+
+      auto dn_dx_local =
+          quad->dn_dx_local(coords, nodal_coords, zero, def_gradient);
+      REQUIRE(dn_dx_local.rows() == 100);
+      REQUIRE(dn_dx_local.cols() == Dim);
+
+      for (unsigned i = 0; i < dn_dx_local.rows(); ++i)
+        for (unsigned j = 0; j < dn_dx_local.cols(); ++j)
+          REQUIRE(dn_dx_local(i, j) ==
+                  Approx(dndx_local(i, j)).epsilon(Tolerance));
     }
 
     SECTION("2D quadrilateral LME element evaluation at the edge of the mesh") {

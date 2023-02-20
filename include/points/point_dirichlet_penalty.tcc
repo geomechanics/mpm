@@ -181,3 +181,148 @@ void mpm::PointDirichletPenalty<Tdim>::map_boundary_force(unsigned phase) {
           true, phase, -1.0 * penalty_force.segment(i * Tdim, Tdim));
   }
 }
+
+//! Compute size of serialized point data
+template <unsigned Tdim>
+int mpm::PointDirichletPenalty<Tdim>::compute_pack_size() const {
+  int total_size = mpm::PointBase<Tdim>::compute_pack_size();
+  int partial_size;
+#ifdef USE_MPI
+  // Penalty factor
+  MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+
+  // Slip, contact
+  MPI_Pack_size(2, MPI_C_BOOL, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+
+  // Normal type
+  MPI_Pack_size(1, MPI_UNSIGNED, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+
+  // Normal vector
+  MPI_Pack_size(Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+#endif
+  return total_size;
+}
+
+//! Serialize point data
+template <unsigned Tdim>
+std::vector<uint8_t> mpm::PointDirichletPenalty<Tdim>::serialize() {
+  // Compute pack size
+  if (pack_size_ == 0) pack_size_ = compute_pack_size();
+  // Initialize data buffer
+  std::vector<uint8_t> data;
+  data.resize(pack_size_);
+  uint8_t* data_ptr = &data[0];
+  int position = 0;
+
+#ifdef USE_MPI
+  // Type
+  int type = PointType.at(this->type());
+  MPI_Pack(&type, 1, MPI_INT, data_ptr, data.size(), &position, MPI_COMM_WORLD);
+
+  // ID
+  MPI_Pack(&id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+  // Area
+  MPI_Pack(&area_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
+  // Coordinates
+  MPI_Pack(coordinates_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
+           &position, MPI_COMM_WORLD);
+  // Displacement
+  MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
+           &position, MPI_COMM_WORLD);
+
+  // Cell id
+  MPI_Pack(&cell_id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(),
+           &position, MPI_COMM_WORLD);
+
+  // Status
+  MPI_Pack(&status_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
+  // Penalty factor
+  MPI_Pack(&penalty_factor_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
+  // Slip
+  MPI_Pack(&slip_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
+  // Contact
+  MPI_Pack(&contact_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
+  // Normal type
+  MPI_Pack(&normal_type_, 1, MPI_UNSIGNED, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
+  // Normal vector
+  MPI_Pack(normal_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
+#endif
+  return data;
+}
+
+//! Deserialize point data
+template <unsigned Tdim>
+void mpm::PointDirichletPenalty<Tdim>::deserialize(
+    const std::vector<uint8_t>& data) {
+  uint8_t* data_ptr = const_cast<uint8_t*>(&data[0]);
+  int position = 0;
+
+#ifdef USE_MPI
+  // Type
+  int type;
+  MPI_Unpack(data_ptr, data.size(), &position, &type, 1, MPI_INT,
+             MPI_COMM_WORLD);
+  assert(type == PointType.at(this->type()));
+
+  // ID
+  MPI_Unpack(data_ptr, data.size(), &position, &id_, 1, MPI_UNSIGNED_LONG_LONG,
+             MPI_COMM_WORLD);
+  // area
+  MPI_Unpack(data_ptr, data.size(), &position, &area_, 1, MPI_DOUBLE,
+             MPI_COMM_WORLD);
+
+  // Coordinates
+  MPI_Unpack(data_ptr, data.size(), &position, coordinates_.data(), Tdim,
+             MPI_DOUBLE, MPI_COMM_WORLD);
+  // Displacement
+  MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
+             MPI_DOUBLE, MPI_COMM_WORLD);
+
+  // cell id
+  MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,
+             MPI_UNSIGNED_LONG_LONG, MPI_COMM_WORLD);
+  // status
+  MPI_Unpack(data_ptr, data.size(), &position, &status_, 1, MPI_C_BOOL,
+             MPI_COMM_WORLD);
+
+  // Penalty factor
+  MPI_Unpack(data_ptr, data.size(), &position, &penalty_factor_, 1, MPI_DOUBLE,
+             MPI_COMM_WORLD);
+
+  // Slip
+  MPI_Unpack(data_ptr, data.size(), &position, &slip_, 1, MPI_C_BOOL,
+             MPI_COMM_WORLD);
+
+  // Contact
+  MPI_Unpack(data_ptr, data.size(), &position, &contact_, 1, MPI_C_BOOL,
+             MPI_COMM_WORLD);
+
+  // Normal type
+  MPI_Unpack(data_ptr, data.size(), &position, &normal_type_, 1, MPI_UNSIGNED,
+             MPI_COMM_WORLD);
+
+  // Normal vector
+  MPI_Unpack(data_ptr, data.size(), &position, normal_.data(), Tdim, MPI_DOUBLE,
+             MPI_COMM_WORLD);
+
+#endif
+}

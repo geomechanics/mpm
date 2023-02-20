@@ -19,7 +19,11 @@ namespace mpm {
 //! Cartesian: assign normal following the imposition direction
 //! Assigned: assign normal via input file
 //! Automatic: automatically compute normal
-enum class NormalType { Cartesian, Assign, Automatic };
+enum class NormalType : unsigned int {
+  Cartesian = 0,
+  Assign = 1,
+  Automatic = 2
+};
 
 // Forward declaration of Material
 template <unsigned Tdim>
@@ -76,6 +80,14 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   //! \param[in] velocity Applied point velocity constraint
   void apply_point_velocity_constraints(unsigned dir, double velocity) override;
 
+  //! Serialize
+  //! \retval buffer Serialized buffer data
+  std::vector<uint8_t> serialize() override;
+
+  //! Deserialize
+  //! \param[in] buffer Serialized buffer data
+  void deserialize(const std::vector<uint8_t>& buffer) override;
+
   //! Assign penalty factor
   //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
   //! \param[in] penalty_factor Penalty factor
@@ -106,6 +118,11 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   }
 
  protected:
+  //! Compute pack size
+  //! \retval pack size of serialized object
+  int compute_pack_size() const override;
+
+ protected:
   //! point id
   using PointBase<Tdim>::id_;
   //! coordinates
@@ -124,6 +141,8 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   using PointBase<Tdim>::displacement_;
   //! Area
   using PointBase<Tdim>::area_;
+  //! Pack size
+  using PointBase<Tdim>::pack_size_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Imposed displacement

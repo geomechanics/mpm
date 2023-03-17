@@ -167,6 +167,7 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/nodes/
   ${mpm_SOURCE_DIR}/include/particles/
   ${mpm_SOURCE_DIR}/include/particles/anti_locking
+  ${mpm_SOURCE_DIR}/include/particles/perfectly_matched_layer
   ${mpm_SOURCE_DIR}/include/particles/pod_particles
   ${mpm_SOURCE_DIR}/include/solvers/
   ${mpm_SOURCE_DIR}/include/solvers/mpm_scheme/

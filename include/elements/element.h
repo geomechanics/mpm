@@ -107,6 +107,16 @@ class Element {
       VectorDim& particle_size,
       const MatrixDim& deformation_gradient) const = 0;
 
+  //! Return the local dN/dx at a given local coord
+  //! \param[in] xi given local coordinates
+  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
+  //! \param[in] particle_size Particle size
+  //! \param[in] deformation_gradient Deformation gradient
+  virtual Eigen::MatrixXd dn_dx_local(
+      const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
+      VectorDim& particle_size,
+      const MatrixDim& deformation_gradient) const = 0;
+
   //! Evaluate the B matrix at given local coordinates for a real cell
   //! \param[in] xi given local coordinates
   //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
@@ -117,20 +127,6 @@ class Element {
       const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
       VectorDim& particle_size,
       const MatrixDim& deformation_gradient) const = 0;
-
-  //! Evaluate the Ni Nj matrix
-  //! \param[in] xi_s Vector of local coordinates
-  //! \retval ni_nj_matrix Ni Nj matrix
-  virtual Eigen::MatrixXd ni_nj_matrix(
-      const std::vector<VectorDim>& xi_s) const = 0;
-
-  //! Evaluate the Laplace matrix at given local coordinates for a real cell
-  //! \param[in] xi_s Vector of local coordinates
-  //! \param[in] nodal_coordinates Coordinates of nodes forming the cell
-  //! \retval laplace_matrix Laplace matrix
-  virtual Eigen::MatrixXd laplace_matrix(
-      const std::vector<VectorDim>& xi_s,
-      const Eigen::MatrixXd& nodal_coordinates) const = 0;
 
   //! Return the degree of element
   virtual mpm::ElementDegree degree() const = 0;

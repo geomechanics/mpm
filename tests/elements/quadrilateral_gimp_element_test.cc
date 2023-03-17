@@ -583,6 +583,18 @@ TEST_CASE("Quadrilateral gimp elements are checked",
         REQUIRE(dn_dx(i, 1) == Approx(gradsf(i, 1)).epsilon(Tolerance));
       }
 
+      // Check dN/dx local
+      Eigen::Matrix<double, nfunctions, Dim> dndx_local;
+      dndx_local << -0.25, -0.25, 0.25, -0.75, 0.75, 0.75, -0.75, 0.25, 0, 0,
+          -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, -0;
+      auto dn_dx_local = quad->dn_dx_local(xi, coords, zero, defgrad);
+      REQUIRE(dn_dx_local.rows() == nfunctions);
+      REQUIRE(dn_dx_local.cols() == Dim);
+      for (unsigned i = 0; i < nfunctions; ++i)
+        for (unsigned j = 0; j < dn_dx_local.cols(); ++j)
+          REQUIRE(dn_dx_local(i, j) ==
+                  Approx(dndx_local(i, j)).epsilon(Tolerance));
+
       // Check size of B-matrix
       REQUIRE(bmatrix.size() == nfunctions);
 

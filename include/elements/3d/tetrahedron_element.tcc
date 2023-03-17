@@ -139,6 +139,16 @@ inline Eigen::MatrixXd mpm::TetrahedronElement<Tdim, Tnfunctions>::dn_dx(
   return grad_sf * (jacobian.inverse()).transpose();
 }
 
+//! Compute local dn_dx
+template <unsigned Tdim, unsigned Tnfunctions>
+inline Eigen::MatrixXd mpm::TetrahedronElement<Tdim, Tnfunctions>::dn_dx_local(
+    const VectorDim& xi, const Eigen::MatrixXd& nodal_coordinates,
+    VectorDim& particle_size, const MatrixDim& deformation_gradient) const {
+  // Get gradient shape functions
+  return this->dn_dx(xi, nodal_coordinates, particle_size,
+                     deformation_gradient);
+}
+
 //! Compute Bmatrix
 template <unsigned Tdim, unsigned Tnfunctions>
 inline std::vector<Eigen::MatrixXd>
@@ -186,68 +196,6 @@ inline std::vector<Eigen::MatrixXd>
     bmatrix.push_back(bi);
   }
   return bmatrix;
-}
-
-//! Return ni_nj_matrix of a Tetrahedron Element
-template <unsigned Tdim, unsigned Tnfunctions>
-inline Eigen::MatrixXd mpm::TetrahedronElement<Tdim, Tnfunctions>::ni_nj_matrix(
-    const std::vector<VectorDim>& xi_s) const {
-  // Zeros
-  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
-  Eigen::Matrix<double, Tdim, Tdim> zero_matrix =
-      Eigen::Matrix<double, Tdim, Tdim>::Zero();
-
-  // Ni Nj matrix
-  Eigen::Matrix<double, Tnfunctions, Tnfunctions> ni_nj_matrix;
-  ni_nj_matrix.setZero();
-  for (const auto& xi : xi_s) {
-    const Eigen::Matrix<double, Tnfunctions, 1> shape_fn =
-        this->shapefn(xi, zeros, zero_matrix);
-    ni_nj_matrix.noalias() += (shape_fn * shape_fn.transpose());
-  }
-  return ni_nj_matrix;
-}
-
-//! Return the laplace_matrix of a Tetrahedron Element
-template <unsigned Tdim, unsigned Tnfunctions>
-inline Eigen::MatrixXd
-    mpm::TetrahedronElement<Tdim, Tnfunctions>::laplace_matrix(
-        const std::vector<VectorDim>& xi_s,
-        const Eigen::MatrixXd& nodal_coordinates) const {
-
-  try {
-    // Check if matrices dimensions are correct
-    if ((this->nfunctions() != nodal_coordinates.rows()) ||
-        (xi_s.at(0).size() != nodal_coordinates.cols()))
-      throw std::runtime_error(
-          "Jacobian calculation: Incorrect dimension of xi & nodes");
-  } catch (std::exception& exception) {
-    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
-  }
-
-  // Zeros
-  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
-  Eigen::Matrix<double, Tdim, Tdim> zero_matrix =
-      Eigen::Matrix<double, Tdim, Tdim>::Zero();
-
-  // Laplace matrix
-  Eigen::Matrix<double, Tnfunctions, Tnfunctions> laplace_matrix;
-  laplace_matrix.setZero();
-  for (const auto& xi : xi_s) {
-    // Get gradient shape functions
-    const Eigen::MatrixXd grad_sf = this->grad_shapefn(xi, zeros, zero_matrix);
-
-    // Jacobian dx_i/dxi_j
-    const Eigen::Matrix<double, Tdim, Tdim> jacobian =
-        (grad_sf.transpose() * nodal_coordinates);
-
-    // Gradient shapefn of the cell
-    // dN/dx = [J]^-1 * dN/dxi
-    const Eigen::MatrixXd grad_shapefn = grad_sf * jacobian.inverse();
-
-    laplace_matrix.noalias() += (grad_shapefn * grad_shapefn.transpose());
-  }
-  return laplace_matrix;
 }
 
 //! Return the degree of element

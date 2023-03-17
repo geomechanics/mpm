@@ -724,6 +724,31 @@ TEST_CASE("Hexahedron gimp elements are checked", "[hex][element][3D][gimp]") {
         REQUIRE(dn_dx(i, 2) == Approx(gradsf(i, 2)).epsilon(Tolerance));
       }
 
+      // Check dN/dx local
+      Eigen::Matrix<double, 64, Dim> dndx_local;
+      dndx_local << -0.125, 0.125, -0.125, 0.125, 0.125, -0.125, 0.125, 0.125,
+          0.125, -0.125, 0.125, 0.125, -0.125, -0.125, -0.125, 0.125, -0.125,
+          -0.125, 0.125, -0.125, 0.125, -0.125, -0.125, 0.125, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0;
+      auto dn_dx_local = hex->dn_dx_local(xi, coords, zero, zero_matrix);
+      REQUIRE(dn_dx_local.rows() == 64);
+      REQUIRE(dn_dx_local.cols() == Dim);
+      for (unsigned i = 0; i < 64; ++i) {
+        REQUIRE(dn_dx_local(i, 0) ==
+                Approx(dndx_local(i, 0)).epsilon(Tolerance));
+        REQUIRE(dn_dx_local(i, 1) ==
+                Approx(dndx_local(i, 1)).epsilon(Tolerance));
+        REQUIRE(dn_dx_local(i, 2) ==
+                Approx(dndx_local(i, 2)).epsilon(Tolerance));
+      }
+
       // Check size of B-matrix
       REQUIRE(bmatrix.size() == nfunctions);
 

@@ -981,6 +981,21 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         for (unsigned i = 0; i < dn_dx.rows(); ++i)
           for (unsigned j = 0; j < dn_dx.cols(); ++j)
             REQUIRE(dn_dx(i, j) == Approx(gradsf_ans(i, j)).epsilon(Tolerance));
+
+        // Check dN/dx local
+        Eigen::Matrix<double, 9, Dim> dndx_local;
+        dndx_local << -0.125, -0.125, 0.125, -0.375, 0.375, 0.375, -0.375,
+            0.125, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+
+        auto dn_dx_local =
+            quad->dn_dx_local(coords, nodal_coords, zero, zero_matrix);
+        REQUIRE(dn_dx_local.rows() == 9);
+        REQUIRE(dn_dx_local.cols() == Dim);
+
+        for (unsigned i = 0; i < dn_dx_local.rows(); ++i)
+          for (unsigned j = 0; j < dn_dx_local.cols(); ++j)
+            REQUIRE(dn_dx_local(i, j) ==
+                    Approx(dndx_local(i, j)).epsilon(Tolerance));
       }
 
       // Coordinates is (-1,-1)

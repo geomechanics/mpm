@@ -1,5 +1,4 @@
 // hexahedron element test
-#include <iostream>
 #include <memory>
 
 #include "catch.hpp"
@@ -513,6 +512,19 @@ TEST_CASE("Hexahedron lme elements are checked", "[hex][element][3D][lme]") {
             REQUIRE(dn_dx(i, 0) == Approx(gradsf(i, 0)).epsilon(Tolerance));
             REQUIRE(dn_dx(i, 1) == Approx(gradsf(i, 1)).epsilon(Tolerance));
             REQUIRE(dn_dx(i, 2) == Approx(gradsf(i, 2)).epsilon(Tolerance));
+          }
+
+          // Check dN/dx local
+          auto dn_dx_local = hex->dn_dx_local(xi, coords, zero, zero_matrix);
+          REQUIRE(dn_dx_local.rows() == 64);
+          REQUIRE(dn_dx_local.cols() == Dim);
+          for (unsigned i = 0; i < 64; ++i) {
+            REQUIRE(dn_dx_local(i, 0) ==
+                    Approx(gradsf(i, 0)).epsilon(Tolerance));
+            REQUIRE(dn_dx_local(i, 1) ==
+                    Approx(gradsf(i, 1)).epsilon(Tolerance));
+            REQUIRE(dn_dx_local(i, 2) ==
+                    Approx(gradsf(i, 2)).epsilon(Tolerance));
           }
 
           // Check size of B-matrix

@@ -50,36 +50,19 @@ class ParticlePML : public mpm::Particle<Tdim> {
     return (Tdim == 2) ? "P2DPML" : "P3DPML";
   }
 
-  //! Compute shape functions of a particle, based on local coordinates
-  void compute_shapefn() noexcept override;
-
-  //! Return strain of the particle
-  Eigen::Matrix<double, 6, 1> strain() const override {
-    const auto& strain = this->compute_hencky_strain();
-    return strain;
-  }
-
-  //! Return deformation gradient increment of the particle
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment() const {
-    return deformation_gradient_increment_;
-  }
-
-  //! Update volume based on deformation gradient increment
-  //! Note: Volume is updated in compute_strain() and
-  //! compute_strain_volume_newmark() for particle with PML
-  void update_volume() noexcept override{};
-
-  //! Compute deformation gradient
-  //! Note: Deformation gradient is updated in update_stress_strain() and
-  //! compute stress() for particle with PML
-  void update_deformation_gradient(const std::string& type,
-                                   double dt) noexcept override{};
-
-  //! Compute deformation gradient increment using nodal velocity
+  //! Compute strain
+  //! \param[in] dt Analysis time step
   void compute_strain(double dt) noexcept override;
 
-  //! Compute stress and update deformation gradient
-  void compute_stress() noexcept override;
+  //! Map particle mass and momentum to nodes
+  //! \param[in] velocity_update Method to update nodal velocity
+  void map_mass_momentum_to_nodes(
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept override;
+
+  //! Map body force
+  //! \param[in] pgravity Gravity of a particle
+  void map_body_force(const VectorDim& pgravity) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -90,35 +73,51 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! \ingroup Implicit
   void initialise_constitutive_law() noexcept override;
 
-  //! Map mass, material and geometric stiffness matrix to cell
-  //! (used in equilibrium equation LHS)
+  //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
-  //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
-  //! \param[in] quasi_static Boolean of quasi-static analysis
-  inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
-                                           bool quasi_static) override;
+  void map_mass_momentum_inertia_to_nodes() noexcept override;
 
-  //! Compute deformation gradient and volume using nodal displacement
+  //! Map inertial force
+  //! \ingroup Implicit
+  void map_inertial_force() noexcept override;
+
+  //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
   void compute_strain_volume_newmark() noexcept override;
 
-  //! Compute stress using implicit updating scheme
-  //! \ingroup Implicit
-  void compute_stress_newmark() noexcept override;
-
-  //! Update stress and strain after convergence of Newton-Raphson iteration
-  //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
   /**@}*/
 
  protected:
-  //! Map geometric stiffness matrix to cell (used in equilibrium equation LHS)
+  //! Compute strain rate
   //! \ingroup Implicit
-  inline bool map_geometric_stiffness_matrix_to_cell();
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval strain rate at particle inside a cell
+  inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
 
-  //! Compute Hencky strain using deformation gradient
-  inline Eigen::Matrix<double, 6, 1> compute_hencky_strain() const;
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Compute strain increment
+  //! \ingroup Implicit
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval strain increment at particle inside a cell
+  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
+
+  //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  inline bool map_material_stiffness_matrix_to_cell() override;
+
+  //! Map mass matrix to cell (used in equilibrium equation LHS)
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
+  /**@}*/
 
  protected:
   //! particle id
@@ -155,8 +154,22 @@ class ParticlePML : public mpm::Particle<Tdim> {
   using Particle<Tdim>::acceleration_;
   //! Displacement
   using Particle<Tdim>::displacement_;
+  //! Shape functions
+  using Particle<Tdim>::shapefn_;
   //! dN/dX
   using Particle<Tdim>::dn_dx_;
+  //! dN/dX at cell centroid
+  using Particle<Tdim>::dn_dx_centroid_;
+  //! Strain rate
+  using Particle<Tdim>::strain_rate_;
+  //! dstrains
+  using Particle<Tdim>::dstrain_;
+  //! Strains
+  using Particle<Tdim>::strain_;
+  //! dvolumetric strain
+  using Particle<Tdim>::dvolumetric_strain_;
+  //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
+  using Particle<Tdim>::constitutive_matrix_;
   //! Size of particle in natural coordinates
   using Particle<Tdim>::natural_size_;
   //! Size of particle
@@ -164,19 +177,6 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
-
-  /**
-   * \defgroup FiniteStrainVariables Variables for PML formulation
-   */
-  /**@{*/
-  //! Deformation gradient
-  using Particle<Tdim>::deformation_gradient_;
-  //! Deformation gradient increment
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_{
-      Eigen::Matrix<double, 3, 3>::Identity()};
-  //! Shape function gradient at the reference configuration
-  Eigen::MatrixXd reference_dn_dx_;
-  /**@}*/
 
 };  // ParticlePML class
 }  // namespace mpm

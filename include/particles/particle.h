@@ -450,7 +450,6 @@ class Particle : public ParticleBase<Tdim> {
   void initialise_material(unsigned phase_size = 1);
 
   //! Compute strain rate
-  //! \ingroup Implicit
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
   //! \retval strain rate at particle inside a cell
@@ -498,13 +497,13 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  inline bool map_material_stiffness_matrix_to_cell();
+  virtual inline bool map_material_stiffness_matrix_to_cell();
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter beta of Newmark scheme
-  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
+  virtual inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
   /**@}*/
 
   /**

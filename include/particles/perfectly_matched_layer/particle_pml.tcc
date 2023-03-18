@@ -19,43 +19,64 @@ mpm::ParticlePML<Tdim>::ParticlePML(Index id, const VectorDim& coord,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
-// Compute shape functions and gradients
-template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::compute_shapefn() noexcept {
-  mpm::Particle<Tdim>::compute_shapefn();
-  this->reference_dn_dx_ = this->dn_dx_;
-}
-
-// Compute stress
-template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::compute_stress() noexcept {
-  // Check if material ptr is valid
-  assert(this->material() != nullptr);
-  // Calculate stress
-  this->stress_ =
-      (this->material())
-          ->compute_stress(stress_, deformation_gradient_,
-                           deformation_gradient_increment_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
-
-  // Update deformation gradient
-  this->deformation_gradient_ =
-      this->deformation_gradient_increment_ * this->deformation_gradient_;
-}
-
 // Compute strain of the particle
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::compute_strain(double dt) noexcept {
-  // Compute deformation gradient increment
-  // Note: Deformation gradient must be updated after compute_stress
-  deformation_gradient_increment_ =
-      this->compute_deformation_gradient_increment(
-          dn_dx_, mpm::ParticlePhase::Solid, dt);
+  // Assign strain rate
+  strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
+  // Update dstrain
+  dstrain_ = strain_rate_ * dt;
+  // Update strain
+  strain_.noalias() += dstrain_;
 
-  // Update volume and mass density
-  const double deltaJ = this->deformation_gradient_increment_.determinant();
-  this->volume_ *= deltaJ;
-  this->mass_density_ /= deltaJ;
+  // Compute at centroid
+  // Strain rate for reduced integration
+  const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
+      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+
+  // Assign volumetric strain at centroid
+  dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+}
+
+//! Map particle mass and momentum to nodes
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
+    mpm::VelocityUpdate velocity_update) noexcept {
+
+  switch (velocity_update) {
+    case mpm::VelocityUpdate::APIC:
+      this->map_mass_momentum_to_nodes_affine();
+      break;
+    case mpm::VelocityUpdate::ASFLIP:
+      this->map_mass_momentum_to_nodes_affine();
+      break;
+    case mpm::VelocityUpdate::TPIC:
+      this->map_mass_momentum_to_nodes_taylor();
+      break;
+    default:
+      // Check if particle mass is set
+      assert(mass_ != std::numeric_limits<double>::max());
+
+      // Map mass and momentum to nodes
+      for (unsigned i = 0; i < nodes_.size(); ++i) {
+        // Map mass and momentum
+        nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
+                               mass_ * shapefn_[i]);
+        nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
+                                   mass_ * shapefn_[i] * velocity_);
+      }
+      break;
+  }
+}
+
+//! Map body force
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::map_body_force(
+    const VectorDim& pgravity) noexcept {
+  // Compute nodal body forces
+  for (unsigned i = 0; i < nodes_.size(); ++i)
+    nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
+                                     (pgravity * mass_ * shapefn_(i)));
 }
 
 //! Function to reinitialise material to be run at the beginning of each time
@@ -71,30 +92,200 @@ void mpm::ParticlePML<Tdim>::initialise_constitutive_law() noexcept {
   // Compute initial consititutive matrix
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
-          stress_, previous_stress_, deformation_gradient_,
-          deformation_gradient_increment_, this,
+          stress_, previous_stress_, dstrain_, this,
           &state_variables_[mpm::ParticlePhase::Solid]);
 }
 
-//! Map mass and material stiffness matrix to cell
-//! (used in poisson equation LHS)
+//! Map particle mass, momentum and inertia to nodes
 template <unsigned Tdim>
-inline bool mpm::ParticlePML<Tdim>::map_stiffness_matrix_to_cell(
-    double newmark_beta, double dt, bool quasi_static) {
+void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
+  // Map mass and momentum to nodes
+  this->map_mass_momentum_to_nodes();
+
+  // Map inertia to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->update_inertia(true, mpm::ParticlePhase::Solid,
+                              mass_ * shapefn_[i] * acceleration_);
+  }
+}
+
+//! Map inertial force
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::map_inertial_force() noexcept {
+  // Check if particle has a valid cell ptr
+  assert(cell_ != nullptr);
+
+  // Compute nodal inertial forces
+  for (unsigned i = 0; i < nodes_.size(); ++i)
+    nodes_[i]->update_external_force(
+        true, mpm::ParticlePhase::Solid,
+        (-1. * nodes_[i]->acceleration(mpm::ParticlePhase::Solid) * mass_ *
+         shapefn_(i)));
+}
+
+// Compute strain and volume of the particle using nodal displacement
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::compute_strain_volume_newmark() noexcept {
+  // Compute the volume at the previous time step
+  this->volume_ /= (1. + dvolumetric_strain_);
+  this->mass_density_ *= (1. + dvolumetric_strain_);
+
+  // Compute strain increment from previous time step
+  this->dstrain_ =
+      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+
+  // Updated volumetric strain increment
+  this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
+
+  // Update volume using volumetric strain increment
+  this->volume_ *= (1. + dvolumetric_strain_);
+  this->mass_density_ /= (1. + dvolumetric_strain_);
+}
+
+// Compute strain rate of the particle
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<1>::compute_strain_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 1, 1> vel = nodes_[i]->velocity(phase);
+    strain_rate[0] += dn_dx(i, 0) * vel[0];
+  }
+
+  if (std::fabs(strain_rate(0)) < 1.E-15) strain_rate[0] = 0.;
+  return strain_rate;
+}
+
+// Compute strain rate of the particle
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<2>::compute_strain_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+    strain_rate[0] += dn_dx(i, 0) * vel[0];
+    strain_rate[1] += dn_dx(i, 1) * vel[1];
+    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+  }
+
+  if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
+  if (std::fabs(strain_rate[1]) < 1.E-15) strain_rate[1] = 0.;
+  if (std::fabs(strain_rate[3]) < 1.E-15) strain_rate[3] = 0.;
+  return strain_rate;
+}
+
+// Compute strain rate of the particle
+template <>
+inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<3>::compute_strain_rate(
+    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Define strain rate
+  Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+    strain_rate[0] += dn_dx(i, 0) * vel[0];
+    strain_rate[1] += dn_dx(i, 1) * vel[1];
+    strain_rate[2] += dn_dx(i, 2) * vel[2];
+    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+    strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
+    strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+  }
+
+  for (unsigned i = 0; i < strain_rate.size(); ++i)
+    if (std::fabs(strain_rate[i]) < 1.E-15) strain_rate[i] = 0.;
+  return strain_rate;
+}
+
+// Compute strain increment of the particle
+template <>
+inline Eigen::Matrix<double, 6, 1>
+    mpm::ParticlePML<1>::compute_strain_increment(const Eigen::MatrixXd& dn_dx,
+                                                  unsigned phase) noexcept {
+  // Define strain rincrement
+  Eigen::Matrix<double, 6, 1> strain_increment =
+      Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 1, 1> displacement = nodes_[i]->displacement(phase);
+    strain_increment[0] += dn_dx(i, 0) * displacement[0];
+  }
+
+  if (std::fabs(strain_increment(0)) < 1.E-15) strain_increment[0] = 0.;
+  return strain_increment;
+}
+
+// Compute strain increment of the particle
+template <>
+inline Eigen::Matrix<double, 6, 1>
+    mpm::ParticlePML<2>::compute_strain_increment(const Eigen::MatrixXd& dn_dx,
+                                                  unsigned phase) noexcept {
+  // Define strain increment
+  Eigen::Matrix<double, 6, 1> strain_increment =
+      Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
+    strain_increment[0] += dn_dx(i, 0) * displacement[0];
+    strain_increment[1] += dn_dx(i, 1) * displacement[1];
+    strain_increment[3] +=
+        dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+  }
+
+  if (std::fabs(strain_increment[0]) < 1.E-15) strain_increment[0] = 0.;
+  if (std::fabs(strain_increment[1]) < 1.E-15) strain_increment[1] = 0.;
+  if (std::fabs(strain_increment[3]) < 1.E-15) strain_increment[3] = 0.;
+  return strain_increment;
+}
+
+// Compute strain increment of the particle
+template <>
+inline Eigen::Matrix<double, 6, 1>
+    mpm::ParticlePML<3>::compute_strain_increment(const Eigen::MatrixXd& dn_dx,
+                                                  unsigned phase) noexcept {
+  // Define strain increment
+  Eigen::Matrix<double, 6, 1> strain_increment =
+      Eigen::Matrix<double, 6, 1>::Zero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    Eigen::Matrix<double, 3, 1> displacement = nodes_[i]->displacement(phase);
+    strain_increment[0] += dn_dx(i, 0) * displacement[0];
+    strain_increment[1] += dn_dx(i, 1) * displacement[1];
+    strain_increment[2] += dn_dx(i, 2) * displacement[2];
+    strain_increment[3] +=
+        dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+    strain_increment[4] +=
+        dn_dx(i, 2) * displacement[1] + dn_dx(i, 1) * displacement[2];
+    strain_increment[5] +=
+        dn_dx(i, 2) * displacement[0] + dn_dx(i, 0) * displacement[2];
+  }
+
+  for (unsigned i = 0; i < strain_increment.size(); ++i)
+    if (std::fabs(strain_increment[i]) < 1.E-15) strain_increment[i] = 0.;
+  return strain_increment;
+}
+
+//! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+template <unsigned Tdim>
+inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
   bool status = true;
   try {
     // Check if material ptr is valid
     assert(this->material() != nullptr);
 
-    // Compute material stiffness matrix
-    this->map_material_stiffness_matrix_to_cell();
+    // Reduce constitutive relations matrix depending on the dimension
+    const Eigen::MatrixXd reduced_dmatrix =
+        this->reduce_dmatrix(constitutive_matrix_);
 
-    // Compute mass matrix
-    if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);
+    // Calculate B matrix
+    const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
 
-    // Compute geometric stiffness matrix
-    this->map_geometric_stiffness_matrix_to_cell();
-
+    // Compute local material stiffness matrix
+    cell_->compute_local_material_stiffness_matrix(bmatrix, reduced_dmatrix,
+                                                   volume_);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -102,137 +293,21 @@ inline bool mpm::ParticlePML<Tdim>::map_stiffness_matrix_to_cell(
   return status;
 }
 
-//! Map geometric stiffness matrix to cell (used in equilibrium equation LHS)
+//! Map mass matrix to cell (used in poisson equation LHS)
 template <unsigned Tdim>
-inline bool mpm::ParticlePML<Tdim>::map_geometric_stiffness_matrix_to_cell() {
+inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
+                                                            double dt) {
   bool status = true;
   try {
-    // Stress tensor in suitable dimension
-    const Eigen::Matrix<double, Tdim, Tdim>& stress_matrix =
-        mpm::math::matrix_form<Tdim>(this->stress_);
+    // Check if material ptr is valid
+    assert(this->material() != nullptr);
 
-    const auto& reduced_stiffness = dn_dx_ * stress_matrix * dn_dx_.transpose();
-
-    const Eigen::Matrix<double, Tdim, Tdim> Idim =
-        Eigen::Matrix<double, Tdim, Tdim>::Identity();
-
-    Eigen::MatrixXd geometric_stiffness(Idim.rows() * reduced_stiffness.rows(),
-                                        Idim.cols() * reduced_stiffness.cols());
-    for (int i = 0; i < reduced_stiffness.cols(); i++)
-      for (int j = 0; j < reduced_stiffness.rows(); j++)
-        geometric_stiffness.block(i * Idim.rows(), j * Idim.cols(), Idim.rows(),
-                                  Idim.cols()) = reduced_stiffness(i, j) * Idim;
-
-    // Compute local geometric stiffness matrix
-    cell_->compute_local_geometric_stiffness_matrix(geometric_stiffness,
-                                                    volume_);
+    // Compute local mass matrix
+    cell_->compute_local_mass_matrix(shapefn_, volume_,
+                                     mass_density_ / (newmark_beta * dt * dt));
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
   }
   return status;
-}
-
-// Compute stress using implicit updating scheme
-template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::compute_stress_newmark() noexcept {
-  // Check if material ptr is valid
-  assert(this->material() != nullptr);
-  // Clone state variables
-  auto temp_state_variables = state_variables_[mpm::ParticlePhase::Solid];
-  // Calculate stress
-  this->stress_ = (this->material())
-                      ->compute_stress(previous_stress_, deformation_gradient_,
-                                       deformation_gradient_increment_, this,
-                                       &temp_state_variables);
-
-  // Compute current consititutive matrix
-  this->constitutive_matrix_ =
-      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
-          stress_, previous_stress_, deformation_gradient_,
-          deformation_gradient_increment_, this, &temp_state_variables);
-}
-
-// Compute deformation gradient increment and volume of the particle
-template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::compute_strain_volume_newmark() noexcept {
-  // Compute volume and mass density at the previous time step
-  double deltaJ = this->deformation_gradient_increment_.determinant();
-  this->volume_ /= deltaJ;
-  this->mass_density_ *= deltaJ;
-
-  // Compute deformation gradient increment from previous time step
-  this->deformation_gradient_increment_ =
-      this->compute_deformation_gradient_increment(this->reference_dn_dx_,
-                                                   mpm::ParticlePhase::Solid);
-
-  // Update dn_dx to the intermediate/iterative configuration
-  const auto& def_grad_inc_inverse =
-      this->deformation_gradient_increment_.inverse().block(0, 0, Tdim, Tdim);
-  for (unsigned i = 0; i < dn_dx_.rows(); i++)
-    dn_dx_.row(i) = reference_dn_dx_.row(i) * def_grad_inc_inverse;
-
-  // Update volume and mass density
-  deltaJ = this->deformation_gradient_increment_.determinant();
-  this->volume_ *= deltaJ;
-  this->mass_density_ /= deltaJ;
-}
-
-// Compute Hencky strain
-template <unsigned Tdim>
-inline Eigen::Matrix<double, 6, 1>
-    mpm::ParticlePML<Tdim>::compute_hencky_strain() const {
-
-  // Left Cauchy-Green strain
-  const Eigen::Matrix<double, 3, 3> left_cauchy_green_tensor =
-      deformation_gradient_ * deformation_gradient_.transpose();
-
-  // Principal values of left Cauchy-Green strain
-  Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-  const Eigen::Matrix<double, 3, 1> principal_left_cauchy_green_strain =
-      mpm::math::principal_tensor(left_cauchy_green_tensor, directors);
-
-  // Principal value of Hencky (logarithmic) strain
-  Eigen::Matrix<double, 3, 3> principal_hencky_strain =
-      Eigen::Matrix<double, 3, 3>::Zero();
-  principal_hencky_strain.diagonal() =
-      0.5 * principal_left_cauchy_green_strain.array().log();
-
-  // Hencky strain tensor and vector
-  const Eigen::Matrix<double, 3, 3> hencky_strain =
-      directors * principal_hencky_strain * directors.transpose();
-  Eigen::Matrix<double, 6, 1> hencky_strain_vector;
-  hencky_strain_vector(0) = hencky_strain(0, 0);
-  hencky_strain_vector(1) = hencky_strain(1, 1);
-  hencky_strain_vector(2) = hencky_strain(2, 2);
-  hencky_strain_vector(3) = 2. * hencky_strain(0, 1);
-  hencky_strain_vector(4) = 2. * hencky_strain(1, 2);
-  hencky_strain_vector(5) = 2. * hencky_strain(2, 0);
-
-  return hencky_strain_vector;
-}
-
-// Update stress and strain after convergence of Newton-Raphson iteration
-template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::update_stress_strain() noexcept {
-  // Update converged stress
-  this->stress_ =
-      (this->material())
-          ->compute_stress(this->previous_stress_, this->deformation_gradient_,
-                           this->deformation_gradient_increment_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
-
-  // Update initial stress of the time step
-  this->previous_stress_ = this->stress_;
-
-  // Update deformation gradient
-  this->deformation_gradient_ =
-      this->deformation_gradient_increment_ * this->deformation_gradient_;
-
-  // Volumetric strain increment
-  this->dvolumetric_strain_ =
-      (this->deformation_gradient_increment_.determinant() - 1.0);
-
-  // Reset deformation gradient increment
-  this->deformation_gradient_increment_.setIdentity();
 }

@@ -23,7 +23,8 @@ mpm::ParticlePML<Tdim>::ParticlePML(Index id, const VectorDim& coord,
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::compute_strain(double dt) noexcept {
   // Assign strain rate
-  strain_rate_ = this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
+  strain_rate_ =
+      this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::SinglePhase);
   // Update dstrain
   dstrain_ = strain_rate_ * dt;
   // Update strain
@@ -32,13 +33,15 @@ void mpm::ParticlePML<Tdim>::compute_strain(double dt) noexcept {
   // Compute at centroid
   // Strain rate for reduced integration
   const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
-      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
+      mpm::Particle<Tdim>::compute_strain_rate(dn_dx_centroid_,
+                                               mpm::ParticlePhase::SinglePhase);
 
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
 }
 
 //! Map particle mass and momentum to nodes
+// TODO:
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
     mpm::VelocityUpdate velocity_update) noexcept {
@@ -60,9 +63,9 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
       // Map mass and momentum to nodes
       for (unsigned i = 0; i < nodes_.size(); ++i) {
         // Map mass and momentum
-        nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
+        nodes_[i]->update_mass(true, mpm::ParticlePhase::SinglePhase,
                                mass_ * shapefn_[i]);
-        nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
+        nodes_[i]->update_momentum(true, mpm::ParticlePhase::SinglePhase,
                                    mass_ * shapefn_[i] * velocity_);
       }
       break;
@@ -73,30 +76,47 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_body_force(
     const VectorDim& pgravity) noexcept {
+  // Damping functions
+  const double c_x =
+      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_x"];
+  const double c_y =
+      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_y"];
+  const double c_z =
+      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_z"];
+  Eigen::Matrix<double, 3, 1> damping_functions;
+  damping_functions << c_x, c_y, c_z;
+
+  // Modify gravity
+  VectorDim pgravity_mod = pgravity;
+  for (unsigned i = 0; i < Tdim; i++) pgravity_mod(i) *= damping_functions(i);
+
   // Compute nodal body forces
   for (unsigned i = 0; i < nodes_.size(); ++i)
-    nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                     (pgravity * mass_ * shapefn_(i)));
+    nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,
+                                     (pgravity_mod * mass_ * shapefn_(i)));
 }
 
 //! Function to reinitialise material to be run at the beginning of each time
+// TODO:
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::initialise_constitutive_law() noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
 
   // Reset material to be Elastic
-  material_[mpm::ParticlePhase::Solid]->initialise(
-      &state_variables_[mpm::ParticlePhase::Solid]);
+  material_[mpm::ParticlePhase::SinglePhase]->initialise(
+      &state_variables_[mpm::ParticlePhase::SinglePhase]);
 
   // Compute initial consititutive matrix
   this->constitutive_matrix_ =
-      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
-          stress_, previous_stress_, dstrain_, this,
-          &state_variables_[mpm::ParticlePhase::Solid]);
+      material_[mpm::ParticlePhase::SinglePhase]
+          ->compute_consistent_tangent_matrix(
+              stress_, previous_stress_, dstrain_, this,
+              &state_variables_[mpm::ParticlePhase::SinglePhase]);
 }
 
 //! Map particle mass, momentum and inertia to nodes
+// TODO:
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
   // Map mass and momentum to nodes
@@ -104,7 +124,7 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
 
   // Map inertia to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->update_inertia(true, mpm::ParticlePhase::Solid,
+    nodes_[i]->update_inertia(true, mpm::ParticlePhase::SinglePhase,
                               mass_ * shapefn_[i] * acceleration_);
   }
 }
@@ -115,12 +135,28 @@ void mpm::ParticlePML<Tdim>::map_inertial_force() noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
+  // Damping functions
+  const double c_x =
+      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_x"];
+  const double c_y =
+      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_y"];
+  const double c_z =
+      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_z"];
+  Eigen::Matrix<double, 3, 1> damping_functions;
+  damping_functions << c_x, c_y, c_z;
+
   // Compute nodal inertial forces
-  for (unsigned i = 0; i < nodes_.size(); ++i)
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Modify nodal acceleration
+    auto n_acceleration =
+        nodes_[i]->acceleration(mpm::ParticlePhase::SinglePhase);
+    for (unsigned i = 0; i < Tdim; i++)
+      n_acceleration(i) *= damping_functions(i);
+
     nodes_[i]->update_external_force(
-        true, mpm::ParticlePhase::Solid,
-        (-1. * nodes_[i]->acceleration(mpm::ParticlePhase::Solid) * mass_ *
-         shapefn_(i)));
+        true, mpm::ParticlePhase::SinglePhase,
+        (-1. * n_acceleration * mass_ * shapefn_(i)));
+  }
 }
 
 // Compute strain and volume of the particle using nodal displacement
@@ -132,17 +168,20 @@ void mpm::ParticlePML<Tdim>::compute_strain_volume_newmark() noexcept {
 
   // Compute strain increment from previous time step
   this->dstrain_ =
-      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::SinglePhase);
 
   // Updated volumetric strain increment
-  this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
+  const Eigen::Matrix<double, 6, 1>& real_strain =
+      mpm::Particle<Tdim>::compute_strain_increment(
+          dn_dx_, mpm::ParticlePhase::SinglePhase);
+  this->dvolumetric_strain_ = real_strain.head(Tdim).sum();
 
   // Update volume using volumetric strain increment
   this->volume_ *= (1. + dvolumetric_strain_);
   this->mass_density_ /= (1. + dvolumetric_strain_);
 }
 
-// Compute strain rate of the particle
+// Compute strain rate of the PML particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<1>::compute_strain_rate(
     const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
@@ -158,7 +197,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<1>::compute_strain_rate(
   return strain_rate;
 }
 
-// Compute strain rate of the particle
+// Compute strain rate of the PML particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<2>::compute_strain_rate(
     const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
@@ -169,7 +208,13 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<2>::compute_strain_rate(
     Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
     strain_rate[1] += dn_dx(i, 1) * vel[1];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
+
+    // Damping functions
+    const double c_x = state_variables_[phase]["damping_function_x"];
+    const double c_y = state_variables_[phase]["damping_function_y"];
+
+    strain_rate[3] += ((1 + c_x) / (1 + c_y)) * dn_dx(i, 1) * vel[0] +
+                      ((1 + c_y) / (1 + c_x)) * dn_dx(i, 0) * vel[1];
   }
 
   if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
@@ -178,7 +223,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<2>::compute_strain_rate(
   return strain_rate;
 }
 
-// Compute strain rate of the particle
+// Compute strain rate of the PML particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<3>::compute_strain_rate(
     const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
@@ -190,9 +235,18 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<3>::compute_strain_rate(
     strain_rate[0] += dn_dx(i, 0) * vel[0];
     strain_rate[1] += dn_dx(i, 1) * vel[1];
     strain_rate[2] += dn_dx(i, 2) * vel[2];
-    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
-    strain_rate[4] += dn_dx(i, 2) * vel[1] + dn_dx(i, 1) * vel[2];
-    strain_rate[5] += dn_dx(i, 2) * vel[0] + dn_dx(i, 0) * vel[2];
+
+    // Damping functions
+    const double c_x = state_variables_[phase]["damping_function_x"];
+    const double c_y = state_variables_[phase]["damping_function_y"];
+    const double c_z = state_variables_[phase]["damping_function_z"];
+
+    strain_rate[3] += ((1 + c_x) / (1 + c_y)) * dn_dx(i, 1) * vel[0] +
+                      ((1 + c_y) / (1 + c_x)) * dn_dx(i, 0) * vel[1];
+    strain_rate[4] += ((1 + c_y) / (1 + c_z)) * dn_dx(i, 2) * vel[1] +
+                      ((1 + c_z) / (1 + c_y)) * dn_dx(i, 1) * vel[2];
+    strain_rate[5] += ((1 + c_x) / (1 + c_z)) * dn_dx(i, 2) * vel[0] +
+                      ((1 + c_z) / (1 + c_x)) * dn_dx(i, 0) * vel[2];
   }
 
   for (unsigned i = 0; i < strain_rate.size(); ++i)
@@ -231,8 +285,14 @@ inline Eigen::Matrix<double, 6, 1>
     Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
     strain_increment[0] += dn_dx(i, 0) * displacement[0];
     strain_increment[1] += dn_dx(i, 1) * displacement[1];
+
+    // Damping functions
+    const double c_x = state_variables_[phase]["damping_function_x"];
+    const double c_y = state_variables_[phase]["damping_function_y"];
+
     strain_increment[3] +=
-        dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+        ((1 + c_x) / (1 + c_y)) * dn_dx(i, 1) * displacement[0] +
+        ((1 + c_y) / (1 + c_x)) * dn_dx(i, 0) * displacement[1];
   }
 
   if (std::fabs(strain_increment[0]) < 1.E-15) strain_increment[0] = 0.;
@@ -255,12 +315,21 @@ inline Eigen::Matrix<double, 6, 1>
     strain_increment[0] += dn_dx(i, 0) * displacement[0];
     strain_increment[1] += dn_dx(i, 1) * displacement[1];
     strain_increment[2] += dn_dx(i, 2) * displacement[2];
+
+    // Damping functions
+    const double c_x = state_variables_[phase]["damping_function_x"];
+    const double c_y = state_variables_[phase]["damping_function_y"];
+    const double c_z = state_variables_[phase]["damping_function_z"];
+
     strain_increment[3] +=
-        dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
+        ((1 + c_x) / (1 + c_y)) * dn_dx(i, 1) * displacement[0] +
+        ((1 + c_y) / (1 + c_x)) * dn_dx(i, 0) * displacement[1];
     strain_increment[4] +=
-        dn_dx(i, 2) * displacement[1] + dn_dx(i, 1) * displacement[2];
+        ((1 + c_y) / (1 + c_z)) * dn_dx(i, 2) * displacement[1] +
+        ((1 + c_z) / (1 + c_y)) * dn_dx(i, 1) * displacement[2];
     strain_increment[5] +=
-        dn_dx(i, 2) * displacement[0] + dn_dx(i, 0) * displacement[2];
+        ((1 + c_x) / (1 + c_z)) * dn_dx(i, 2) * displacement[0] +
+        ((1 + c_z) / (1 + c_x)) * dn_dx(i, 0) * displacement[2];
   }
 
   for (unsigned i = 0; i < strain_increment.size(); ++i)
@@ -269,6 +338,7 @@ inline Eigen::Matrix<double, 6, 1>
 }
 
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
+// TODO:
 template <unsigned Tdim>
 inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
   bool status = true;
@@ -294,6 +364,7 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
 }
 
 //! Map mass matrix to cell (used in poisson equation LHS)
+// TODO:
 template <unsigned Tdim>
 inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
                                                             double dt) {

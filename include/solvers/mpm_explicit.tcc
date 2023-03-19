@@ -99,7 +99,10 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   }
 
   // Create nodal properties
-  if (interface_ or absorbing_boundary_) mesh_->create_nodal_properties();
+  if (interface_ or absorbing_boundary_)
+    mesh_->create_nodal_properties();
+  else if (pml_boundary_)
+    mesh_->create_nodal_properties_pml();
 
   // Initialise loading conditions
   this->initialise_loads();
@@ -132,6 +135,11 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
+
+    // Apply PML specific routines
+    if (pml_boundary_) {
+      mpm_scheme_->pml_boundary_properties();
+    }
 
     // Map material properties to nodes
     contact_->compute_contact_forces();

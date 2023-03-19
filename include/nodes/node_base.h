@@ -326,6 +326,15 @@ class NodeBase {
   //! Compute multimaterial normal unit vector
   virtual void compute_multimaterial_normal_unit_vector() = 0;
 
+  //! Return nodal PML status
+  virtual bool pml() = 0;
+
+  //! Assign nodal PML status
+  virtual void assign_pml(bool pml) = 0;
+
+  //! Compute velocity from the momentum and damped mass vector for PML nodes
+  virtual void compute_pml_velocity() = 0;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

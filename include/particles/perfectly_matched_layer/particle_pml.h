@@ -60,6 +60,9 @@ class ParticlePML : public mpm::Particle<Tdim> {
       mpm::VelocityUpdate velocity_update =
           mpm::VelocityUpdate::FLIP) noexcept override;
 
+  // ! Map damped mass vector to nodes
+  void map_damped_masses_to_nodes() noexcept override;
+
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;

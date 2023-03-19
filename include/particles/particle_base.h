@@ -167,6 +167,9 @@ class ParticleBase {
   // ! Map linear elastic wave velocities to nodes
   virtual void map_wave_velocities_to_nodes() noexcept = 0;
 
+  // ! Map damped mass vector to nodes
+  virtual void map_damped_masses_to_nodes() noexcept = 0;
+
   //! Assign material
   virtual bool assign_material(const std::shared_ptr<Material<Tdim>>& material,
                                unsigned phase = mpm::ParticlePhase::Solid) = 0;

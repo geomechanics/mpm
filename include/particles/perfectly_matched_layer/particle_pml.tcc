@@ -175,6 +175,23 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
   }
 }
 
+//! Map damped mass vector to nodes
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::map_damped_masses_to_nodes() noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // Damping functions
+  const VectorDim& damping_functions = this->mass_damping_functions();
+
+  // Map damped mass vector to nodal property
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const auto& damped_mass = mass_ * shapefn_[i] * damping_functions;
+    nodes_[i]->update_property(true, "damped_masses", damped_mass, 0, Tdim);
+    nodes_[i]->assign_pml(true);
+  }
+}
+
 //! Map body force
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_body_force(

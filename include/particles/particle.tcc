@@ -1710,3 +1710,20 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 
   return beta;
 }
+
+//! Map damped mass vector to nodes
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_damped_masses_to_nodes() noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // For normal particle damping scaling is not necessary
+  Eigen::Matrix<double, Tdim, 1> damping_functions =
+      Eigen::Matrix<double, Tdim, 1>::Ones();
+
+  // Map damped mass vector to nodal property
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const auto& damped_mass = mass_ * shapefn_[i] * damping_functions;
+    nodes_[i]->update_property(true, "damped_masses", damped_mass, 0, Tdim);
+  }
+}

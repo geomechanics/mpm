@@ -327,6 +327,19 @@ class Node : public NodeBase<Tdim> {
   //! Compute multimaterial normal unit vector
   void compute_multimaterial_normal_unit_vector() override;
 
+  //! Return nodal PML status
+  bool pml() override { return pml_; };
+
+  //! Assign nodal PML status
+  void assign_pml(bool pml) override {
+    node_mutex_.lock();
+    pml_ = pml;
+    node_mutex_.unlock();
+  }
+
+  //! Compute velocity from the momentum and damped mass vector for PML nodes
+  void compute_pml_velocity() override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -646,6 +659,8 @@ class Node : public NodeBase<Tdim> {
   //! Cohesion constraints
   bool cohesion_{false};
   std::tuple<unsigned, int, double, double> cohesion_constraint_;
+  //! Perfectly Matched Layer
+  bool pml_{false};
   //! Mathematical function for pressure
   std::map<unsigned, std::shared_ptr<FunctionBase>> pressure_function_;
   //! Concentrated force

@@ -2219,6 +2219,30 @@ void mpm::Mesh<Tdim>::create_nodal_properties() {
   }
 }
 
+// Create the nodal properties' map for analysis with perfectly matched layer
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::create_nodal_properties_pml() {
+  // Initialise the shared pointer to nodal properties
+  nodal_properties_ = std::make_shared<mpm::NodalProperties>();
+
+  // Check if nodes_ and materials_is empty and throw runtime error if they
+  // are
+  if (nodes_.size() != 0 && materials_.size() != 0) {
+    // Compute number of rows in nodal properties for vector entities
+    const unsigned nrows = nodes_.size() * Tdim;
+    // Create pool data for each property in the nodal properties struct
+    // object. Properties must be named in the plural form
+    nodal_properties_->create_property("damped_masses", nrows, 1);
+
+    // Iterate over all nodes to initialise the property handle in each node
+    // and assign its node id as the prop id in the nodal property data pool
+    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+      (*nitr)->initialise_property_handle((*nitr)->id(), nodal_properties_);
+  } else {
+    throw std::runtime_error("Number of nodes or number of materials is zero");
+  }
+}
+
 // Initialise the nodal properties' map
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::initialise_nodal_properties() {

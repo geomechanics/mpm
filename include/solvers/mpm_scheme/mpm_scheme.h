@@ -62,6 +62,9 @@ class MPMScheme {
   //! Assign relevant properties for absorbing boundary
   virtual inline void absorbing_boundary_properties();
 
+  //! Assign relevant properties for perfectly matched layer boundary
+  virtual inline void pml_boundary_properties();
+
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Method to update particle velocity
   //! \param[in] blending_ratio FLIP-PIC blending ratio

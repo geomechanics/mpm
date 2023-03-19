@@ -520,6 +520,9 @@ class Mesh {
   // Create the nodal properties' map
   void create_nodal_properties();
 
+  // Create the nodal properties' map for analysis with perfectly matched layer
+  void create_nodal_properties_pml();
+
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
 

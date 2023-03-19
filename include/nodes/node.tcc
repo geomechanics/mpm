@@ -1081,6 +1081,32 @@ void mpm::Node<Tdim, Tdof,
   node_mutex_.unlock();
 }
 
+//! Compute PML velocity
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity() {
+  const double tolerance = 1.E-16;
+
+  // Damped mass vector
+  VectorDim damped_mass =
+      property_handle_->property("damped_masses", prop_id_, 0, Tdim);
+
+  for (unsigned phase = 0; phase < Tnphases; ++phase) {
+    if (mass_(phase) > tolerance) {
+      for (unsigned i = 0; i < Tdim; i++)
+        velocity_.col(phase)(i) = momentum_.col(phase)(i) / damped_mass(i);
+
+      // Check to see if value is below threshold
+      for (unsigned i = 0; i < velocity_.rows(); ++i)
+        if (std::abs(velocity_.col(phase)(i)) < 1.E-15)
+          velocity_.col(phase)(i) = 0.;
+    }
+  }
+
+  // Apply velocity constraints, which also sets acceleration to 0,
+  // when velocity is set.
+  this->apply_velocity_constraints();
+}
+
 //! Function that initialise variables for nonlocal MPM
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {

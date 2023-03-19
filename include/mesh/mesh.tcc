@@ -2250,6 +2250,76 @@ void mpm::Mesh<Tdim>::initialise_nodal_properties() {
   nodal_properties_->initialise_nodal_properties();
 }
 
+//! Assign particle PML distance function
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        particle_distance_functions) {
+  bool status = true;
+
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign pore "
+          "pressures");
+
+    double L_x, L_y, L_z;
+    L_x = L_y = L_z = 0.0;
+    for (const auto& particle_distance_function : particle_distance_functions) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_distance_function);
+      // Distance function vector
+      VectorDim pdist_functions = std::get<1>(particle_distance_function);
+
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        // Check if material state_variable has r_x, r_y, and r_z
+        if ((!std::isnan(
+                map_particles_[pid]->state_variable("distance_function_x"))) or
+            (!std::isnan(
+                map_particles_[pid]->state_variable("distance_function_y"))) or
+            (!std::isnan(
+                map_particles_[pid]->state_variable("distance_function_z")))) {
+          status = false;
+          throw std::runtime_error("Assign PML distance function is invalid");
+          break;
+        }
+
+        // Check for every dimension
+        switch (Tdim) {
+          case (3):
+            if (pdist_functions(2) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function z cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_z",
+                                                       pdist_functions(2));
+            L_z = std::max(L_z, pdist_functions(2));
+          case (2):
+            if (pdist_functions(1) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function y cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_y",
+                                                       pdist_functions(1));
+            L_y = std::max(L_y, pdist_functions(1));
+          case (1):
+            if (pdist_functions(0) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function x cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_x",
+                                                       pdist_functions(0));
+            L_x = std::max(L_x, pdist_functions(0));
+        }
+      }
+    }
+
+    // Compute minimum boundary distance
+    double L = std::min(L_x, std::min(L_y, L_z));
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Upgrade cells to nonlocal cells
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::upgrade_cells_to_nonlocal(

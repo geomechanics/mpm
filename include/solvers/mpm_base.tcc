@@ -452,6 +452,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
     console_->warn("#{}: Material sets are not specified", __LINE__,
                    exception.what());
   }
+
+  // Read and assign perfectly matched layer properties
+  this->particles_pml_properties(mesh_props, particle_io);
 }
 
 // Initialise materials
@@ -1751,6 +1754,47 @@ void mpm::MPMBase<Tdim>::pressure_smoothing(unsigned phase) {
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_pressure_smoothing,
                 std::placeholders::_1, phase));
+}
+
+// Read and assign perfectly matched layer properties
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_pml_properties(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("particles_pml_distance_functions") !=
+        mesh_props.end()) {
+      // Get generator type
+      const std::string type =
+          mesh_props["particles_pml_distance_functions"]["type"]
+              .template get<std::string>();
+      if (type == "file") {
+        std::string fpml_r =
+            mesh_props["particles_pml_distance_functions"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fpml_r).empty()) {
+
+          // Get pml distance function for PML particles
+          const auto particles_pml_r =
+              particle_io->read_particles_vector_properties(
+                  io_->file_name(fpml_r));
+
+          // Assign particles distance functions
+          if (!mesh_->assign_pml_particles_distance_functions(particles_pml_r))
+            throw std::runtime_error(
+                "Particles PML distance functions are not properly assigned");
+        }
+      }
+
+      // Activate PML boundary boolean
+      this->pml_boundary_ = true;
+    } else
+      throw std::runtime_error("Particle PML distance function JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle PML distance function are undefined {} ",
+                   __LINE__, exception.what());
+  }
 }
 
 //! MPM implicit solver initialization

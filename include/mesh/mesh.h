@@ -374,6 +374,12 @@ class Mesh {
   bool assign_particles_stresses(
       const std::vector<Eigen::Matrix<double, 6, 1>>& particle_stresses);
 
+  //! Assign pml particles distance functions
+  //! \param[in] particle_distance_functions Particle distance functions
+  bool assign_pml_particles_distance_functions(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_distance_functions);
+
   //! Assign particles cells
   //! \param[in] particles_cells Particles and cells
   bool assign_particles_cells(

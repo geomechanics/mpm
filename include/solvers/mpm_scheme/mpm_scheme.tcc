@@ -212,7 +212,7 @@ template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
     const std::string& damping_type, double damping_factor, unsigned step,
-    bool update_defgrad) {
+    bool update_defgrad, bool pml_boundary) {
 
   // Update nodal acceleration constraints
   mesh_->update_nodal_acceleration_constraints(step * dt_);
@@ -229,6 +229,14 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
                   std::placeholders::_1, phase, dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+  // Recompute acceleration and velocity for PML nodes
+  if (pml_boundary) {
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::compute_pml_acceleration_velocity,
+                  std::placeholders::_1, phase, dt_),
+        std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
+  }
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

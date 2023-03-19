@@ -1107,6 +1107,46 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity() {
   this->apply_velocity_constraints();
 }
 
+//! Compute PML nodal acceleration and velocity
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_acceleration_velocity(
+    unsigned phase, double dt) noexcept {
+  bool status = false;
+  const double tolerance = 1.0E-15;
+
+  // Damped mass vector
+  VectorDim damped_mass =
+      property_handle_->property("damped_masses", prop_id_, 0, Tdim);
+
+  if (mass_(phase) > tolerance) {
+    // acceleration = (unbalaced force / mass)
+    for (unsigned i = 0; i < Tdim; i++)
+      this->acceleration_.col(phase)(i) =
+          (this->external_force_.col(phase)(i) +
+           this->internal_force_.col(phase)(i)) /
+          damped_mass(i);
+
+    // Apply acceleration constraints
+    this->apply_acceleration_constraints();
+
+    // Velocity += acceleration * dt
+    this->velocity_.col(phase).noalias() += this->acceleration_.col(phase) * dt;
+    // Apply velocity constraints, which also sets acceleration to 0,
+    // when velocity is set.
+    this->apply_velocity_constraints();
+
+    // Set a threshold
+    for (unsigned i = 0; i < Tdim; ++i)
+      if (std::abs(velocity_.col(phase)(i)) < tolerance)
+        velocity_.col(phase)(i) = 0.;
+    for (unsigned i = 0; i < Tdim; ++i)
+      if (std::abs(acceleration_.col(phase)(i)) < tolerance)
+        acceleration_.col(phase)(i) = 0.;
+    status = true;
+  }
+  return status;
+}
+
 //! Function that initialise variables for nonlocal MPM
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {

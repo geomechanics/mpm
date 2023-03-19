@@ -56,7 +56,8 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
                                           double blending_ratio, unsigned phase,
                                           const std::string& damping_type,
                                           double damping_factor, unsigned step,
-                                          bool update_defgrad) override;
+                                          bool update_defgrad,
+                                          bool pml_boundary) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

@@ -509,9 +509,9 @@ bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
 template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
   // Particle kinematics and volume
-  mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
-                                           phase_, "Cundall", damping_factor_,
-                                           step_, update_defgrad_);
+  mpm_scheme_->compute_particle_kinematics(
+      velocity_update_, blending_ratio_, phase_, "Cundall", damping_factor_,
+      step_, update_defgrad_, pml_boundary_);
 
   // Particle stress, strain and volume
   mpm_scheme_->update_particle_stress_strain_volume();

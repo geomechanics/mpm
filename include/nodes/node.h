@@ -340,6 +340,13 @@ class Node : public NodeBase<Tdim> {
   //! Compute velocity from the momentum and damped mass vector for PML nodes
   void compute_pml_velocity() override;
 
+  //! Compute acceleration and velocity with cundall damping factor considering
+  //! damped mass vector for PML nodes
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  bool compute_pml_acceleration_velocity(unsigned phase,
+                                         double dt) noexcept override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

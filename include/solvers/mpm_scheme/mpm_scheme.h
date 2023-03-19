@@ -75,7 +75,7 @@ class MPMScheme {
   virtual inline void compute_particle_kinematics(
       mpm::VelocityUpdate velocity_update, double blending_ratio,
       unsigned phase, const std::string& damping_type, double damping_factor,
-      unsigned step, bool update_defgrad);
+      unsigned step, bool update_defgrad, bool pml_boundary);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

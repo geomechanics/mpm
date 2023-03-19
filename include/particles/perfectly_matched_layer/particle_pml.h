@@ -114,6 +114,21 @@ class ParticlePML : public mpm::Particle<Tdim> {
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
   /**@}*/
 
+  /**
+   * \defgroup AdvancedMapping Functions dealing with advance mapping scheme of
+   * MPM
+   */
+  /**@{*/
+  //! Map particle mass and momentum to nodes for affine transformation
+  //! \ingroup AdvancedMapping
+  void map_mass_momentum_to_nodes_affine() noexcept override;
+
+  //! Map particle mass and momentum to nodes for approximate taylor expansion
+  //! \ingroup AdvancedMapping
+  void map_mass_momentum_to_nodes_taylor() noexcept override;
+
+  /**@}*/
+
   //! Function to return mass damping functions
   VectorDim mass_damping_functions() const noexcept;
 
@@ -175,6 +190,8 @@ class ParticlePML : public mpm::Particle<Tdim> {
   using Particle<Tdim>::natural_size_;
   //! Size of particle
   using Particle<Tdim>::pack_size_;
+  //! Mapping matrix for advance mapping schemes
+  using Particle<Tdim>::mapping_matrix_;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

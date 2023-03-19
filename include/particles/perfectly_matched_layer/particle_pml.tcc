@@ -47,15 +47,12 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
 
   switch (velocity_update) {
     case mpm::VelocityUpdate::APIC:
-      // TODO:
       this->map_mass_momentum_to_nodes_affine();
       break;
     case mpm::VelocityUpdate::ASFLIP:
-      // TODO:
       this->map_mass_momentum_to_nodes_affine();
       break;
     case mpm::VelocityUpdate::TPIC:
-      // TODO:
       this->map_mass_momentum_to_nodes_taylor();
       break;
     default:
@@ -80,20 +77,82 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
   }
 }
 
-//! Map body force
+//! Map particle mass and momentum to nodes for affine transformation
 template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::map_body_force(
-    const VectorDim& pgravity) noexcept {
+void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes_affine() noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // Initialise Mapping matrix if necessary
+  if (mapping_matrix_.rows() != Tdim) {
+    mapping_matrix_.resize(Tdim, Tdim);
+    mapping_matrix_.setZero();
+  }
+
+  // Shape tensor computation for APIC
+  Eigen::MatrixXd shape_tensor;
+  shape_tensor.resize(Tdim, Tdim);
+  shape_tensor.setZero();
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const auto& branch_vector = nodes_[i]->coordinates() - this->coordinates_;
+    shape_tensor.noalias() +=
+        shapefn_[i] * branch_vector * branch_vector.transpose();
+  }
+
   // Damping functions
   const VectorDim& damping_functions = this->mass_damping_functions();
 
-  // Modify gravity
-  const VectorDim& pgravity_mod = pgravity.cwiseProduct(damping_functions);
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Initialise map velocity
+    VectorDim map_velocity = velocity_;
+    map_velocity.noalias() += mapping_matrix_ * shape_tensor.inverse() *
+                              (nodes_[i]->coordinates() - this->coordinates_);
 
-  // Compute nodal body forces
-  for (unsigned i = 0; i < nodes_.size(); ++i)
-    nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,
-                                     (pgravity_mod * mass_ * shapefn_(i)));
+    // Modify Velocity to include damping term
+    const VectorDim& velocity_mod =
+        map_velocity.cwiseProduct(damping_functions);
+
+    // Map mass and momentum
+    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
+                           mass_ * shapefn_[i]);
+    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
+                               mass_ * shapefn_[i] * velocity_mod);
+  }
+}
+
+//! Map particle mass and momentum to nodes for approximate taylor expansion
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes_taylor() noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // Initialise Mapping matrix if necessary
+  if (mapping_matrix_.rows() != Tdim) {
+    mapping_matrix_.resize(Tdim, Tdim);
+    mapping_matrix_.setZero();
+  }
+
+  // Damping functions
+  const VectorDim& damping_functions = this->mass_damping_functions();
+
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Initialise map velocity
+    VectorDim map_velocity = velocity_;
+    map_velocity.noalias() +=
+        mapping_matrix_ * (nodes_[i]->coordinates() - this->coordinates_);
+
+    // Modify Velocity to include damping term
+    const VectorDim& velocity_mod =
+        map_velocity.cwiseProduct(damping_functions);
+
+    // Map mass and momentum
+    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
+                           mass_ * shapefn_[i]);
+    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
+                               mass_ * shapefn_[i] * velocity_mod);
+  }
 }
 
 //! Map particle mass, momentum and inertia to nodes
@@ -114,6 +173,22 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
     nodes_[i]->update_inertia(true, mpm::ParticlePhase::SinglePhase,
                               mass_ * shapefn_[i] * acceleration_mod);
   }
+}
+
+//! Map body force
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::map_body_force(
+    const VectorDim& pgravity) noexcept {
+  // Damping functions
+  const VectorDim& damping_functions = this->mass_damping_functions();
+
+  // Modify gravity
+  const VectorDim& pgravity_mod = pgravity.cwiseProduct(damping_functions);
+
+  // Compute nodal body forces
+  for (unsigned i = 0; i < nodes_.size(); ++i)
+    nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,
+                                     (pgravity_mod * mass_ * shapefn_(i)));
 }
 
 //! Map inertial force

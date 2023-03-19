@@ -36,12 +36,48 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   //! Delete assignement operator
   LinearElasticPML& operator=(const LinearElasticPML&) = delete;
 
+  //! Initialise material
+  //! \brief Function that initialise material to be called at the beginning of
+  //! time step
+  void initialise(mpm::dense_map* state_vars) override {
+    const double multiplier =
+        alpha_ * std::pow(1.0 / boundary_thickness_, dpower_);
+    (*state_vars).at("damping_function_x") =
+        multiplier * std::pow((*state_vars).at("distance_function_x"), dpower_);
+    (*state_vars).at("damping_function_y") =
+        multiplier * std::pow((*state_vars).at("distance_function_y"), dpower_);
+    (*state_vars).at("damping_function_z") =
+        multiplier * std::pow((*state_vars).at("distance_function_z"), dpower_);
+  };
+
   //! Initialise history variables
   //! \retval state_vars State variables with history
   mpm::dense_map initialise_state_variables() override;
 
   //! State variables
   std::vector<std::string> state_variables() const override;
+
+  //! Compute stress
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval updated_stress Updated value of stress
+  Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
+                          const ParticleBase<Tdim>* ptr,
+                          mpm::dense_map* state_vars) override;
+
+  //! Compute consistent tangent matrix
+  //! \param[in] stress Updated stress
+  //! \param[in] prev_stress Stress at the current step
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval dmatrix Constitutive relations mattrix
+  Matrix6x6 compute_consistent_tangent_matrix(
+      const Vector6d& stress, const Vector6d& prev_stress,
+      const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
+      mpm::dense_map* state_vars) override;
 
  protected:
   //! material id
@@ -50,6 +86,11 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
+
+ private:
+  //! Compute elastic tensor
+  //! \param[in] state_vars History-dependent state variables
+  Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
 
  private:
   //! Density
@@ -66,6 +107,8 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   double alpha_{std::numeric_limits<double>::max()};
   //! Damping power
   double dpower_{0.};
+  //! PML boundary thickness
+  double boundary_thickness_{std::numeric_limits<double>::max()};
 };  // LinearElasticPML class
 }  // namespace mpm
 

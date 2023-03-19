@@ -41,24 +41,32 @@ void mpm::ParticlePML<Tdim>::compute_strain(double dt) noexcept {
 }
 
 //! Map particle mass and momentum to nodes
-// TODO:
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
     mpm::VelocityUpdate velocity_update) noexcept {
 
   switch (velocity_update) {
     case mpm::VelocityUpdate::APIC:
+      // TODO:
       this->map_mass_momentum_to_nodes_affine();
       break;
     case mpm::VelocityUpdate::ASFLIP:
+      // TODO:
       this->map_mass_momentum_to_nodes_affine();
       break;
     case mpm::VelocityUpdate::TPIC:
+      // TODO:
       this->map_mass_momentum_to_nodes_taylor();
       break;
     default:
       // Check if particle mass is set
       assert(mass_ != std::numeric_limits<double>::max());
+
+      // Damping functions
+      const VectorDim& damping_functions = this->mass_damping_functions();
+
+      // Modify Velocity to include damping term
+      const VectorDim& velocity_mod = velocity_.cwiseProduct(damping_functions);
 
       // Map mass and momentum to nodes
       for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -66,7 +74,7 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes(
         nodes_[i]->update_mass(true, mpm::ParticlePhase::SinglePhase,
                                mass_ * shapefn_[i]);
         nodes_[i]->update_momentum(true, mpm::ParticlePhase::SinglePhase,
-                                   mass_ * shapefn_[i] * velocity_);
+                                   mass_ * shapefn_[i] * velocity_mod);
       }
       break;
   }
@@ -77,18 +85,10 @@ template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_body_force(
     const VectorDim& pgravity) noexcept {
   // Damping functions
-  const double c_x =
-      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_x"];
-  const double c_y =
-      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_y"];
-  const double c_z =
-      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_z"];
-  Eigen::Matrix<double, 3, 1> damping_functions;
-  damping_functions << c_x, c_y, c_z;
+  const VectorDim& damping_functions = this->mass_damping_functions();
 
   // Modify gravity
-  VectorDim pgravity_mod = pgravity;
-  for (unsigned i = 0; i < Tdim; i++) pgravity_mod(i) *= damping_functions(i);
+  const VectorDim& pgravity_mod = pgravity.cwiseProduct(damping_functions);
 
   // Compute nodal body forces
   for (unsigned i = 0; i < nodes_.size(); ++i)
@@ -96,36 +96,23 @@ void mpm::ParticlePML<Tdim>::map_body_force(
                                      (pgravity_mod * mass_ * shapefn_(i)));
 }
 
-//! Function to reinitialise material to be run at the beginning of each time
-// TODO:
-template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::initialise_constitutive_law() noexcept {
-  // Check if material ptr is valid
-  assert(this->material() != nullptr);
-
-  // Reset material to be Elastic
-  material_[mpm::ParticlePhase::SinglePhase]->initialise(
-      &state_variables_[mpm::ParticlePhase::SinglePhase]);
-
-  // Compute initial consititutive matrix
-  this->constitutive_matrix_ =
-      material_[mpm::ParticlePhase::SinglePhase]
-          ->compute_consistent_tangent_matrix(
-              stress_, previous_stress_, dstrain_, this,
-              &state_variables_[mpm::ParticlePhase::SinglePhase]);
-}
-
 //! Map particle mass, momentum and inertia to nodes
-// TODO:
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
   // Map mass and momentum to nodes
   this->map_mass_momentum_to_nodes();
 
+  // Damping functions
+  const VectorDim& damping_functions = this->mass_damping_functions();
+
+  // Modify Acceleration
+  const VectorDim& acceleration_mod =
+      acceleration_.cwiseProduct(damping_functions);
+
   // Map inertia to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_inertia(true, mpm::ParticlePhase::SinglePhase,
-                              mass_ * shapefn_[i] * acceleration_);
+                              mass_ * shapefn_[i] * acceleration_mod);
   }
 }
 
@@ -136,26 +123,19 @@ void mpm::ParticlePML<Tdim>::map_inertial_force() noexcept {
   assert(cell_ != nullptr);
 
   // Damping functions
-  const double c_x =
-      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_x"];
-  const double c_y =
-      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_y"];
-  const double c_z =
-      state_variables_[mpm::ParticlePhase::SinglePhase]["damping_function_z"];
-  Eigen::Matrix<double, 3, 1> damping_functions;
-  damping_functions << c_x, c_y, c_z;
+  const VectorDim& damping_functions = this->mass_damping_functions();
 
   // Compute nodal inertial forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Modify nodal acceleration
-    auto n_acceleration =
-        nodes_[i]->acceleration(mpm::ParticlePhase::SinglePhase);
-    for (unsigned i = 0; i < Tdim; i++)
-      n_acceleration(i) *= damping_functions(i);
+    const VectorDim& acceleration_mod =
+        nodes_[i]
+            ->acceleration(mpm::ParticlePhase::SinglePhase)
+            .cwiseProduct(damping_functions);
 
     nodes_[i]->update_external_force(
         true, mpm::ParticlePhase::SinglePhase,
-        (-1. * n_acceleration * mass_ * shapefn_(i)));
+        (-1. * acceleration_mod * mass_ * shapefn_(i)));
   }
 }
 
@@ -338,7 +318,6 @@ inline Eigen::Matrix<double, 6, 1>
 }
 
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
-// TODO:
 template <unsigned Tdim>
 inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
   bool status = true;
@@ -353,9 +332,12 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
     // Calculate B matrix
     const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
 
+    // Calculate B matrix modified
+    const Eigen::MatrixXd bmatrix_mod = this->compute_bmatrix_pml();
+
     // Compute local material stiffness matrix
-    cell_->compute_local_material_stiffness_matrix(bmatrix, reduced_dmatrix,
-                                                   volume_);
+    cell_->compute_local_material_stiffness_matrix_pml(
+        bmatrix, bmatrix_mod, reduced_dmatrix, volume_);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -364,7 +346,6 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
 }
 
 //! Map mass matrix to cell (used in poisson equation LHS)
-// TODO:
 template <unsigned Tdim>
 inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
                                                             double dt) {
@@ -373,12 +354,113 @@ inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
     // Check if material ptr is valid
     assert(this->material() != nullptr);
 
+    // Damping functions
+    const VectorDim& damping_functions = this->mass_damping_functions();
+
+    // Modify mass density
+    const VectorDim& mass_density_mod = damping_functions * mass_density_;
+
     // Compute local mass matrix
-    cell_->compute_local_mass_matrix(shapefn_, volume_,
-                                     mass_density_ / (newmark_beta * dt * dt));
+    cell_->compute_local_mass_matrix_pml(
+        shapefn_, volume_, mass_density_mod / (newmark_beta * dt * dt));
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
   }
   return status;
+}
+
+//! Function to return mass damping functions
+template <unsigned Tdim>
+Eigen::Matrix<double, Tdim, 1> mpm::ParticlePML<Tdim>::mass_damping_functions()
+    const noexcept {
+  // Damping functions
+  const double c_x = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_x");
+  const double c_y = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_y");
+  const double c_z = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_z");
+  Eigen::Matrix<double, Tdim, 1> damping_functions;
+  switch (Tdim) {
+    case 1:
+      damping_functions << std::pow((1. + c_x), 2);
+      break;
+    case 2:
+      damping_functions << std::pow((1. + c_x), 2), std::pow((1. + c_y), 2);
+      break;
+    case 3:
+      damping_functions << std::pow((1. + c_x), 2), std::pow((1. + c_y), 2),
+          std::pow((1. + c_z), 2);
+      break;
+  }
+
+  return damping_functions;
+}
+
+// Compute B matrix
+template <>
+inline Eigen::MatrixXd mpm::ParticlePML<1>::compute_bmatrix_pml() noexcept {
+  Eigen::MatrixXd bmatrix;
+  bmatrix.resize(1, this->nodes_.size());
+  bmatrix.setZero();
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    bmatrix(0, i) = dn_dx_(i, 0);
+  }
+  return bmatrix;
+}
+
+// Compute B matrix
+template <>
+inline Eigen::MatrixXd mpm::ParticlePML<2>::compute_bmatrix_pml() noexcept {
+  Eigen::MatrixXd bmatrix;
+  bmatrix.resize(3, 2 * this->nodes_.size());
+  bmatrix.setZero();
+
+  // Damping functions
+  const double c_x = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_x");
+  const double c_y = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_y");
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    bmatrix(0, 2 * i) = dn_dx_(i, 0);
+    bmatrix(2, 2 * i) = ((1 + c_x) / (1 + c_y)) * dn_dx_(i, 1);
+
+    bmatrix(1, 2 * i + 1) = dn_dx_(i, 1);
+    bmatrix(2, 2 * i + 1) = ((1 + c_y) / (1 + c_x)) * dn_dx_(i, 0);
+  }
+  return bmatrix;
+}
+
+// Compute B matrix
+template <>
+inline Eigen::MatrixXd mpm::ParticlePML<3>::compute_bmatrix_pml() noexcept {
+  Eigen::MatrixXd bmatrix;
+  bmatrix.resize(6, 3 * this->nodes_.size());
+  bmatrix.setZero();
+
+  // Damping functions
+  const double c_x = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_x");
+  const double c_y = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_y");
+  const double c_z = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_z");
+
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    bmatrix(0, 3 * i) = dn_dx_(i, 0);
+    bmatrix(3, 3 * i) = ((1 + c_x) / (1 + c_y)) * dn_dx_(i, 1);
+    bmatrix(5, 3 * i) = ((1 + c_x) / (1 + c_z)) * dn_dx_(i, 2);
+
+    bmatrix(1, 3 * i + 1) = dn_dx_(i, 1);
+    bmatrix(3, 3 * i + 1) = ((1 + c_y) / (1 + c_x)) * dn_dx_(i, 0);
+    bmatrix(4, 3 * i + 1) = ((1 + c_y) / (1 + c_z)) * dn_dx_(i, 2);
+
+    bmatrix(2, 3 * i + 2) = dn_dx_(i, 2);
+    bmatrix(4, 3 * i + 2) = ((1 + c_z) / (1 + c_y)) * dn_dx_(i, 1);
+    bmatrix(5, 3 * i + 2) = ((1 + c_z) / (1 + c_x)) * dn_dx_(i, 0);
+  }
+  return bmatrix;
 }

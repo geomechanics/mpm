@@ -68,11 +68,6 @@ class ParticlePML : public mpm::Particle<Tdim> {
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
-  //! Function to reinitialise consitutive law to be run at the beginning of
-  //! each time step
-  //! \ingroup Implicit
-  void initialise_constitutive_law() noexcept override;
-
   //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
   void map_mass_momentum_inertia_to_nodes() noexcept override;
@@ -118,6 +113,12 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! \param[in] dt parameter beta of Newmark scheme
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
   /**@}*/
+
+  //! Function to return mass damping functions
+  VectorDim mass_damping_functions() const noexcept;
+
+  //! Compute PML B matrix of a particle, with damping
+  inline Eigen::MatrixXd compute_bmatrix_pml() noexcept;
 
  protected:
   //! particle id

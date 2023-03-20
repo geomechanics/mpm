@@ -36,20 +36,6 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   //! Delete assignement operator
   LinearElasticPML& operator=(const LinearElasticPML&) = delete;
 
-  //! Initialise material
-  //! \brief Function that initialise material to be called at the beginning of
-  //! time step
-  void initialise(mpm::dense_map* state_vars) override {
-    const double multiplier =
-        alpha_ * std::pow(1.0 / boundary_thickness_, dpower_);
-    (*state_vars).at("damping_function_x") =
-        multiplier * std::pow((*state_vars).at("distance_function_x"), dpower_);
-    (*state_vars).at("damping_function_y") =
-        multiplier * std::pow((*state_vars).at("distance_function_y"), dpower_);
-    (*state_vars).at("damping_function_z") =
-        multiplier * std::pow((*state_vars).at("distance_function_z"), dpower_);
-  };
-
   //! Initialise history variables
   //! \retval state_vars State variables with history
   mpm::dense_map initialise_state_variables() override;
@@ -92,6 +78,10 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   //! \param[in] state_vars History-dependent state variables
   Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
 
+  //! Compute damping functions for all direction
+  //! \param[in] state_vars History-dependent state variables
+  void compute_damping_functions(mpm::dense_map* state_vars);
+
  private:
   //! Density
   double density_{std::numeric_limits<double>::max()};
@@ -107,8 +97,6 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   double alpha_{std::numeric_limits<double>::max()};
   //! Damping power
   double dpower_{0.};
-  //! PML boundary thickness
-  double boundary_thickness_{std::numeric_limits<double>::max()};
 };  // LinearElasticPML class
 }  // namespace mpm
 

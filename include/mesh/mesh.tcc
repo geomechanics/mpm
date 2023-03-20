@@ -2263,6 +2263,7 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
           "No particles have been assigned in mesh, cannot assign pore "
           "pressures");
 
+    // Initialise dimension-wise maximum boundary thickness
     double L_x, L_y, L_z;
     L_x = L_y = L_z = 0.0;
     for (const auto& particle_distance_function : particle_distance_functions) {
@@ -2311,8 +2312,25 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
       }
     }
 
-    // Compute minimum boundary distance
-    double L = std::min(L_x, std::min(L_y, L_z));
+    // Compute and assigned minimum boundary thickness
+    const double L = std::min(L_x, std::min(L_y, L_z));
+    for (const auto& particle_distance_function : particle_distance_functions) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_distance_function);
+
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        // Check if material state_variable has boundary_thickness
+        if (!std::isnan(
+                map_particles_[pid]->state_variable("boundary_thickness"))) {
+          status = false;
+          throw std::runtime_error("Assign PML distance function is invalid");
+          break;
+        }
+
+        map_particles_[pid]->assign_state_variable("boundary_thickness", L);
+      }
+    }
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

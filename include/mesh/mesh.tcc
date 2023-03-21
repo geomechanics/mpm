@@ -2274,11 +2274,11 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
 
       if (map_particles_.find(pid) != map_particles_.end()) {
         // Check if material state_variable has r_x, r_y, and r_z
-        if ((!std::isnan(
+        if ((std::isnan(
                 map_particles_[pid]->state_variable("distance_function_x"))) or
-            (!std::isnan(
+            (std::isnan(
                 map_particles_[pid]->state_variable("distance_function_y"))) or
-            (!std::isnan(
+            (std::isnan(
                 map_particles_[pid]->state_variable("distance_function_z")))) {
           status = false;
           throw std::runtime_error("Assign PML distance function is invalid");
@@ -2312,23 +2312,38 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
       }
     }
 
+    // Check if any of the length are zero
+    if (L_x < std::numeric_limits<double>::epsilon())
+      L_x = std::numeric_limits<double>::quiet_NaN();
+    if (L_y < std::numeric_limits<double>::epsilon())
+      L_y = std::numeric_limits<double>::quiet_NaN();
+    if (L_z < std::numeric_limits<double>::epsilon())
+      L_z = std::numeric_limits<double>::quiet_NaN();
+
     // Compute and assigned minimum boundary thickness
     const double L = std::min(L_x, std::min(L_y, L_z));
-    for (const auto& particle_distance_function : particle_distance_functions) {
-      // Particle id
-      mpm::Index pid = std::get<0>(particle_distance_function);
+    if (!std::isnan(L)) {
+      for (const auto& particle_distance_function :
+           particle_distance_functions) {
+        // Particle id
+        mpm::Index pid = std::get<0>(particle_distance_function);
 
-      if (map_particles_.find(pid) != map_particles_.end()) {
-        // Check if material state_variable has boundary_thickness
-        if (!std::isnan(
-                map_particles_[pid]->state_variable("boundary_thickness"))) {
-          status = false;
-          throw std::runtime_error("Assign PML distance function is invalid");
-          break;
+        if (map_particles_.find(pid) != map_particles_.end()) {
+          // Check if material state_variable has boundary_thickness
+          if (std::isnan(
+                  map_particles_[pid]->state_variable("boundary_thickness"))) {
+            status = false;
+            throw std::runtime_error(
+                "Assign PML boundary thickness is invalid");
+            break;
+          }
+
+          map_particles_[pid]->assign_state_variable("boundary_thickness", L);
         }
-
-        map_particles_[pid]->assign_state_variable("boundary_thickness", L);
       }
+    } else {
+      throw std::runtime_error(
+          "Assign PML boundary thickness is invalid - L is NaN");
     }
 
   } catch (std::exception& exception) {

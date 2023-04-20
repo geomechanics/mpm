@@ -1110,7 +1110,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity() {
 //! Compute PML nodal acceleration and velocity
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_acceleration_velocity(
-    unsigned phase, double dt) noexcept {
+    unsigned phase, double dt,double damping_factor) noexcept {
   bool status = false;
   const double tolerance = 1.0E-15;
 
@@ -1124,8 +1124,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_acceleration_velocity(
       this->acceleration_.col(phase)(i) =
           (this->external_force_.col(phase)(i) +
            this->internal_force_.col(phase)(i)) /
-          damped_mass(i);
-
+          damped_mass(i)-this->velocity_.col(phase)(i)*damping_factor;
     // Apply acceleration constraints
     this->apply_acceleration_constraints();
 

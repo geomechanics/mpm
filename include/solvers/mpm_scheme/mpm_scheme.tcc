@@ -211,7 +211,7 @@ inline void mpm::MPMScheme<Tdim>::pml_boundary_properties() {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step,
+    const mpm::Damping damping_type, double damping_factor, unsigned step,
     bool update_defgrad, bool pml_boundary) {
 
   // Update nodal acceleration constraints
@@ -219,7 +219,7 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
-  if (damping_type == "Cundall")
+  if (damping_type == mpm::Damping::Cundall)
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
                   std::placeholders::_1, phase, dt_, damping_factor),
@@ -234,7 +234,7 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
   if (pml_boundary) {
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_pml_acceleration_velocity,
-                  std::placeholders::_1, phase, dt_),
+                  std::placeholders::_1, phase, dt_,damping_factor),
         std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
   }
 

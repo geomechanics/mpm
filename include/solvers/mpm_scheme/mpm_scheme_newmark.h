@@ -54,7 +54,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] update_defgrad Update deformation gradient
   inline void compute_particle_kinematics(mpm::VelocityUpdate velocity_update,
                                           double blending_ratio, unsigned phase,
-                                          const std::string& damping_type,
+                                          const mpm::Damping damping_type,
                                           double damping_factor, unsigned step,
                                           bool update_defgrad,
                                           bool pml_boundary) override;

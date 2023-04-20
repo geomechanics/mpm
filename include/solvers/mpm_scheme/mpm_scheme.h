@@ -8,7 +8,9 @@
 #include "mesh.h"
 
 namespace mpm {
-
+//! Cundall: Cundall damping
+//! Rayleigh: Rayleigh damping
+enum class Damping { None, Cundall ,Rayleigh};
 //! MPMScheme class
 //! \brief Mpmscheme base class to support different stress update schemes
 //! \tparam Tdim Dimension
@@ -74,7 +76,7 @@ class MPMScheme {
   //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
       mpm::VelocityUpdate velocity_update, double blending_ratio,
-      unsigned phase, const std::string& damping_type, double damping_factor,
+      unsigned phase, const mpm::Damping damping_type, double damping_factor,
       unsigned step, bool update_defgrad, bool pml_boundary);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes

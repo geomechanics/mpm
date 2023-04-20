@@ -1646,10 +1646,9 @@ bool mpm::MPMBase<Tdim>::initialise_damping(const Json& damping_props) {
     // Read damping type
     std::string type = damping_props.at("type").template get<std::string>();
     if (type == "Cundall") damping_type_ = mpm::Damping::Cundall;
-
+    else if (type == "Rayleigh") damping_type_ = mpm::Damping::Rayleigh;
     // Read damping factor
     damping_factor_ = damping_props.at("damping_factor").template get<double>();
-
   } catch (std::exception& exception) {
     console_->warn("#{}: Damping parameters are undefined {} ", __LINE__,
                    exception.what());

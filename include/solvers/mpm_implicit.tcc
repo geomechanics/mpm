@@ -510,7 +510,7 @@ template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
   // Particle kinematics and volume
   mpm_scheme_->compute_particle_kinematics(
-      velocity_update_, blending_ratio_, phase_, "Cundall", damping_factor_,
+      velocity_update_, blending_ratio_, phase_, damping_type_, damping_factor_,
       step_, update_defgrad_, pml_boundary_);
 
   // Particle stress, strain and volume

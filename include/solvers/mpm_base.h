@@ -43,8 +43,6 @@ enum class VariableType { Scalar, Vector, Tensor };
 
 //! Damping type
 //! None: No damping is specified
-//! Cundall: Cundall damping
-enum class Damping { None, Cundall };
 
 //! Velocity update type
 extern std::map<std::string, mpm::VelocityUpdate> VelocityUpdateType;

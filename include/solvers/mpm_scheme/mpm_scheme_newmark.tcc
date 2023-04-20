@@ -160,7 +160,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step,
+    const mpm::Damping damping_type, double damping_factor, unsigned step,
     bool update_defgrad, bool pml_boundary) {
 
   // Iterate over each particle to compute updated position

@@ -234,7 +234,7 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
   if (pml_boundary) {
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_pml_acceleration_velocity,
-                  std::placeholders::_1, phase, dt_,damping_factor),
+                  std::placeholders::_1, phase, dt_, damping_factor),
         std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
   }
 

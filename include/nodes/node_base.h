@@ -340,8 +340,8 @@ class NodeBase {
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
   //! \param[in] damping_factor Rayleigh damping alpha
-  virtual bool compute_pml_acceleration_velocity(unsigned phase,
-                                                 double dt,double damping_factor) noexcept = 0;
+  virtual bool compute_pml_acceleration_velocity(
+      unsigned phase, double dt, double damping_factor) noexcept = 0;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

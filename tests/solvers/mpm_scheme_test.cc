@@ -195,17 +195,20 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
 
     // Particle kinematics
+    mpm::Damping damping_type = mpm::Damping::Cundall;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step, false,
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, false,
         false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step, false,
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, false,
+        false));
+
+    damping_type = mpm::Damping::None;
+    REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, false,
         false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, false,
-        false));
-    REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step, false,
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, false,
         false));
 
     // Update Stress Last
@@ -241,16 +244,19 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
 
     // Particle kinematics
+    mpm::Damping damping_type = mpm::Damping::Cundall;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step, true,
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
         false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step, true,
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
+        false));
+    damping_type = mpm::Damping::None;
+    REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
         false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, true, false));
-    REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step, true,
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
         false));
 
     // Update Stress Last
@@ -286,16 +292,20 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
 
     // Particle kinematics
+    mpm::Damping damping_type = mpm::Damping::Cundall;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step, true,
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
         false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step, true,
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
+        false));
+
+    damping_type = mpm::Damping::None;
+    REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
         false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, true, false));
-    REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step, true,
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
         false));
 
     // Update Stress Last
@@ -337,10 +347,12 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
         mpm_scheme->compute_forces(gravity, phase, step, true, false));
 
     // Particle kinematics
+    mpm::Damping damping_type = mpm::Damping::None;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, true, false));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, false,
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, false,
         false));
 
     // Update Stress Last

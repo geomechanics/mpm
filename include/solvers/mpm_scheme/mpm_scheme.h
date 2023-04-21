@@ -10,7 +10,8 @@
 namespace mpm {
 //! Cundall: Cundall damping
 //! Rayleigh: Rayleigh damping
-enum class Damping { None, Cundall ,Rayleigh};
+enum class Damping { None, Cundall, Rayleigh };
+
 //! MPMScheme class
 //! \brief Mpmscheme base class to support different stress update schemes
 //! \tparam Tdim Dimension

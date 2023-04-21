@@ -345,8 +345,8 @@ class Node : public NodeBase<Tdim> {
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
   //! \param[in] damping_factor Rayleigh damping alpha
-  bool compute_pml_acceleration_velocity(unsigned phase,
-                                         double dt,double damping_factor) noexcept override;
+  bool compute_pml_acceleration_velocity(
+      unsigned phase, double dt, double damping_factor) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

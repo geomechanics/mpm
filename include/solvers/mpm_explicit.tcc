@@ -157,8 +157,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(
-        velocity_update_, blending_ratio_, phase, damping_type_, damping_factor_,
-        step_, update_defgrad_, pml_boundary_);
+        velocity_update_, blending_ratio_, phase, damping_type_,
+        damping_factor_, step_, update_defgrad_, pml_boundary_);
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase);

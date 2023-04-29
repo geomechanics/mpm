@@ -79,6 +79,9 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! \ingroup Implicit
   void map_inertial_force() noexcept override;
 
+  //! Map internal force
+  inline void map_internal_force() noexcept override;
+
   //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
   void compute_strain_volume_newmark() noexcept override;
@@ -137,6 +140,9 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Compute PML B matrix of a particle, with damping
   inline Eigen::MatrixXd compute_bmatrix_pml() noexcept;
+
+  //! Compute PML stress assuming visco-elastic fractional derivative operators
+  Eigen::Matrix<double, 6, 1> compute_pml_stress() noexcept;
 
  protected:
   //! particle id

@@ -208,6 +208,159 @@ void mpm::ParticlePML<Tdim>::map_body_force(
                                      (pgravity_mod * mass_ * shapefn_(i)));
 }
 
+//! Map internal force
+template <>
+inline void mpm::ParticlePML<1>::map_internal_force() noexcept {
+
+  // Compute PML stress
+  const auto& pml_stress = this->compute_pml_stress();
+
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 1, 1> force;
+    force[0] = -1. * dn_dx_(i, 0) * volume_ * pml_stress[0];
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
+//! Map internal force
+template <>
+inline void mpm::ParticlePML<2>::map_internal_force() noexcept {
+
+  // Compute PML stress
+  const auto& pml_stress = this->compute_pml_stress();
+
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 2, 1> force;
+    force[0] = dn_dx_(i, 0) * pml_stress[0] + dn_dx_(i, 1) * pml_stress[3];
+    force[1] = dn_dx_(i, 1) * pml_stress[1] + dn_dx_(i, 0) * pml_stress[3];
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
+//! Map internal force
+template <>
+inline void mpm::ParticlePML<3>::map_internal_force() noexcept {
+
+  // Compute PML stress
+  const auto& pml_stress = this->compute_pml_stress();
+
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 3, 1> force;
+    force[0] = dn_dx_(i, 0) * pml_stress[0] + dn_dx_(i, 1) * pml_stress[3] +
+               dn_dx_(i, 2) * pml_stress[5];
+
+    force[1] = dn_dx_(i, 1) * pml_stress[1] + dn_dx_(i, 0) * pml_stress[3] +
+               dn_dx_(i, 2) * pml_stress[4];
+
+    force[2] = dn_dx_(i, 2) * pml_stress[2] + dn_dx_(i, 1) * pml_stress[4] +
+               dn_dx_(i, 0) * pml_stress[5];
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
+//! Compute PML stress assuming visco-elastic fractional derivative operators
+template <unsigned Tdim>
+Eigen::Matrix<double, 6, 1>
+    mpm::ParticlePML<Tdim>::compute_pml_stress() noexcept {
+  // Initialise PML stress
+  Eigen::Matrix<double, 6, 1> pml_stress = this->stress_;
+
+  // Check if visco_elastic is needed
+  bool viscoelastic =
+      (this->material())
+          ->template property<bool>(std::string("visco_elasticity"));
+
+  if (viscoelastic) {
+    // Read parameters
+    const double E_0 =
+        (this->material())
+            ->template property<double>(std::string("youngs_modulus"));
+    const double E_inf = (this->material())
+                             ->template property<double>(std::string(
+                                 "visco_elastic_youngs_modulus_non_relaxed"));
+    const double alpha = (this->material())
+                             ->template property<double>(
+                                 std::string("visco_elastic_fractional_power"));
+    const double tau = (this->material())
+                           ->template property<double>(
+                               std::string("visco_elastic_relaxed_time"));
+    const double dt = dstrain_[0] / strain_rate_[0];
+    const double c =
+        std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
+
+    // Check parameter
+    assert(E_inf > E_0);
+    assert((alpha > 0) && (alpha < 1.0));
+    assert(tau > 0);
+
+    // Add non-historical component
+    pml_stress.noalias() += c * (E_inf - E_0) / E_0 * this->stress_;
+
+    // Read internal strain function
+    unsigned phase = mpm::ParticlePhase::SinglePhase;
+    Eigen::Matrix<double, 6, 1> prev_strain_funct;
+    prev_strain_funct[0] = state_variables_[phase]["prev_strain_function_x"];
+    prev_strain_funct[1] = state_variables_[phase]["prev_strain_function_y"];
+    prev_strain_funct[2] = state_variables_[phase]["prev_strain_function_z"];
+    prev_strain_funct[3] = state_variables_[phase]["prev_strain_function_xy"];
+    prev_strain_funct[4] = state_variables_[phase]["prev_strain_function_yz"];
+    prev_strain_funct[5] = state_variables_[phase]["prev_strain_function_xz"];
+
+    Eigen::Matrix<double, 6, 1> old_strain_funct;
+    old_strain_funct[0] = state_variables_[phase]["old_strain_function_x"];
+    old_strain_funct[1] = state_variables_[phase]["old_strain_function_y"];
+    old_strain_funct[2] = state_variables_[phase]["old_strain_function_z"];
+    old_strain_funct[3] = state_variables_[phase]["old_strain_function_xy"];
+    old_strain_funct[4] = state_variables_[phase]["old_strain_function_yz"];
+    old_strain_funct[5] = state_variables_[phase]["old_strain_function_xz"];
+
+    // Add historical component
+    const Eigen::Matrix<double, 6, 6>& D_e =
+        material_[phase]->compute_consistent_tangent_matrix(
+            this->stress_, this->stress_, dstrain_, this,
+            &state_variables_[phase]);
+    const double A_2 = -alpha;
+    const double A_3 = -alpha * (1. - alpha) / 2.;
+    pml_stress.noalias() += c * E_inf / E_0 * D_e *
+                            (A_2 * prev_strain_funct + A_3 * old_strain_funct);
+
+    // Compute new strain function
+    Eigen::Matrix<double, 6, 1> new_strain_funct =
+        ((1.0 - c) * (E_inf - E_0) / E_inf) * this->strain_ -
+        c * (A_2 * prev_strain_funct + A_3 * old_strain_funct);
+
+    // Store internal strain function
+    state_variables_[phase]["prev_strain_function_x"] = new_strain_funct[0];
+    state_variables_[phase]["prev_strain_function_y"] = new_strain_funct[1];
+    state_variables_[phase]["prev_strain_function_z"] = new_strain_funct[2];
+    state_variables_[phase]["prev_strain_function_xy"] = new_strain_funct[3];
+    state_variables_[phase]["prev_strain_function_yz"] = new_strain_funct[4];
+    state_variables_[phase]["prev_strain_function_xz"] = new_strain_funct[5];
+
+    state_variables_[phase]["old_strain_function_x"] = prev_strain_funct[0];
+    state_variables_[phase]["old_strain_function_y"] = prev_strain_funct[1];
+    state_variables_[phase]["old_strain_function_z"] = prev_strain_funct[2];
+    state_variables_[phase]["old_strain_function_xy"] = prev_strain_funct[3];
+    state_variables_[phase]["old_strain_function_yz"] = prev_strain_funct[4];
+    state_variables_[phase]["old_strain_function_xz"] = prev_strain_funct[5];
+  }
+
+  return pml_stress;
+}
+
 //! Map inertial force
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_inertial_force() noexcept {

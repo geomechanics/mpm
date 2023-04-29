@@ -684,7 +684,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
         }
       } else if (Tdim == 3) {  // STRUCTURED SQUARE HEXAHEDRONS
         switch (nposition) {
-          case 1:              // Corner
+          case 1:  // Corner
             nodal_area = pow(0.5 * h_min, 2);
             break;
           case 2:  // Edge

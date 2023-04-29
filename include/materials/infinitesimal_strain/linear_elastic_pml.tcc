@@ -40,7 +40,20 @@ mpm::dense_map mpm::LinearElasticPML<Tdim>::initialise_state_variables() {
                                // Damping functions
                                {"damping_function_x", 0.},
                                {"damping_function_y", 0.},
-                               {"damping_function_z", 0.}};
+                               {"damping_function_z", 0.},
+                               // Historical strain variables
+                               {"prev_strain_function_x", 0.},
+                               {"prev_strain_function_y", 0.},
+                               {"prev_strain_function_z", 0.},
+                               {"prev_strain_function_xy", 0.},
+                               {"prev_strain_function_yz", 0.},
+                               {"prev_strain_function_xz", 0.},
+                               {"old_strain_function_x", 0.},
+                               {"old_strain_function_y", 0.},
+                               {"old_strain_function_z", 0.},
+                               {"old_strain_function_xy", 0.},
+                               {"old_strain_function_yz", 0.},
+                               {"old_strain_function_xz", 0.}};
   return state_vars;
 }
 
@@ -48,9 +61,16 @@ mpm::dense_map mpm::LinearElasticPML<Tdim>::initialise_state_variables() {
 template <unsigned Tdim>
 std::vector<std::string> mpm::LinearElasticPML<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
-      "distance_function_x", "distance_function_y", "distance_function_z",
-      "boundary_thickness",  "damping_function_x",  "damping_function_y",
-      "damping_function_z"};
+      "distance_function_x",     "distance_function_y",
+      "distance_function_z",     "boundary_thickness",
+      "damping_function_x",      "damping_function_y",
+      "damping_function_z",      "prev_strain_function_x",
+      "prev_strain_function_y",  "prev_strain_function_z",
+      "prev_strain_function_xy", "prev_strain_function_yz",
+      "prev_strain_function_xz", "old_strain_function_x",
+      "old_strain_function_y",   "old_strain_function_z",
+      "old_strain_function_xy",  "old_strain_function_yz",
+      "old_strain_function_xz"};
   return state_vars;
 }
 

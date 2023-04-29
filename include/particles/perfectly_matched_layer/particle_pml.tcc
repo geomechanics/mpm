@@ -297,14 +297,16 @@ Eigen::Matrix<double, 6, 1>
     const double tau = (this->material())
                            ->template property<double>(
                                std::string("visco_elastic_relaxed_time"));
-    const double dt = dstrain_[0] / strain_rate_[0];
-    const double c =
-        std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
 
     // Check parameter
     assert(E_inf > E_0);
     assert((alpha > 0) && (alpha < 1.0));
     assert(tau > 0);
+    double c = 0.0;
+    if (std::abs(strain_rate_.sum()) > std::numeric_limits<double>::epsilon()) {
+      const double dt = dstrain_.sum() / strain_rate_.sum();
+      c = std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
+    }
 
     // Add non-historical component
     pml_stress.noalias() += c * (E_inf - E_0) / E_0 * this->stress_;

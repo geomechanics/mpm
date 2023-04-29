@@ -300,7 +300,7 @@ Eigen::Matrix<double, 6, 1>
 
     // Check parameter
     assert(E_inf > E_0);
-    assert((alpha > 0) && (alpha < 1.0));
+    assert((alpha > 0) && (alpha <= 1.0));
     assert(tau > 0);
     double c = 0.0;
     if (std::abs(strain_rate_.sum()) > std::numeric_limits<double>::epsilon()) {

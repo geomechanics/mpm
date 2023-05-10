@@ -335,6 +335,10 @@ class NodeBase {
   //! Compute velocity from the momentum and damped mass vector for PML nodes
   virtual void compute_pml_velocity() = 0;
 
+  //! Compute velocity and acceleration from the momentum, inertia and damped
+  //! mass vector for PML nodes
+  virtual void compute_pml_velocity_acceleration() = 0;
+
   //! Compute acceleration and velocity with cundall damping factor considering
   //! damped mass vector for PML nodes
   //! \param[in] phase Index corresponding to the phase

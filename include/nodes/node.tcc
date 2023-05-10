@@ -1107,6 +1107,33 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity() {
   this->apply_velocity_constraints();
 }
 
+//! Compute PML velocity
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity_acceleration() {
+  const double tolerance = 1.E-16;
+
+  // Damped mass vector
+  VectorDim damped_mass =
+      property_handle_->property("damped_masses", prop_id_, 0, Tdim);
+
+  for (unsigned phase = 0; phase < Tnphases; ++phase) {
+    if (mass_(phase) > tolerance) {
+      for (unsigned i = 0; i < Tdim; i++) {
+        velocity_.col(phase)(i) = momentum_.col(phase)(i) / damped_mass(i);
+        acceleration_.col(phase)(i) = inertia_.col(phase)(i) / damped_mass(i);
+      }
+
+      // Check to see if value is below threshold
+      for (unsigned i = 0; i < velocity_.rows(); ++i)
+        if (std::abs(velocity_.col(phase)(i)) < 1.E-15)
+          velocity_.col(phase)(i) = 0.;
+      for (unsigned i = 0; i < acceleration_.rows(); ++i)
+        if (std::abs(acceleration_.col(phase)(i)) < 1.E-15)
+          acceleration_.col(phase)(i) = 0.;
+    }
+  }
+}
+
 //! Compute PML nodal acceleration and velocity
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_acceleration_velocity(

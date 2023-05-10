@@ -99,6 +99,9 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   inline void update_particle_stress_strain_volume() override;
   /**@}*/
 
+  //! Assign relevant properties for perfectly matched layer boundary
+  inline void pml_boundary_properties() override;
+
  protected:
   //! Mesh object
   using mpm::MPMScheme<Tdim>::mesh_;

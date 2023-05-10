@@ -146,6 +146,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     this->mpi_domain_decompose(initial_step);
   }
 
+  // Create nodal properties
+  if (pml_boundary_) mesh_->create_nodal_properties_pml();
+
   // Initialise loading conditions
   this->initialise_loads();
 
@@ -180,6 +183,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
+
+    // Apply PML specific routines
+    if (pml_boundary_) mpm_scheme_->pml_boundary_properties();
 
     // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,

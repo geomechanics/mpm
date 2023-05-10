@@ -194,3 +194,21 @@ template <unsigned Tdim>
 inline std::string mpm::MPMSchemeNewmark<Tdim>::scheme() const {
   return "Newmark";
 }
+
+// Assign PML Boundary Properties
+template <unsigned Tdim>
+inline void mpm::MPMSchemeNewmark<Tdim>::pml_boundary_properties() {
+  // Initialise nodal properties
+  mesh_->initialise_nodal_properties();
+
+  // Map damped mass to nodes
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::map_damped_masses_to_nodes,
+                std::placeholders::_1));
+
+  // Recompute velocity for PML nodes
+  mesh_->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Tdim>::compute_pml_velocity_acceleration,
+                std::placeholders::_1),
+      std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
+}

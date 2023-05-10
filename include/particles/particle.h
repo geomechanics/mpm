@@ -500,7 +500,8 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  virtual inline bool map_material_stiffness_matrix_to_cell();
+  //! \param[in] dt parameter beta of Newmark scheme
+  virtual inline bool map_material_stiffness_matrix_to_cell(double dt);
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit

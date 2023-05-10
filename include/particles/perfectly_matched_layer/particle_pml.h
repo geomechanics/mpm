@@ -111,7 +111,8 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  inline bool map_material_stiffness_matrix_to_cell() override;
+  //! \param[in] dt parameter beta of Newmark scheme
+  inline bool map_material_stiffness_matrix_to_cell(double dt) override;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit

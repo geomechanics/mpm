@@ -53,7 +53,7 @@ inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
     assert(this->material() != nullptr);
 
     // Compute material stiffness matrix
-    this->map_material_stiffness_matrix_to_cell();
+    this->map_material_stiffness_matrix_to_cell(dt);
 
     // Compute mass matrix
     if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);
@@ -67,7 +67,8 @@ inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
 
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
 template <unsigned Tdim>
-inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell() {
+inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell(
+    double dt) {
   bool status = true;
   try {
     // Check if material ptr is valid

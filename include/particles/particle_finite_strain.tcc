@@ -89,7 +89,7 @@ inline bool mpm::ParticleFiniteStrain<Tdim>::map_stiffness_matrix_to_cell(
     assert(this->material() != nullptr);
 
     // Compute material stiffness matrix
-    this->map_material_stiffness_matrix_to_cell();
+    this->map_material_stiffness_matrix_to_cell(dt);
 
     // Compute mass matrix
     if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);

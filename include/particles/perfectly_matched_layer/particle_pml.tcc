@@ -566,7 +566,8 @@ inline Eigen::Matrix<double, 6, 1>
 
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
 template <unsigned Tdim>
-inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
+inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell(
+    double dt) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -582,9 +583,42 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell() {
     // Calculate B matrix modified
     const Eigen::MatrixXd bmatrix_mod = this->compute_bmatrix_pml();
 
+    // Visco elastic multiplier
+    double multiplier = 1.0;
+    // Check if visco_elastic is needed
+    bool viscoelastic =
+        (this->material())
+            ->template property<bool>(std::string("visco_elasticity"));
+
+    if (viscoelastic) {
+      // Read parameters
+      const double E_0 =
+          (this->material())
+              ->template property<double>(std::string("youngs_modulus"));
+      const double E_inf = (this->material())
+                               ->template property<double>(std::string(
+                                   "visco_elastic_youngs_modulus_non_relaxed"));
+      const double alpha = (this->material())
+                               ->template property<double>(std::string(
+                                   "visco_elastic_fractional_power"));
+      const double tau = (this->material())
+                             ->template property<double>(
+                                 std::string("visco_elastic_relaxed_time"));
+
+      // Check parameter
+      assert(E_inf > E_0);
+      assert((alpha > 0) && (alpha <= 1.0));
+      assert(tau > 0);
+      double c =
+          std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
+
+      // Add non-historical component
+      multiplier += c * (E_inf - E_0) / E_0;
+    }
+
     // Compute local material stiffness matrix
     cell_->compute_local_material_stiffness_matrix_pml(
-        bmatrix, bmatrix_mod, reduced_dmatrix, volume_);
+        bmatrix, bmatrix_mod, reduced_dmatrix, volume_, multiplier);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

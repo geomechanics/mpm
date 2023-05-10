@@ -396,12 +396,25 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
         std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
                   std::placeholders::_1, newmark_beta_, dt_, quasi_static_));
 
-    // Assemble global stiffness matrix
-    assembler_->assemble_stiffness_matrix();
-
     // Compute local residual force
     mpm_scheme_->compute_forces(gravity_, phase_, step_,
                                 set_node_concentrated_force_, quasi_static_);
+
+    // Add rayleigh damping to stiffness matrix and force
+    if (pml_boundary_ && damping_type_ == mpm::Damping::Rayleigh) {
+      mesh_->iterate_over_particles(std::bind(
+          &mpm::ParticleBase<Tdim>::map_rayleigh_damping_matrix_to_cell,
+          std::placeholders::_1, newmark_gamma_, newmark_beta_, dt_,
+          damping_factor_));
+
+      // Iterate over each particle to compute nodal internal force
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::map_rayleigh_damping_force,
+                    std::placeholders::_1, damping_factor_));
+    }
+
+    // Assemble global stiffness matrix
+    assembler_->assemble_stiffness_matrix();
 
     // Assemble global residual force RHS vector
     assembler_->assemble_residual_force_right();

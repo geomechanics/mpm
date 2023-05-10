@@ -119,6 +119,22 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt time step
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
+
+  //! Map PML rayleigh damping force
+  //! \ingroup Implicit
+  //! \param[in] damping_factor Rayleigh damping factor
+  void map_rayleigh_damping_force(double damping_factor) noexcept override;
+
+  //! Map PML rayleigh damping matrix to cell (used in equilibrium
+  //! equation LHS)
+  //! \ingroup Implicit
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] damping_factor Rayleigh damping factor
+  inline bool map_rayleigh_damping_matrix_to_cell(
+      double newmark_gamma, double newmark_beta, double dt,
+      double damping_factor) override;
   /**@}*/
 
   /**

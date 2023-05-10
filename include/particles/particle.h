@@ -443,6 +443,22 @@ class Particle : public ParticleBase<Tdim> {
   void initialise_constitutive_law() noexcept override;
   /**@}*/
 
+  //! Map PML rayleigh damping force
+  //! \param[in] damping_factor Rayleigh damping factor
+  void map_rayleigh_damping_force(double damping_factor) noexcept override{};
+
+  //! Map PML rayleigh damping matrix to cell (used in equilibrium
+  //! equation LHS)
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] damping_factor Rayleigh damping factor
+  inline bool map_rayleigh_damping_matrix_to_cell(
+      double newmark_gamma, double newmark_beta, double dt,
+      double damping_factor) override {
+    return false;
+  };
+
  protected:
   //! Initialise particle material container
   //! \details This function allocate memory and initialise the material related

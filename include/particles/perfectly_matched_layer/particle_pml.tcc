@@ -648,6 +648,59 @@ inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
   return status;
 }
 
+//! Map PML rayleigh damping force
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::map_rayleigh_damping_force(
+    double damping_factor) noexcept {
+  // Check if particle has a valid cell ptr
+  assert(cell_ != nullptr);
+
+  // Damping functions
+  const VectorDim& damping_functions = this->mass_damping_functions();
+
+  // Compute nodal rayleigh damping forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Modify nodal velocity
+    const VectorDim& velocity_mod =
+        nodes_[i]
+            ->velocity(mpm::ParticlePhase::SinglePhase)
+            .cwiseProduct(damping_functions);
+
+    nodes_[i]->update_external_force(
+        true, mpm::ParticlePhase::SinglePhase,
+        (-1. * damping_factor * velocity_mod * mass_ * shapefn_(i)));
+  }
+}
+
+//! Map PML rayleigh damping matrix to cell (used in equilibrium
+//! equation LHS)
+template <unsigned Tdim>
+inline bool mpm::ParticlePML<Tdim>::map_rayleigh_damping_matrix_to_cell(
+    double newmark_gamma, double newmark_beta, double dt,
+    double damping_factor) {
+  bool status = true;
+  try {
+    // Check if material ptr is valid
+    assert(this->material() != nullptr);
+
+    // Damping functions
+    const VectorDim& damping_functions = this->mass_damping_functions();
+
+    // Modify mass density
+    const VectorDim& mass_density_mod =
+        damping_factor * damping_functions * mass_density_;
+
+    // Compute additional damping term via local mass matrix
+    cell_->compute_local_mass_matrix_pml(
+        shapefn_, volume_,
+        mass_density_mod * newmark_gamma / (newmark_beta * dt));
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Function to return mass damping functions
 template <unsigned Tdim>
 Eigen::Matrix<double, Tdim, 1> mpm::ParticlePML<Tdim>::mass_damping_functions()

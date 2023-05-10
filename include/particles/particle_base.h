@@ -390,10 +390,12 @@ class ParticleBase {
                                                    bool quasi_static) = 0;
 
   //! Reduce constitutive relations matrix depending on the dimension
+  //! \ingroup Implicit
   virtual inline Eigen::MatrixXd reduce_dmatrix(
       const Eigen::MatrixXd& dmatrix) = 0;
 
   //! Compute B matrix
+  //! \ingroup Implicit
   virtual inline Eigen::MatrixXd compute_bmatrix() = 0;
 
   //! Compute strain and volume using nodal displacement
@@ -430,6 +432,20 @@ class ParticleBase {
   //! Return mapping matrix
   //! \ingroup AdvancedMapping
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
+
+  //! Map PML rayleigh damping force
+  //! \param[in] damping_factor Rayleigh damping factor
+  virtual void map_rayleigh_damping_force(double damping_factor) = 0;
+
+  //! Map PML rayleigh damping matrix to cell (used in equilibrium
+  //! equation LHS)
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] damping_factor Rayleigh damping factor
+  virtual inline bool map_rayleigh_damping_matrix_to_cell(
+      double newmark_gamma, double newmark_beta, double dt,
+      double damping_factor) = 0;
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle

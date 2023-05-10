@@ -137,7 +137,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
     // Apply PML specific routines
-    if (pml_boundary_) mpm_scheme_->pml_boundary_properties();
+    if (pml_boundary_) mpm_scheme_->initialise_pml_boundary_properties();
 
     // Map material properties to nodes
     contact_->compute_contact_forces();
@@ -165,6 +165,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
+
+    // Apply PML specific routines
+    if (pml_boundary_) mpm_scheme_->finalise_pml_boundary_properties();
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);

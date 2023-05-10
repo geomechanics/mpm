@@ -151,6 +151,9 @@ class Particle : public ParticleBase<Tdim> {
   // ! Map damped mass vector to nodes
   void map_damped_masses_to_nodes() noexcept override;
 
+  // ! Finalise pml properties
+  void finalise_pml_properties(double dt) noexcept override{};
+
   //! Assign nodal mass to particles
   //! \param[in] mass Mass from the particles in a cell
   //! \retval status Assignment status

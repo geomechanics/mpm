@@ -198,7 +198,7 @@ inline std::string mpm::MPMSchemeNewmark<Tdim>::scheme() const {
 
 // Assign PML Boundary Properties
 template <unsigned Tdim>
-inline void mpm::MPMSchemeNewmark<Tdim>::pml_boundary_properties() {
+inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties() {
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
 

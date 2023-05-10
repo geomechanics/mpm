@@ -63,6 +63,9 @@ class ParticlePML : public mpm::Particle<Tdim> {
   // ! Map damped mass vector to nodes
   void map_damped_masses_to_nodes() noexcept override;
 
+  // ! Finalise pml properties
+  void finalise_pml_properties(double dt) noexcept override;
+
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;
@@ -160,6 +163,9 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Compute PML stress assuming visco-elastic fractional derivative operators
   Eigen::Matrix<double, 6, 1> compute_pml_stress(double dt) noexcept;
+
+  //! Function to update viscoelatic strain functions
+  void update_pml_viscoelastic_strain_functions(double dt) noexcept;
 
  protected:
   //! particle id

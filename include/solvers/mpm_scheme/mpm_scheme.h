@@ -66,7 +66,10 @@ class MPMScheme {
   virtual inline void absorbing_boundary_properties();
 
   //! Assign relevant properties for perfectly matched layer boundary
-  virtual inline void pml_boundary_properties();
+  virtual inline void initialise_pml_boundary_properties();
+
+  //! Finalise perfectly matched layer boundary
+  virtual inline void finalise_pml_boundary_properties();
 
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Method to update particle velocity

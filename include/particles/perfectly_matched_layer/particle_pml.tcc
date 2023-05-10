@@ -192,6 +192,12 @@ void mpm::ParticlePML<Tdim>::map_damped_masses_to_nodes() noexcept {
   }
 }
 
+//! Finalise pml properties
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::finalise_pml_properties(double dt) noexcept {
+  this->update_pml_viscoelastic_strain_functions(dt);
+}
+
 //! Map body force
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_body_force(
@@ -335,8 +341,63 @@ Eigen::Matrix<double, 6, 1> mpm::ParticlePML<Tdim>::compute_pml_stress(
     const double A_3 = -alpha * (1. - alpha) / 2.;
     pml_stress.noalias() += c * E_inf / E_0 * D_e *
                             (A_2 * prev_strain_funct + A_3 * old_strain_funct);
+  }
+
+  return pml_stress;
+}
+
+//! Function to update viscoelatic strain functions
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::update_pml_viscoelastic_strain_functions(
+    double dt) noexcept {
+  // Check if visco_elastic is needed
+  bool viscoelastic =
+      (this->material())
+          ->template property<bool>(std::string("visco_elasticity"));
+
+  if (viscoelastic) {
+    // Read parameters
+    const double E_0 =
+        (this->material())
+            ->template property<double>(std::string("youngs_modulus"));
+    const double E_inf = (this->material())
+                             ->template property<double>(std::string(
+                                 "visco_elastic_youngs_modulus_non_relaxed"));
+    const double alpha = (this->material())
+                             ->template property<double>(
+                                 std::string("visco_elastic_fractional_power"));
+    const double tau = (this->material())
+                           ->template property<double>(
+                               std::string("visco_elastic_relaxed_time"));
+
+    // Check parameter
+    assert(E_inf > E_0);
+    assert((alpha > 0) && (alpha <= 1.0));
+    assert(tau > 0);
+    double c =
+        std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
+
+    // Read internal strain function
+    unsigned phase = mpm::ParticlePhase::SinglePhase;
+    Eigen::Matrix<double, 6, 1> prev_strain_funct;
+    prev_strain_funct[0] = state_variables_[phase]["prev_strain_function_x"];
+    prev_strain_funct[1] = state_variables_[phase]["prev_strain_function_y"];
+    prev_strain_funct[2] = state_variables_[phase]["prev_strain_function_z"];
+    prev_strain_funct[3] = state_variables_[phase]["prev_strain_function_xy"];
+    prev_strain_funct[4] = state_variables_[phase]["prev_strain_function_yz"];
+    prev_strain_funct[5] = state_variables_[phase]["prev_strain_function_xz"];
+
+    Eigen::Matrix<double, 6, 1> old_strain_funct;
+    old_strain_funct[0] = state_variables_[phase]["old_strain_function_x"];
+    old_strain_funct[1] = state_variables_[phase]["old_strain_function_y"];
+    old_strain_funct[2] = state_variables_[phase]["old_strain_function_z"];
+    old_strain_funct[3] = state_variables_[phase]["old_strain_function_xy"];
+    old_strain_funct[4] = state_variables_[phase]["old_strain_function_yz"];
+    old_strain_funct[5] = state_variables_[phase]["old_strain_function_xz"];
 
     // Compute new strain function
+    const double A_2 = -alpha;
+    const double A_3 = -alpha * (1. - alpha) / 2.;
     Eigen::Matrix<double, 6, 1> new_strain_funct =
         ((1.0 - c) * (E_inf - E_0) / E_inf) * this->strain_ -
         c * (A_2 * prev_strain_funct + A_3 * old_strain_funct);
@@ -356,8 +417,6 @@ Eigen::Matrix<double, 6, 1> mpm::ParticlePML<Tdim>::compute_pml_stress(
     state_variables_[phase]["old_strain_function_yz"] = prev_strain_funct[4];
     state_variables_[phase]["old_strain_function_xz"] = prev_strain_funct[5];
   }
-
-  return pml_stress;
 }
 
 //! Map inertial force

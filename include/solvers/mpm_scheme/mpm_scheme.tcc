@@ -192,7 +192,7 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 
 // Assign PML Boundary Properties
 template <unsigned Tdim>
-inline void mpm::MPMScheme<Tdim>::pml_boundary_properties() {
+inline void mpm::MPMScheme<Tdim>::initialise_pml_boundary_properties() {
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
 
@@ -206,6 +206,15 @@ inline void mpm::MPMScheme<Tdim>::pml_boundary_properties() {
       std::bind(&mpm::NodeBase<Tdim>::compute_pml_velocity,
                 std::placeholders::_1),
       std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
+}
+
+// Finalise PML Boundary Properties
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::finalise_pml_boundary_properties() {
+  // Update viscoelastic properties
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::finalise_pml_properties,
+                std::placeholders::_1, dt_));
 }
 
 // Compute particle kinematics

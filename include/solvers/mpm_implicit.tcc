@@ -185,7 +185,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
 
     // Apply PML specific routines
-    if (pml_boundary_) mpm_scheme_->pml_boundary_properties();
+    if (pml_boundary_) mpm_scheme_->initialise_pml_boundary_properties();
 
     // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
@@ -534,4 +534,7 @@ void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
 
   // Particle stress, strain and volume
   mpm_scheme_->update_particle_stress_strain_volume();
+
+  // Apply PML specific routines
+  if (pml_boundary_) mpm_scheme_->finalise_pml_boundary_properties();
 }

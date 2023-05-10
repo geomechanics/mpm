@@ -223,7 +223,7 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
         // Iterate over each particle to compute nodal internal force
         mesh_->iterate_over_particles(
             std::bind(&mpm::ParticleBase<Tdim>::map_internal_force,
-                      std::placeholders::_1));
+                      std::placeholders::_1, this->dt_));
       }
     }  // Wait for tasks to finish
 

@@ -80,7 +80,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
   void map_inertial_force() noexcept override;
 
   //! Map internal force
-  inline void map_internal_force() noexcept override;
+  inline void map_internal_force(double dt) noexcept override;
 
   //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
@@ -111,13 +111,13 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt time step
   inline bool map_material_stiffness_matrix_to_cell(double dt) override;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt time step
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
   /**@}*/
 
@@ -143,7 +143,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
   inline Eigen::MatrixXd compute_bmatrix_pml() noexcept;
 
   //! Compute PML stress assuming visco-elastic fractional derivative operators
-  Eigen::Matrix<double, 6, 1> compute_pml_stress() noexcept;
+  Eigen::Matrix<double, 6, 1> compute_pml_stress(double dt) noexcept;
 
  protected:
   //! particle id

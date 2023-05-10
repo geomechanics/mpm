@@ -210,10 +210,10 @@ void mpm::ParticlePML<Tdim>::map_body_force(
 
 //! Map internal force
 template <>
-inline void mpm::ParticlePML<1>::map_internal_force() noexcept {
+inline void mpm::ParticlePML<1>::map_internal_force(double dt) noexcept {
 
   // Compute PML stress
-  const auto& pml_stress = this->compute_pml_stress();
+  const auto& pml_stress = this->compute_pml_stress(dt);
 
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -227,10 +227,10 @@ inline void mpm::ParticlePML<1>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::ParticlePML<2>::map_internal_force() noexcept {
+inline void mpm::ParticlePML<2>::map_internal_force(double dt) noexcept {
 
   // Compute PML stress
-  const auto& pml_stress = this->compute_pml_stress();
+  const auto& pml_stress = this->compute_pml_stress(dt);
 
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -247,10 +247,10 @@ inline void mpm::ParticlePML<2>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::ParticlePML<3>::map_internal_force() noexcept {
+inline void mpm::ParticlePML<3>::map_internal_force(double dt) noexcept {
 
   // Compute PML stress
-  const auto& pml_stress = this->compute_pml_stress();
+  const auto& pml_stress = this->compute_pml_stress(dt);
 
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -273,8 +273,8 @@ inline void mpm::ParticlePML<3>::map_internal_force() noexcept {
 
 //! Compute PML stress assuming visco-elastic fractional derivative operators
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 1>
-    mpm::ParticlePML<Tdim>::compute_pml_stress() noexcept {
+Eigen::Matrix<double, 6, 1> mpm::ParticlePML<Tdim>::compute_pml_stress(
+    double dt) noexcept {
   // Initialise PML stress
   Eigen::Matrix<double, 6, 1> pml_stress = this->stress_;
 
@@ -302,11 +302,8 @@ Eigen::Matrix<double, 6, 1>
     assert(E_inf > E_0);
     assert((alpha > 0) && (alpha <= 1.0));
     assert(tau > 0);
-    double c = 0.0;
-    if (std::abs(strain_rate_.sum()) > std::numeric_limits<double>::epsilon()) {
-      const double dt = dstrain_.sum() / strain_rate_.sum();
-      c = std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
-    }
+    double c =
+        std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
 
     // Add non-historical component
     pml_stress.noalias() += c * (E_inf - E_0) / E_0 * this->stress_;

@@ -308,7 +308,7 @@ TEST_CASE("ParticleFiniteStrain is checked for 2D case",
 
     // Map particle internal force
     particle->assign_volume(1.0);
-    particle->map_internal_force();
+    particle->map_internal_force(dt);
 
     // Check nodal internal force
     for (unsigned i = 0; i < internal_force.rows(); ++i)
@@ -663,7 +663,7 @@ TEST_CASE("ParticleFiniteStrain is checked for 3D case",
 
     // Map particle internal force
     particle->assign_volume(8.0);
-    particle->map_internal_force();
+    particle->map_internal_force(dt);
 
     // Check nodal internal force
     for (unsigned i = 0; i < internal_force.rows(); ++i)

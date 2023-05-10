@@ -43,7 +43,7 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   ParticleBbar& operator=(const ParticleBbar<Tdim>&) = delete;
 
   //! Map internal force
-  inline void map_internal_force() noexcept override;
+  inline void map_internal_force(double dt) noexcept override;
 
   //! Type of particle
   std::string type() const override {

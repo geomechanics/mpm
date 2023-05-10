@@ -893,7 +893,7 @@ void mpm::Particle<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<1>::map_internal_force() noexcept {
+inline void mpm::Particle<1>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -906,7 +906,7 @@ inline void mpm::Particle<1>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<2>::map_internal_force() noexcept {
+inline void mpm::Particle<2>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -922,7 +922,7 @@ inline void mpm::Particle<2>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<3>::map_internal_force() noexcept {
+inline void mpm::Particle<3>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume

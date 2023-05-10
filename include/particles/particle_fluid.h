@@ -39,7 +39,7 @@ class FluidParticle : public mpm::Particle<Tdim> {
   void compute_stress() noexcept override;
 
   //! Map internal force
-  inline void map_internal_force() noexcept override;
+  inline void map_internal_force(double dt) noexcept override;
 
   //! Serialize
   //! \retval buffer Serialized buffer data

@@ -264,7 +264,7 @@ class ParticleBase {
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
 
   //! Map internal force
-  virtual void map_internal_force() noexcept = 0;
+  virtual void map_internal_force(double dt) noexcept = 0;
 
   //! Map particle pressure to nodes
   virtual bool map_pressure_to_nodes(

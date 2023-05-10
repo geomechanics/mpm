@@ -145,8 +145,9 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
     {
       // Spawn a task for internal force
       // Iterate over each particle to compute nodal internal force
-      mesh_->iterate_over_particles(std::bind(
-          &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::map_internal_force,
+                    std::placeholders::_1, dt_));
     }
   }  // Wait for tasks to finish
 

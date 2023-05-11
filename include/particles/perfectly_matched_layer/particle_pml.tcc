@@ -295,8 +295,8 @@ Eigen::Matrix<double, 6, 1> mpm::ParticlePML<Tdim>::compute_pml_stress(
         (this->material())
             ->template property<double>(std::string("youngs_modulus"));
     const double E_0 = (this->material())
-                             ->template property<double>(std::string(
-                                 "visco_elastic_youngs_modulus_relaxed"));
+                           ->template property<double>(std::string(
+                               "visco_elastic_youngs_modulus_relaxed"));
     const double alpha = (this->material())
                              ->template property<double>(
                                  std::string("visco_elastic_fractional_power"));
@@ -361,8 +361,8 @@ void mpm::ParticlePML<Tdim>::update_pml_viscoelastic_strain_functions(
         (this->material())
             ->template property<double>(std::string("youngs_modulus"));
     const double E_0 = (this->material())
-                             ->template property<double>(std::string(
-                                 "visco_elastic_youngs_modulus_relaxed"));
+                           ->template property<double>(std::string(
+                               "visco_elastic_youngs_modulus_relaxed"));
     const double alpha = (this->material())
                              ->template property<double>(
                                  std::string("visco_elastic_fractional_power"));
@@ -652,8 +652,8 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell(
           (this->material())
               ->template property<double>(std::string("youngs_modulus"));
       const double E_0 = (this->material())
-                               ->template property<double>(std::string(
-                                   "visco_elastic_youngs_modulus_relaxed"));
+                             ->template property<double>(std::string(
+                                 "visco_elastic_youngs_modulus_relaxed"));
       const double alpha = (this->material())
                                ->template property<double>(std::string(
                                    "visco_elastic_fractional_power"));

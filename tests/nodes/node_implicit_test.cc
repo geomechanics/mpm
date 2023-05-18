@@ -328,6 +328,38 @@ TEST_CASE("Implicit Node is checked for 2D case", "[node][2D][Implicit]") {
       REQUIRE(node->velocity(Nphase)(i) == Approx(0.1).epsilon(Tolerance));
     for (unsigned i = 0; i < Dim; ++i)
       REQUIRE(node->acceleration(Nphase)(i) == Approx(0.1).epsilon(Tolerance));
+
+    SECTION("Check Cartesian displacement constraints") {
+      // Assign displacement constraints
+      REQUIRE(node->assign_displacement_constraint(0, -12.5, nullptr) == true);
+      // Check out of bounds condition
+      REQUIRE(node->assign_displacement_constraint(2, 0., nullptr) == false);
+
+      // Apply constraints
+      node->apply_displacement_constraints();
+
+      // Check apply constraints
+      Eigen::VectorXd displacement;
+      displacement.resize(Dim);
+      displacement << -12.5, 0.0;
+      for (unsigned i = 0; i < displacement.size(); ++i)
+        REQUIRE(node->displacement(Nphase)(i) ==
+                Approx(displacement(i)).epsilon(Tolerance));
+
+      Eigen::VectorXd velocity;
+      velocity.resize(Dim);
+      velocity << 0.0, 0.1;
+      for (unsigned i = 0; i < velocity.size(); ++i)
+        REQUIRE(node->velocity(Nphase)(i) ==
+                Approx(velocity(i)).epsilon(Tolerance));
+
+      Eigen::VectorXd acceleration;
+      acceleration.resize(Dim);
+      acceleration << 0., 0.1;
+      for (unsigned i = 0; i < acceleration.size(); ++i)
+        REQUIRE(node->acceleration(Nphase)(i) ==
+                Approx(acceleration(i)).epsilon(Tolerance));
+    }
   }
 }
 
@@ -494,5 +526,38 @@ TEST_CASE("Implicit Node is checked for 3D case", "[node][3D][Implicit]") {
       REQUIRE(node->velocity(Nphase)(i) == Approx(0.1).epsilon(Tolerance));
     for (unsigned i = 0; i < Dim; ++i)
       REQUIRE(node->acceleration(Nphase)(i) == Approx(0.1).epsilon(Tolerance));
+
+    SECTION("Check Cartesian displacement constraints") {
+      // Apply displacement constraints
+      REQUIRE(node->assign_displacement_constraint(0, 10.5, nullptr) == true);
+      REQUIRE(node->assign_displacement_constraint(1, -12.5, nullptr) == true);
+      // Check out of bounds condition
+      REQUIRE(node->assign_displacement_constraint(4, 0., nullptr) == false);
+
+      // Apply constraints
+      node->apply_displacement_constraints();
+
+      // Check apply constraints
+      Eigen::VectorXd displacement;
+      displacement.resize(Dim);
+      displacement << 10.5, -12.5, 0.0;
+      for (unsigned i = 0; i < displacement.size(); ++i)
+        REQUIRE(node->displacement(Nphase)(i) ==
+                Approx(displacement(i)).epsilon(Tolerance));
+
+      Eigen::VectorXd velocity;
+      velocity.resize(Dim);
+      velocity << 0.0, 0.0, 0.1;
+      for (unsigned i = 0; i < velocity.size(); ++i)
+        REQUIRE(node->velocity(Nphase)(i) ==
+                Approx(velocity(i)).epsilon(Tolerance));
+
+      Eigen::VectorXd acceleration;
+      acceleration.resize(Dim);
+      acceleration << 0.0, 0.0, 0.1;
+      for (unsigned i = 0; i < acceleration.size(); ++i)
+        REQUIRE(node->acceleration(Nphase)(i) ==
+                Approx(acceleration(i)).epsilon(Tolerance));
+    }
   }
 }

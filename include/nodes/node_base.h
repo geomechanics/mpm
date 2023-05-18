@@ -401,6 +401,10 @@ class NodeBase {
       const unsigned dir, const double displacement,
       const std::shared_ptr<FunctionBase>& function) = 0;
 
+  //! Apply displacement constraints
+  //! \ingroup Implicit
+  virtual void apply_displacement_constraints() = 0;
+
   //! Return displacement constraint
   //! \ingroup Implicit
   virtual double displacement_constraint(const unsigned dir,

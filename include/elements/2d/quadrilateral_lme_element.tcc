@@ -54,6 +54,40 @@ inline Eigen::VectorXd mpm::QuadrilateralLMEElement<Tdim>::shapefn(
       const auto& inverse_deformation_gradient = deformation_gradient.inverse();
       metric = inverse_deformation_gradient.transpose() *
                inverse_deformation_gradient;
+
+      // Stabilization routines for extremely large deformation
+      // Eigen decomposition of metric
+      metric *= 1 / (this->support_radius_ * this->support_radius_);
+      Eigen::Matrix<double, Tdim, 1> eigen_value;
+      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(metric);
+      eigen_value = es.eigenvalues();
+      auto& directors = es.eigenvectors();
+
+      // Compute semi axes vector
+      Eigen::Matrix<double, Tdim, 1> l =
+          (eigen_value.cwiseSqrt()).cwiseInverse();
+      int maxi, mini;
+      double maximum = l.maxCoeff(&maxi);
+      double minimum = l.minCoeff(&mini);
+
+      // Check and impose constraints
+      // Minimum length constraint
+      const double spacing_length =
+          std::abs(nodal_coordinates_(1, 0) - nodal_coordinates_(0, 0));
+      if (minimum < spacing_length * std::sqrt(Tdim))
+        l(mini) = spacing_length * std::sqrt(Tdim);
+
+      // Maximum and minimum ratio constraint
+      const double ratio = maximum / l(mini);
+      if (ratio > 5.0)
+        l(maxi) = 5.0 * l(mini);
+      else if (ratio < 1.0)
+        l(maxi) = l(mini);
+
+      // Obtain new metric
+      eigen_value = (l.cwiseAbs2()).cwiseInverse();
+      metric = (this->support_radius_ * this->support_radius_) * directors *
+               eigen_value.asDiagonal() * directors.transpose();
     }
 
     //! Compute particle-node distance once as a vector
@@ -204,6 +238,40 @@ inline Eigen::MatrixXd mpm::QuadrilateralLMEElement<Tdim>::grad_shapefn(
       const auto& inverse_deformation_gradient = deformation_gradient.inverse();
       metric = inverse_deformation_gradient.transpose() *
                inverse_deformation_gradient;
+
+      // Stabilization routines for extremely large deformation
+      // Eigen decomposition of metric
+      metric *= 1 / (this->support_radius_ * this->support_radius_);
+      Eigen::Matrix<double, Tdim, 1> eigen_value;
+      Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(metric);
+      eigen_value = es.eigenvalues();
+      auto& directors = es.eigenvectors();
+
+      // Compute semi axes vector
+      Eigen::Matrix<double, Tdim, 1> l =
+          (eigen_value.cwiseSqrt()).cwiseInverse();
+      int maxi, mini;
+      double maximum = l.maxCoeff(&maxi);
+      double minimum = l.minCoeff(&mini);
+
+      // Check and impose constraints
+      // Minimum length constraint
+      const double spacing_length =
+          std::abs(nodal_coordinates_(1, 0) - nodal_coordinates_(0, 0));
+      if (minimum < spacing_length * std::sqrt(Tdim))
+        l(mini) = spacing_length * std::sqrt(Tdim);
+
+      // Maximum and minimum ratio constraint
+      const double ratio = maximum / l(mini);
+      if (ratio > 5.0)
+        l(maxi) = 5.0 * l(mini);
+      else if (ratio < 1.0)
+        l(maxi) = l(mini);
+
+      // Obtain new metric
+      eigen_value = (l.cwiseAbs2()).cwiseInverse();
+      metric = (this->support_radius_ * this->support_radius_) * directors *
+               eigen_value.asDiagonal() * directors.transpose();
     }
 
     //! Compute particle-node distance once as a vector

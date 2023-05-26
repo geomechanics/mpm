@@ -418,6 +418,10 @@ class Node : public NodeBase<Tdim> {
       const unsigned dir, const double displacement,
       const std::shared_ptr<FunctionBase>& function) override;
 
+  //! Apply displacement constraints
+  //! \ingroup Implicit
+  void apply_displacement_constraints() override;
+
   //! Return displacement constraint
   //! \ingroup Implicit
   double displacement_constraint(const unsigned dir,

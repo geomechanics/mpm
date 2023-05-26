@@ -91,6 +91,49 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_velocity_acceleration_newmark(
       acceleration_.col(phase)(i) = 0.;
 }
 
+//! Update velocity and acceleration by Newmark scheme if pml is used
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::update_velocity_acceleration_newmark_pml(
+    unsigned phase, double newmark_beta, double newmark_gamma, double dt) {
+  const double tolerance = 1.E-16;
+  //! Compute velocity and acceleration at the previous time step
+  VectorDim previous_velocity;
+  VectorDim previous_acceleration;
+  previous_velocity.setZero();
+  previous_acceleration.setZero();
+
+  // Damped mass vector
+  VectorDim damped_mass =
+      property_handle_->property("damped_masses", prop_id_, 0, Tdim);
+
+  if (mass_(phase) > tolerance) {
+    for (unsigned i = 0; i < Tdim; i++) {
+      previous_velocity(i) = momentum_.col(phase)(i) / damped_mass(i);
+      previous_acceleration(i) = inertia_.col(phase)(i) / damped_mass(i);
+    }
+  }
+
+  //! Update of velocity and acceleration
+  velocity_.col(phase) =
+      newmark_gamma / newmark_beta / dt * displacement_.col(phase) -
+      (newmark_gamma / newmark_beta - 1.) * previous_velocity -
+      0.5 * dt * (newmark_gamma / newmark_beta - 2.) * previous_acceleration;
+
+  acceleration_.col(phase) =
+      1. / newmark_beta / dt / dt * displacement_.col(phase) -
+      1. / newmark_beta / dt * previous_velocity -
+      (0.5 / newmark_beta - 1.) * previous_acceleration;
+
+  // Check to see if value is below threshold
+  for (unsigned i = 0; i < velocity_.rows(); ++i)
+    if (std::abs(velocity_.col(phase)(i)) < 1.E-15)
+      velocity_.col(phase)(i) = 0.;
+
+  for (unsigned i = 0; i < acceleration_.rows(); ++i)
+    if (std::abs(acceleration_.col(phase)(i)) < 1.E-15)
+      acceleration_.col(phase)(i) = 0.;
+}
+
 //! Update displacement increment at the node
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::update_displacement_increment(

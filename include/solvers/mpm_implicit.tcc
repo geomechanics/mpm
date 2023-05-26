@@ -189,7 +189,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
     // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                 newmark_gamma_);
+                                                 newmark_gamma_, pml_boundary_);
 
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
@@ -219,8 +219,8 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       this->solve_system_equation();
 
       // Update nodal kinematics -- Corrector step of Newmark scheme
-      mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                   newmark_gamma_);
+      mpm_scheme_->update_nodal_kinematics_newmark(
+          phase_, newmark_beta_, newmark_gamma_, pml_boundary_);
 
       // Update stress and strain
       mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);

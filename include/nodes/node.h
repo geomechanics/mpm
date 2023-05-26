@@ -351,6 +351,16 @@ class Node : public NodeBase<Tdim> {
   bool compute_pml_acceleration_velocity(
       unsigned phase, double dt, double damping_factor) noexcept override;
 
+  //! Update velocity and acceleration by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta Parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
+  //! \param[in] dt Time-step
+  void update_velocity_acceleration_newmark_pml(unsigned phase,
+                                                double newmark_beta,
+                                                double newmark_gamma,
+                                                double dt) override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

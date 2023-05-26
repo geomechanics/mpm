@@ -347,6 +347,16 @@ class NodeBase {
   virtual bool compute_pml_acceleration_velocity(
       unsigned phase, double dt, double damping_factor) noexcept = 0;
 
+  //! Update velocity and acceleration by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta Parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
+  //! \param[in] dt Time-step
+  virtual void update_velocity_acceleration_newmark_pml(unsigned phase,
+                                                        double newmark_beta,
+                                                        double newmark_gamma,
+                                                        double dt) = 0;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

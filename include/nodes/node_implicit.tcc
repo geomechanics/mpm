@@ -53,6 +53,10 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_velocity_acceleration() {
           acceleration_.col(phase)(i) = 0.;
     }
   }
+
+  // Apply displacement constraints, which also sets velocity and acceleration
+  // to 0, as well as momentum and inertia.
+  this->apply_displacement_constraints();
 }
 
 //! Update velocity and acceleration by Newmark scheme
@@ -100,5 +104,63 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_displacement_increment(
   for (unsigned i = 0; i < Tdim; ++i) {
     displacement_.col(phase)(i) +=
         displacement_increment(nactive_node * i + active_id_);
+  }
+}
+
+//! Assign displacement constraints
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::assign_displacement_constraint(
+    const unsigned dir, const double displacement,
+    const std::shared_ptr<FunctionBase>& function) {
+  bool status = true;
+  try {
+    //! Constrain directions can take values between 0 and Dim * Nphases
+    if (dir < (Tdim * Tnphases))
+      this->displacement_constraints_.insert(std::make_pair<unsigned, double>(
+          static_cast<unsigned>(dir), static_cast<double>(displacement)));
+    else
+      throw std::runtime_error("Constraint direction is out of bounds");
+
+    // Assign displacement function
+    if (function != nullptr)
+      this->displacement_function_.insert(
+          std::make_pair<unsigned, std::shared_ptr<FunctionBase>>(
+              static_cast<unsigned>(dir),
+              static_cast<std::shared_ptr<FunctionBase>>(function)));
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply displacement constraints
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_displacement_constraints() {
+  // Set displacement constraint
+  for (const auto& constraint : this->displacement_constraints_) {
+    // Direction value in the constraint (0, Dim * Nphases)
+    const unsigned dir = constraint.first;
+    // Direction: dir % Tdim (modulus)
+    const auto direction = static_cast<unsigned>(dir % Tdim);
+    // Phase: Integer value of division (dir / Tdim)
+    const auto phase = static_cast<unsigned>(dir / Tdim);
+
+    if (generic_boundary_constraints_)
+      throw std::runtime_error(
+          "Generic boundary constraints is not available for displacement "
+          "constraints!");
+
+    // Displacement constraints are applied on Cartesian boundaries
+    this->displacement_(direction, phase) = constraint.second;
+    // Set velocity and acceleration to 0 in direction of displacement
+    // constraint
+    this->velocity_(direction, phase) = 0.;
+    this->acceleration_(direction, phase) = 0.;
+
+    // Set momentum and inertia to 0 in direction of displacement constraint
+    this->momentum_(direction, phase) = 0.;
+    this->inertia_(direction, phase) = 0.;
   }
 }

@@ -388,6 +388,22 @@ class Node : public NodeBase<Tdim> {
     return inertia_.col(phase);
   }
 
+  //! Return previous displacement of pml nodes
+  //! \ingroup PML
+  VectorDim previous_pml_displacement() const override;
+
+  //! Return previous velocity of pml nodes
+  //! \ingroup PML
+  VectorDim previous_pml_velocity() const override;
+
+  //! Return previous acceleration of pml nodes
+  //! \ingroup PML
+  VectorDim previous_pml_acceleration() const override;
+
+  //! Apply displacement constraints
+  //! \ingroup PML
+  void apply_pml_displacement_constraints() override;
+
   //! Compute velocity and acceleration from the momentum and inertia
   //! \ingroup Implicit
   void compute_velocity_acceleration() override;
@@ -748,5 +764,6 @@ class Node : public NodeBase<Tdim> {
 #include "node.tcc"
 #include "node_implicit.tcc"
 #include "node_multiphase.tcc"
+#include "node_pml.tcc"
 
 #endif  // MPM_NODE_H_

@@ -339,6 +339,22 @@ class NodeBase {
   //! mass vector for PML nodes
   virtual void compute_pml_velocity_acceleration() = 0;
 
+  //! Return previous displacement of pml nodes
+  //! \ingroup PML
+  virtual VectorDim previous_pml_displacement() const = 0;
+
+  //! Return previous velocity of pml nodes
+  //! \ingroup PML
+  virtual VectorDim previous_pml_velocity() const = 0;
+
+  //! Return previous acceleration of pml nodes
+  //! \ingroup PML
+  virtual VectorDim previous_pml_acceleration() const = 0;
+
+  //! Apply pml displacement constraints
+  //! \ingroup PML
+  virtual void apply_pml_displacement_constraints() = 0;
+
   //! Compute acceleration and velocity with cundall damping factor considering
   //! damped mass vector for PML nodes
   //! \param[in] phase Index corresponding to the phase

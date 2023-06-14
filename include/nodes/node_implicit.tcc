@@ -101,10 +101,8 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_velocity_acceleration_newmark_pml(
     unsigned phase, double newmark_beta, double newmark_gamma, double dt) {
   const double tolerance = 1.E-16;
   //! Compute velocity and acceleration at the previous time step
-  VectorDim previous_velocity;
-  VectorDim previous_acceleration;
-  previous_velocity.setZero();
-  previous_acceleration.setZero();
+  VectorDim previous_velocity = VectorDim::Zero();
+  VectorDim previous_acceleration = VectorDim::Zero();
 
   // Damped mass vector
   VectorDim damped_mass =

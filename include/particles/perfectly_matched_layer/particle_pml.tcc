@@ -184,10 +184,16 @@ void mpm::ParticlePML<Tdim>::map_pml_properties_to_nodes() noexcept {
   // Damping functions
   const VectorDim& damping_functions = this->mass_damping_functions();
 
-  // Map damped mass vector to nodal property
+  // Modify displacements
+  const VectorDim& displacement_mod =
+      displacement_.cwiseProduct(damping_functions);
+
+  // Map damped mass, displacement vector to nodal property
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     const auto& damped_mass = mass_ * shapefn_[i] * damping_functions;
     nodes_[i]->update_property(true, "damped_masses", damped_mass, 0, Tdim);
+    nodes_[i]->update_property(true, "damped_mass_displacements",
+                               mass_ * shapefn_[i] * displacement_mod, 0, Tdim);
     nodes_[i]->assign_pml(true);
   }
 }
@@ -235,16 +241,62 @@ inline void mpm::ParticlePML<1>::map_internal_force(double dt) noexcept {
 template <>
 inline void mpm::ParticlePML<2>::map_internal_force(double dt) noexcept {
 
-  // Compute PML stress
-  const auto& pml_stress = this->compute_pml_stress(dt);
+  // Compute local K
+  Eigen::MatrixXd local_stiffness(2 * nodes_.size(), 2 * nodes_.size());
+  local_stiffness.setZero();
+
+  // Compute material constant
+  double E = (this->material())
+                 ->template property<double>(std::string("youngs_modulus"));
+  double nu = (this->material())
+                  ->template property<double>(std::string("poisson_ratio"));
+  double lambda = E * nu / (1. + nu) / (1. - 2. * nu);
+  double shear_modulus = E / (2.0 * (1. + nu));
+  const double c_x = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_x");
+  const double c_y = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+      "damping_function_y");
+
+  // Compute K
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    for (unsigned j = 0; j < nodes_.size(); ++j) {
+      Eigen::MatrixXd k(2, 2);
+      k.setZero();
+      k(0, 0) = (lambda + 2.0 * shear_modulus) * dn_dx_(i, 0) * dn_dx_(j, 0) +
+                (1.0 + c_x) * (1.0 + c_x) * shear_modulus * dn_dx_(i, 1) *
+                    dn_dx_(j, 1);
+      k(0, 1) = (1.0 + c_x) * (lambda * dn_dx_(i, 0) * dn_dx_(j, 1) +
+                               shear_modulus * dn_dx_(i, 1) * dn_dx_(j, 0));
+      k(1, 0) = (1.0 + c_y) * (lambda * dn_dx_(i, 1) * dn_dx_(j, 0) +
+                               shear_modulus * dn_dx_(i, 0) * dn_dx_(j, 1));
+      k(1, 1) = (lambda + 2.0 * shear_modulus) * dn_dx_(i, 1) * dn_dx_(j, 1) +
+                (1.0 + c_y) * (1.0 + c_y) * shear_modulus * dn_dx_(i, 0) *
+                    dn_dx_(j, 0);
+
+      local_stiffness.block(i * 2, j * 2, 2, 2) += k;
+    }
+  }
+
+  // Displacement vector
+  Eigen::VectorXd disp(2 * nodes_.size());
+  disp.setZero();
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const VectorDim& u_n = nodes_[i]->previous_pml_displacement();
+    const VectorDim& v_n = nodes_[i]->previous_pml_velocity();
+    const VectorDim& a_n = nodes_[i]->previous_pml_acceleration();
+    const VectorDim& a_new =
+        nodes_[i]->acceleration(mpm::ParticlePhase::SinglePhase);
+    disp.segment(i * 2, 2) +=
+        u_n + v_n * dt + dt * dt / 2 * (0.5 * a_n + 0.5 * a_new);
+  }
+
+  // K*u
+  Eigen::VectorXd nodal_force = local_stiffness * disp;
 
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
-    Eigen::Matrix<double, 2, 1> force;
-    force[0] = dn_dx_(i, 0) * pml_stress[0] + dn_dx_(i, 1) * pml_stress[3];
-    force[1] = dn_dx_(i, 1) * pml_stress[1] + dn_dx_(i, 0) * pml_stress[3];
-
+    Eigen::Matrix<double, 2, 1> force = nodal_force.segment(i * 2, 2);
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
@@ -491,13 +543,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticlePML<2>::compute_strain_rate(
     Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
     strain_rate[1] += dn_dx(i, 1) * vel[1];
-
-    // Damping functions
-    const double c_x = state_variables_[phase]["damping_function_x"];
-    const double c_y = state_variables_[phase]["damping_function_y"];
-
-    strain_rate[3] += ((1 + c_x) / (1 + c_y)) * dn_dx(i, 1) * vel[0] +
-                      ((1 + c_y) / (1 + c_x)) * dn_dx(i, 0) * vel[1];
+    strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
   }
 
   if (std::fabs(strain_rate[0]) < 1.E-15) strain_rate[0] = 0.;
@@ -568,14 +614,8 @@ inline Eigen::Matrix<double, 6, 1>
     Eigen::Matrix<double, 2, 1> displacement = nodes_[i]->displacement(phase);
     strain_increment[0] += dn_dx(i, 0) * displacement[0];
     strain_increment[1] += dn_dx(i, 1) * displacement[1];
-
-    // Damping functions
-    const double c_x = state_variables_[phase]["damping_function_x"];
-    const double c_y = state_variables_[phase]["damping_function_y"];
-
     strain_increment[3] +=
-        ((1 + c_x) / (1 + c_y)) * dn_dx(i, 1) * displacement[0] +
-        ((1 + c_y) / (1 + c_x)) * dn_dx(i, 0) * displacement[1];
+        dn_dx(i, 1) * displacement[0] + dn_dx(i, 0) * displacement[1];
   }
 
   if (std::fabs(strain_increment[0]) < 1.E-15) strain_increment[0] = 0.;
@@ -629,52 +669,93 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell(
     // Check if material ptr is valid
     assert(this->material() != nullptr);
 
-    // Reduce constitutive relations matrix depending on the dimension
-    const Eigen::MatrixXd reduced_dmatrix =
-        this->reduce_dmatrix(constitutive_matrix_);
+    // Compute local K
+    Eigen::MatrixXd local_stiffness(2 * nodes_.size(), 2 * nodes_.size());
+    local_stiffness.setZero();
 
-    // Calculate B matrix
-    const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
+    // Compute material constant
+    double E = (this->material())
+                   ->template property<double>(std::string("youngs_modulus"));
+    double nu = (this->material())
+                    ->template property<double>(std::string("poisson_ratio"));
+    double lambda = E * nu / (1. + nu) / (1. - 2. * nu);
+    double shear_modulus = E / (2.0 * (1. + nu));
+    const double c_x = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+        "damping_function_x");
+    const double c_y = state_variables_[mpm::ParticlePhase::SinglePhase].at(
+        "damping_function_y");
 
-    // Calculate B matrix modified
-    const Eigen::MatrixXd bmatrix_mod = this->compute_bmatrix_pml();
+    // Compute K
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      for (unsigned j = 0; j < nodes_.size(); ++j) {
+        Eigen::MatrixXd k(2, 2);
+        k.setZero();
+        k(0, 0) = (lambda + 2.0 * shear_modulus) * dn_dx_(i, 0) * dn_dx_(j, 0) +
+                  (1.0 + c_x) * (1.0 + c_x) * shear_modulus * dn_dx_(i, 1) *
+                      dn_dx_(j, 1);
+        k(0, 1) = (1.0 + c_x) * (lambda * dn_dx_(i, 0) * dn_dx_(j, 1) +
+                                 shear_modulus * dn_dx_(i, 1) * dn_dx_(j, 0));
+        k(1, 0) = (1.0 + c_y) * (lambda * dn_dx_(i, 1) * dn_dx_(j, 0) +
+                                 shear_modulus * dn_dx_(i, 0) * dn_dx_(j, 1));
+        k(1, 1) = (lambda + 2.0 * shear_modulus) * dn_dx_(i, 1) * dn_dx_(j, 1) +
+                  (1.0 + c_y) * (1.0 + c_y) * shear_modulus * dn_dx_(i, 0) *
+                      dn_dx_(j, 0);
 
-    // Visco elastic multiplier
-    double multiplier = 1.0;
-    // Check if visco_elastic is needed
-    bool viscoelastic =
-        (this->material())
-            ->template property<bool>(std::string("visco_elasticity"));
-
-    if (viscoelastic) {
-      // Read parameters
-      const double E_inf =
-          (this->material())
-              ->template property<double>(std::string("youngs_modulus"));
-      const double E_0 = (this->material())
-                             ->template property<double>(std::string(
-                                 "visco_elastic_youngs_modulus_relaxed"));
-      const double alpha = (this->material())
-                               ->template property<double>(std::string(
-                                   "visco_elastic_fractional_power"));
-      const double tau = (this->material())
-                             ->template property<double>(
-                                 std::string("visco_elastic_relaxed_time"));
-
-      // Check parameter
-      assert(E_inf > E_0);
-      assert((alpha > 0) && (alpha <= 1.0));
-      assert(tau > 0);
-      double c =
-          std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt, alpha));
-
-      // Add non-historical component
-      multiplier += c * (E_inf - E_0) / E_0;
+        local_stiffness.block(i * Tdim, j * Tdim, Tdim, Tdim) += k;
+      }
     }
 
     // Compute local material stiffness matrix
-    cell_->compute_local_material_stiffness_matrix_pml(
-        bmatrix, bmatrix_mod, reduced_dmatrix, volume_, multiplier);
+    cell_->compute_local_stiffness_matrix_block(0, 0, local_stiffness, volume_,
+                                                1.0);
+
+    // // Reduce constitutive relations matrix depending on the dimension
+    // const Eigen::MatrixXd reduced_dmatrix =
+    //     this->reduce_dmatrix(constitutive_matrix_);
+
+    // // Calculate B matrix
+    // const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
+
+    // // Calculate B matrix modified
+    // const Eigen::MatrixXd bmatrix_mod = this->compute_bmatrix_pml();
+
+    // // Visco elastic multiplier
+    // double multiplier = 1.0;
+    // // Check if visco_elastic is needed
+    // bool viscoelastic =
+    //     (this->material())
+    //         ->template property<bool>(std::string("visco_elasticity"));
+
+    // if (viscoelastic) {
+    //   // Read parameters
+    //   const double E_inf =
+    //       (this->material())
+    //           ->template property<double>(std::string("youngs_modulus"));
+    //   const double E_0 = (this->material())
+    //                          ->template property<double>(std::string(
+    //                              "visco_elastic_youngs_modulus_relaxed"));
+    //   const double alpha = (this->material())
+    //                            ->template property<double>(std::string(
+    //                                "visco_elastic_fractional_power"));
+    //   const double tau = (this->material())
+    //                          ->template property<double>(
+    //                              std::string("visco_elastic_relaxed_time"));
+
+    //   // Check parameter
+    //   assert(E_inf > E_0);
+    //   assert((alpha > 0) && (alpha <= 1.0));
+    //   assert(tau > 0);
+    //   double c =
+    //       std::pow(tau, alpha) / (std::pow(tau, alpha) + std::pow(dt,
+    //       alpha));
+
+    //   // Add non-historical component
+    //   multiplier += c * (E_inf - E_0) / E_0;
+    // }
+
+    // // Compute local material stiffness matrix
+    // cell_->compute_local_material_stiffness_matrix_pml(
+    //     bmatrix, bmatrix_mod, reduced_dmatrix, volume_, multiplier);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

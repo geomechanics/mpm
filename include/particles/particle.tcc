@@ -1725,5 +1725,7 @@ void mpm::Particle<Tdim>::map_pml_properties_to_nodes() noexcept {
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     const auto& damped_mass = mass_ * shapefn_[i] * damping_functions;
     nodes_[i]->update_property(true, "damped_masses", damped_mass, 0, Tdim);
+    nodes_[i]->update_property(true, "damped_mass_displacements",
+                               mass_ * shapefn_[i] * displacement_, 0, Tdim);
   }
 }

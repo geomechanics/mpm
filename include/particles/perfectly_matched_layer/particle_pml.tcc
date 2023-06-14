@@ -328,6 +328,7 @@ void mpm::ParticlePML<Tdim>::map_internal_force(double dt) noexcept {
 
     // Read internal nodal displacement vector
     Eigen::VectorXd old_displacements(Tdim * nodes_.size());
+    old_displacements.setZero();
     for (unsigned i = 0; i < nodes_.size(); ++i) {
       VectorDim disp_sum = VectorDim::Zero();
       for (unsigned j = 0; j < nt; j++) {

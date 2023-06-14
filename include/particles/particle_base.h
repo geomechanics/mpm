@@ -168,7 +168,7 @@ class ParticleBase {
   virtual void map_wave_velocities_to_nodes() noexcept = 0;
 
   // ! Map damped mass vector to nodes
-  virtual void map_damped_masses_to_nodes() noexcept = 0;
+  virtual void map_pml_properties_to_nodes() noexcept = 0;
 
   // ! Finalise pml properties
   virtual void finalise_pml_properties(double dt) noexcept = 0;

@@ -1713,7 +1713,7 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 
 //! Map damped mass vector to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_damped_masses_to_nodes() noexcept {
+void mpm::Particle<Tdim>::map_pml_properties_to_nodes() noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 

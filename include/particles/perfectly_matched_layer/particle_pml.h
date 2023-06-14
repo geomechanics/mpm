@@ -61,7 +61,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
           mpm::VelocityUpdate::FLIP) noexcept override;
 
   // ! Map damped mass vector to nodes
-  void map_damped_masses_to_nodes() noexcept override;
+  void map_pml_properties_to_nodes() noexcept override;
 
   // ! Finalise pml properties
   void finalise_pml_properties(double dt) noexcept override;

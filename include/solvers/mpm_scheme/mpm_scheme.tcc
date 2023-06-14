@@ -198,7 +198,7 @@ inline void mpm::MPMScheme<Tdim>::initialise_pml_boundary_properties() {
 
   // Map damped mass to nodes
   mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::map_damped_masses_to_nodes,
+      std::bind(&mpm::ParticleBase<Tdim>::map_pml_properties_to_nodes,
                 std::placeholders::_1));
 
   // Recompute velocity for PML nodes

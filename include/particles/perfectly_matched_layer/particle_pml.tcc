@@ -177,7 +177,7 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
 
 //! Map damped mass vector to nodes
 template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::map_damped_masses_to_nodes() noexcept {
+void mpm::ParticlePML<Tdim>::map_pml_properties_to_nodes() noexcept {
   // Check if particle mass is set
   assert(mass_ != std::numeric_limits<double>::max());
 

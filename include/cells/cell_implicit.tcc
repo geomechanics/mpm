@@ -52,33 +52,6 @@ inline void mpm::Cell<Tdim>::compute_local_mass_matrix(
   }
 }
 
-//! Compute local material stiffness matrix (Used for perfectly matched layer)
-template <unsigned Tdim>
-void mpm::Cell<Tdim>::compute_local_material_stiffness_matrix_pml(
-    const Eigen::MatrixXd& bmatrix, const Eigen::MatrixXd& bmatrix_mod,
-    const Eigen::MatrixXd& dmatrix, double pvolume,
-    double multiplier) noexcept {
-
-  std::lock_guard<std::mutex> guard(cell_mutex_);
-  stiffness_matrix_.noalias() +=
-      bmatrix.transpose() * dmatrix * bmatrix_mod * multiplier * pvolume;
-}
-
-//! Compute local mass matrix (Used for perfectly matched layer)
-template <unsigned Tdim>
-inline void mpm::Cell<Tdim>::compute_local_mass_matrix_pml(
-    const Eigen::VectorXd& shapefn, double pvolume,
-    const VectorDim& multiplier) noexcept {
-
-  std::lock_guard<std::mutex> guard(cell_mutex_);
-  for (unsigned i = 0; i < this->nnodes_; ++i) {
-    for (unsigned k = 0; k < Tdim; ++k) {
-      stiffness_matrix_(Tdim * i + k, Tdim * i + k) +=
-          shapefn(i) * multiplier(k) * pvolume;
-    }
-  }
-}
-
 //! Compute local stiffness matrix (Used in equilibrium equation)
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::compute_local_stiffness_matrix_block(

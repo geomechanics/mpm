@@ -390,7 +390,8 @@ class Node : public NodeBase<Tdim> {
 
   //! Return previous displacement of pml nodes
   //! \ingroup PML
-  VectorDim previous_pml_displacement() const override;
+  //! \param[in] t_index Time index, default j=0 which refer to t = tn
+  VectorDim previous_pml_displacement(unsigned t_index = 0) const override;
 
   //! Return previous velocity of pml nodes
   //! \ingroup PML

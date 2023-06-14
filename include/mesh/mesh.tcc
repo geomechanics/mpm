@@ -2234,6 +2234,14 @@ void mpm::Mesh<Tdim>::create_nodal_properties_pml() {
     // object. Properties must be named in the plural form
     nodal_properties_->create_property("damped_masses", nrows, 1);
     nodal_properties_->create_property("damped_mass_displacements", nrows, 1);
+    nodal_properties_->create_property("damped_mass_displacements_j1", nrows,
+                                       1);
+    nodal_properties_->create_property("damped_mass_displacements_j2", nrows,
+                                       1);
+    nodal_properties_->create_property("damped_mass_displacements_j3", nrows,
+                                       1);
+    nodal_properties_->create_property("damped_mass_displacements_j4", nrows,
+                                       1);
 
     // Iterate over all nodes to initialise the property handle in each node
     // and assign its node id as the prop id in the nodal property data pool

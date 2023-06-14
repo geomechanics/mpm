@@ -341,7 +341,8 @@ class NodeBase {
 
   //! Return previous displacement of pml nodes
   //! \ingroup PML
-  virtual VectorDim previous_pml_displacement() const = 0;
+  //! \param[in] t_index Time index, default j=0 which refer to t = tn
+  virtual VectorDim previous_pml_displacement(unsigned t_index = 0) const = 0;
 
   //! Return previous velocity of pml nodes
   //! \ingroup PML

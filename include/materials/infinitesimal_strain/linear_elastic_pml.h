@@ -43,28 +43,6 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   //! State variables
   std::vector<std::string> state_variables() const override;
 
-  //! Compute stress
-  //! \param[in] stress Stress
-  //! \param[in] dstrain Strain
-  //! \param[in] particle Constant point to particle base
-  //! \param[in] state_vars History-dependent state variables
-  //! \retval updated_stress Updated value of stress
-  Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
-                          const ParticleBase<Tdim>* ptr,
-                          mpm::dense_map* state_vars) override;
-
-  //! Compute consistent tangent matrix
-  //! \param[in] stress Updated stress
-  //! \param[in] prev_stress Stress at the current step
-  //! \param[in] dstrain Strain
-  //! \param[in] particle Constant point to particle base
-  //! \param[in] state_vars History-dependent state variables
-  //! \retval dmatrix Constitutive relations mattrix
-  Matrix6x6 compute_consistent_tangent_matrix(
-      const Vector6d& stress, const Vector6d& prev_stress,
-      const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
-      mpm::dense_map* state_vars) override;
-
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -72,15 +50,6 @@ class LinearElasticPML : public LinearElastic<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
-
- private:
-  //! Compute elastic tensor
-  //! \param[in] state_vars History-dependent state variables
-  Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
-
-  //! Compute damping functions for all direction
-  //! \param[in] state_vars History-dependent state variables
-  void compute_damping_functions(mpm::dense_map* state_vars);
 
  private:
   //! Density

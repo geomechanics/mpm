@@ -50,10 +50,6 @@ class ParticlePML : public mpm::Particle<Tdim> {
     return (Tdim == 2) ? "P2DPML" : "P3DPML";
   }
 
-  //! Compute strain
-  //! \param[in] dt Analysis time step
-  void compute_strain(double dt) noexcept override;
-
   //! Map particle mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   void map_mass_momentum_to_nodes(
@@ -83,35 +79,15 @@ class ParticlePML : public mpm::Particle<Tdim> {
   void map_inertial_force() noexcept override;
 
   //! Map internal force
-  inline void map_internal_force(double dt) noexcept override;
-
-  //! Compute strain and volume using nodal displacement
-  //! \ingroup Implicit
-  void compute_strain_volume_newmark() noexcept override;
+  void map_internal_force(double dt) noexcept override;
 
   /**@}*/
 
  protected:
-  //! Compute strain rate
-  //! \ingroup Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval strain rate at particle inside a cell
-  inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
-
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
-  //! Compute strain increment
-  //! \ingroup Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval strain increment at particle inside a cell
-  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
-
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] dt time step
@@ -155,17 +131,17 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   /**@}*/
 
+  //! Function to recompute particle damping functions
+  void compute_damping_functions(mpm::dense_map& state_vars) noexcept;
+
   //! Function to return mass damping functions
   VectorDim mass_damping_functions() const noexcept;
 
-  //! Compute PML B matrix of a particle, with damping
-  inline Eigen::MatrixXd compute_bmatrix_pml() noexcept;
+  //! Compute PML stiffness matrix
+  inline Eigen::MatrixXd compute_pml_stiffness_matrix() noexcept;
 
-  //! Compute PML stress assuming visco-elastic fractional derivative operators
-  Eigen::Matrix<double, 6, 1> compute_pml_stress(double dt) noexcept;
-
-  //! Function to update viscoelatic strain functions
-  void update_pml_viscoelastic_strain_functions(double dt) noexcept;
+  //! Function to update displacement functions
+  void update_pml_displacement_functions(double dt) noexcept;
 
  protected:
   //! particle id

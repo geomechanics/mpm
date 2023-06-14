@@ -271,26 +271,6 @@ class Cell {
                                             const Eigen::MatrixXd& stiffness,
                                             double pvolume,
                                             double multiplier = 1.0) noexcept;
-
-  //! Compute local material stiffness matrix (Used for perfectly matched layer)
-  //! \ingroup Implicit
-  //! \param[in] bmatrix B matrix
-  //! \param[in] dmatrix constitutive relations matrix
-  //! \param[in] pvolume particle volume
-  //! \param[in] multiplier multiplier
-  void compute_local_material_stiffness_matrix_pml(
-      const Eigen::MatrixXd& bmatrix, const Eigen::MatrixXd& bmatrix_mod,
-      const Eigen::MatrixXd& dmatrix, double pvolume,
-      double multiplier = 1.0) noexcept;
-
-  //! Compute local mass matrix with damping (Used for perfectly matched layer)
-  //! \ingroup Implicit
-  //! \param[in] shapefn shape function
-  //! \param[in] pvolume particle volume
-  //! \param[in] multiplier multiplier
-  void compute_local_mass_matrix_pml(const Eigen::VectorXd& shapefn,
-                                     double pvolume,
-                                     const VectorDim& multiplier) noexcept;
   /**@}*/
 
   /**

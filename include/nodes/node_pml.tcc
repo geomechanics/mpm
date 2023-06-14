@@ -118,21 +118,76 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_pml_displacement_constraints() {
     damped_mass_disp(direction) = constraint.second;
     property_handle_->assign_property("damped_mass_displacements", prop_id_, 0,
                                       damped_mass_disp, Tdim);
+
+    // Displacement constraints of historical boundary
+    // j = 1
+    VectorDim damped_mass_disp_j1 = property_handle_->property(
+        "damped_mass_displacements_j1", prop_id_, 0, Tdim);
+    damped_mass_disp_j1(direction) = 0.0;
+    property_handle_->assign_property("damped_mass_displacements_j1", prop_id_,
+                                      0, damped_mass_disp_j1, Tdim);
+
+    // j = 2
+    VectorDim damped_mass_disp_j2 = property_handle_->property(
+        "damped_mass_displacements_j2", prop_id_, 0, Tdim);
+    damped_mass_disp_j2(direction) = 0.0;
+    property_handle_->assign_property("damped_mass_displacements_j2", prop_id_,
+                                      0, damped_mass_disp_j2, Tdim);
+
+    // j = 3
+    VectorDim damped_mass_disp_j3 = property_handle_->property(
+        "damped_mass_displacements_j3", prop_id_, 0, Tdim);
+    damped_mass_disp_j3(direction) = 0.0;
+    property_handle_->assign_property("damped_mass_displacements_j3", prop_id_,
+                                      0, damped_mass_disp_j3, Tdim);
+
+    // j = 4
+    VectorDim damped_mass_disp_j4 = property_handle_->property(
+        "damped_mass_displacements_j4", prop_id_, 0, Tdim);
+    damped_mass_disp_j4(direction) = 0.0;
+    property_handle_->assign_property("damped_mass_displacements_j4", prop_id_,
+                                      0, damped_mass_disp_j4, Tdim);
   }
 }
 
 //! Return previous displacement of pml nodes
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 Eigen::Matrix<double, Tdim, 1>
-    mpm::Node<Tdim, Tdof, Tnphases>::previous_pml_displacement() const {
+    mpm::Node<Tdim, Tdof, Tnphases>::previous_pml_displacement(
+        unsigned t_index) const {
   const double tolerance = 1.E-16;
   VectorDim damped_mass =
       property_handle_->property("damped_masses", prop_id_, 0, Tdim);
-  VectorDim damped_mass_disp = property_handle_->property(
-      "damped_mass_displacements", prop_id_, 0, Tdim);
+
+  // Time index switch
+  VectorDim damped_mass_disp;
+  switch (t_index) {
+    case 0:  // Displacement at tn
+      damped_mass_disp = property_handle_->property("damped_mass_displacements",
+                                                    prop_id_, 0, Tdim);
+      break;
+    case 1:  // Displacement at tn - dt
+      damped_mass_disp = property_handle_->property(
+          "damped_mass_displacements_j1", prop_id_, 0, Tdim);
+      break;
+    case 2:  // Displacement at tn - 2*dt
+      damped_mass_disp = property_handle_->property(
+          "damped_mass_displacements_j2", prop_id_, 0, Tdim);
+      break;
+    case 3:  // Displacement at tn - 2*dt
+      damped_mass_disp = property_handle_->property(
+          "damped_mass_displacements_j3", prop_id_, 0, Tdim);
+      break;
+    case 4:  // Displacement at tn - 2*dt
+      damped_mass_disp = property_handle_->property(
+          "damped_mass_displacements_j4", prop_id_, 0, Tdim);
+      break;
+    default:
+      throw std::runtime_error("Invalid time index for pml displacement");
+      break;
+  }
 
   VectorDim previous_pml_displacement = VectorDim::Zero();
-
   if (mass_(mpm::NodePhase::NSinglePhase) > tolerance) {
     for (unsigned i = 0; i < Tdim; i++) {
       previous_pml_displacement(i) = damped_mass_disp(i) / damped_mass(i);

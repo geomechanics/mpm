@@ -563,6 +563,25 @@ void mpm::ParticlePML<Tdim>::map_rayleigh_damping_force(
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
+  // Scale damping factor
+  const auto& state_vars = state_variables_[mpm::ParticlePhase::SinglePhase];
+  VectorDim dist_function;
+  switch (Tdim) {
+    case 1:
+      dist_function << state_vars.at("distance_function_x");
+      break;
+    case 2:
+      dist_function << state_vars.at("distance_function_x"),
+          state_vars.at("distance_function_y");
+      break;
+    case 3:
+      dist_function << state_vars.at("distance_function_x"),
+          state_vars.at("distance_function_y"),
+          state_vars.at("distance_function_z");
+      break;
+  }
+  double scaling_factor = dist_function.norm();
+
   // Damping functions
   const VectorDim& damping_functions = this->mass_damping_functions();
 
@@ -574,9 +593,9 @@ void mpm::ParticlePML<Tdim>::map_rayleigh_damping_force(
             ->velocity(mpm::ParticlePhase::SinglePhase)
             .cwiseProduct(damping_functions);
 
-    nodes_[i]->update_external_force(
-        true, mpm::ParticlePhase::SinglePhase,
-        (-1. * damping_factor * velocity_mod * mass_ * shapefn_(i)));
+    nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,
+                                     (-1. * scaling_factor * damping_factor *
+                                      velocity_mod * mass_ * shapefn_(i)));
   }
 }
 
@@ -591,12 +610,31 @@ inline bool mpm::ParticlePML<Tdim>::map_rayleigh_damping_matrix_to_cell(
     // Check if material ptr is valid
     assert(this->material() != nullptr);
 
+    // Scale damping factor
+    const auto& state_vars = state_variables_[mpm::ParticlePhase::SinglePhase];
+    VectorDim dist_function;
+    switch (Tdim) {
+      case 1:
+        dist_function << state_vars.at("distance_function_x");
+        break;
+      case 2:
+        dist_function << state_vars.at("distance_function_x"),
+            state_vars.at("distance_function_y");
+        break;
+      case 3:
+        dist_function << state_vars.at("distance_function_x"),
+            state_vars.at("distance_function_y"),
+            state_vars.at("distance_function_z");
+        break;
+    }
+    double scaling_factor = dist_function.norm();
+
     // Damping functions
     const VectorDim& damping_functions = this->mass_damping_functions();
 
     // Modify mass density
     const VectorDim& mass_density_mod =
-        damping_factor * damping_functions * mass_density_;
+        scaling_factor * damping_factor * damping_functions * mass_density_;
 
     // Construct matrix
     Eigen::MatrixXd mass_density_matrix(Tdim * nodes_.size(),

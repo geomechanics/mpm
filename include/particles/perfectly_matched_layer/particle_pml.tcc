@@ -565,19 +565,20 @@ void mpm::ParticlePML<Tdim>::map_rayleigh_damping_force(
 
   // Scale damping factor
   const auto& state_vars = state_variables_[mpm::ParticlePhase::SinglePhase];
+  double L = state_vars.at("boundary_thickness");
   VectorDim dist_function;
   switch (Tdim) {
     case 1:
-      dist_function << state_vars.at("distance_function_x");
+      dist_function << state_vars.at("distance_function_x") / L;
       break;
     case 2:
-      dist_function << state_vars.at("distance_function_x"),
-          state_vars.at("distance_function_y");
+      dist_function << state_vars.at("distance_function_x") / L,
+          state_vars.at("distance_function_y") / L;
       break;
     case 3:
-      dist_function << state_vars.at("distance_function_x"),
-          state_vars.at("distance_function_y"),
-          state_vars.at("distance_function_z");
+      dist_function << state_vars.at("distance_function_x") / L,
+          state_vars.at("distance_function_y") / L,
+          state_vars.at("distance_function_z") / L;
       break;
   }
   double scaling_factor = dist_function.norm();
@@ -612,19 +613,20 @@ inline bool mpm::ParticlePML<Tdim>::map_rayleigh_damping_matrix_to_cell(
 
     // Scale damping factor
     const auto& state_vars = state_variables_[mpm::ParticlePhase::SinglePhase];
+    double L = state_vars.at("boundary_thickness");
     VectorDim dist_function;
     switch (Tdim) {
       case 1:
-        dist_function << state_vars.at("distance_function_x");
+        dist_function << state_vars.at("distance_function_x") / L;
         break;
       case 2:
-        dist_function << state_vars.at("distance_function_x"),
-            state_vars.at("distance_function_y");
+        dist_function << state_vars.at("distance_function_x") / L,
+            state_vars.at("distance_function_y") / L;
         break;
       case 3:
-        dist_function << state_vars.at("distance_function_x"),
-            state_vars.at("distance_function_y"),
-            state_vars.at("distance_function_z");
+        dist_function << state_vars.at("distance_function_x") / L,
+            state_vars.at("distance_function_y") / L,
+            state_vars.at("distance_function_z") / L;
         break;
     }
     double scaling_factor = dist_function.norm();

@@ -283,6 +283,9 @@ class ParticleBase {
   //! Return velocity
   virtual VectorDim velocity() const = 0;
 
+  //! Assign displacement
+  virtual bool assign_displacement(const VectorDim& displacement) = 0;
+
   //! Return displacement of the particle
   virtual VectorDim displacement() const = 0;
 

@@ -224,6 +224,11 @@ class Particle : public ParticleBase<Tdim> {
   //! Return velocity of the particle
   VectorDim velocity() const override { return velocity_; }
 
+  //! Assign displacement to the particle
+  //! \param[in] displacement A vector of particle displacement
+  //! \retval status Assignment status
+  bool assign_displacement(const VectorDim& displacement) override;
+
   //! Return displacement of the particle
   VectorDim displacement() const override { return displacement_; }
 

@@ -951,6 +951,15 @@ bool mpm::Particle<Tdim>::assign_velocity(
   return true;
 }
 
+// Assign displacement to the particle
+template <unsigned Tdim>
+bool mpm::Particle<Tdim>::assign_displacement(
+    const Eigen::Matrix<double, Tdim, 1>& displacement) {
+  // Assign displacement
+  displacement_ = displacement;
+  return true;
+}
+
 // Assign traction to the particle
 template <unsigned Tdim>
 bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {

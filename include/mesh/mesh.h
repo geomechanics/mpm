@@ -380,6 +380,12 @@ class Mesh {
       const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
           particle_distance_functions);
 
+  //! Assign pml particles displacements
+  //! \param[in] particle_displacements Particle displacements
+  bool assign_pml_particles_displacements(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_displacements);
+
   //! Assign particles cells
   //! \param[in] particles_cells Particles and cells
   bool assign_particles_cells(

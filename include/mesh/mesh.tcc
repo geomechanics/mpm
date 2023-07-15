@@ -2269,8 +2269,8 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
   try {
     if (!particles_.size())
       throw std::runtime_error(
-          "No particles have been assigned in mesh, cannot assign pore "
-          "pressures");
+          "No particles have been assigned in mesh, cannot assign PML distance "
+          "functions");
 
     // Initialise dimension-wise maximum boundary thickness
     double L_x, L_y, L_z;
@@ -2353,6 +2353,38 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
     } else {
       throw std::runtime_error(
           "Assign PML boundary thickness is invalid - L is NaN");
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign particle PML displacementss
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_pml_particles_displacements(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        particle_displacements) {
+  bool status = true;
+
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign PML "
+          "displacements");
+
+    // Loop over particle displacements
+    for (const auto& particle_disp : particle_displacements) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_disp);
+      // Distance function vector
+      VectorDim pdisp = std::get<1>(particle_disp);
+
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        map_particles_[pid]->assign_displacement(pdisp);
+      }
     }
 
   } catch (std::exception& exception) {

@@ -171,6 +171,10 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
   REQUIRE_NOTHROW(particle1->assign_volume(4.0));
   REQUIRE_NOTHROW(particle2->assign_volume(3.0));
 
+  // Assign zero mass
+  REQUIRE_NOTHROW(particle1->assign_mass(0.0));
+  REQUIRE_NOTHROW(particle2->assign_mass(0.0));
+
   SECTION("Check USF") {
     auto mpm_scheme = std::make_shared<mpm::MPMSchemeUSF<Dim>>(mesh, 0.01);
     // Phase

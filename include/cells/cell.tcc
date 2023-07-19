@@ -168,7 +168,7 @@ bool mpm::Cell<Tdim>::add_node(
 template <unsigned Tdim>
 void mpm::Cell<Tdim>::activate_nodes() {
   // If number of particles are present, set all associated nodes as active
-  if (particles_.size() > 0) {
+  if (particles_.size() > 0 || points_.size() > 0) {
     // std::lock_guard<std::mutex> guard(cell_mutex_);
     for (unsigned i = 0; i < nodes_.size(); ++i) nodes_[i]->assign_status(true);
   }
@@ -227,6 +227,27 @@ void mpm::Cell<Tdim>::remove_particle_id(Index id) {
   std::lock_guard<std::mutex> guard(cell_mutex_);
   particles_.erase(std::remove(particles_.begin(), particles_.end(), id),
                    particles_.end());
+}
+
+//! Add a point id and return the status of addition of a point id
+template <unsigned Tdim>
+bool mpm::Cell<Tdim>::add_point_id(Index id) {
+  bool status = false;
+  std::lock_guard<std::mutex> guard(cell_mutex_);
+  // Check if it is found in the container
+  auto itr = std::find(points_.begin(), points_.end(), id);
+  if (itr == points_.end()) {
+    points_.emplace_back(id);
+    status = true;
+  }
+  return status;
+}
+
+//! Remove a point id
+template <unsigned Tdim>
+void mpm::Cell<Tdim>::remove_point_id(Index id) {
+  std::lock_guard<std::mutex> guard(cell_mutex_);
+  points_.erase(std::remove(points_.begin(), points_.end(), id), points_.end());
 }
 
 //! Compute volume of a 2D cell

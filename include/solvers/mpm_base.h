@@ -65,6 +65,9 @@ class MPMBase : public MPM {
   //! Initialise particles
   void initialise_particles() override;
 
+  //! Initialise interface points
+  void initialise_points() override;
+
   //! Initialise materials
   void initialise_materials() override;
 
@@ -96,8 +99,15 @@ class MPMBase : public MPM {
   //! \param[in] check Check duplicates
   void particle_entity_sets(bool check);
 
+  //! Point entity sets
+  //! \param[in] check Check duplicates
+  void point_entity_sets(bool check);
+
   //! Particle velocity constraints
   void particle_velocity_constraints();
+
+  //! Point velocity constraints
+  void point_velocity_constraints();
 
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
@@ -116,9 +126,21 @@ class MPMBase : public MPM {
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
 
+  //! Write HDF5 files for material points
+  void write_hdf5_particles(mpm::Index step, mpm::Index max_steps) override;
+
+  //! Write HDF5 files for interface points
+  void write_hdf5_points(mpm::Index step, mpm::Index max_steps) override;
+
 #ifdef USE_VTK
   //! Write VTK files
   void write_vtk(mpm::Index step, mpm::Index max_steps) override;
+
+  //! Write VTK files for material points
+  void write_vtk_particles(mpm::Index step, mpm::Index max_steps) override;
+
+  //! Write VTK files for interface points
+  void write_vtk_points(mpm::Index step, mpm::Index max_steps) override;
 #endif
 
 #ifdef USE_PARTIO
@@ -209,6 +231,12 @@ class MPMBase : public MPM {
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  //! Points areas
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void points_areas(const Json& mesh_prop,
+                    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   //! Initialise damping
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);
@@ -219,6 +247,9 @@ class MPMBase : public MPM {
 
   //! Initialise particle types
   void initialise_particle_types();
+
+  //! Initialise point types
+  void initialise_point_types();
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -272,6 +303,8 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::Constraints<Tdim>> constraints_;
   //! Particle types
   std::set<std::string> particle_types_;
+  //! Point types
+  std::set<std::string> point_types_;
   //! Materials
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Mathematical functions

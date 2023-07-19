@@ -139,7 +139,8 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assign_displacement_constraints(
 
 //! Apply displacement constraints vector
 template <unsigned Tdim>
-void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
+void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints(
+    unsigned iteration) {
   try {
     // Modify residual_force_rhs_vector_
     residual_force_rhs_vector_ +=
@@ -150,7 +151,8 @@ void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
              displacement_constraints_);
          it; ++it) {
       // Modify residual force_rhs_vector
-      residual_force_rhs_vector_(it.index()) = it.value();
+      residual_force_rhs_vector_(it.index()) =
+          (iteration == 0) ? it.value() : 0.0;
       // Modify stiffness_matrix
       stiffness_matrix_.row(it.index()) *= 0;
       stiffness_matrix_.col(it.index()) *= 0;

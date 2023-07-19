@@ -144,7 +144,7 @@ TEST_CASE("TwoPhase Particle is checked for 1D case",
         std::make_shared<mpm::TwoPhaseParticle<Dim>>(id, coords);
 
     // Check mass
-    REQUIRE(particle->mass() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->mass() == std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->mass() == Approx(100.5).epsilon(Tolerance));
@@ -1451,7 +1451,7 @@ TEST_CASE("TwoPhase Particle is checked for 2D case",
         std::make_shared<mpm::TwoPhaseParticle<Dim>>(id, coords);
 
     // Check mass
-    REQUIRE(particle->mass() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->mass() == std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->mass() == Approx(100.5).epsilon(Tolerance));
@@ -3017,7 +3017,7 @@ TEST_CASE("TwoPhase Particle is checked for 3D case",
         std::make_shared<mpm::TwoPhaseParticle<Dim>>(id, coords);
 
     // Check mass
-    REQUIRE(particle->mass() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->mass() == std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->mass() == Approx(100.5).epsilon(Tolerance));

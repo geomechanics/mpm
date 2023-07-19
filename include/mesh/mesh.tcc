@@ -328,6 +328,13 @@ void mpm::Mesh<Tdim>::find_nglobal_particles_cells() {
     MPI_Bcast(&nparticles, 1, MPI_INT, (*citr)->rank(), MPI_COMM_WORLD);
     // Receive broadcast and update on all ranks
     (*citr)->nglobal_particles(nparticles);
+
+    int npoints;
+    // Determine the rank of the broadcast emitter process
+    if ((*citr)->rank() == mpi_rank) npoints = (*citr)->npoints();
+    MPI_Bcast(&npoints, 1, MPI_INT, (*citr)->rank(), MPI_COMM_WORLD);
+    // Receive broadcast and update on all ranks
+    (*citr)->nglobal_points(npoints);
   }
 #endif
 }
@@ -988,6 +995,378 @@ void mpm::Mesh<Tdim>::transfer_nonrank_particles(
 #endif
 }
 
+//! Remove a point pointer from the mesh
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::remove_point(
+    const std::shared_ptr<mpm::PointBase<Tdim>>& point) {
+  const mpm::Index id = point->id();
+  // Remove associated cell for the point
+  map_points_[id]->remove_cell();
+  // Remove a point if found in the container and map
+  return (points_.remove(point) && map_points_.remove(id));
+}
+
+//! Remove points by id
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::remove_points(const std::vector<mpm::Index>& pids) {
+  if (!pids.empty()) {
+    // Get MPI rank
+    int mpi_size = 1;
+#ifdef USE_MPI
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+    for (auto& id : pids) {
+      map_points_[id]->remove_cell();
+      map_points_.remove(id);
+    }
+
+    // Get number of points to reserve size
+    unsigned npoints = this->npoints();
+    // Clear points and start a new element of points
+    points_.clear();
+    points_.reserve(static_cast<int>(npoints / mpi_size));
+    // Iterate over the map of points and add them to container
+    for (auto& point : map_points_) points_.add(point.second, false);
+  }
+}
+
+//! Remove all points in a cell given cell id
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::remove_all_nonrank_points() {
+  // Get MPI rank
+  int mpi_rank = 0;
+  int mpi_size = 1;
+#ifdef USE_MPI
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+
+  // Remove associated cell for the point
+  for (auto citr = this->cells_.cbegin(); citr != this->cells_.cend(); ++citr) {
+    // If cell is non empty
+    if ((*citr)->points().size() != 0 && (*citr)->rank() != mpi_rank) {
+      auto pids = (*citr)->points();
+      // Remove points from map
+      for (auto& id : pids) {
+        map_points_[id]->remove_cell();
+        map_points_.remove(id);
+      }
+      (*citr)->clear_point_ids();
+    }
+  }
+
+  // Get number of points to reserve size
+  unsigned npoints = this->npoints();
+  // Clear points and start a new element of points
+  points_.clear();
+  points_.reserve(static_cast<int>(npoints));
+  // Iterate over the map of points and add them to container
+  for (auto& point : map_points_) points_.add(point.second, false);
+}
+
+//! Transfer all points in cells that are not in local rank
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::transfer_halo_points() {
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  int mpi_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  int mpi_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
+  if (mpi_size > 1) {
+    std::vector<MPI_Request> send_requests;
+    send_requests.reserve(ghost_cells_.size());
+
+    unsigned i = 0;
+    unsigned np = 0;
+    std::vector<mpm::Index> remove_pids;
+    // Iterate through the ghost cells and send points
+    for (auto citr = this->ghost_cells_.cbegin();
+         citr != this->ghost_cells_.cend(); ++citr, ++i) {
+
+      // Send number of points to receiver rank
+      auto point_ids = (*citr)->points();
+      unsigned npoints = point_ids.size();
+      MPI_Isend(&npoints, 1, MPI_UNSIGNED, (*citr)->rank(), 1, MPI_COMM_WORLD,
+                &send_requests[i]);
+    }
+
+    // Iterate through the ghost cells and send points
+    for (auto citr = this->ghost_cells_.cbegin();
+         citr != this->ghost_cells_.cend(); ++citr, ++i) {
+      // Send number of points to receiver rank
+      auto point_ids = (*citr)->points();
+      for (auto& id : point_ids) {
+        // Create a vector of serialized point
+        std::vector<uint8_t> buffer = map_points_[id]->serialize();
+        MPI_Send(buffer.data(), buffer.size(), MPI_UINT8_T, (*citr)->rank(), 0,
+                 MPI_COMM_WORLD);
+        ++np;
+        // Points to be removed from the current rank
+        remove_pids.emplace_back(id);
+      }
+      (*citr)->clear_point_ids();
+    }
+    // Remove all sent points
+    this->remove_points(remove_pids);
+
+    // Send complete
+    for (unsigned i = 0; i < this->ghost_cells_.size(); ++i)
+      MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
+
+    // Point id
+    mpm::Index pid = 0;
+    // Initial point coordinates
+    Eigen::Matrix<double, Tdim, 1> pcoordinates =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+
+    // Iterate through the local ghost cells and receive points
+    for (auto citr = this->local_ghost_cells_.cbegin();
+         citr != this->local_ghost_cells_.cend(); ++citr) {
+      std::vector<unsigned> neighbour_ranks =
+          ghost_cells_neighbour_ranks_[(*citr)->id()];
+      // Total number of points
+      std::vector<unsigned> nrank_points(neighbour_ranks.size(), 0);
+      for (unsigned i = 0; i < neighbour_ranks.size(); ++i)
+        MPI_Recv(&nrank_points[i], 1, MPI_UNSIGNED, neighbour_ranks[i], 1,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      // Receive number of points
+      unsigned nrecv_points =
+          std::accumulate(nrank_points.begin(), nrank_points.end(), 0);
+
+      for (unsigned j = 0; j < nrecv_points; ++j) {
+        // Retrieve information about the incoming message
+        MPI_Status status;
+        MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+
+        // Get buffer size
+        int size;
+        MPI_Get_count(&status, MPI_UINT8_T, &size);
+
+        // Allocate the buffer now that we know how many elements there are
+        std::vector<uint8_t> buffer;
+        buffer.resize(size);
+
+        // Finally receive the message
+        MPI_Recv(buffer.data(), size, MPI_UINT8_T, MPI_ANY_SOURCE, 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        uint8_t* bufptr = const_cast<uint8_t*>(&buffer[0]);
+        int position = 0;
+
+        // Get point type
+        int ptype;
+        MPI_Unpack(bufptr, buffer.size(), &position, &ptype, 1, MPI_INT,
+                   MPI_COMM_WORLD);
+        std::string point_type = mpm::PointTypeName.at(ptype);
+
+        // Create point
+        auto point = Factory<mpm::PointBase<Tdim>, mpm::Index,
+                             const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                         ->create(point_type, static_cast<mpm::Index>(pid),
+                                  pcoordinates);
+        point->deserialize(buffer);
+        // Add point to mesh
+        this->add_point(point, true);
+      }
+    }
+  }
+#endif
+}
+
+//! Transfer all points in cells that are not in local rank
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::transfer_nonrank_points(
+    const std::vector<mpm::Index>& exchange_cells) {
+#ifdef USE_MPI
+  // Get number of MPI ranks
+  int mpi_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  int mpi_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
+  if (mpi_size > 1) {
+    std::vector<MPI_Request> send_requests;
+    send_requests.reserve(exchange_cells.size());
+    std::vector<MPI_Request> send_point_requests;
+    send_point_requests.reserve(exchange_cells.size() * 100);
+    unsigned nsend_requests = 0;
+    unsigned np = 0;
+    std::vector<mpm::Index> remove_pids;
+    // Iterate through the ghost cells and send points
+    for (auto cid : exchange_cells) {
+      // Get cell pointer
+      auto cell = map_cells_[cid];
+      // If the previous rank of cell is the current MPI rank,
+      // then send all points
+      if ((cell->rank() != cell->previous_mpirank()) &&
+          (cell->previous_mpirank() == mpi_rank)) {
+
+        // Send number of points to receiver rank
+        unsigned npoints = cell->npoints();
+        MPI_Ibsend(&npoints, 1, MPI_UNSIGNED, cell->rank(), 0, MPI_COMM_WORLD,
+                   &send_requests[nsend_requests]);
+
+        auto point_ids = cell->points();
+        for (auto& id : point_ids) {
+          // Create a vector of serialized point
+          std::vector<uint8_t> buffer = map_points_[id]->serialize();
+          MPI_Ibsend(buffer.data(), buffer.size(), MPI_UINT8_T, cell->rank(), 0,
+                     MPI_COMM_WORLD, &send_point_requests[np]);
+          ++np;
+
+          // Points to be removed from the current rank
+          remove_pids.emplace_back(id);
+        }
+        cell->clear_point_ids();
+        ++nsend_requests;
+      }
+    }
+    // Remove all sent points
+    this->remove_points(remove_pids);
+    // Send complete iterate only upto valid send requests
+    for (unsigned i = 0; i < nsend_requests; ++i)
+      MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
+    // Send points complete
+    for (unsigned i = 0; i < np; ++i)
+      MPI_Wait(&send_point_requests[i], MPI_STATUS_IGNORE);
+
+    // Point id
+    mpm::Index pid = 0;
+    // Initial point coordinates
+    Eigen::Matrix<double, Tdim, 1> pcoordinates =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+
+    // Iterate through the ghost cells and receive points
+    for (auto cid : exchange_cells) {
+      // Get cell pointer
+      auto cell = map_cells_[cid];
+      // If the current rank is the MPI rank receive points
+      if ((cell->rank() != cell->previous_mpirank()) &&
+          (cell->rank() == mpi_rank)) {
+        // Receive number of points
+        unsigned nrecv_points;
+        MPI_Recv(&nrecv_points, 1, MPI_UNSIGNED, cell->previous_mpirank(), 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        for (unsigned j = 0; j < nrecv_points; ++j) {
+          // Retrieve information about the incoming message
+          MPI_Status status;
+          MPI_Probe(cell->previous_mpirank(), 0, MPI_COMM_WORLD, &status);
+
+          // Get buffer size
+          int size;
+          MPI_Get_count(&status, MPI_UINT8_T, &size);
+
+          // Allocate the buffer now that we know how many elements there are
+          std::vector<uint8_t> buffer;
+          buffer.resize(size);
+
+          // Finally receive the message
+          MPI_Recv(buffer.data(), size, MPI_UINT8_T, cell->previous_mpirank(),
+                   0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+          uint8_t* bufptr = const_cast<uint8_t*>(&buffer[0]);
+          int position = 0;
+
+          // Get point type
+          int ptype;
+          MPI_Unpack(bufptr, buffer.size(), &position, &ptype, 1, MPI_INT,
+                     MPI_COMM_WORLD);
+          std::string point_type = mpm::PointTypeName.at(ptype);
+
+          // Create point
+          auto point =
+              Factory<mpm::PointBase<Tdim>, mpm::Index,
+                      const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                  ->create(point_type, static_cast<mpm::Index>(pid),
+                           pcoordinates);
+          point->deserialize(buffer);
+          // Add point to mesh
+          this->add_point(point, true);
+        }
+      }
+    }
+  }
+#endif
+}
+
+//! Create points from coordinates
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_points(const std::string& point_type,
+                                    const std::vector<VectorDim>& coordinates,
+                                    unsigned pset_id, bool check_duplicates) {
+  bool status = true;
+  try {
+    // Points ids
+    std::vector<mpm::Index> pids;
+    // Check if point coordinates is empty
+    if (coordinates.empty())
+      throw std::runtime_error("List of coordinates is empty");
+    // Iterate over point coordinates
+    for (const auto& point_coordinates : coordinates) {
+      // Point id
+      mpm::Index pid = points_.size();
+      // Create point
+      auto point = Factory<mpm::PointBase<Tdim>, mpm::Index,
+                           const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                       ->create(point_type, static_cast<mpm::Index>(pid),
+                                point_coordinates);
+
+      // Add point to mesh and check
+      bool insert_status = this->add_point(point, check_duplicates);
+
+      // If insertion is successful
+      if (insert_status) {
+        pids.emplace_back(pid);
+      } else
+        throw std::runtime_error("Addition of point to mesh failed!");
+    }
+    // Add points to set
+    status = this->point_sets_
+                 .insert(std::pair<mpm::Index, std::vector<mpm::Index>>(pset_id,
+                                                                        pids))
+                 .second;
+    if (!status) throw std::runtime_error("Point set creation failed");
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Add a point pointer to the mesh
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::add_point(
+    const std::shared_ptr<mpm::PointBase<Tdim>>& point, bool checks) {
+  bool status = false;
+  try {
+    if (checks) {
+      // Add only if point can be located in any cell of the mesh
+      if (this->locate_point_cells(point)) {
+        status = points_.add(point, checks);
+        points_cell_ids_.insert(
+            std::pair<mpm::Index, mpm::Index>(point->id(), point->cell_id()));
+        map_points_.insert(point->id(), point);
+      } else {
+        throw std::runtime_error("Point not found in mesh");
+      }
+    } else {
+      status = points_.add(point, checks);
+      points_cell_ids_.insert(
+          std::pair<mpm::Index, mpm::Index>(point->id(), point->cell_id()));
+      map_points_.insert(point->id(), point);
+    }
+    if (!status) throw std::runtime_error("Point addition failed");
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Resume cell ranks and partitioned domain
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::resume_domain_cell_ranks() {
@@ -1149,6 +1528,61 @@ bool mpm::Mesh<Tdim>::locate_particle_cells(
   return status;
 }
 
+//! Locate points in a cell
+template <unsigned Tdim>
+std::vector<std::shared_ptr<mpm::PointBase<Tdim>>>
+    mpm::Mesh<Tdim>::locate_points_mesh() {
+
+  std::vector<std::shared_ptr<mpm::PointBase<Tdim>>> points;
+
+  std::for_each(
+      points_.cbegin(), points_.cend(),
+      [=, &points](const std::shared_ptr<mpm::PointBase<Tdim>>& point) {
+        // If point is not found in mesh add to a list of points
+        if (!this->locate_point_cells(point)) points.emplace_back(point);
+      });
+
+  return points;
+}
+
+//! Locate points in a cell
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::locate_point_cells(
+    const std::shared_ptr<mpm::PointBase<Tdim>>& point) {
+  // Check the current cell if it is not invalid
+  if (point->cell_id() != std::numeric_limits<mpm::Index>::max()) {
+    // If a cell id is present, but not a cell locate the cell from map
+    if (!point->cell_ptr()) point->assign_cell(map_cells_[point->cell_id()]);
+    if (point->compute_reference_location()) return true;
+
+    // Check if point is in any of its nearest neighbours
+    const auto neighbours = map_cells_[point->cell_id()]->neighbours();
+    Eigen::Matrix<double, Tdim, 1> xi;
+    Eigen::Matrix<double, Tdim, 1> coordinates = point->coordinates();
+    for (auto neighbour : neighbours) {
+      if (map_cells_[neighbour]->is_point_in_cell(coordinates, &xi)) {
+        point->assign_cell_xi(map_cells_[neighbour], xi);
+        return true;
+      }
+    }
+  }
+
+  bool status = false;
+#pragma omp parallel for schedule(runtime)
+  for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+    // Check if point is already found, if so don't run for other cells
+    // Check if co-ordinates is within the cell, if true
+    // add point to cell
+    Eigen::Matrix<double, Tdim, 1> xi;
+    if (!status && (*citr)->is_point_in_cell(point->coordinates(), &xi)) {
+      point->assign_cell_xi(*citr, xi);
+      status = true;
+    }
+  }
+
+  return status;
+}
+
 //! Iterate over particles
 template <unsigned Tdim>
 template <typename Toper>
@@ -1183,6 +1617,33 @@ void mpm::Mesh<Tdim>::iterate_over_particle_set(int set_id, Toper oper) {
       unsigned pid = (*sitr);
       if (map_particles_.find(pid) != map_particles_.end())
         oper(map_particles_[pid]);
+    }
+  }
+}
+
+//! Iterate over points
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_points(Toper oper) {
+#pragma omp parallel for schedule(runtime)
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr)
+    oper(*pitr);
+}
+
+//! Iterate over point set
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_point_set(int set_id, Toper oper) {
+  // If set id is -1, use all points
+  if (set_id == -1) {
+    this->iterate_over_points(oper);
+  } else {
+    // Iterate over the point set
+    auto set = point_sets_.at(set_id);
+#pragma omp parallel for schedule(runtime)
+    for (auto sitr = set.begin(); sitr != set.cend(); ++sitr) {
+      unsigned pid = (*sitr);
+      if (map_points_.find(pid) != map_points_.end()) oper(map_points_[pid]);
     }
   }
 }
@@ -1284,6 +1745,72 @@ std::vector<double> mpm::Mesh<Tdim>::particles_statevars_data(
   return statevars_data;
 }
 
+//! Return point coordinates
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::point_coordinates() {
+  std::vector<Eigen::Matrix<double, 3, 1>> point_coordinates;
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr) {
+    Eigen::Vector3d coordinates;
+    coordinates.setZero();
+    auto pcoords = (*pitr)->coordinates();
+    // Fill coordinates to the size of dimensions
+    for (unsigned i = 0; i < Tdim; ++i) coordinates(i) = pcoords(i);
+    point_coordinates.emplace_back(coordinates);
+  }
+  return point_coordinates;
+}
+
+//! Return point scalar data
+template <unsigned Tdim>
+std::vector<double> mpm::Mesh<Tdim>::points_scalar_data(
+    const std::string& attribute) const {
+  std::vector<double> scalar_data;
+  scalar_data.reserve(points_.size());
+  // Iterate over points and add scalar value to data
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr)
+    scalar_data.emplace_back((*pitr)->scalar_data(attribute));
+  return scalar_data;
+}
+
+//! Return point vector data
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::points_vector_data(
+    const std::string& attribute) const {
+  std::vector<Eigen::Matrix<double, 3, 1>> vector_data;
+  // Iterate over points
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr) {
+    Eigen::Matrix<double, 3, 1> data;
+    data.setZero();
+    auto pdata = (*pitr)->vector_data(attribute);
+    // Fill vector_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    vector_data.emplace_back(data);
+  }
+  return vector_data;
+}
+
+//! Return point tensor data
+template <unsigned Tdim>
+template <unsigned Tsize>
+std::vector<Eigen::Matrix<double, Tsize, 1>>
+    mpm::Mesh<Tdim>::points_tensor_data(const std::string& attribute) const {
+  std::vector<Eigen::Matrix<double, Tsize, 1>> tensor_data;
+  // Iterate over points
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr) {
+    Eigen::Matrix<double, Tsize, 1> data;
+    data.setZero();
+    auto pdata = (*pitr)->tensor_data(attribute);
+    // Fill tensor_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+
+    // Add to a tensor of data
+    tensor_data.emplace_back(data);
+  }
+  return tensor_data;
+}
+
 //! Assign particles volumes
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_particles_volumes(
@@ -1305,6 +1832,34 @@ bool mpm::Mesh<Tdim>::assign_particles_volumes(
 
       if (!status)
         throw std::runtime_error("Cannot assign invalid particle volume");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign points area
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_points_areas(
+    const std::vector<std::tuple<mpm::Index, double>>& points_areas) {
+  bool status = true;
+  try {
+    if (!points_.size())
+      throw std::runtime_error(
+          "No points have been assigned in mesh, cannot assign area");
+
+    for (const auto& points_area : points_areas) {
+      // Point id
+      mpm::Index pid = std::get<0>(points_area);
+      // Area
+      double area = std::get<1>(points_area);
+
+      if (map_points_.find(pid) != map_points_.end())
+        status = map_points_[pid]->assign_area(area);
+
+      if (!status) throw std::runtime_error("Cannot assign invalid point area");
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -1461,6 +2016,54 @@ void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
     this->iterate_over_particle_set(
         set_id,
         std::bind(&mpm::ParticleBase<Tdim>::apply_particle_velocity_constraints,
+                  std::placeholders::_1, dir, velocity));
+  }
+}
+
+//! Create point velocity constraints
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
+    int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
+    const std::string& constraint_type, double penalty_factor,
+    const std::string& normal_type, const VectorDim& normal_vector) {
+  bool status = true;
+  try {
+    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
+      // Create a point velocity constraint
+      if (constraint->dir() < Tdim)
+        point_velocity_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error("Invalid direction of velocity constraint");
+
+      // Assign penalty factor
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_penalty_parameter,
+                            std::placeholders::_1, constraint_type,
+                            penalty_factor, normal_type, normal_vector));
+    } else
+      throw std::runtime_error(
+          "No point set found to assign velocity constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply point velocity constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {
+  // Iterate over all point velocity constraints
+  for (const auto& pvelocity : point_velocity_constraints_) {
+    // If set id is -1, use all points
+    int set_id = pvelocity->setid();
+    unsigned dir = pvelocity->dir();
+    double velocity = pvelocity->velocity();
+
+    this->iterate_over_point_set(
+        set_id,
+        std::bind(&mpm::PointBase<Tdim>::apply_point_velocity_constraints,
                   std::placeholders::_1, dir, velocity));
   }
 }
@@ -1643,6 +2246,42 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_twophase(
   return true;
 }
 
+//! Write points to HDF5
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::write_points_hdf5(const std::string& filename) {
+  const unsigned npoints = this->npoints();
+
+  std::vector<PODPoint> point_data;
+  point_data.reserve(npoints);
+
+  for (auto pitr = points_.cbegin(); pitr != points_.cend(); ++pitr) {
+    auto pod = std::static_pointer_cast<mpm::PODPoint>((*pitr)->pod());
+    point_data.emplace_back(*pod);
+  }
+
+  // Calculate the size and the offsets of our struct members in memory
+  const hsize_t NRECORDS = npoints;
+  const hsize_t NFIELDS = mpm::pod::point::NFIELDS;
+
+  hid_t file_id;
+  hsize_t chunk_size = 10000;
+  int* fill_data = NULL;
+  int compress = 0;
+
+  // Create a new file using default properties.
+  file_id =
+      H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+  // make a table
+  H5TBmake_table("Table Title", file_id, "table", NFIELDS, NRECORDS,
+                 mpm::pod::point::dst_size, mpm::pod::point::field_names,
+                 mpm::pod::point::dst_offset, mpm::pod::point::field_type,
+                 chunk_size, fill_data, compress, point_data.data());
+
+  H5Fclose(file_id);
+  return true;
+}
+
 //! Read HDF5 particles with type name
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
@@ -1791,6 +2430,73 @@ std::vector<mpm::PODParticle> mpm::Mesh<Tdim>::particles_hdf5() const {
   return particles_hdf5;
 }
 
+//! Read HDF5 points with type name
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::read_points_hdf5(const std::string& filename,
+                                       const std::string& type_name,
+                                       const std::string& point_type) {
+  bool status = false;
+  if (type_name == "points")
+    status = this->read_points_hdf5(filename, point_type);
+
+  return status;
+}
+
+//! Read HDF5 point
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::read_points_hdf5(const std::string& filename,
+                                       const std::string& point_type) {
+
+  // Create a new file using default properties.
+  hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  // Throw an error if file can't be found
+  if (file_id < 0) throw std::runtime_error("HDF5 point file is not found");
+
+  // Calculate the size and the offsets of our struct members in memory
+  hsize_t nrecords = 0;
+  hsize_t nfields = 0;
+  H5TBget_table_info(file_id, "table", &nfields, &nrecords);
+
+  if (nfields != mpm::pod::point::NFIELDS)
+    throw std::runtime_error("HDF5 table has incorrect number of fields");
+
+  std::vector<PODPoint> dst_buf;
+  dst_buf.reserve(nrecords);
+  // Read the table
+  H5TBread_table(file_id, "table", mpm::pod::point::dst_size,
+                 mpm::pod::point::dst_offset, mpm::pod::point::dst_sizes,
+                 dst_buf.data());
+
+  // Iterate over all HDF5 points
+  for (unsigned i = 0; i < nrecords; ++i) {
+    PODPoint pod_point = dst_buf[i];
+
+    // Point id
+    mpm::Index pid = pod_point.id;
+    // Initialise coordinates
+    Eigen::Matrix<double, Tdim, 1> coords;
+    coords.setZero();
+
+    // Create point
+    auto point = Factory<mpm::PointBase<Tdim>, mpm::Index,
+                         const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                     ->create(point_type, static_cast<mpm::Index>(pid), coords);
+
+    // Initialise point with HDF5 data
+    point->initialise_point(pod_point);
+
+    // Add point to mesh and check
+    bool insert_status = this->add_point(point, false);
+
+    // If insertion is successful
+    if (!insert_status)
+      throw std::runtime_error("Addition of point to mesh failed!");
+  }
+  // close the file
+  H5Fclose(file_id);
+  return true;
+}
+
 //! Nodal coordinates
 template <unsigned Tdim>
 std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::nodal_coordinates()
@@ -1872,6 +2578,31 @@ bool mpm::Mesh<Tdim>::create_particle_sets(
       status = this->particle_sets_
                    .insert(std::pair<mpm::Index, std::vector<mpm::Index>>(
                        sitr->first, particles))
+                   .second;
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  }
+  return status;
+}
+
+//! Create map of container of point in sets
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_sets(
+    const tsl::robin_map<mpm::Index, std::vector<mpm::Index>>& point_sets,
+    bool check_duplicates) {
+  bool status = false;
+  try {
+    // Create container for each point set
+    for (auto sitr = point_sets.begin(); sitr != point_sets.end(); ++sitr) {
+      // Create a container for the set
+      std::vector<mpm::Index> points((sitr->second).begin(),
+                                     (sitr->second).end());
+
+      // Create the map of the container
+      status = this->point_sets_
+                   .insert(std::pair<mpm::Index, std::vector<mpm::Index>>(
+                       sitr->first, points))
                    .second;
     }
   } catch (std::exception& exception) {
@@ -2143,6 +2874,66 @@ bool mpm::Mesh<Tdim>::read_particles_file(const std::shared_ptr<mpm::IO>& io,
                                        pset_id, check_duplicates);
 
   if (!status) throw std::runtime_error("Addition of particles to mesh failed");
+
+  return status;
+}
+
+//! Generate points
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::generate_points(const std::shared_ptr<mpm::IO>& io,
+                                      const Json& generator) {
+  bool status = true;
+  try {
+    // Point generator
+    const auto generator_type = generator["type"].template get<std::string>();
+
+    // Generate points from file
+    if (generator_type == "file") {
+      // Point set id
+      unsigned pset_id = generator["pset_id"].template get<unsigned>();
+      status = this->read_points_file(io, generator, pset_id);
+    }
+
+    else
+      throw std::runtime_error(
+          "Point generator type is not properly specified");
+
+  } catch (std::exception& exception) {
+    console_->error("{}: #{} Generating point failed! {}\n", __FILE__, __LINE__,
+                    exception.what());
+    status = false;
+  }
+  return status;
+}
+
+// Read point file
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::read_points_file(const std::shared_ptr<mpm::IO>& io,
+                                       const Json& generator,
+                                       unsigned pset_id) {
+  // Point type
+  auto point_type = generator["point_type"].template get<std::string>();
+
+  // File location
+  auto file_loc =
+      io->file_name(generator["location"].template get<std::string>());
+
+  // Check duplicates
+  bool check_duplicates = generator["check_duplicates"].template get<bool>();
+
+  const std::string reader = generator["io_type"].template get<std::string>();
+
+  // Create a point reader
+  auto point_io = Factory<mpm::IOMesh<Tdim>>::instance()->create(reader);
+
+  // Get coordinates using read particles function
+  auto coords = point_io->read_particles(file_loc);
+
+  // Create points from coordinates
+  bool status =
+      this->create_points(point_type, coords, pset_id, check_duplicates);
+
+  if (!status) throw std::runtime_error("Addition of points to mesh failed");
 
   return status;
 }

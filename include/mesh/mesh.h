@@ -42,6 +42,7 @@ using Json = nlohmann::json;
 #include "particle.h"
 #include "particle_base.h"
 #include "pod_particle.h"
+#include "point_base.h"
 #include "radial_basis_function.h"
 #include "traction.h"
 #include "vector.h"
@@ -216,13 +217,13 @@ class Mesh {
   //! Add a particle to the mesh
   //! \param[in] particle A shared pointer to particle
   //! \param[in] checks Parameter to check duplicates and addition
-  //! \retval insertion_status Return the successful addition of a particle
+  //! \retval insertion_status Return the successful deletion of a particle
   bool add_particle(const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle,
                     bool checks = true);
 
   //! Remove a particle from the mesh
   //! \param[in] particle A shared pointer to particle
-  //! \retval insertion_status Return the successful addition of a particle
+  //! \retval insertion_status Return the successful deletion of a particle
   bool remove_particle(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
 
@@ -244,6 +245,42 @@ class Mesh {
   void transfer_nonrank_particles(
       const std::vector<mpm::Index>& exchange_cells);
 
+  //! Create points from coordinates
+  //! \param[in] point_type Point type
+  //! \param[in] coordinates Nodal coordinates
+  //! \param[in] pset_id Set ID of the points
+  //! \param[in] check_duplicates Parameter to check duplicates
+  //! \retval status Create point status
+  bool create_points(const std::string& point_type,
+                     const std::vector<VectorDim>& coordinates,
+                     unsigned pset_id, bool check_duplicates = true);
+
+  //! Add a point to the mesh
+  //! \param[in] point A shared pointer to point
+  //! \param[in] checks Parameter to check duplicates and addition
+  //! \retval insertion_status Return the successful addition of a point
+  bool add_point(const std::shared_ptr<mpm::PointBase<Tdim>>& point,
+                 bool checks = true);
+
+  //! Remove a point from the mesh
+  //! \param[in] point A shared pointer to point
+  //! \retval insertion_status Return the successful deletion of a point
+  bool remove_point(const std::shared_ptr<mpm::PointBase<Tdim>>& point);
+
+  //! Remove points from the mesh
+  //! \param[in] pids Vector of point ids
+  void remove_points(const std::vector<mpm::Index>& pids);
+
+  //! Remove all points in a cell in nonlocal rank
+  void remove_all_nonrank_points();
+
+  //! Transfer halo points to different ranks
+  void transfer_halo_points();
+
+  //! Transfer points to different ranks in nonlocal rank cells
+  //! \param[in] exchange_cells Vector of cell ids that needs exchange
+  void transfer_nonrank_points(const std::vector<mpm::Index>& exchange_cells);
+
   //! Resume cell ranks and partitioned domain
   void resume_domain_cell_ranks();
 
@@ -260,11 +297,20 @@ class Mesh {
   //! \param[in] particle particle_type A string denoting particle type
   mpm::Index nparticles(const std::string& particle_type) const;
 
+  //! Number of points in the mesh
+  mpm::Index npoints() const { return points_.size(); }
+
   //! Locate particles in a cell
   //! Iterate over all cells in a mesh to find the cell in which particles
   //! are located.
   //! \retval particles Particles which cannot be located in the mesh
   std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> locate_particles_mesh();
+
+  //! Locate points in a cell
+  //! Iterate over all cells in a mesh to find the cell in which points
+  //! are located.
+  //! \retval points Points which cannot be located in the mesh
+  std::vector<std::shared_ptr<mpm::PointBase<Tdim>>> locate_points_mesh();
 
   //! Iterate over particles
   //! \tparam Toper Callable object typically a baseclass functor
@@ -282,6 +328,17 @@ class Mesh {
   //! \param[in] set_id particle set id
   template <typename Toper>
   void iterate_over_particle_set(int set_id, Toper oper);
+
+  //! Iterate over points
+  //! \tparam Toper Callable object typically a baseclass functor
+  template <typename Toper>
+  void iterate_over_points(Toper oper);
+
+  //! Iterate over particle set
+  //! \tparam Toper Callable object typically a baseclass functor
+  //! \param[in] set_id particle set id
+  template <typename Toper>
+  void iterate_over_point_set(int set_id, Toper oper);
 
   //! Return coordinates of particles
   std::vector<Eigen::Matrix<double, 3, 1>> particle_coordinates();
@@ -311,15 +368,41 @@ class Mesh {
   std::vector<double> particles_statevars_data(
       const std::string& attribute, unsigned phase = mpm::ParticlePhase::Solid);
 
+  //! Return coordinates of points
+  std::vector<Eigen::Matrix<double, 3, 1>> point_coordinates();
+
+  //! Return points scalar data
+  //! \param[in] attribute Name of the scalar data attribute
+  //! \retval scalar_data Vector containing scalar properties from points
+  std::vector<double> points_scalar_data(const std::string& attribute) const;
+
+  //! Return points vector data
+  //! \param[in] attribute Name of the tensor data attribute
+  //! \retval vector_data Vector containing vector properties from points
+  std::vector<Eigen::Matrix<double, 3, 1>> points_vector_data(
+      const std::string& attribute) const;
+
+  //! Return points tensor data
+  //! \param[in] attribute Name of the tensor data attribute
+  //! \retval tensor_data Vector containing tensor properties from points
+  template <unsigned Tsize>
+  std::vector<Eigen::Matrix<double, Tsize, 1>> points_tensor_data(
+      const std::string& attribute) const;
+
   //! Compute and assign rotation matrix to nodes
   //! \param[in] euler_angles Map of node number and respective euler_angles
   bool compute_nodal_rotation_matrices(
       const std::map<mpm::Index, Eigen::Matrix<double, Tdim, 1>>& euler_angles);
 
   //! Assign particles volumes
-  //! \param[in] particle_volumes Volume at dir on particle
+  //! \param[in] particle_volumes Volume of particles
   bool assign_particles_volumes(
       const std::vector<std::tuple<mpm::Index, double>>& particle_volumes);
+
+  //! Assign points areas
+  //! \param[in] point_areas Area of points
+  bool assign_points_areas(
+      const std::vector<std::tuple<mpm::Index, double>>& point_areas);
 
   //! Create particles tractions
   //! \param[in] mfunction Math function if defined
@@ -353,6 +436,21 @@ class Mesh {
 
   //! Apply particles velocity constraints
   void apply_particle_velocity_constraints();
+
+  //! Create point velocity constraints
+  //! \param[in] setid Node set id
+  //! \param[in] constraint Velocity constraint
+  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
+  //! \param[in] penalty_factor Penalty factor
+  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
+  //! \param[in] normal_vector Normal vector
+  bool create_point_velocity_constraint(
+      int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
+      const std::string& constraint_type, double penalty_factor,
+      const std::string& normal_type, const VectorDim& normal_vector);
+
+  //! Apply points velocity constraints
+  void apply_point_velocity_constraints();
 
   //! Assign nodal concentrated force
   //! \param[in] nodal_forces Force at dir on nodes
@@ -439,6 +537,11 @@ class Mesh {
   //! \retval status Status of writing HDF5 output
   bool write_particles_hdf5_twophase(const std::string& filename);
 
+  //! Write HDF5 points
+  //! \param[in] filename Name of HDF5 file to write particles data
+  //! \retval status Status of writing HDF5 output
+  bool write_points_hdf5(const std::string& filename);
+
   //! Read HDF5 particles with type name
   //! \param[in] filename Name of HDF5 file to write particles data
   //! \param[in] typename Name of particle type name
@@ -466,6 +569,22 @@ class Mesh {
   //! \retval particles_hdf5 Vector of HDF5 particles
   std::vector<mpm::PODParticle> particles_hdf5() const;
 
+  //! Read HDF5 points with type name
+  //! \param[in] filename Name of HDF5 file to write points data
+  //! \param[in] typename Name of point type name
+  //! \param[in] point_type Point type to be generated
+  //! \retval status Status of reading HDF5 output
+  bool read_points_hdf5(const std::string& filename,
+                        const std::string& type_name,
+                        const std::string& point_type);
+
+  //! Read HDF5 points
+  //! \param[in] filename Name of HDF5 file to write points data
+  //! \param[in] point_type Point type to be generated
+  //! \retval status Status of reading HDF5 output
+  bool read_points_hdf5(const std::string& filename,
+                        const std::string& point_type);
+
   //! Return nodal coordinates
   std::vector<Eigen::Matrix<double, 3, 1>> nodal_coordinates() const;
 
@@ -478,6 +597,14 @@ class Mesh {
   //! \retval status Status of  create particle sets
   bool create_particle_sets(
       const tsl::robin_map<mpm::Index, std::vector<mpm::Index>>& particle_sets,
+      bool check_duplicates);
+
+  //! Create map of vector of points in sets
+  //! \param[in] map of points ids in sets
+  //! \param[in] check_duplicates Parameter to check duplicates
+  //! \retval status Status of  create particle sets
+  bool create_point_sets(
+      const tsl::robin_map<mpm::Index, std::vector<mpm::Index>>& point_sets,
       bool check_duplicates);
 
   //! Create map of vector of nodes in sets
@@ -522,6 +649,12 @@ class Mesh {
 
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
+
+  //! Generate points
+  //! \param[in] io IO object handle
+  //! \param[in] generator Point generator object
+  bool generate_points(const std::shared_ptr<mpm::IO>& io,
+                       const Json& generator);
 
   /**
    * \defgroup MultiPhase Functions dealing with multi-phase MPM
@@ -676,6 +809,14 @@ class Mesh {
   bool locate_particle_cells(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
 
+  // Read points from file
+  //! \param[in] pset_id Set ID of the particles
+  bool read_points_file(const std::shared_ptr<mpm::IO>& io,
+                        const Json& generator, unsigned pset_id);
+
+  // Locate a point in mesh cells
+  bool locate_point_cells(const std::shared_ptr<mpm::PointBase<Tdim>>& point);
+
  private:
   //! mesh id
   unsigned id_{std::numeric_limits<unsigned>::max()};
@@ -683,6 +824,7 @@ class Mesh {
   bool isoparametric_{true};
   //! Vector of mesh neighbours
   Map<Mesh<Tdim>> neighbour_meshes_;
+
   //! Vector of particles
   Vector<ParticleBase<Tdim>> particles_;
   //! Vector of particles ids and cell ids
@@ -691,6 +833,16 @@ class Mesh {
   tsl::robin_map<unsigned, std::vector<mpm::Index>> particle_sets_;
   //! Map of particles for fast retrieval
   Map<ParticleBase<Tdim>> map_particles_;
+
+  //! Vector of points
+  Vector<PointBase<Tdim>> points_;
+  //! Vector of points ids and cell ids
+  std::map<mpm::Index, mpm::Index> points_cell_ids_;
+  //! Vector of particle sets
+  tsl::robin_map<unsigned, std::vector<mpm::Index>> point_sets_;
+  //! Map of points for fast retrieval
+  Map<PointBase<Tdim>> map_points_;
+
   //! Vector of nodes
   Vector<NodeBase<Tdim>> nodes_;
   //! Vector of domain shared nodes
@@ -703,6 +855,7 @@ class Mesh {
   Vector<NodeBase<Tdim>> active_nodes_;
   //! Map of nodes for fast retrieval
   Map<NodeBase<Tdim>> map_nodes_;
+
   //! Map of cells for fast retrieval
   Map<Cell<Tdim>> map_cells_;
   //! Vector of cells
@@ -715,10 +868,12 @@ class Mesh {
   tsl::robin_map<unsigned, Vector<Cell<Tdim>>> cell_sets_;
   //! Map of ghost cells to the neighbours ranks
   std::map<unsigned, std::vector<unsigned>> ghost_cells_neighbour_ranks_;
+
   //! Faces and cells
   std::multimap<std::vector<mpm::Index>, mpm::Index> faces_cells_;
   //! Materials
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
+
   //! Loading (Particle tractions)
   std::vector<std::shared_ptr<mpm::Traction>> particle_tractions_;
   //! Nodal acceleration constraints
@@ -727,6 +882,10 @@ class Mesh {
   //! Particle velocity constraints
   std::vector<std::shared_ptr<mpm::VelocityConstraint>>
       particle_velocity_constraints_;
+  //! Point velocity constraints
+  std::vector<std::shared_ptr<mpm::VelocityConstraint>>
+      point_velocity_constraints_;
+
   //! Vector of generators for particle injections
   std::vector<mpm::Injection> particle_injections_;
   //! Nodal property pool

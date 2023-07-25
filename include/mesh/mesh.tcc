@@ -1313,6 +1313,70 @@ bool mpm::Mesh<Tdim>::assign_particles_volumes(
   return status;
 }
 
+//! Assign particle velocities
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_velocities(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        particle_velocities) {
+  bool status = true;
+
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign particles "
+          "velocities");
+
+    // Loop over particle velocities
+    for (const auto& particle_vel : particle_velocities) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_vel);
+      // Velocity vector
+      VectorDim pvel = std::get<1>(particle_vel);
+
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        map_particles_[pid]->assign_velocity(pvel);
+      }
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign particle accelerations
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_accelerations(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        particle_accelerations) {
+  bool status = true;
+
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign particles "
+          "accelerations");
+
+    // Loop over particle accelerations
+    for (const auto& particle_acc : particle_accelerations) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_acc);
+      // Acceleration vector
+      VectorDim pacc = std::get<1>(particle_acc);
+
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        map_particles_[pid]->assign_acceleration(pacc);
+      }
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Compute and assign rotation matrix to nodes
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::compute_nodal_rotation_matrices(

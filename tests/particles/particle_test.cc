@@ -1121,7 +1121,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
+    REQUIRE_NOTHROW(particle->compute_stress(dt));
 
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
@@ -1351,7 +1351,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
               Approx(volumetric_strain).epsilon(Tolerance));
 
       // Compute stress
-      REQUIRE_NOTHROW(particle->compute_stress());
+      REQUIRE_NOTHROW(particle->compute_stress(dt));
 
       REQUIRE(
           particle->pressure() ==
@@ -2623,7 +2623,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
+    REQUIRE_NOTHROW(particle->compute_stress(dt));
 
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
@@ -2829,7 +2829,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
               Approx(volumetric_strain).epsilon(Tolerance));
 
       // Compute stress
-      REQUIRE_NOTHROW(particle->compute_stress());
+      REQUIRE_NOTHROW(particle->compute_stress(dt));
 
       REQUIRE(
           particle->pressure() ==

@@ -34,19 +34,23 @@ class MPMScheme {
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
   virtual inline void compute_stress_strain(unsigned phase,
-                                            bool pressure_smoothing);
+                                            bool pressure_smoothing,
+                                            mpm::StressRate stress_rate);
 
   //! Precompute stress and strain (empty call)
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
   virtual inline void precompute_stress_strain(unsigned phase,
-                                               bool pressure_smoothing) = 0;
+                                               bool pressure_smoothing,
+                                               mpm::StressRate stress_rate) = 0;
 
   //! Postcompute stress and strain (empty call)
-  //! \param[in] phase Phase to smooth postssure
-  //! \param[in] postssure_smoothing Enable or disable postssure smoothing
-  virtual inline void postcompute_stress_strain(unsigned phase,
-                                                bool pressure_smoothing) = 0;
+  //! \param[in] phase Phase to smooth pressure
+  //! \param[in] pressure_smoothing Enable or disable pressure smoothing
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
+  virtual inline void postcompute_stress_strain(
+      unsigned phase, bool pressure_smoothing, mpm::StressRate stress_rate) = 0;
 
   //! Pressure smoothing
   //! \param[in] phase Phase to smooth pressure

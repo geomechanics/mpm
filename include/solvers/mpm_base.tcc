@@ -58,7 +58,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
           stress_rate_ = mpm::StressRate::Jaumann;
         else
           throw std::runtime_error("Stress rate type is not supported");
-      }
+      } else
+        throw std::runtime_error("No stress rate type specified");
     } catch (std::exception& exception) {
       console_->warn(
           "{} #{}: {}. Using Cauchy stress rate (non-objective) as default",

@@ -258,7 +258,7 @@ class ParticleBase {
   virtual void beginning_stress(const Eigen::Matrix<double, 6, 1>&) = 0;
 
   //! Compute stress
-  virtual void compute_stress() noexcept = 0;
+  virtual void compute_stress(double dt) noexcept = 0;
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;

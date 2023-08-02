@@ -208,7 +208,7 @@ class Particle : public ParticleBase<Tdim> {
   }
 
   //! Compute stress
-  void compute_stress() noexcept override;
+  void compute_stress(double dt) noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }

@@ -77,7 +77,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   void compute_strain(double dt) noexcept override;
 
   //! Compute stress and update deformation gradient
-  void compute_stress() noexcept override;
+  void compute_stress(double dt) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

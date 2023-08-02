@@ -30,7 +30,7 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_shapefn() noexcept {
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::ParticleFiniteStrain<Tdim>::compute_stress() noexcept {
+void mpm::ParticleFiniteStrain<Tdim>::compute_stress(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Calculate stress

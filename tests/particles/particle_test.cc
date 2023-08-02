@@ -8,6 +8,7 @@
 #include "hexahedron_element.h"
 #include "linear_function.h"
 #include "material.h"
+#include "math_utility.h"
 #include "node.h"
 #include "particle.h"
 #include "pod_particle.h"

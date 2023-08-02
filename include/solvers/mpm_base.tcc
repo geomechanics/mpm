@@ -56,11 +56,12 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       if (analysis_.find("stress_rate") != analysis_.end()) {
         if (analysis_["stress_rate"].template get<std::string>() == "jaumann")
           stress_rate_ = mpm::StressRate::Jaumann;
+        else
+          throw std::runtime_error("Stress rate type is not supported");
       }
     } catch (std::exception& exception) {
       console_->warn(
-          "{} #{}: {}. Stress rate method is not specified, using Cauchy "
-          "stress rate (non-objective) as default",
+          "{} #{}: {}. Using Cauchy stress rate (non-objective) as default",
           __FILE__, __LINE__, exception.what());
     }
 

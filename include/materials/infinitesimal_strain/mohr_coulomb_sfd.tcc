@@ -387,7 +387,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombSFD<Tdim>::compute_stress(
     // Compute cohesion from su/sigma'v
     adopted_cohesion_peak = su_over_pi_peak_ * (-1. * bstress(1));
     adopted_cohesion_residual = su_over_pi_residual_ * (-1. * bstress(1));
-    // Add lower bound cohesion for ground shale layer 
+    // Add lower bound cohesion for ground shale layer
     if (ptr->material_id() == 3) {
       const double floor = 20000.;
       if (adopted_cohesion_peak < floor) {

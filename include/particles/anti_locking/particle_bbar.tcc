@@ -294,3 +294,42 @@ inline Eigen::Matrix<double, 6, 1>
     if (std::fabs(strain_increment[i]) < 1.E-15) strain_increment[i] = 0.;
   return strain_increment;
 }
+
+//! Minus the internal force of the virtual stress field
+template <unsigned Tdim>
+void mpm::ParticleBbar<Tdim>::minus_virtual_stress_field(
+    Eigen::Matrix<double, 6, 1>& traction, VectorDim& divergence_traction) {
+  auto const tolerance = std::numeric_limits<double>::epsilon();
+
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    double mass_solid = nodes_[i]->mass(mpm::NodePhase::NSolid);
+    if (mass_solid < tolerance) continue;
+
+    VectorDim force;
+    if (Tdim == 2) {
+      force[0] = (dn_dx_(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2.) *
+                     traction[0] +
+                 (dn_dx_centroid_(i, 0) - dn_dx_(i, 0)) / 2. * traction[1] +
+                 dn_dx_(i, 1) * traction[3];
+      force[1] = (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2. * traction[0] +
+                 (dn_dx_(i, 1) + (dn_dx_centroid_(i, 1) - dn_dx_(i, 1)) / 2.) *
+                     traction[1] +
+                 dn_dx_(i, 0) * traction[3];
+    } else if (Tdim == 3) {
+      // FIXME (not updated for B-bar yet)
+      force[0] = dn_dx_(i, 0) * traction[0] + dn_dx_(i, 1) * traction[3] +
+                 dn_dx_(i, 2) * traction[5];
+      force[1] = dn_dx_(i, 0) * traction[3] + dn_dx_(i, 1) * traction[1] +
+                 dn_dx_(i, 2) * traction[4];
+      force[2] = dn_dx_(i, 0) * traction[5] + dn_dx_(i, 1) * traction[4] +
+                 dn_dx_(i, 2) * traction[2];
+    }
+
+    // Note: add particle-wise traction and divergence terms to force
+    force *= this->volume_;
+    for (unsigned j = 0; j < Tdim; j++)
+      force[j] += shapefn_[i] * divergence_traction[j] * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}

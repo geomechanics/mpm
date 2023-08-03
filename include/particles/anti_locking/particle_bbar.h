@@ -50,6 +50,13 @@ class ParticleBbar : public mpm::Particle<Tdim> {
     return (Tdim == 2) ? "P2DBBAR" : "P3DBBAR";
   }
 
+  //! Minus the internal force of the virtual stress field
+  //! \param[in] traction Boundary traction
+  //! \param[in] divergence_traction Divergence of boundary traction
+  virtual void minus_virtual_stress_field(
+      Eigen::Matrix<double, 6, 1>& traction,
+      VectorDim& divergence_traction) override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -104,6 +111,8 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   using Particle<Tdim>::dn_dx_;
   //! dN/dX at cell centroid
   using Particle<Tdim>::dn_dx_centroid_;
+  //! dN/dX at cell centroid
+  using Particle<Tdim>::shapefn_;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

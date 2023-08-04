@@ -878,7 +878,7 @@ void mpm::Particle<Tdim>::compute_stress(double dt,
   assert(this->material() != nullptr);
 
   // Compute material part of stress
-  const Eigen::Matrix<double, 6, 1> material_part_Voigt =
+  const Eigen::Matrix<double, 6, 1>& material_part_voigt =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
@@ -886,45 +886,33 @@ void mpm::Particle<Tdim>::compute_stress(double dt,
   switch (stress_rate) {
     case mpm::StressRate::None:
       // Update stress
-      this->stress_ = material_part_Voigt;
+      this->stress_ = material_part_voigt;
       break;
 
     case mpm::StressRate::Jaumann:
       // Velocity gradient (dv_i/dx_j)
-      const Eigen::Matrix<double, Tdim, Tdim> L =
+      const Eigen::Matrix<double, Tdim, Tdim>& vel_grad =
           this->compute_velocity_gradient(this->dn_dx_,
                                           mpm::ParticlePhase::SinglePhase);
 
       // Compute spin tensor increment
-      const Eigen::Matrix<double, Tdim, Tdim> W_dt =
-          0.5 * (L - L.transpose()) * dt;
+      const Eigen::Matrix<double, Tdim, Tdim>& spin_dt =
+          0.5 * (vel_grad - vel_grad.transpose()) * dt;
 
       // Convert Cauchy stress from Voigt -> matrix
       const Eigen::Matrix<double, Tdim, Tdim>& stress_matrix =
           mpm::math::matrix_form<Tdim>(this->stress_);
 
       // Compute rotation part of stress increment
-      const Eigen::Matrix<double, Tdim, Tdim> rotation_part_matrix =
-          (W_dt * stress_matrix) - (stress_matrix * W_dt);
+      const Eigen::Matrix<double, Tdim, Tdim>& rotation_part_matrix =
+          (spin_dt * stress_matrix) - (stress_matrix * spin_dt);
 
       // Convert matrix to Voigt (must be 6x1 regardless of Tdim)
-      Eigen::Matrix<double, 6, 1> rotation_part_Voigt;
-
-      rotation_part_Voigt(0) = rotation_part_matrix(0, 0);
-      rotation_part_Voigt(1) = rotation_part_matrix(1, 1);
-      rotation_part_Voigt(2) = 0.;
-      rotation_part_Voigt(3) = rotation_part_matrix(0, 1);
-      rotation_part_Voigt(4) = 0.;
-      rotation_part_Voigt(5) = 0.;
-
-      if (Tdim == 3) {
-        rotation_part_Voigt(2) = rotation_part_matrix(2, 2);
-        rotation_part_Voigt(4) = rotation_part_matrix(1, 2);
-        rotation_part_Voigt(5) = rotation_part_matrix(0, 2);
-      }
+      const Eigen::Matrix<double, 6, 1>& rotation_part_voigt =
+          mpm::math::voigt_form<Tdim>(rotation_part_matrix);
 
       // Update stress
-      this->stress_ = material_part_Voigt + rotation_part_Voigt;
+      this->stress_ = material_part_voigt + rotation_part_voigt;
       break;
   }
 }

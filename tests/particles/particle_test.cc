@@ -1137,6 +1137,26 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
+    // Compute stress (Jaumann)
+    REQUIRE_NOTHROW(particle->compute_stress(dt, mpm::StressRate::Jaumann));
+
+    Eigen::Matrix<double, 6, 1> stress_Jaumann;
+    // clang-format off
+    stress_Jaumann << 2875000.00000000,
+                      6740384.61538462,
+                      2884615.38461538,
+                      336538.461538460,
+                      0.,
+                      0.;
+    // clang-format on
+    // Check stress
+    for (unsigned i = 0; i < stress_Jaumann.rows(); ++i)
+      REQUIRE(particle->stress()(i) ==
+              Approx(stress_Jaumann(i)).epsilon(Tolerance));
+
+    // Put stress back to values from Lines 1129-1134
+    particle->initial_stress(stress);
+
     // Check body force
     Eigen::Matrix<double, 2, 1> gravity;
     gravity << 0., -9.81;
@@ -2638,6 +2658,26 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
+
+    // Compute stress (Jaumann)
+    REQUIRE_NOTHROW(particle->compute_stress(dt, mpm::StressRate::Jaumann));
+
+    Eigen::Matrix<double, 6, 1> stress_Jaumann;
+    // clang-format off
+    stress_Jaumann << 5468750.00000000,
+                      6704326.92307692,
+                     11576923.07692308,
+                      -156250.00000000,
+                      2759615.38461539,
+                      -288461.53846154;
+    // clang-format on
+    // Check stress
+    for (unsigned i = 0; i < stress_Jaumann.rows(); ++i)
+      REQUIRE(particle->stress()(i) ==
+              Approx(stress_Jaumann(i)).epsilon(Tolerance));
+
+    // Put stress back to values from Lines 2651-2656
+    particle->initial_stress(stress);
 
     // Check body force
     Eigen::Matrix<double, 3, 1> gravity;

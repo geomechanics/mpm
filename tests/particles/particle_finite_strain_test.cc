@@ -282,7 +282,7 @@ TEST_CASE("ParticleFiniteStrain is checked for 2D case",
     REQUIRE(particle->volume() == Approx(1.25).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
+    REQUIRE_NOTHROW(particle->compute_stress(dt));
 
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
@@ -633,7 +633,7 @@ TEST_CASE("ParticleFiniteStrain is checked for 3D case",
     REQUIRE(particle->volume() == Approx(11.8).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
+    REQUIRE_NOTHROW(particle->compute_stress(dt));
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
     stress << 1517827.6913974094,

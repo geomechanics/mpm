@@ -1,5 +1,14 @@
 //! Convert 2nd-order symmetric tensor from voigt notation to full matrix form
 template <>
+inline const Eigen::Matrix<double, 1, 1> mpm::math::matrix_form<1>(
+    const Eigen::Matrix<double, 6, 1>& voigt_tensor) {
+  Eigen::Matrix<double, 1, 1> matrix_tensor;
+  matrix_tensor(0, 0) = voigt_tensor(0);
+  return matrix_tensor;
+}
+
+//! Convert 2nd-order symmetric tensor from voigt notation to full matrix form
+template <>
 inline const Eigen::Matrix<double, 2, 2> mpm::math::matrix_form<2>(
     const Eigen::Matrix<double, 6, 1>& voigt_tensor) {
   Eigen::Matrix<double, 2, 2> matrix_tensor;
@@ -32,6 +41,16 @@ inline const Eigen::Matrix<double, 3, 3> mpm::math::matrix_form(
   matrix_tensor(2, 0) = matrix_tensor(0, 2);
 
   return matrix_tensor;
+}
+
+//! Convert 2nd-order symmetric tensor from full matrix form to voigt notation
+template <>
+inline const Eigen::Matrix<double, 6, 1> mpm::math::voigt_form<1>(
+    const Eigen::Matrix<double, 1, 1>& matrix_tensor) {
+  Eigen::Matrix<double, 6, 1> voigt_tensor =
+      Eigen::Matrix<double, 6, 1>::Zero();
+  voigt_tensor(0) = matrix_tensor(0, 0);
+  return voigt_tensor;
 }
 
 //! Convert 2nd-order symmetric tensor from full matrix form to voigt notation

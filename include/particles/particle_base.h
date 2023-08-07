@@ -230,6 +230,7 @@ class ParticleBase {
   virtual double pressure(unsigned phase = mpm::ParticlePhase::Solid) const = 0;
 
   //! Compute strain
+  //! \param[in] dt Analysis time step
   virtual void compute_strain(double dt) noexcept = 0;
 
   //! Strain
@@ -252,7 +253,11 @@ class ParticleBase {
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;
 
   //! Compute stress
-  virtual void compute_stress() noexcept = 0;
+  //! \param[in] dt Analysis time step
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
+  virtual void compute_stress(
+      double dt,
+      mpm::StressRate stress_rate = mpm::StressRate::None) noexcept = 0;
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;

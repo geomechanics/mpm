@@ -407,6 +407,12 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombSFD<Tdim>::compute_stress(
                     0.2 * sptn_ * std::pow(sigma_v, 2.48) + 41.13)) *
         47.880208;
     adopted_cohesion_peak = adopted_cohesion_residual;
+    // Add lower bound cohesion for liquefied sands layers
+    const double floor = 20000.;
+    if (adopted_cohesion_peak < floor) {
+      adopted_cohesion_peak = floor;
+      adopted_cohesion_residual = floor;
+    }
     // Update state_vars cohesion
     (*state_vars).at("cohesion") = adopted_cohesion_peak;
   } else if (mc_to_tresca_bool_) {

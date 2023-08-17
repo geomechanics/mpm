@@ -6,8 +6,7 @@
 VtkWriter::VtkWriter(
     const std::vector<Eigen::Matrix<double, 3, 1>>& point_coordinates,
     const std::vector<Eigen::Matrix<double, 3, 1>>& nodal_coordinates,
-    const std::vector<std::vector<mpm::Index>>& cell_connectivity)
-    : cell_connectivity_(cell_connectivity) {
+    const std::vector<std::vector<mpm::Index>>& cell_connectivity) {
   // Assign points
   points_ = vtkSmartPointer<vtkPoints>::New();
   unsigned long long id = 0;
@@ -24,6 +23,12 @@ VtkWriter::VtkWriter(
     const double* node = coordinate.data();
     nodes_->InsertPoint(nid, node);
     ++nid;
+  }
+
+  // Assign cell_connectivity
+  for (const auto& conn : cell_connectivity) {
+    std::vector<vtkIdType> vtkConn(conn.begin(), conn.end());
+    cell_connectivity_.push_back(vtkConn);
   }
 }
 
@@ -195,8 +200,16 @@ void VtkWriter::write_scalar_node_data(const std::string& filename,
   auto pdata = vtkSmartPointer<vtkPolyData>::New();
   // Add the points to the dataset
   pdata->SetPoints(nodes_);
+
+  // Create cells
+  auto cells = vtkSmartPointer<vtkCellArray>::New();
+  for (const auto& connectivity : cell_connectivity_) {
+    cells->InsertNextCell(connectivity.size(), connectivity.data());
+  }
+  pdata->SetPolys(cells);
+
   // Add the scalar data to the points
-  pdata->GetPointData()->SetScalars(scalardata);
+  pdata->GetPointData()->AddArray(scalardata);
 
   // Write file
   auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
@@ -238,8 +251,15 @@ void VtkWriter::write_vector_node_data(const std::string& filename,
     vectordata->SetTuple(id, vdata);
   }
 
-  // Add the SignedDistances to the grid
-  pdata->GetPointData()->SetVectors(vectordata);
+  // Create cells
+  auto cells = vtkSmartPointer<vtkCellArray>::New();
+  for (const auto& connectivity : cell_connectivity_) {
+    cells->InsertNextCell(connectivity.size(), connectivity.data());
+  }
+  pdata->SetPolys(cells);
+
+  // Add the scalar data to the points
+  pdata->GetPointData()->AddArray(vectordata);
 
   // Write file
   auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();

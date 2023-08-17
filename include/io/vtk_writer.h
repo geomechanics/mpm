@@ -105,7 +105,7 @@ class VtkWriter {
   //! Vector of nodal coordinates
   vtkSmartPointer<vtkPoints> nodes_;
   //! Vector of cell connectivity
-  std::vector<std::vector<mpm::Index>> cell_connectivity_;
+  std::vector<std::vector<vtkIdType>> cell_connectivity_;
 };
 
 #endif

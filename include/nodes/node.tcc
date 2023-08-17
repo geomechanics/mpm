@@ -19,6 +19,14 @@ mpm::Node<Tdim, Tdof, Tnphases>::Node(
   acceleration_constraints_.clear();
   concentrated_force_.setZero();
   this->initialise();
+
+  // Initialise scalar and vector properties
+  this->scalar_properties_["mass"] = [&](unsigned phase) {
+    return mass(phase);
+  };
+  this->vector_properties_["velocities"] = [&](unsigned phase) {
+    return velocity(phase);
+  };
 }
 
 //! Initialise nodal properties
@@ -1085,4 +1093,26 @@ template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {
   nonlocal_node_type_.resize(Tdim);
   std::fill(nonlocal_node_type_.begin(), nonlocal_node_type_.end(), 0);
+}
+
+//! Return node scalar data
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+inline double mpm::Node<Tdim, Tdof, Tnphases>::scalar_data(
+    const std::string& property, unsigned phase) const {
+  return (this->scalar_properties_.find(property) !=
+          this->scalar_properties_.end())
+             ? this->scalar_properties_.at(property)(phase)
+             : std::numeric_limits<double>::quiet_NaN();
+}
+
+//! Return node vector data
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+inline Eigen::Matrix<double, Tdim, 1>
+    mpm::Node<Tdim, Tdof, Tnphases>::vector_data(const std::string& property,
+                                                 unsigned phase) const {
+  return (this->vector_properties_.find(property) !=
+          this->vector_properties_.end())
+             ? this->vector_properties_.at(property)(phase)
+             : Eigen::Matrix<double, Tdim, 1>::Constant(
+                   std::numeric_limits<double>::quiet_NaN());
 }

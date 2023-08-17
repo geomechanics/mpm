@@ -292,7 +292,7 @@ class Mesh {
   std::vector<double> particles_scalar_data(const std::string& attribute) const;
 
   //! Return particles vector data
-  //! \param[in] attribute Name of the tensor data attribute
+  //! \param[in] attribute Name of the vector data attribute
   //! \retval vector_data Vector containing vector properties from particles
   std::vector<Eigen::Matrix<double, 3, 1>> particles_vector_data(
       const std::string& attribute) const;
@@ -310,6 +310,20 @@ class Mesh {
   //! \retval statevars_data Vector containing state variable from particles
   std::vector<double> particles_statevars_data(
       const std::string& attribute, unsigned phase = mpm::ParticlePhase::Solid);
+
+  //! Return nodes scalar data
+  //! \param[in] attribute Name of the scalar data attribute
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval scalar_data Vector containing scalar properties from nodes
+  std::vector<double> nodes_scalar_data(const std::string& attribute,
+                                        unsigned phase) const;
+
+  //! Return nodes vector data
+  //! \param[in] attribute Name of the vector data attribute
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval vector_data Vector containing vector properties from nodes
+  std::vector<Eigen::Matrix<double, 3, 1>> nodes_vector_data(
+      const std::string& attribute, unsigned phase) const;
 
   //! Compute and assign rotation matrix to nodes
   //! \param[in] euler_angles Map of node number and respective euler_angles

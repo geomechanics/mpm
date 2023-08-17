@@ -1213,7 +1213,7 @@ std::vector<Eigen::Matrix<double, 3, 1>>
   for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
     Eigen::Vector3d coordinates;
     coordinates.setZero();
-    auto pcoords = (*pitr)->coordinates();
+    const auto& pcoords = (*pitr)->coordinates();
     // Fill coordinates to the size of dimensions
     for (unsigned i = 0; i < Tdim; ++i) coordinates(i) = pcoords(i);
     particle_coordinates.emplace_back(coordinates);
@@ -1282,6 +1282,36 @@ std::vector<double> mpm::Mesh<Tdim>::particles_statevars_data(
   for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr)
     statevars_data.emplace_back((*pitr)->state_variable(attribute, phase));
   return statevars_data;
+}
+
+//! Return node scalar data
+template <unsigned Tdim>
+std::vector<double> mpm::Mesh<Tdim>::nodes_scalar_data(
+    const std::string& attribute, unsigned phase) const {
+  std::vector<double> scalar_data;
+  scalar_data.reserve(nodes_.size());
+  // Iterate over nodes and add scalar value to data
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+    scalar_data.emplace_back((*nitr)->scalar_data(attribute, phase));
+  return scalar_data;
+}
+
+//! Return node vector data
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::nodes_vector_data(
+    const std::string& attribute, unsigned phase) const {
+  std::vector<Eigen::Matrix<double, 3, 1>> vector_data;
+  // Iterate over nodes
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+    Eigen::Matrix<double, 3, 1> data;
+    data.setZero();
+    auto pdata = (*nitr)->vector_data(attribute, phase);
+    // Fill vector_data to the size of dimensions
+    for (unsigned i = 0; i < pdata.size(); ++i) data(i) = pdata(i);
+    // Add to a vector of data
+    vector_data.emplace_back(data);
+  }
+  return vector_data;
 }
 
 //! Assign particles volumes
@@ -1809,7 +1839,7 @@ std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::nodal_coordinates()
       // initialise coordinates
       Eigen::Matrix<double, 3, 1> node;
       node.setZero();
-      auto coords = (*nitr)->coordinates();
+      const auto& coords = (*nitr)->coordinates();
 
       for (unsigned i = 0; i < coords.size(); ++i) node(i) = coords(i);
 

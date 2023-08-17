@@ -2,6 +2,7 @@
 #define MPM_NODE_H_
 
 #include "logger.h"
+#include "map.h"
 #include "mutex.h"
 #include "nodal_properties.h"
 #include "node_base.h"
@@ -326,6 +327,20 @@ class Node : public NodeBase<Tdim> {
 
   //! Compute multimaterial normal unit vector
   void compute_multimaterial_normal_unit_vector() override;
+
+  //! Return scalar data of nodes
+  //! \param[in] property Property string
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval data Scalar data of node property
+  inline double scalar_data(const std::string& property,
+                            unsigned phase) const override;
+
+  //! Return vector data of nodes
+  //! \param[in] property Property string
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval data Vector data of node property
+  inline VectorDim vector_data(const std::string& property,
+                               unsigned phase) const override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -666,6 +681,12 @@ class Node : public NodeBase<Tdim> {
   Index active_id_{std::numeric_limits<Index>::max()};
   //! Global index for active node (globally)
   Index global_active_id_{std::numeric_limits<Index>::max()};
+  //! Map of scalar properties
+  tsl::robin_map<std::string, std::function<double(unsigned)>>
+      scalar_properties_;
+  //! Map of vector properties
+  tsl::robin_map<std::string, std::function<VectorDim(unsigned)>>
+      vector_properties_;
 
   /**
    * \defgroup ImplicitVariables Variables dealing with implicit MPM

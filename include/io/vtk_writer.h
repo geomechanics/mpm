@@ -81,7 +81,7 @@ class VtkWriter {
                           unsigned ncomponents = 3);
 
  private:
-  //! Vector of nodal coordinates
+  //! Vector of coordinates
   vtkSmartPointer<vtkPoints> points_;
 };
 

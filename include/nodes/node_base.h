@@ -326,6 +326,20 @@ class NodeBase {
   //! Compute multimaterial normal unit vector
   virtual void compute_multimaterial_normal_unit_vector() = 0;
 
+  //! Return scalar data of nodes
+  //! \param[in] property Property string
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval data Scalar data of node property
+  virtual double scalar_data(const std::string& property,
+                             unsigned phase) const = 0;
+
+  //! Return vector data of nodes
+  //! \param[in] property Property string
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval data Vector data of node property
+  virtual VectorDim vector_data(const std::string& property,
+                                unsigned phase) const = 0;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

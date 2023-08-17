@@ -1852,6 +1852,40 @@ std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::nodal_coordinates()
   return coordinates;
 }
 
+//! Cell connectivity
+template <unsigned Tdim>
+std::vector<std::vector<mpm::Index>> mpm::Mesh<Tdim>::cell_connectivity(
+    bool active) const {
+
+  // Cell connectivity
+  std::vector<std::vector<mpm::Index>> cell_connectivity;
+
+  try {
+    int mpi_rank = 0;
+#ifdef USE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+    if (cells_.size() == 0)
+      throw std::runtime_error("No cells have been initialised!");
+
+    for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+      // If cell connectivity are only requested for active nodes
+      bool get_connectivities =
+          (active == true) ? ((*citr)->rank() == mpi_rank) : true;
+      if (get_connectivities) {
+        const std::vector<mpm::Index>& connectivity =
+            (*citr)->local_nodes_id_connectivity();
+        cell_connectivity.emplace_back(connectivity);
+      }
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    cell_connectivity.clear();
+  }
+  return cell_connectivity;
+}
+
 //! Cell node pairs
 template <unsigned Tdim>
 std::vector<std::array<mpm::Index, 2>> mpm::Mesh<Tdim>::node_pairs(

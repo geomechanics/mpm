@@ -30,8 +30,13 @@
 //! \brief VTK writer class
 class VtkWriter {
  public:
-  // Constructor with coordinates
-  VtkWriter(const std::vector<Eigen::Matrix<double, 3, 1>>& coordinates);
+  //! VTK Writer class Constructor
+  //! \param[in] point_coordinates Point coordinates
+  //! \param[in] nodal_coordinates Nodal coordinates
+  //! \param[in] cell_connectivity List of cell_connectivity
+  VtkWriter(const std::vector<Eigen::Matrix<double, 3, 1>>& point_coordinates,
+            const std::vector<Eigen::Matrix<double, 3, 1>>& nodal_coordinates,
+            const std::vector<std::vector<mpm::Index>>& cell_connectivity);
 
   //! Write coordinates
   void write_geometry(const std::string& filename);
@@ -60,12 +65,26 @@ class VtkWriter {
       const std::vector<Eigen::Matrix<double, 6, 1>>& data,
       const std::string& data_fields);
 
+  //! \brief Write scalar node data
+  //! \param[in] filename Output file to write geometry
+  //! \param[in] data Scalar field data
+  //! \param[in] data_field Field name ("pdstrain")
+  void write_scalar_node_data(const std::string& filename,
+                              const std::vector<double>& data,
+                              const std::string& data_field);
+
+  //! Write vector node data
+  //! \param[in] filename Output file to write geometry
+  //! \param[in] data Vector data
+  //! \param[in] data_field Field name ("Displacement", "Forces")
+  void write_vector_node_data(const std::string& filename,
+                              const std::vector<Eigen::Vector3d>& data,
+                              const std::string& data_fields);
+
   //! Write mesh
   //! \param[in] filename Mesh VTP file
-  //! \param[in] coordinates Nodal coordinates
   //! \param[in] node_pairs Node pairs ids
   void write_mesh(const std::string& filename,
-                  const std::vector<Eigen::Vector3d>& coordinates,
                   const std::vector<std::array<mpm::Index, 2>>& node_pairs);
 
   //! Write Parallel VTK file
@@ -81,8 +100,12 @@ class VtkWriter {
                           unsigned ncomponents = 3);
 
  private:
-  //! Vector of coordinates
+  //! Vector of particle coordinates
   vtkSmartPointer<vtkPoints> points_;
+  //! Vector of nodal coordinates
+  vtkSmartPointer<vtkPoints> nodes_;
+  //! Vector of cell connectivity
+  std::vector<std::vector<mpm::Index>> cell_connectivity_;
 };
 
 #endif

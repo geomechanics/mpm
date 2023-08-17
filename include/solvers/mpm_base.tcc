@@ -642,7 +642,9 @@ template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
 
   // VTK PolyData writer
-  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates());
+  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates(),
+                                                mesh_->nodal_coordinates(),
+                                                mesh_->cell_connectivity(true));
   const std::string extension = ".vtp";
 
   // Write mesh on step 0
@@ -650,7 +652,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
   if (step % nload_balance_steps_ == 0)
     vtk_writer->write_mesh(
         io_->output_file("mesh", extension, uuid_, step, max_steps).string(),
-        mesh_->nodal_coordinates(), mesh_->node_pairs(true));
+        mesh_->node_pairs(true));
 
   // VTK geometry
   if (geometry_vtk_) {
@@ -757,6 +759,64 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
         unsigned ncomponents = 1;
         vtk_writer->write_parallel_vtk(parallel_file, phase_attribute, mpi_size,
                                        step, max_steps, ncomponents);
+      }
+#endif
+    }
+  }
+
+  //! VTK nodal scalar variables
+  for (const auto& vtk_scalar_nodevar :
+       vtk_nodevars_.at(mpm::VariableType::Scalar)) {
+    unsigned phase_id = vtk_scalar_nodevar.first;
+    for (const auto& attribute : vtk_scalar_nodevar.second) {
+      std::string node_phase_attribute =
+          "node_phase" + std::to_string(phase_id) + attribute;
+      // Write state variables
+      auto file = io_->output_file(node_phase_attribute, extension, uuid_, step,
+                                   max_steps)
+                      .string();
+      vtk_writer->write_scalar_node_data(
+          file, mesh_->nodes_scalar_data(attribute, phase_id),
+          node_phase_attribute);
+      // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+      if (mpi_rank == 0 && mpi_size > 1) {
+        auto parallel_file =
+            io_->output_file(node_phase_attribute, ".pvtp", uuid_, step,
+                             max_steps, write_mpi_rank)
+                .string();
+        unsigned ncomponents = 1;
+        vtk_writer->write_parallel_vtk(parallel_file, node_phase_attribute,
+                                       mpi_size, step, max_steps, ncomponents);
+      }
+#endif
+    }
+  }
+
+  //! VTK nodal vector variables
+  for (const auto& vtk_vector_nodevar :
+       vtk_nodevars_.at(mpm::VariableType::Vector)) {
+    unsigned phase_id = vtk_vector_nodevar.first;
+    for (const auto& attribute : vtk_vector_nodevar.second) {
+      std::string node_phase_attribute =
+          "node_phase" + std::to_string(phase_id) + attribute;
+      // Write state variables
+      auto file = io_->output_file(node_phase_attribute, extension, uuid_, step,
+                                   max_steps)
+                      .string();
+      vtk_writer->write_vector_node_data(
+          file, mesh_->nodes_vector_data(attribute, phase_id),
+          node_phase_attribute);
+      // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+      if (mpi_rank == 0 && mpi_size > 1) {
+        auto parallel_file =
+            io_->output_file(node_phase_attribute, ".pvtp", uuid_, step,
+                             max_steps, write_mpi_rank)
+                .string();
+        unsigned ncomponents = 3;
+        vtk_writer->write_parallel_vtk(parallel_file, node_phase_attribute,
+                                       mpi_size, step, max_steps, ncomponents);
       }
 #endif
     }

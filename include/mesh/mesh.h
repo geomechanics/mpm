@@ -483,6 +483,10 @@ class Mesh {
   //! Return nodal coordinates
   std::vector<Eigen::Matrix<double, 3, 1>> nodal_coordinates() const;
 
+  //! Return Cell connectivity
+  std::vector<std::vector<mpm::Index>> cell_connectivity(
+      bool active = false) const;
+
   //! Return node pairs
   std::vector<std::array<mpm::Index, 2>> node_pairs(bool active = false) const;
 

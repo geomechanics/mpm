@@ -439,6 +439,12 @@ class Cell {
   //! \ingroup Nonlocal
   std::set<mpm::Index> local_nodes_id() const;
 
+  //! Return nodes connectivity in a cell
+  //! \ingroup Nonlocal
+  //! \brief The same output as local_nodes_id but appreciating connectivity
+  //! order
+  std::vector<mpm::Index> local_nodes_id_connectivity() const;
+
   //! Return number of local shape functions, returns zero if the element type
   //! is not set.
   //! \ingroup Nonlocal

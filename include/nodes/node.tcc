@@ -27,6 +27,9 @@ mpm::Node<Tdim, Tdof, Tnphases>::Node(
   this->vector_properties_["velocities"] = [&](unsigned phase) {
     return velocity(phase);
   };
+  this->vector_properties_["accelerations"] = [&](unsigned phase) {
+    return acceleration(phase);
+  };
 }
 
 //! Initialise nodal properties

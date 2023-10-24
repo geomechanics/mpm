@@ -24,6 +24,9 @@ mpm::Node<Tdim, Tdof, Tnphases>::Node(
   this->scalar_properties_["mass"] = [&](unsigned phase) {
     return mass(phase);
   };
+  this->vector_properties_["displacements"] = [&](unsigned phase) {
+    return displacement(phase);
+  };
   this->vector_properties_["velocities"] = [&](unsigned phase) {
     return velocity(phase);
   };

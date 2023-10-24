@@ -42,6 +42,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       // Scalar variables
       {"mass", VariableType::Scalar},
       // Vector variables
+      {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
       {"accelerations", VariableType::Vector}};
 

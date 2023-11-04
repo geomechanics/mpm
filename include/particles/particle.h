@@ -198,6 +198,13 @@ class Particle : public ParticleBase<Tdim> {
     this->previous_stress_ = stress;
   }
 
+  //! Initial effective stress
+  //! \param[in] stress_effective Initial effective stress
+  void initial_stress_effective(
+      const Eigen::Matrix<double, 6, 1>& stress_effective) override {
+    this->stress_effective_ = stress_effective;
+  }
+
   //! Compute stress
   //! \param[in] dt Analysis time step
   //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
@@ -206,6 +213,11 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
+
+  //! Return effective stress of the particle
+  Eigen::Matrix<double, 6, 1> stress_effective() const override {
+    return stress_effective_;
+  }
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
@@ -606,6 +618,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, Tdim, 1> natural_size_;
   //! Stresses
   Eigen::Matrix<double, 6, 1> stress_;
+  //! Effective stresses
+  Eigen::Matrix<double, 6, 1> stress_effective_;
   //! Strains
   Eigen::Matrix<double, 6, 1> strain_;
   //! dvolumetric strain

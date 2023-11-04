@@ -318,6 +318,7 @@ void mpm::Particle<Tdim>::initialise() {
   strain_.setZero();
   previous_stress_.setZero();
   stress_.setZero();
+  stress_effective_.setZero();
   traction_.setZero();
   velocity_.setZero();
   acceleration_.setZero();
@@ -334,6 +335,9 @@ void mpm::Particle<Tdim>::initialise() {
   this->vector_properties_["accelerations"] = [&]() { return acceleration(); };
   this->vector_properties_["normals"] = [&]() { return normal(); };
   this->tensor_properties_["stresses"] = [&]() { return stress(); };
+  this->tensor_properties_["stresses_effective"] = [&]() {
+    return stress_effective();
+  };
   this->tensor_properties_["strains"] = [&]() { return strain(); };
 }
 

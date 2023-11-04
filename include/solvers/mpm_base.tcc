@@ -33,7 +33,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"normals", VariableType::Vector},
       // Tensor variables
       {"strains", VariableType::Tensor},
-      {"stresses", VariableType::Tensor}};
+      {"stresses", VariableType::Tensor},
+      {"stresses_effective", VariableType::Tensor}};
 
   try {
     analysis_ = io_->analysis();
@@ -424,6 +425,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
 
   // Read and assign particles stresses
   this->particles_stresses(mesh_props, particle_io);
+
+  // Read and assign particles effective stresses
+  this->particles_stresses_effective(mesh_props, particle_io);
 
   // Read and assign particles initial pore pressure
   this->particles_pore_pressures(mesh_props, particle_io);
@@ -1530,6 +1534,37 @@ void mpm::MPMBase<Tdim>::particles_stresses(
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle stresses are undefined {} ", __LINE__,
                    exception.what());
+  }
+}
+
+// Particles effective stresses
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_stresses_effective(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("particles_stresses_effective") != mesh_props.end()) {
+      std::string fparticles_stresses =
+          mesh_props["particles_stresses_effective"]["location"]
+              .template get<std::string>();
+      if (!io_->file_name(fparticles_stresses).empty()) {
+
+        // Get stresses of all particles
+        const auto all_particles_stresses =
+            particle_io->read_particles_stresses(
+                io_->file_name(fparticles_stresses));
+
+        // Read and assign particles stresses
+        if (!mesh_->assign_particles_stresses_effective(all_particles_stresses))
+          throw std::runtime_error(
+              "Particles effective stresses are not properly assigned");
+      }
+    } else
+      throw std::runtime_error("Particle effective stresses JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle effective stresses are undefined {} ",
+                   __LINE__, exception.what());
   }
 }
 

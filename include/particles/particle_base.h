@@ -252,6 +252,10 @@ class ParticleBase {
   //! Initial stress
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;
 
+  //! Initial effective stress
+  virtual void initial_stress_effective(
+      const Eigen::Matrix<double, 6, 1>& stress_effective) = 0;
+
   //! Compute stress
   //! \param[in] dt Analysis time step
   //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
@@ -261,6 +265,9 @@ class ParticleBase {
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;
+
+  //! Return effective stress
+  virtual Eigen::Matrix<double, 6, 1> stress_effective() const = 0;
 
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;

@@ -202,6 +202,13 @@ class MPMBase : public MPM {
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  //! Particles effective stresses
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_stresses_effective(
+      const Json& mesh_prop,
+      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   // Particles pore pressures
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle

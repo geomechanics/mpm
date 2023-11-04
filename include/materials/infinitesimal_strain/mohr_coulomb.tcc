@@ -15,21 +15,45 @@ mpm::MohrCoulomb<Tdim>::MohrCoulomb(unsigned id,
         material_properties.at("poisson_ratio").template get<double>();
     // Softening status
     softening_ = material_properties.at("softening").template get<bool>();
-    // Peak friction, dilation and cohesion
-    phi_peak_ =
-        material_properties.at("friction").template get<double>() * M_PI / 180.;
-    psi_peak_ =
-        material_properties.at("dilation").template get<double>() * M_PI / 180.;
-    cohesion_peak_ = material_properties.at("cohesion").template get<double>();
-    // Residual friction, dilation and cohesion
-    phi_residual_ =
-        material_properties.at("residual_friction").template get<double>() *
-        M_PI / 180.;
-    psi_residual_ =
-        material_properties.at("residual_dilation").template get<double>() *
-        M_PI / 180.;
-    cohesion_residual_ =
-        material_properties.at("residual_cohesion").template get<double>();
+    // Su_over_sigmav status
+    if (material_properties.find("su_over_sigmav_bool") !=
+        material_properties.end())
+      su_over_sigmav_bool_ =
+          material_properties.at("su_over_sigmav_bool").template get<bool>();
+    // Normally consolidated SHANSEP
+    if (su_over_sigmav_bool_) {
+      // Maximum su_over_p
+      su_over_sigmav_peak_ =
+          material_properties.at("su_over_sigmav_peak").template get<double>();
+      // Residual su_over_p
+      su_over_sigmav_residual_ =
+          material_properties.at("su_over_sigmav_residual")
+              .template get<double>();
+      // Minimum su
+      su_floor_ = material_properties.at("su_floor").template get<double>();
+      // Zero friction and dilation
+      phi_peak_ = 0.;
+      psi_peak_ = 0.;
+      phi_residual_ = 0.;
+      psi_residual_ = 0.;
+    } else {
+      // Peak friction, dilation and cohesion
+      phi_peak_ = material_properties.at("friction").template get<double>() *
+                  M_PI / 180.;
+      psi_peak_ = material_properties.at("dilation").template get<double>() *
+                  M_PI / 180.;
+      cohesion_peak_ =
+          material_properties.at("cohesion").template get<double>();
+      // Residual friction, dilation and cohesion
+      phi_residual_ =
+          material_properties.at("residual_friction").template get<double>() *
+          M_PI / 180.;
+      psi_residual_ =
+          material_properties.at("residual_dilation").template get<double>() *
+          M_PI / 180.;
+      cohesion_residual_ =
+          material_properties.at("residual_cohesion").template get<double>();
+    }
     // Peak plastic deviatoric strain
     pdstrain_peak_ =
         material_properties.at("peak_pdstrain").template get<double>();
@@ -321,6 +345,20 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // Get previous time step state variable
   const auto prev_state_vars = (*state_vars);
   const double pdstrain = (*state_vars).at("pdstrain");
+
+  // Normally consolidated SHANSEP
+  if (su_over_sigmav_bool_) {
+    // Get initial effective stress
+    const Eigen::Matrix<double, 6, 1> stress_eff = ptr->stress_effective();
+    // Compute cohesion from su/sigma'v
+    cohesion_peak_ = su_over_sigmav_peak_ * (-1. * stress_eff(1));
+    if (cohesion_peak_ < su_floor_) cohesion_peak_ = su_floor_;
+    cohesion_residual_ = su_over_sigmav_residual_ * (-1. * stress_eff(1));
+    if (cohesion_residual_ < su_floor_) cohesion_residual_ = su_floor_;
+    // Update state_vars cohesion
+    (*state_vars).at("cohesion") = cohesion_peak_;
+  }
+
   // Update MC parameters using a linear softening rule
   if (softening_ && pdstrain > pdstrain_peak_) {
     if (pdstrain < pdstrain_residual_) {

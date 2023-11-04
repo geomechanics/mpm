@@ -146,6 +146,14 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   double psi_residual_{std::numeric_limits<double>::max()};
   //! Residual cohesion
   double cohesion_residual_{std::numeric_limits<double>::max()};
+  //! su_over_sigmav_bool
+  bool su_over_sigmav_bool_{false};
+  //! Maximum su_over_sigmav
+  double su_over_sigmav_peak_{std::numeric_limits<double>::max()};
+  //! Residual su_over_sigmav
+  double su_over_sigmav_residual_{std::numeric_limits<double>::max()};
+  //! Minimum su
+  double su_floor_{std::numeric_limits<double>::max()};
   //! Peak plastic deviatoric strain
   double pdstrain_peak_{std::numeric_limits<double>::max()};
   //! Residual plastic deviatoric strain

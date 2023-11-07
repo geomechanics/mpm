@@ -346,17 +346,24 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   const auto prev_state_vars = (*state_vars);
   const double pdstrain = (*state_vars).at("pdstrain");
 
+  // Local peak and residual cohesion
+  double cohesion_peak_loc;
+  double cohesion_residual_loc;
+
   // Normally consolidated SHANSEP
   if (su_over_sigmav_bool_) {
     // Get initial effective stress
     const Eigen::Matrix<double, 6, 1> stress_eff = ptr->stress_effective();
     // Compute cohesion from su/sigma'v
-    cohesion_peak_ = su_over_sigmav_peak_ * (-1. * stress_eff(1));
-    if (cohesion_peak_ < su_floor_) cohesion_peak_ = su_floor_;
-    cohesion_residual_ = su_over_sigmav_residual_ * (-1. * stress_eff(1));
-    if (cohesion_residual_ < su_floor_) cohesion_residual_ = su_floor_;
+    cohesion_peak_loc = su_over_sigmav_peak_ * (-1. * stress_eff(1));
+    if (cohesion_peak_loc < su_floor_) cohesion_peak_loc = su_floor_;
+    cohesion_residual_loc = su_over_sigmav_residual_ * (-1. * stress_eff(1));
+    if (cohesion_residual_loc < su_floor_) cohesion_residual_loc = su_floor_;
     // Update state_vars cohesion
-    (*state_vars).at("cohesion") = cohesion_peak_;
+    (*state_vars).at("cohesion") = cohesion_peak_loc;
+  } else {
+    cohesion_peak_loc = cohesion_peak_;
+    cohesion_residual_loc = cohesion_residual_;
   }
 
   // Update MC parameters using a linear softening rule
@@ -371,13 +378,13 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
           ((psi_peak_ - psi_residual_) * (pdstrain - pdstrain_residual_) /
            (pdstrain_peak_ - pdstrain_residual_));
       (*state_vars).at("cohesion") =
-          cohesion_residual_ + ((cohesion_peak_ - cohesion_residual_) *
-                                (pdstrain - pdstrain_residual_) /
-                                (pdstrain_peak_ - pdstrain_residual_));
+          cohesion_residual_loc + ((cohesion_peak_loc - cohesion_residual_loc) *
+                                   (pdstrain - pdstrain_residual_) /
+                                   (pdstrain_peak_ - pdstrain_residual_));
     } else {
       (*state_vars).at("phi") = phi_residual_;
       (*state_vars).at("psi") = psi_residual_;
-      (*state_vars).at("cohesion") = cohesion_residual_;
+      (*state_vars).at("cohesion") = cohesion_residual_loc;
     }
     // Modify tension cutoff acoording to softening law
     const double apex =

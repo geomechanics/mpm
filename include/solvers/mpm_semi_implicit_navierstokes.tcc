@@ -198,7 +198,7 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
 
     // Iterate over each particle to compute shear (deviatoric) stress
     mesh_->iterate_over_particles(std::bind(
-        &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
+        &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1, dt_));
 
     // Spawn a task for external force
 #pragma omp parallel sections

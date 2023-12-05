@@ -761,14 +761,40 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress() noexcept {
+void mpm::Particle<Tdim>::compute_stress(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
-  // Calculate stress
-  this->stress_ =
+
+  // Compute material part of stress
+  const Eigen::Matrix<double, 6, 1>& material_part_voigt =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
                            &state_variables_[mpm::ParticlePhase::Solid]);
+
+  // Velocity gradient (dv_i = dx_j)
+  const Eigen::Matrix<double, Tdim, Tdim>& vel_grad =
+      this->compute_velocity_gradient(this->dn_dx_,
+                                      mpm::ParticlePhase::SinglePhase);
+
+  // Compute spin tensor increment
+  const Eigen::Matrix<double, Tdim, Tdim>& spin_dt =
+      0.5 * (vel_grad - vel_grad.transpose()) * dt;
+
+  // Convert Cauchy stress from Voigt -> matrix
+  const Eigen::Matrix<double, Tdim, Tdim>& stress_matrix =
+      mpm::math::matrix_form<Tdim>(this->stress_);
+
+  // Compute rotation part of stress increment
+  const Eigen::Matrix<double, Tdim, Tdim>& rotation_part_matrix =
+      (spin_dt * stress_matrix) - (stress_matrix * spin_dt);
+
+  // Convert matrix to Voigt (must be 6x1 regardless of Tdim)
+  const Eigen::Matrix<double, 6, 1>& rotation_part_voigt =
+      mpm::math::voigt_form<Tdim>(rotation_part_matrix);
+
+  // Update stress
+  // this->stress_ = material_part_voigt;
+  this->stress_ = material_part_voigt + rotation_part_voigt;
 }
 
 //! Map body force
@@ -1428,4 +1454,28 @@ void mpm::Particle<Tdim>::minus_virtual_stress_field(
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
+}
+
+// Compute velocity gradient
+template <unsigned Tdim>
+inline Eigen::Matrix<double, Tdim, Tdim>
+    mpm::Particle<Tdim>::compute_velocity_gradient(const Eigen::MatrixXd& dn_dx,
+                                                   unsigned phase) noexcept {
+  // Define velocity gradient
+  Eigen::Matrix<double, Tdim, Tdim> velocity_gradient =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
+
+  // Reference configuration is the beginning of the time step
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& velocity = nodes_[i]->velocity(phase);
+    velocity_gradient.noalias() += velocity * dn_dx.row(i);
+  }
+
+  for (unsigned i = 0; i < Tdim; ++i) {
+    for (unsigned j = 0; j < Tdim; ++j) {
+      if (std::fabs(velocity_gradient(i, j)) < 1.E-15)
+        velocity_gradient(i, j) = 0.;
+    }
+  }
+  return velocity_gradient;
 }

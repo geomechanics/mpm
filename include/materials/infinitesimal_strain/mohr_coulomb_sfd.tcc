@@ -387,6 +387,14 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombSFD<Tdim>::compute_stress(
     // Compute cohesion from su/sigma'v
     adopted_cohesion_peak = su_over_pi_peak_ * (-1. * bstress(1));
     adopted_cohesion_residual = su_over_pi_residual_ * (-1. * bstress(1));
+    // Add lower bound cohesion for ground shale layer
+    if (ptr->material_id() == 3) {
+      const double floor = 20000.;
+      if (adopted_cohesion_peak < floor) {
+        adopted_cohesion_peak = floor;
+        adopted_cohesion_residual = floor;
+      }
+    }
     // Update state_vars cohesion
     (*state_vars).at("cohesion") = adopted_cohesion_peak;
   } else if (sptn_bool_) {
@@ -399,6 +407,12 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombSFD<Tdim>::compute_stress(
                     0.2 * sptn_ * std::pow(sigma_v, 2.48) + 41.13)) *
         47.880208;
     adopted_cohesion_peak = adopted_cohesion_residual;
+    // Add lower bound cohesion for liquefied sands layers
+    const double floor = 20000.;
+    if (adopted_cohesion_peak < floor) {
+      adopted_cohesion_peak = floor;
+      adopted_cohesion_residual = floor;
+    }
     // Update state_vars cohesion
     (*state_vars).at("cohesion") = adopted_cohesion_peak;
   } else if (mc_to_tresca_bool_) {

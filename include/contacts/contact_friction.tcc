@@ -18,7 +18,7 @@ inline void mpm::ContactFriction<Tdim>::initialise() {
 
 //! Compute contact forces
 template <unsigned Tdim>
-inline void mpm::ContactFriction<Tdim>::compute_contact_forces() {
+inline void mpm::ContactFriction<Tdim>::compute_contact_forces(double dt) {
 
   // Map multimaterial properties from particles to nodes
   mesh_->iterate_over_particles(std::bind(

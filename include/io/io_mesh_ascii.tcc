@@ -254,13 +254,13 @@ std::vector<Eigen::Matrix<double, 6, 1>>
   return stresses;
 }
 
-//! Return particles scalar properties
+//! Return scalar properties for particles or nodes
 template <unsigned Tdim>
 std::vector<std::tuple<mpm::Index, double>>
-    mpm::IOMeshAscii<Tdim>::read_particles_scalar_properties(
+    mpm::IOMeshAscii<Tdim>::read_scalar_properties(
         const std::string& scalar_file) {
 
-  // Particles scalar properties
+  // Scalar properties for particles or nodes
   std::vector<std::tuple<mpm::Index, double>> scalar_properties;
 
   // input file stream
@@ -293,7 +293,7 @@ std::vector<std::tuple<mpm::Index, double>>
     }
     file.close();
   } catch (std::exception& exception) {
-    console_->error("Read particle {} #{}: {}\n", __FILE__, __LINE__,
+    console_->error("Read particle/node {} #{}: {}\n", __FILE__, __LINE__,
                     exception.what());
     file.close();
   }
@@ -641,7 +641,7 @@ std::vector<std::tuple<mpm::Index, unsigned, double>>
   return constraints;
 }
 
-//! Return friction constraints of particles
+//! Return friction constraints
 template <unsigned Tdim>
 std::vector<std::tuple<mpm::Index, unsigned, int, double>>
     mpm::IOMeshAscii<Tdim>::read_friction_constraints(
@@ -692,7 +692,7 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double>>
   return constraints;
 }
 
-//! Return cohesion constraints of particles
+//! Return cohesion constraints
 template <unsigned Tdim>
 std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
     mpm::IOMeshAscii<Tdim>::read_cohesion_constraints(
@@ -746,6 +746,64 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
     file.close();
   }
   return constraints;
+}
+
+//! Return nodal levelset information
+template <unsigned Tdim>
+std::vector<std::tuple<mpm::Index, double, double, double, double, double>>
+    mpm::IOMeshAscii<Tdim>::read_levelset_input(
+        const std::string& levelset_input_file) {
+
+  // Nodal levelset information
+  std::vector<std::tuple<mpm::Index, double, double, double, double, double>>
+      levelset_inputs;
+  levelset_inputs.clear();
+
+  // input file stream
+  std::fstream file;
+  file.open(levelset_input_file.c_str(), std::ios::in);
+
+  try {
+    if (file.is_open() && file.good()) {
+      // Line
+      std::string line;
+      while (std::getline(file, line)) {
+        boost::algorithm::trim(line);
+        std::istringstream istream(line);
+        // ignore comment lines (# or !) or blank lines
+        if ((line.find('#') == std::string::npos) &&
+            (line.find('!') == std::string::npos) && (line != "")) {
+          // ID
+          mpm::Index id;
+          // Levelset value
+          double levelset;
+          // Friction
+          double levelset_mu;
+          // Barrier stiffness
+          double barrier_stiffness;
+          // Slip threshold
+          double slip_threshold;
+          // mp radius of influence
+          double levelset_mp_radius;
+          while (istream.good()) {
+            // Read stream
+            istream >> id >> levelset >> levelset_mu >> barrier_stiffness >>
+                slip_threshold >> levelset_mp_radius;
+            levelset_inputs.emplace_back(
+                std::make_tuple(id, levelset, levelset_mu, barrier_stiffness,
+                                slip_threshold, levelset_mp_radius));
+          }
+        }
+      }
+    } else {
+      throw std::runtime_error("File not open or not good!");
+    }
+    file.close();
+  } catch (std::exception& exception) {
+    console_->error("Read levelset inputs: {}", exception.what());
+    file.close();
+  }
+  return levelset_inputs;
 }
 
 //! Return particles force

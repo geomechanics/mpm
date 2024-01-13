@@ -1224,6 +1224,38 @@ void mpm::MPMBase<Tdim>::nodal_cohesional_constraints(
   }
 }
 
+// Nodal levelset inputs
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nodal_levelset_inputs(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign levelset inputs
+    if (mesh_props.find("levelset") != mesh_props.end() &&
+        mesh_props["levelset"].find("levelset") !=
+            mesh_props["levelset"].end()) {
+      // Iterate over levelset inputs
+      for (const auto& levelset_inputs : mesh_props["levelset"]) {
+        // Levelset inputs are specified in a file
+        if (mesh_props.find("file") != mesh_props.end()) {
+          std::string levelset_input_file =
+              levelset_inputs.at("file").template get<std::string>();
+          bool levelset_info =
+              mesh_->assign_nodal_levelset_values(mesh_io->read_levelset_input(
+                  io_->file_name(levelset_input_file)));
+          if (!levelset_info)
+            throw std::runtime_error(
+                "Levelset inputs are not properly assigned");
+        }
+      }
+    } else
+      throw std::runtime_error("Levelset inputs JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Levelset conditions are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
 // Nodal pressure constraints
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::nodal_pressure_constraints(
@@ -1536,7 +1568,7 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
         if (!io_->file_name(fparticles_pore_pressures).empty()) {
           // Read and assign particles pore pressures
           if (!mesh_->assign_particles_pore_pressures(
-                  particle_io->read_particles_scalar_properties(
+                  particle_io->read_scalar_properties(
                       io_->file_name(fparticles_pore_pressures))))
             throw std::runtime_error(
                 "Particles pore pressures are not properly assigned");

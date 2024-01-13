@@ -12,9 +12,16 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
   else
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSF<Tdim>>(mesh_, dt_);
 
+  // LEDT check json file (see mpm_explicit.tcc)
+
   //! Interface scheme
   if (this->interface_)
-    contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
+    if (this->interface_type_ == "multimaterial")
+      contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
+    else if (this->interface_type_ == "levelset")
+      contact_ = std::make_shared<mpm::ContactLevelset<Tdim>>(mesh_);
+    else  // default is "none"
+      contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
   else
     contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
 }
@@ -134,7 +141,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
     // Map material properties to nodes
-    contact_->compute_contact_forces();
+    contact_->compute_contact_forces(dt_);
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);

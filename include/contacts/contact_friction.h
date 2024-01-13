@@ -18,7 +18,8 @@ class ContactFriction : public Contact<Tdim> {
   virtual inline void initialise() override;
 
   //! Compute contact forces
-  virtual inline void compute_contact_forces() override;
+  //! \param[in] dt Analysis time step
+  virtual inline void compute_contact_forces(double dt) override;
 
  protected:
   //! Mesh object

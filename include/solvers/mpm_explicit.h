@@ -7,6 +7,8 @@
 
 #include "mpm_base.h"
 
+#include <string>
+
 namespace mpm {
 
 //! MPMExplicit class
@@ -83,8 +85,10 @@ class MPMExplicit : public MPMBase<Tdim> {
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
-  //! Interface
+  //! Interface boolean
   bool interface_{false};
+  //! Interface type
+  std::string interface_type_{"none"};
 
 };  // MPMExplicit class
 }  // namespace mpm

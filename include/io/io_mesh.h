@@ -64,11 +64,11 @@ class IOMesh {
   virtual std::vector<Eigen::Matrix<double, 6, 1>> read_particles_stresses(
       const std::string& particles_stresses) = 0;
 
-  //! Read particle scalar properties
+  //! Read scalar properties for particles or nodes
   //! \param[in] scalar_file file name with particle scalar properties
-  //! \retval Vector of particles scalar properties
-  virtual std::vector<std::tuple<mpm::Index, double>>
-      read_particles_scalar_properties(const std::string& scalar_file) = 0;
+  //! \retval Vector of scalar properties for particles or nodes
+  virtual std::vector<std::tuple<mpm::Index, double>> read_scalar_properties(
+      const std::string& scalar_file) = 0;
 
   //! Read pressure constraints file
   //! \param[in] pressure_constraints_files file name with pressure constraints
@@ -122,6 +122,12 @@ class IOMesh {
       std::tuple<mpm::Index, unsigned, int, double, double, int>>
       read_cohesion_constraints(
           const std::string& cohesion_constraints_file) = 0;
+
+  //! Read levelset file
+  //! \param[in] levelset_input_file file name with levelset values
+  virtual std::vector<
+      std::tuple<mpm::Index, double, double, double, double, double>>
+      read_levelset_input(const std::string& levelset_input_file) = 0;
 
   //! Read forces file
   //! \param[in] forces_file file name with nodal concentrated force

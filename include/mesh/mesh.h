@@ -676,7 +676,7 @@ class Mesh {
   bool locate_particle_cells(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
 
- private:
+ protected:
   //! mesh id
   unsigned id_{std::numeric_limits<unsigned>::max()};
   //! Isoparametric mesh

@@ -23,6 +23,7 @@
 #include "constraints.h"
 #include "contact.h"
 #include "contact_friction.h"
+#include "contact_levelset.h"
 #include "mpm.h"
 #include "mpm_scheme.h"
 #include "mpm_scheme_musl.h"
@@ -301,6 +302,17 @@ class MPMBase : public MPM {
   unsigned cell_neighbourhood_{0};
   // Node neighbourhood: default 1 for linear element
   unsigned node_neighbourhood_{1};
+  /**@}*/
+
+  /**
+   * \defgroup Levelset variables
+   * @{
+   */
+  //! Nodal levelset inputs
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void nodal_levelset_inputs(const Json& mesh_prop,
+                             const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
   /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING

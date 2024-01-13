@@ -51,10 +51,10 @@ class IOMeshAscii : public IOMesh<Tdim> {
   std::vector<Eigen::Matrix<double, 6, 1>> read_particles_stresses(
       const std::string& particles_stresses) override;
 
-  //! Read particle scalar properties
-  //! \param[in] scalar_file file name with particle scalar properties
-  //! \retval Vector of particles scalar properties
-  std::vector<std::tuple<mpm::Index, double>> read_particles_scalar_properties(
+  //! Read scalar properties for particles or nodes
+  //! \param[in] scalar_file file name with particle or node scalar properties
+  //! \retval Vector of scalar properties for particles or nodes
+  std::vector<std::tuple<mpm::Index, double>> read_scalar_properties(
       const std::string& scalar_file) override;
 
   //! Read pressure constraints file
@@ -109,6 +109,11 @@ class IOMeshAscii : public IOMesh<Tdim> {
   std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
       read_cohesion_constraints(
           const std::string& cohesion_constraints_file) override;
+
+  //! Read levelset file
+  //! \param[in] levelset_input_file file name with levelset values
+  std::vector<std::tuple<mpm::Index, double, double, double, double, double>>
+      read_levelset_input(const std::string& levelset_input_file) override;
 
   //! Read traction file
   //! \param[in] forces_file file name with nodal concentrated force

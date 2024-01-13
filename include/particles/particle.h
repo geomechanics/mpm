@@ -9,6 +9,7 @@
 
 #include "cell.h"
 #include "logger.h"
+#include "math_utility.h"
 #include "particle_base.h"
 
 namespace mpm {
@@ -198,7 +199,10 @@ class Particle : public ParticleBase<Tdim> {
   }
 
   //! Compute stress
-  void compute_stress() noexcept override;
+  //! \param[in] dt Analysis time step
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
+  void compute_stress(double dt, mpm::StressRate stress_rate =
+                                     mpm::StressRate::None) noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }

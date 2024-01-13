@@ -74,10 +74,14 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
                                    double dt) noexcept override{};
 
   //! Compute deformation gradient increment using nodal velocity
+  //! \param[in] dt Analysis time step
   void compute_strain(double dt) noexcept override;
 
   //! Compute stress and update deformation gradient
-  void compute_stress() noexcept override;
+  //! \param[in] dt Analysis time step
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
+  void compute_stress(double dt, mpm::StressRate stress_rate =
+                                     mpm::StressRate::None) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

@@ -30,20 +30,23 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  inline void compute_stress_strain(unsigned phase,
-                                    bool pressure_smoothing) override;
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
+  inline void compute_stress_strain(unsigned phase, bool pressure_smoothing,
+                                    mpm::StressRate stress_rate) override;
 
   //! Precompute stress
-  //! \param[in] phase Phase to smooth postssure
-  //! \param[in] postssure_smoothing Enable or disable postssure smoothing
-  inline void precompute_stress_strain(unsigned phase,
-                                       bool pressure_smoothing) override;
+  //! \param[in] phase Phase to smooth pressure
+  //! \param[in] pressure_smoothing Enable or disable pressure smoothing
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
+  inline void precompute_stress_strain(unsigned phase, bool pressure_smoothing,
+                                       mpm::StressRate stress_rate) override;
 
   //! Postcompute stress
-  //! \param[in] phase Phase to smooth postssure
-  //! \param[in] postssure_smoothing Enable or disable postssure smoothing
-  inline void postcompute_stress_strain(unsigned phase,
-                                        bool pressure_smoothing) override;
+  //! \param[in] phase Phase to smooth pressure
+  //! \param[in] pressure_smoothing Enable or disable pressure smoothing
+  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
+  inline void postcompute_stress_strain(unsigned phase, bool pressure_smoothing,
+                                        mpm::StressRate stress_rate) override;
 
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Method to update particle velocity

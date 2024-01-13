@@ -51,6 +51,21 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
     if (analysis_.find("locate_particles") != analysis_.end())
       locate_particles_ = analysis_["locate_particles"].template get<bool>();
 
+    // Stress rate method (None/Jaumann)
+    try {
+      if (analysis_.find("stress_rate") != analysis_.end()) {
+        if (analysis_["stress_rate"].template get<std::string>() == "jaumann")
+          stress_rate_ = mpm::StressRate::Jaumann;
+        else
+          throw std::runtime_error("Stress rate type is not supported");
+      } else
+        throw std::runtime_error("No stress rate type specified");
+    } catch (std::exception& exception) {
+      console_->warn(
+          "{} #{}: {}. Using Cauchy stress rate (non-objective) as default",
+          __FILE__, __LINE__, exception.what());
+    }
+
     // Stress update method (USF/USL/MUSL/Newmark)
     try {
       if (analysis_.find("mpm_scheme") != analysis_.end())

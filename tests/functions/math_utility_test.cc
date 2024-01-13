@@ -19,6 +19,13 @@ TEST_CASE("math utility is checked", "[math]") {
     stress.setZero();
 
     // Vector to matrix conversion
+    auto stress_1d = mpm::math::matrix_form<1>(stress);
+    REQUIRE(stress_1d.cols() == 1);
+    REQUIRE(stress_1d.rows() == 1);
+    for (unsigned i = 0; i < 1; i++)
+      for (unsigned j = 0; j < 1; j++)
+        REQUIRE(stress_1d(i, j) == Approx(0.).epsilon(Tolerance));
+
     auto stress_2d = mpm::math::matrix_form<2>(stress);
     REQUIRE(stress_2d.cols() == 2);
     REQUIRE(stress_2d.rows() == 2);
@@ -39,6 +46,10 @@ TEST_CASE("math utility is checked", "[math]") {
     for (unsigned i = 0; i < 3; i++)
       for (unsigned j = 0; j < 3; j++)
         REQUIRE(stress_3d(i, j) == Approx(0.).epsilon(Tolerance));
+
+    auto voigt_stress_1d = mpm::math::voigt_form<1>(stress_1d);
+    for (unsigned i = 0; i < 6; i++)
+      REQUIRE(voigt_stress_1d(i) == Approx(stress(i)).epsilon(Tolerance));
 
     auto voigt_stress_2d = mpm::math::voigt_form<2>(stress_2d);
     for (unsigned i = 0; i < 6; i++)
@@ -106,6 +117,14 @@ TEST_CASE("math utility is checked", "[math]") {
     stress(4) = -14.5;
     stress(5) = -33.;
 
+    Eigen::Matrix<double, 6, 1> stress_1dim;
+    stress_1dim(0) = -200.;
+    stress_1dim(1) = 0.0;
+    stress_1dim(2) = 0.0;
+    stress_1dim(3) = 0.0;
+    stress_1dim(4) = 0.0;
+    stress_1dim(5) = 0.0;
+
     Eigen::Matrix<double, 6, 1> stress_2dim;
     stress_2dim(0) = -200.;
     stress_2dim(1) = -150.2;
@@ -126,6 +145,14 @@ TEST_CASE("math utility is checked", "[math]") {
     stress_matrix(2, 0) = -33.;
 
     // Vector to matrix conversion
+    auto stress_1d = mpm::math::matrix_form<1>(stress);
+    REQUIRE(stress_1d.cols() == 1);
+    REQUIRE(stress_1d.rows() == 1);
+    for (unsigned i = 0; i < 1; i++)
+      for (unsigned j = 0; j < 1; j++)
+        REQUIRE(stress_1d(i, j) ==
+                Approx(stress_matrix(i, j)).epsilon(Tolerance));
+
     auto stress_2d = mpm::math::matrix_form<2>(stress);
     REQUIRE(stress_2d.cols() == 2);
     REQUIRE(stress_2d.rows() == 2);
@@ -149,6 +176,10 @@ TEST_CASE("math utility is checked", "[math]") {
       for (unsigned j = 0; j < 3; j++)
         REQUIRE(stress_3d(i, j) ==
                 Approx(stress_matrix(i, j)).epsilon(Tolerance));
+
+    auto voigt_stress_1d = mpm::math::voigt_form<1>(stress_1d);
+    for (unsigned i = 0; i < 6; i++)
+      REQUIRE(voigt_stress_1d(i) == Approx(stress_1dim(i)).epsilon(Tolerance));
 
     auto voigt_stress_2d = mpm::math::voigt_form<2>(stress_2d);
     for (unsigned i = 0; i < 6; i++)

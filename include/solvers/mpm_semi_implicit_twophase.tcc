@@ -20,8 +20,9 @@ void mpm::MPMSemiImplicitTwoPhase<Tdim>::compute_stress_strain() {
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_porosity, std::placeholders::_1, dt_));
   // Iterate over each particle to compute stress of soil skeleton
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1,
+                dt_, mpm::StressRate::None));
   // Pressure smoothing
   if (pressure_smoothing_) this->pressure_smoothing(mpm::ParticlePhase::Solid);
   // Pore pressure smoothing

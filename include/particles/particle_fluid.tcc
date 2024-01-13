@@ -11,9 +11,10 @@ mpm::FluidParticle<Tdim>::FluidParticle(Index id, const VectorDim& coord)
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::FluidParticle<Tdim>::compute_stress() noexcept {
+void mpm::FluidParticle<Tdim>::compute_stress(
+    double dt, mpm::StressRate stress_rate) noexcept {
   // Run particle compute stress
-  mpm::Particle<Tdim>::compute_stress();
+  mpm::Particle<Tdim>::compute_stress(dt);
 
   // Calculate fluid turbulent stress
   this->stress_.noalias() += this->compute_turbulent_stress();

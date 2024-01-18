@@ -18,6 +18,9 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   // Create constraints
   constraints_ = std::make_shared<mpm::Constraints<Tdim>>(mesh_);
 
+  // Create levelset
+  levelset_ = std::make_shared<mpm::MeshLevelset<Tdim>>(mesh_);
+
   // Empty all materials
   materials_.clear();
 
@@ -290,6 +293,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign absorbing constraintes
   this->nodal_absorbing_constraints(mesh_props, mesh_io);
+
+  // Read and assign absorbing constraintes
+  this->nodal_levelset_inputs(mesh_props, mesh_io);
 
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();
@@ -1245,26 +1251,39 @@ void mpm::MPMBase<Tdim>::nodal_levelset_inputs(
     const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
   try {
     // Read and assign levelset inputs
-    if (mesh_props.find("levelset") != mesh_props.end() &&
-        mesh_props["levelset"].find("levelset") !=
-            mesh_props["levelset"].end()) {
-      // Iterate over levelset inputs
-      for (const auto& levelset_inputs : mesh_props["levelset"]) {
-        // Levelset inputs are specified in a file
-        if (mesh_props.find("file") != mesh_props.end()) {
-          std::string levelset_input_file =
-              levelset_inputs.at("file").template get<std::string>();
-          bool levelset_info =
-              mesh_->assign_nodal_levelset_values(mesh_io->read_levelset_input(
-                  io_->file_name(levelset_input_file)));
-          if (!levelset_info)
-            throw std::runtime_error(
-                "Levelset inputs are not properly assigned");
+    if (mesh_props.find("levelset") != mesh_props.end()) {
+      interface_ = true;
+      // Get levelset type
+      const std::string interface_type_ =
+          mesh_props["levelset"]["interface_type"].template get<std::string>();
+      if (interface_type_ == "levelset") {
+        // Create levelset
+        // mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
+        // levelset_ = std::make_shared<mpm::MeshLevelset<Tdim>>(mesh_);
+        // LEDT see constraints_
+        // constraints_ = std::make_shared<mpm::Constraints<Tdim>>(mesh_);
+        // Iterate over levelset inputs
+        for (const auto& levelset_inputs : mesh_props["location"]) {
+          // Levelset inputs are specified in a file
+          if (mesh_props.find("file") != mesh_props.end()) {
+            std::string levelset_input_file =
+                levelset_inputs.at("file").template get<std::string>();
+            bool levelset_info = levelset_->assign_nodal_levelset_values(
+                mesh_io->read_levelset_input(
+                    io_->file_name(levelset_input_file)));
+            if (!levelset_info) {
+              throw std::runtime_error(
+                  "Levelset inputs are not properly assigned");
+            }
+          }
         }
+      } else if (interface_type_ == "multimaterial") {
+        throw std::runtime_error("Multimaterial contact inputs not supported");
+      } else {
+        throw std::runtime_error("Interface type not supported");
       }
     } else
       throw std::runtime_error("Levelset inputs JSON not found");
-
   } catch (std::exception& exception) {
     console_->warn("#{}: Levelset conditions are undefined {} ", __LINE__,
                    exception.what());

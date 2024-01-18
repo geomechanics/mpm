@@ -38,11 +38,12 @@ class ParticleLevelset : public Particle<Tdim> {
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
   //! \param[in] levelset_mp_radius mp radius of influence for contact
-  inline Eigen::Matrix<double, Tdim, 1> compute_levelset_contact_force(
+  inline VectorDim compute_levelset_contact_force(
       double levelset, const VectorDim& levelset_normal, double levelset_mu,
       double barrier_stiffness, double slip_threshold,
       double levelset_mp_radius, double dt) noexcept;
 
+ private:
   //! coupling force
   Eigen::Matrix<double, Tdim, 1> couple_force_{0.};
   //! levelset value

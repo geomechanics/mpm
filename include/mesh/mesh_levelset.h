@@ -19,6 +19,12 @@ template <unsigned Tdim>
 class MeshLevelset : public Mesh<Tdim> {
 
  public:
+  //! Constructor with mesh as input argument
+  MeshLevelset(std::shared_ptr<mpm::Mesh<Tdim>> mesh) {
+    mesh_ = mesh;
+    console_ = std::make_unique<spdlog::logger>("Levelset", mpm::stdout_sink);
+  }
+
   //! Assign mesh levelset values to nodes
   //! \param[in] levelset Levelset value at the particle
   //! \param[in] levelset_mu Levelset friction
@@ -29,20 +35,21 @@ class MeshLevelset : public Mesh<Tdim> {
       const std::vector<std::tuple<mpm::Index, double, double, double, double,
                                    double>>& levelset_input_file);
 
- public:
-  //! Define a vector of size dimension
-  using VectorDim = Eigen::Matrix<double, Tdim, 1>;
-
   //! Return status of the nodes
   bool status() const { return nodes_.size(); }
 
+  //! Define a vector of size dimension
+  using VectorDim = Eigen::Matrix<double, Tdim, 1>;
+
  private:
+  //! Mesh object
+  std::shared_ptr<mpm::Mesh<Tdim>> mesh_;
+  //! Logger
+  std::unique_ptr<spdlog::logger> console_;
   //! Vector of nodes
   Vector<NodeBase<Tdim>> nodes_;
   //! Map of nodes for fast retrieval
   Map<NodeBase<Tdim>> map_nodes_;
-  //! Logger
-  std::unique_ptr<spdlog::logger> console_;
 
 };  // Mesh_Levelset class
 
@@ -50,4 +57,4 @@ class MeshLevelset : public Mesh<Tdim> {
 
 #include "mesh_levelset.tcc"
 
-#endif  // MPM_MESH_LEVELSET_H__
+#endif  // MPM_MESH_LEVELSET_H_

@@ -26,8 +26,8 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // Compute normals
   VectorDim levelset_normal = levelset_gradient.normalized();
 
-  // Compute contact force in particle //LEDT VectorDim?
-  Eigen::Matrix<double, Tdim, 1> force = compute_levelset_contact_force(
+  // Compute contact force in particle
+  VectorDim force = compute_levelset_contact_force(
       levelset, levelset_normal, levelset_mu, barrier_stiffness, slip_threshold,
       levelset_mp_radius, dt);
 
@@ -38,9 +38,9 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   }
 }
 
-//! Compute levelset contact force //LEDT VectorDim?
+//! Compute levelset contact force
 template <unsigned Tdim>
-Eigen::Matrix<double, Tdim, 1>
+typename mpm::ParticleLevelset<Tdim>::VectorDim
     mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
         double levelset, const VectorDim& levelset_normal, double levelset_mu,
         double barrier_stiffness, double slip_threshold,

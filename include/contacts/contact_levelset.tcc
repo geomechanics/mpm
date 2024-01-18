@@ -2,7 +2,10 @@
 template <unsigned Tdim>
 mpm::ContactLevelset<Tdim>::ContactLevelset(
     const std::shared_ptr<mpm::Mesh<Tdim>>& mesh)
-    : mpm::Contact<Tdim>(mesh) {}
+    : mpm::Contact<Tdim>(mesh) {
+  // Assign mesh
+  mesh_ = mesh;
+}
 
 //! Initialize nodal properties
 template <unsigned Tdim>

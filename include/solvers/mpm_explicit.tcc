@@ -14,7 +14,7 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
 
   // LEDT check json file (see mpm_explicit.tcc)
 
-  //! Interface scheme
+  //! Interface scheme //LEDT get from mpm.base
   if (this->interface_)
     if (this->interface_type_ == "multimaterial")
       contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
@@ -63,7 +63,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
 
   // Interface
-  interface_ = io_->analysis_bool("interface");
+  // interface_ = io_->analysis_bool("interface");  // LEDT remove
 
   // Initialise material
   this->initialise_materials();
@@ -135,13 +135,13 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->initialise();
 
     // Initialise nodal properties and append material ids to node
-    contact_->initialise();
+    contact_->initialise();  // LEDT check
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
     // Map material properties to nodes
-    contact_->compute_contact_forces(dt_);
+    contact_->compute_contact_forces(dt_);  // LEDT check
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_,

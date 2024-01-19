@@ -11,7 +11,7 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
 
     for (const auto& levelset_info : levelset_input_file) {
       // Node id
-      mpm::Index pid = std::get<0>(levelset_info);
+      mpm::Index nid = std::get<0>(levelset_info);
       // Levelset
       double levelset = std::get<1>(levelset_info);
       // Levelset mu
@@ -23,8 +23,10 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
       // Levelset mp radius
       double levelset_mp_radius = std::get<5>(levelset_info);
 
-      if (map_nodes_.find(pid) != map_nodes_.end())
-        status = true;  // LEDT FIX (see assign_particles_volumes in mesh.tcc)
+      if (map_nodes_.find(nid) != map_nodes_.end())
+        status = map_nodes_[nid]->assign_levelset(
+            levelset, levelset_mu, barrier_stiffness, slip_threshold,
+            levelset_mp_radius);
 
       if (!status)
         throw std::runtime_error("Cannot assign invalid nodal levelset values");

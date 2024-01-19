@@ -83,15 +83,14 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
   //! Update deformation gradient
   using mpm::MPMBase<Tdim>::update_defgrad_;
+  //! Interface boolean
+  using mpm::MPMBase<Tdim>::interface_;
+  //! Interface type
+  using mpm::MPMBase<Tdim>::interface_type_;
 
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
-  //! Interface boolean
-  bool interface_{false};
-  //! Interface type
-  std::string interface_type_{"none"};
-
 };  // MPMExplicit class
 }  // namespace mpm
 

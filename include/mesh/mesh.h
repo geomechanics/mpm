@@ -369,6 +369,16 @@ class Mesh {
       const std::shared_ptr<FunctionBase>& mfunction, int set_id, unsigned dir,
       double force);
 
+  //! Assign nodal levelset values
+  //! \param[in] levelset Levelset value at the particle
+  //! \param[in] levelset_mu Levelset friction
+  //! \param[in] barrier_stiffness Barrier stiffness
+  //! \param[in] slip_threshold Slip threshold
+  //! \param[in] levelset_mp_radius mp radius of influence for contact
+  virtual bool assign_nodal_levelset_values(
+      const std::vector<std::tuple<mpm::Index, double, double, double, double,
+                                   double>>& levelset_input_file);
+
   //! Assign particles stresses
   //! \param[in] particle_stresses Initial stresses of particle
   bool assign_particles_stresses(

@@ -233,6 +233,16 @@ class MPMBase : public MPM {
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
   /**@}*/
 
+  /**
+   * \defgroup Interface Functions (includes multimaterial and levelset)
+   */
+  /**@{*/
+  //! \ingroup Interface
+  //! Return if interface and levelset are active
+  //! \retval levelset status of mesh
+  bool is_levelset();
+  /**@}*/
+
  protected:
   // Generate a unique id for the analysis
   using mpm::MPM::uuid_;
@@ -313,14 +323,14 @@ class MPMBase : public MPM {
   /**@}*/
 
   /**
-   * \defgroup Levelset variables
+   * \defgroup Interface variables (includes multimaterial and levelset)
    * @{
    */
   //! Nodal levelset inputs
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] mesh_io Mesh IO handle
-  void nodal_levelset_inputs(const Json& mesh_prop,
-                             const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+  void interface_inputs(const Json& mesh_prop,
+                        const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
   /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING

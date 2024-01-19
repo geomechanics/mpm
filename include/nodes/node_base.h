@@ -549,6 +549,23 @@ class NodeBase {
 
   /**@}*/
 
+  /**
+   * \defgroup Levelset Functions
+   */
+  /**@{*/
+
+  // Assign levelset values to nodes
+  //! \param[in] levelset Levelset value at the particle
+  //! \param[in] levelset_mu Levelset friction
+  //! \param[in] barrier_stiffness Barrier stiffness
+  //! \param[in] slip_threshold Slip threshold
+  //! \param[in] levelset_mp_radius mp radius of influence for contact
+  virtual bool assign_levelset(double levelset, double levelset_mu,
+                               double barrier_stiffness, double slip_threshold,
+                               double levelset_mp_radius);
+
+  /**@}*/
+
 };  // NodeBase class
 }  // namespace mpm
 

@@ -15,7 +15,8 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   VectorDim levelset_gradient = VectorDim::Zero();
   for (unsigned i = 0; i < nodes_.size(); i++) {
     // Map levelset and compute gradient
-    levelset += shapefn_[i] * nodes_[i]->levelset();
+    levelset +=
+        shapefn_[i] * nodes_[i]->levelset();  // LEDT need to assign to nodes
     levelset_gradient += dn_dx_.row(i).transpose() * nodes_[i]->levelset();
     // Map other input variables
     levelset_mu += shapefn_[i] * nodes_[i]->levelset_mu();

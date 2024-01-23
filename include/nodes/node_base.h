@@ -562,7 +562,13 @@ class NodeBase {
   //! \param[in] levelset_mp_radius mp radius of influence for contact
   virtual bool assign_levelset(double levelset, double levelset_mu,
                                double barrier_stiffness, double slip_threshold,
-                               double levelset_mp_radius);
+                               double levelset_mp_radius) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(assign_levelset) in "
+        "NodeBase:: illegal operation!");
+    return false;
+  };
 
   /**@}*/
 

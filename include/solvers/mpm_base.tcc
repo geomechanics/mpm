@@ -15,10 +15,12 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
 
   // Construct mesh, use levelset mesh if interface and levelset active
   bool levelset_active = is_levelset();
-  if (levelset_active)
+  if (levelset_active) {
     mesh_ = std::make_shared<mpm::MeshLevelset<Tdim>>(id, isoparametric);
-  else
+    std::cout << "Levelset mesh_ created" << std::endl;
+  } else {
     mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
+  }
 
   // Create constraints
   constraints_ = std::make_shared<mpm::Constraints<Tdim>>(mesh_);
@@ -776,17 +778,23 @@ template <unsigned Tdim>
 bool mpm::MPMBase<Tdim>::is_levelset() {
   bool levelset_active = true;
 
-  const auto mesh_props = io_->json_object("mesh");
-  if (mesh_props.find("interface") != mesh_props.end()) {
-    const std::string interface_type_ =
-        mesh_props["interface"]["interface_type"].template get<std::string>();
-    if (interface_type_ != "levelset") {
+  try {
+    const auto mesh_props = io_->json_object("mesh");
+    if (mesh_props.find("interface") != mesh_props.end()) {
+      const std::string interface_type_ =
+          mesh_props["interface"]["interface_type"].template get<std::string>();
+      if (interface_type_ != "levelset") {
+        levelset_active = false;
+        throw std::runtime_error("Levelset interface type not found in JSON");
+      }
+    } else {
       levelset_active = false;
-      throw std::runtime_error("Levelset interface is not active in mesh");
+      throw std::runtime_error("Interface is not found in JSON");
     }
-  } else {
-    levelset_active = false;
-    throw std::runtime_error("Interface is not active in mesh");
+
+  } catch (std::exception& exception) {
+    console_->warn("{} #{}: Interface is not active in mesh {}", __FILE__,
+                   __LINE__, exception.what());
   }
   return levelset_active;
 }

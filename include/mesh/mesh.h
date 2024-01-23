@@ -377,7 +377,13 @@ class Mesh {
   //! \param[in] levelset_mp_radius mp radius of influence for contact
   virtual bool assign_nodal_levelset_values(
       const std::vector<std::tuple<mpm::Index, double, double, double, double,
-                                   double>>& levelset_input_file);
+                                   double>>& levelset_input_file) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(assign_nodal_levelset_values) in "
+        "Mesh:: illegal operation!");
+    return false;
+  };
 
   //! Assign particles stresses
   //! \param[in] particle_stresses Initial stresses of particle

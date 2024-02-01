@@ -17,7 +17,6 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   bool levelset_active = is_levelset();
   if (levelset_active) {
     mesh_ = std::make_shared<mpm::MeshLevelset<Tdim>>(id, isoparametric);
-    std::cout << "-->2 mesh_ is levelset" << std::endl;  // LEDT REMOVE!
   } else {
     mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
   }
@@ -211,8 +210,6 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
     console_->warn(
         "{} #{}: No VTK statevariable were specified, none will be generated",
         __FILE__, __LINE__);
-
-  std::cout << "-->10a mpm_base constructor done" << std::endl;  // LEDT REMOVE!
 }
 
 // Initialise mesh
@@ -232,7 +229,6 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   auto mesh_props = io_->json_object("mesh");
   // Get Mesh reader from JSON object
   const std::string io_type = mesh_props["io_type"].template get<std::string>();
-  std::cout << "-->10b mpm_base" << std::endl;  // LEDT REMOVE!
 
   bool check_duplicates = true;
   try {
@@ -246,29 +242,23 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Create a mesh reader
   auto mesh_io = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
-  std::cout << "-->10c mpm_base" << std::endl;  // LEDT REMOVE!
 
   auto nodes_begin = std::chrono::steady_clock::now();
   // Global Index
   mpm::Index gid = 0;
   // Node type
   const auto node_type = mesh_props["node_type"].template get<std::string>();
-  std::cout << "-->10d mpm_base" << std::endl;  // LEDT REMOVE!
 
   // Mesh file
   std::string mesh_file =
       io_->file_name(mesh_props["mesh"].template get<std::string>());
 
-  std::cout << "-->10 mpm_base before read_mesh_nodes()"
-            << std::endl;  // LEDT REMOVE!
   // Create nodes from file
   bool node_status =
       mesh_->create_nodes(gid,                                  // global id
                           node_type,                            // node type
                           mesh_io->read_mesh_nodes(mesh_file),  // coordinates
                           check_duplicates);                    // check dups
-  std::cout << "-->11 mpm_base after read_mesh_nodes()"
-            << std::endl;  // LEDT REMOVE!
 
   if (!node_status)
     throw std::runtime_error(
@@ -309,7 +299,6 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign interface (includes multimaterial and levelset)
   this->interface_inputs(mesh_props, mesh_io);
-  std::cout << "-->5 ran interface_inputs()" << std::endl;  // LEDT REMOVE!
 
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();
@@ -518,7 +507,7 @@ void mpm::MPMBase<Tdim>::initialise_materials() {
           "insertion failed");
   }
   // Copy materials to mesh
-  mesh_->initialise_material_models(this->materials_);  // LEDT issue here?
+  mesh_->initialise_material_models(this->materials_);
 }
 
 //! Checkpoint resume
@@ -796,7 +785,7 @@ bool mpm::MPMBase<Tdim>::is_levelset() {
           mesh_props["interface"]["interface_type"].template get<std::string>();
       if (interface_type_ != "levelset") {
         levelset_active = false;
-        throw std::runtime_error("Levelset interface type not found in JSON");
+        throw std::runtime_error("Interface type is not levelset in JSON");
       }
     } else {
       levelset_active = false;
@@ -804,16 +793,9 @@ bool mpm::MPMBase<Tdim>::is_levelset() {
     }
 
   } catch (std::exception& exception) {
-    console_->warn("{} #{}: Interface is not active in mesh {}", __FILE__,
-                   __LINE__, exception.what());
+    console_->warn("{} #{}: Levelset interface is not active in mesh {}",
+                   __FILE__, __LINE__, exception.what());
   }
-
-  std::cout << "--> is_levelset() returns " << levelset_active
-            << std::endl;  // LEDT REMOVE!
-  std::cout << "--> is_levelset() interface_ " << interface_
-            << std::endl;  // LEDT REMOVE!
-  std::cout << "--> is_levelset() interface_type_ " << interface_type_
-            << std::endl;  // LEDT REMOVE!
 
   return levelset_active;
 }
@@ -1305,8 +1287,6 @@ void mpm::MPMBase<Tdim>::interface_inputs(
       // Get interface type
       this->interface_type_ =
           mesh_props["interface"]["interface_type"].template get<std::string>();
-      std::cout << "-->interface_inputs() interface_type_ " << interface_type_
-                << std::endl;  // LEDT REMOVE!
       if (interface_type_ == "levelset") {
         // Check if levelset inputs are specified in a file
         if (mesh_props["interface"].find("location") !=
@@ -1314,29 +1294,27 @@ void mpm::MPMBase<Tdim>::interface_inputs(
           // Retrieve the file name
           std::string levelset_input_file =
               mesh_props["interface"]["location"].template get<std::string>();
-          std::cout << "-->3 Found " << levelset_input_file
-                    << std::endl;  // LEDT REMOVE!
           // Retrieve levelset info from file
           bool levelset_info =
               mesh_->assign_nodal_levelset_values(mesh_io->read_levelset_input(
                   io_->file_name(levelset_input_file)));
-          std::cout << "-->4 Levelset_info created from file using "
-                       "assign_nodal_levelset_values"
-                    << std::endl;  // LEDT REMOVE!
           if (!levelset_info) {
             throw std::runtime_error(
                 "Levelset inputs are not properly assigned");
           }
         }
         // Check if levelset mp radius is specified
-        if (mesh_props["interface"].find("levelset_mp_radius") !=
-            mesh_props["interface"].end()) {
-          levelset_mp_radius_ = mesh_props["interface"]["levelset_mp_radius"]
-                                    .template get<double>();
-          std::cout << "-->interface_inputs() levelset_mp_radius_ "
-                    << levelset_mp_radius_ << std::endl;
-        } else {
-          throw std::runtime_error("Levelset mp radius is not specified");
+        try {
+          if (mesh_props["interface"].find("levelset_mp_radius") !=
+              mesh_props["interface"].end()) {
+            levelset_mp_radius_ = mesh_props["interface"]["levelset_mp_radius"]
+                                      .template get<double>();
+          } else {
+            throw std::runtime_error("Levelset mp radius JSON not found");
+          }
+        } catch (std::exception& exception) {
+          console_->error("#{}: Levelset mp radius is undefined {} ", __LINE__,
+                          exception.what());
         }
       } else if (interface_type_ == "multimaterial") {
         throw std::runtime_error(
@@ -1351,11 +1329,6 @@ void mpm::MPMBase<Tdim>::interface_inputs(
     console_->warn("#{}: Interface conditions are undefined {} ", __LINE__,
                    exception.what());
   }
-
-  std::cout << "-->interface_inputs() interface_ " << interface_
-            << std::endl;  // LEDT REMOVE!
-  std::cout << "-->interface_inputs() interface_type_ " << interface_type_
-            << std::endl;  // LEDT REMOVE!
 }
 
 // Nodal pressure constraints

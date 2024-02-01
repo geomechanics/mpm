@@ -1,11 +1,7 @@
 #ifndef MPM_MESH_LEVELSET_H_
 #define MPM_MESH_LEVELSET_H_
 
-#include <array>
-#include <limits>
-#include <memory>
 #include <string>
-#include <vector>
 
 #include "logger.h"
 #include "mesh.h"
@@ -68,7 +64,7 @@ class MeshLevelset : public Mesh<Tdim> {
   bool isoparametric_{true};
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
-  //! Vector of nodes // LEDT check if necessary
+  //! Vector of nodes
   using mpm::Mesh<Tdim>::nodes_;
   //! Map of nodes for fast retrieval
   using mpm::Mesh<Tdim>::map_nodes_;

@@ -569,7 +569,6 @@ class NodeBase {
     return false;
   };
 
-  // LEDT
   //! Return levelset value
   virtual double levelset() const {
     throw std::runtime_error(

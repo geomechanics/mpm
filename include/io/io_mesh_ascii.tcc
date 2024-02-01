@@ -1,5 +1,3 @@
-#include <iostream>  // LEDT REMOVE!
-
 //! Return coordinates of nodes in a mesh from input file
 template <unsigned Tdim>
 std::vector<Eigen::Matrix<double, Tdim, 1>>
@@ -8,17 +6,12 @@ std::vector<Eigen::Matrix<double, Tdim, 1>>
   std::vector<VectorDim> coordinates;
   coordinates.clear();
 
-  std::cout << "-->10.0 read_mesh_nodes()" << std::endl;  // LEDT REMOVE!
-
   // input file stream
   std::fstream file;
   file.open(mesh.c_str(), std::ios::in);
 
-  std::cout << "-->10.1 read_mesh_nodes()" << std::endl;  // LEDT REMOVE!
-
   try {
     if (file.is_open() && file.good()) {
-      std::cout << "-->10.2 read_mesh_nodes()" << std::endl;  // LEDT REMOVE!
       // Line
       std::string line;
       // bool to check firstline
@@ -31,7 +24,6 @@ std::vector<Eigen::Matrix<double, Tdim, 1>>
       unsigned nnodes = 0, ncells = 0;
       // ignore stream
       double ignore;
-      std::cout << "-->10.3 read_mesh_nodes()" << std::endl;  // LEDT REMOVE!
 
       while (std::getline(file, line)) {
         boost::algorithm::trim(line);
@@ -62,7 +54,6 @@ std::vector<Eigen::Matrix<double, Tdim, 1>>
           ++nlines;
         }
       }
-      std::cout << "-->10.4 read_mesh_nodes()" << std::endl;  // LEDT REMOVE!
     } else {
       throw std::runtime_error("File not open or not good!");
     }
@@ -71,8 +62,6 @@ std::vector<Eigen::Matrix<double, Tdim, 1>>
     console_->error("Read mesh nodes: {}", exception.what());
     file.close();
   }
-
-  std::cout << "-->10.5 read_mesh_nodes()" << std::endl;  // LEDT REMOVE!
 
   return coordinates;
 }

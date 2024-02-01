@@ -21,7 +21,6 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
       // Slip threshold
       double slip_threshold = std::get<4>(levelset_info);
 
-      // LEDT make assign_levelset run from subclass NodeLevelset
       if (map_nodes_.find(nid) != map_nodes_.end())
         status = map_nodes_[nid]->assign_levelset(
             levelset, levelset_mu, barrier_stiffness, slip_threshold);
@@ -44,7 +43,6 @@ void mpm::MeshLevelset<Tdim>::create_nodal_properties() {
 
   // Check if nodes_ and materials_is empty (if empty throw runtime error)
   if (nodes_.size() != 0 && materials_.size() != 0) {
-    std::cout << "-->6 running create_property" << std::endl;  // LEDT REMOVE!
     // Compute number of rows in nodal properties for vector entities
     const unsigned nrows = nodes_.size() * Tdim;
     // Create pool data for each property in the nodal properties struct
@@ -66,10 +64,7 @@ void mpm::MeshLevelset<Tdim>::create_nodal_properties() {
                                        materials_.size());
     nodal_properties_->create_property("density", nodes_.size(),
                                        materials_.size());
-
     // levelset properties
-    std::cout << "-->7 create_property non-levelset"
-              << std::endl;  // LEDT REMOVE!
     nodal_properties_->create_property("levelsets", nodes_.size(),
                                        materials_.size());
     nodal_properties_->create_property("levelset_mus", nodes_.size(),
@@ -80,7 +75,6 @@ void mpm::MeshLevelset<Tdim>::create_nodal_properties() {
                                        materials_.size());
     nodal_properties_->create_property("levelset_mp_radii", nodes_.size(),
                                        materials_.size());
-    std::cout << "-->8 create_property levelset" << std::endl;  // LEDT REMOVE!
 
     // Iterate over all nodes to initialise the property handle in each node
     // and assign its node id as the prop id in the nodal property data pool

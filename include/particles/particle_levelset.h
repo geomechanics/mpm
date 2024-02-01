@@ -1,13 +1,6 @@
 #ifndef MPM_PARTICLE_LEVELSET_H_
 #define MPM_PARTICLE_LEVELSET_H_
 
-#include <Eigen/Dense>  //LEDT added
-#include <array>
-#include <limits>
-#include <memory>
-#include <string>
-#include <vector>
-
 #include "logger.h"
 #include "particle.h"
 
@@ -43,9 +36,6 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleLevelset& operator=(const ParticleLevelset<Tdim>&) = delete;
 
-  // //! Initialise particle levelset properties // LEDT REMOVE
-  // void initialise() override;
-
   //! Assign nodal Levelset value to particles
   //! \param[in] dt Analysis time step
   //! \param[in] levelset_mp_radius mp radius of influence for contact
@@ -56,11 +46,10 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Compute Levelset contact force
   //! \param[in] dt Analysis time step
   //! \param[in] levelset Levelset value at the particle
-  //! \param[in] levelset_normal Normal vector towards the levelset //LEDT check
-  //! \param[in] levelset_mu Levelset friction
-  //! \param[in] barrier_stiffness Barrier stiffness
-  //! \param[in] slip_threshold Slip threshold
-  //! \param[in] levelset_mp_radius mp radius of influence for contact
+  //! \param[in] levelset_normal Normal vector towards the levelset
+  //! \param[in] levelset_mu Levelset friction \param[in]
+  //! barrier_stiffness Barrier stiffness \param[in] slip_threshold Slip
+  //! threshold \param[in] levelset_mp_radius mp radius of influence for contact
   VectorDim compute_levelset_contact_force(
       double levelset, const VectorDim& levelset_normal, double levelset_mu,
       double barrier_stiffness, double slip_threshold,
@@ -80,7 +69,7 @@ class ParticleLevelset : public Particle<Tdim> {
   //! slip threshold
   double slip_threshold{0.};
   //! cumulative slip magnitude
-  double cumulative_slip_mag{0.};
+  double cumulative_slip_mag{0.};  // LEDT check not reseting each step
   //! Nodes
   using Particle<Tdim>::nodes_;
   //! Cell

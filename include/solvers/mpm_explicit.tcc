@@ -30,20 +30,6 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
             << std::endl;  // LEDT REMOVE!
 }
 
-// //! Interface scheme //LEDT get from mpm.base
-// std::string get_interface_scheme(MPMBase& mpm_base) {
-//   if (this->interface_)
-//     if (this->interface_type_ == "multimaterial")
-//       contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
-//     else if (this->interface_type_ == "levelset")
-//       contact_ = std::make_shared<mpm::ContactLevelset<Tdim>>(mesh_);
-//     else  // default is "none"
-//       contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
-//   else
-//     contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
-//   return contact_;
-// };
-
 //! MPM Explicit solver
 template <unsigned Tdim>
 bool mpm::MPMExplicit<Tdim>::solve() {
@@ -79,9 +65,6 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
   // Pressure smoothing
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
-
-  // Interface
-  // interface_ = io_->analysis_bool("interface");  // LEDT remove
 
   // Initialise material
   this->initialise_materials();
@@ -166,8 +149,14 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
     // std::cout << "-->5" << std::endl;  // LEDT REMOVE!
-    // Map material properties to nodes
-    contact_->compute_contact_forces(dt_);  // LEDT check
+    // Contact forces at nodes
+    if (this->interface_type_ == "multimaterial")
+      contact_->compute_contact_forces();
+    else if (this->interface_type_ == "levelset")
+      // std::cout << "-->MPMExplicit levelset_mp_radius_ "
+      //           << this->levelset_mp_radius_ << std::endl;
+      contact_->compute_contact_forces(dt_, this->levelset_mp_radius_);
+    // LEDT check if cheaper way to do this than checking each step?
 
     // std::cout << "-->6" << std::endl;  // LEDT REMOVE!
     // Update stress first

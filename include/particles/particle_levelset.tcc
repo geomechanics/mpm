@@ -39,15 +39,17 @@ mpm::ParticleLevelset<Tdim>::ParticleLevelset(Index id, const VectorDim& coord,
 //! Map levelset contact force
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
-    double dt) {
+    double dt, const double levelset_mp_radius) {
   // std::cout << "-->5.1a" << std::endl;  // LEDT REMOVE!
   // Compute levelset values at particle
   double levelset = 0;
   double levelset_mu = 0;
   double barrier_stiffness = 0;
   double slip_threshold = 0;
-  double levelset_mp_radius = 0;
   VectorDim levelset_gradient = VectorDim::Zero();
+
+  // std::cout << "-->map_particle_contact_force_to_nodes() levelset_mp_radius "
+  //           << levelset_mp_radius << std::endl;  // LEDT REMOVE!
   // std::cout << "-->5.1b" << std::endl;  // LEDT REMOVE!
   // std::cout << "-->nodes_.size() " << nodes_.size() << std::endl;
   // LEDT REMOVE!
@@ -72,9 +74,6 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // std::cout << "-->ls3 " << nodes_[3]->levelset() << std::endl;  // LEDT
   // REMOVE!
 
-  // Get levelset mp radius from first node
-  levelset_mp_radius = nodes_[0]->levelset_mp_radius();
-
   for (unsigned i = 0; i < nodes_.size(); i++) {
     // for (unsigned i = 0; i < particles_.size(); i++) {
 
@@ -89,7 +88,6 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
     levelset_mu += shapefn_[i] * nodes_[i]->levelset_mu();
     barrier_stiffness += shapefn_[i] * nodes_[i]->barrier_stiffness();
     slip_threshold += shapefn_[i] * nodes_[i]->slip_threshold();
-    // levelset_mp_radius += shapefn_[i] * nodes_[i]->levelset_mp_radius();
     // std::cout << "-->5.1b4" << std::endl;  // LEDT REMOVE!
   }
   // std::cout << "-->5.1c" << std::endl;  // LEDT REMOVE!
@@ -119,7 +117,7 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
         double levelset, const VectorDim& levelset_normal, double levelset_mu,
         double barrier_stiffness, double slip_threshold,
-        double levelset_mp_radius, double dt) noexcept {
+        const double levelset_mp_radius, double dt) noexcept {
   // Coupling force zero by default
   VectorDim couple_force_ = VectorDim::Zero();
 

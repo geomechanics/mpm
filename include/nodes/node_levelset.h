@@ -39,10 +39,9 @@ class NodeLevelset : public Node<Tdim, Tdof, Tnphases> {
   //! \param[in] levelset_mu Levelset friction
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
-  //! \param[in] levelset_mp_radius mp radius of influence for contact
   bool assign_levelset(double levelset, double levelset_mu,
-                       double barrier_stiffness, double slip_threshold,
-                       double levelset_mp_radius) override;
+                       double barrier_stiffness,
+                       double slip_threshold) override;
 
   //! Return levelset value
   inline double levelset() const override { return levelset_; }
@@ -58,11 +57,6 @@ class NodeLevelset : public Node<Tdim, Tdof, Tnphases> {
   //! Return slip threshold
   inline double slip_threshold() const override { return slip_threshold_; }
 
-  //! Return levelset mp radius
-  inline double levelset_mp_radius() const override {
-    return levelset_mp_radius_;
-  }
-
  private:
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
@@ -74,8 +68,6 @@ class NodeLevelset : public Node<Tdim, Tdof, Tnphases> {
   double barrier_stiffness_;
   //! Slip threshold
   double slip_threshold_;
-  //! Levelset mp radius
-  double levelset_mp_radius_;
 
 };  // NodeLevelset class
 

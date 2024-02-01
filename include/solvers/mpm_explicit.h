@@ -87,6 +87,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::interface_;
   //! Interface type
   using mpm::MPMBase<Tdim>::interface_type_;
+  //! Levelset mp radius
+  using mpm::MPMBase<Tdim>::levelset_mp_radius_;
 
  private:
   //! Pressure smoothing

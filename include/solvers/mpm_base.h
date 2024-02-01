@@ -273,12 +273,12 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::MPMScheme<Tdim>> mpm_scheme_{nullptr};
   //! Interface scheme
   std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
-  //! Levelset object
-  std::shared_ptr<mpm::MeshLevelset<Tdim>> levelset_;  // LEDT REMOVE?
   //! Interface bool
   bool interface_{false};
   //! Interface type
   std::string interface_type_{"none"};
+  //! Levelset mp radius
+  double levelset_mp_radius_{0.};  // LEDT make sure error if this is <=0
   //! Velocity update method
   mpm::VelocityUpdate velocity_update_{mpm::VelocityUpdate::FLIP};
   //! FLIP-PIC blending ratio

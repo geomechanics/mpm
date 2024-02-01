@@ -1,8 +1,8 @@
 //! Assign mesh levelset values to nodes
 template <unsigned Tdim>
 bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
-    const std::vector<std::tuple<mpm::Index, double, double, double, double,
-                                 double>>& levelset_input_file) {
+    const std::vector<std::tuple<mpm::Index, double, double, double, double>>&
+        levelset_input_file) {
   bool status = true;
   try {
     if (!nodes_.size())
@@ -20,14 +20,11 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
       double barrier_stiffness = std::get<3>(levelset_info);
       // Slip threshold
       double slip_threshold = std::get<4>(levelset_info);
-      // Levelset mp radius
-      double levelset_mp_radius = std::get<5>(levelset_info);
 
       // LEDT make assign_levelset run from subclass NodeLevelset
       if (map_nodes_.find(nid) != map_nodes_.end())
         status = map_nodes_[nid]->assign_levelset(
-            levelset, levelset_mu, barrier_stiffness, slip_threshold,
-            levelset_mp_radius);
+            levelset, levelset_mu, barrier_stiffness, slip_threshold);
 
       if (!status)
         throw std::runtime_error("Cannot assign invalid nodal levelset values");

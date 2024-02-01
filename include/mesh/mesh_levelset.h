@@ -50,10 +50,9 @@ class MeshLevelset : public Mesh<Tdim> {
   //! \param[in] levelset_mu Levelset friction
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
-  //! \param[in] levelset_mp_radius mp radius of influence for contact
   bool assign_nodal_levelset_values(
-      const std::vector<std::tuple<mpm::Index, double, double, double, double,
-                                   double>>& levelset_input_file) override;
+      const std::vector<std::tuple<mpm::Index, double, double, double, double>>&
+          levelset_input_file) override;
 
   // Create the nodal properties' map
   void create_nodal_properties() override;
@@ -77,20 +76,6 @@ class MeshLevelset : public Mesh<Tdim> {
   using mpm::Mesh<Tdim>::materials_;
   //! Nodal property pool
   using mpm::Mesh<Tdim>::nodal_properties_;
-
-  // LEDT TEST ONLY
-  //   //! levelset value
-  //   double levelset{0.};
-  //   //! levelset friction
-  //   double levelset_mu{0.};
-  //   //! barrier stiffness
-  //   double barrier_stiffness{0.};
-  //   //! slip threshold
-  //   double slip_threshold{0.};
-  //   //! slip threshold
-  //   double levelset_mp_radius{0.};
-  //   //! cumulative slip magnitude
-  //   double cumulative_slip_mag{0.};
 
 };  // MeshLevelset class
 

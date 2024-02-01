@@ -1328,6 +1328,16 @@ void mpm::MPMBase<Tdim>::interface_inputs(
                 "Levelset inputs are not properly assigned");
           }
         }
+        // Check if levelset mp radius is specified
+        if (mesh_props["interface"].find("levelset_mp_radius") !=
+            mesh_props["interface"].end()) {
+          levelset_mp_radius_ = mesh_props["interface"]["levelset_mp_radius"]
+                                    .template get<double>();
+          std::cout << "-->interface_inputs() levelset_mp_radius_ "
+                    << levelset_mp_radius_ << std::endl;
+        } else {
+          throw std::runtime_error("Levelset mp radius is not specified");
+        }
       } else if (interface_type_ == "multimaterial") {
         throw std::runtime_error(
             "Multimaterial interface inputs not supported");

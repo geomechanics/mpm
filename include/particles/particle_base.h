@@ -436,7 +436,9 @@ class ParticleBase {
   //! Levelset functions--------------------------------------------------------
   //! Assign nodal Levelset value to particles
   //! \param[in] dt Analysis time step
-  virtual void map_particle_contact_force_to_nodes(double dt) {
+  //! \param[in] levelset_mp_radius mp radius of influence for contact
+  virtual void map_particle_contact_force_to_nodes(
+      double dt, const double levelset_mp_radius) {
     throw std::runtime_error(
         "Calling the base class function (map_particle_contact_force_to_nodes) "
         "in ParticleBase:: illegal operation!");

@@ -559,10 +559,9 @@ class NodeBase {
   //! \param[in] levelset_mu Levelset friction
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
-  //! \param[in] levelset_mp_radius mp radius of influence for contact
   virtual bool assign_levelset(double levelset, double levelset_mu,
-                               double barrier_stiffness, double slip_threshold,
-                               double levelset_mp_radius) {
+                               double barrier_stiffness,
+                               double slip_threshold) {
     throw std::runtime_error(
         "Calling the base class function "
         "(assign_levelset) in "
@@ -600,15 +599,6 @@ class NodeBase {
   virtual double slip_threshold() const {
     throw std::runtime_error(
         "Calling the base class function (slip_threshold) in NodeBase:: "
-        "illegal "
-        "operation!");
-    return 0.;
-  }
-
-  //! Return levelset mp radius
-  virtual double levelset_mp_radius() const {
-    throw std::runtime_error(
-        "Calling the base class function (levelset_mp_radius) in NodeBase:: "
         "illegal "
         "operation!");
     return 0.;

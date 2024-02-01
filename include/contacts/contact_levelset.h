@@ -21,7 +21,8 @@ class ContactLevelset : public Contact<Tdim> {
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
-  void compute_contact_forces(double dt) override;
+  void compute_contact_forces(double dt,
+                              const double levelset_mp_radius) override;
 
   //! Mesh levelset object
   std::shared_ptr<mpm::MeshLevelset<Tdim>> mesh_levelset_;

@@ -18,8 +18,11 @@ inline void mpm::ContactLevelset<Tdim>::initialise() {
 template <unsigned Tdim>
 inline void mpm::ContactLevelset<Tdim>::compute_contact_forces(double dt) {
 
+  // std::cout << "-->5.1" << std::endl;  // LEDT REMOVE!
+
   // Compute and map contact forces to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_particle_contact_force_to_nodes,
                 std::placeholders::_1, dt));
+  // std::cout << "-->5.2" << std::endl;  // LEDT REMOVE!
 }

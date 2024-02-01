@@ -15,11 +15,13 @@ class ContactFriction : public Contact<Tdim> {
   ContactFriction(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh);
 
   //! Intialize
-  virtual inline void initialise() override;
+  virtual inline void initialise() override;  // LEDT why virtual inline?
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
-  virtual inline void compute_contact_forces(double dt) override;
+  virtual inline void compute_contact_forces(double dt) override;  // LEDT why
+                                                                   // virtual
+                                                                   // inline?
 
  protected:
   //! Mesh object

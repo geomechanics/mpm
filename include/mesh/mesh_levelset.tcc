@@ -23,6 +23,7 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
       // Levelset mp radius
       double levelset_mp_radius = std::get<5>(levelset_info);
 
+      // LEDT make assign_levelset run from subclass NodeLevelset
       if (map_nodes_.find(nid) != map_nodes_.end())
         status = map_nodes_[nid]->assign_levelset(
             levelset, levelset_mu, barrier_stiffness, slip_threshold,
@@ -36,4 +37,60 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
     status = false;
   }
   return status;
+}
+
+// Create the nodal properties' map
+template <unsigned Tdim>
+void mpm::MeshLevelset<Tdim>::create_nodal_properties() {
+  // Initialise the shared pointer to nodal properties
+  nodal_properties_ = std::make_shared<mpm::NodalProperties>();
+
+  // Check if nodes_ and materials_is empty (if empty throw runtime error)
+  if (nodes_.size() != 0 && materials_.size() != 0) {
+    std::cout << "-->6 running create_property" << std::endl;  // LEDT REMOVE!
+    // Compute number of rows in nodal properties for vector entities
+    const unsigned nrows = nodes_.size() * Tdim;
+    // Create pool data for each property in the nodal properties struct
+    // object. Properties must be named in the plural form
+    nodal_properties_->create_property("masses", nodes_.size(),
+                                       materials_.size());
+    nodal_properties_->create_property("momenta", nrows, materials_.size());
+    nodal_properties_->create_property("change_in_momenta", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("displacements", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("separation_vectors", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("domain_gradients", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("normal_unit_vectors", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("wave_velocities", nrows,
+                                       materials_.size());
+    nodal_properties_->create_property("density", nodes_.size(),
+                                       materials_.size());
+
+    // levelset properties
+    std::cout << "-->7 create_property non-levelset"
+              << std::endl;  // LEDT REMOVE!
+    nodal_properties_->create_property("levelsets", nodes_.size(),
+                                       materials_.size());
+    nodal_properties_->create_property("levelset_mus", nodes_.size(),
+                                       materials_.size());
+    nodal_properties_->create_property("barrier_stiffnesses", nodes_.size(),
+                                       materials_.size());
+    nodal_properties_->create_property("slip_thresholds", nodes_.size(),
+                                       materials_.size());
+    nodal_properties_->create_property("levelset_mp_radii", nodes_.size(),
+                                       materials_.size());
+    std::cout << "-->8 create_property levelset" << std::endl;  // LEDT REMOVE!
+
+    // Iterate over all nodes to initialise the property handle in each node
+    // and assign its node id as the prop id in the nodal property data pool
+    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+      (*nitr)->initialise_property_handle((*nitr)->id(), nodal_properties_);
+  } else {
+    throw std::runtime_error(
+        "Number of nodes or number of materials is zero (levelset)");
+  }
 }

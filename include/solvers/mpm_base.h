@@ -274,7 +274,7 @@ class MPMBase : public MPM {
   //! Interface scheme
   std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
   //! Levelset object
-  std::shared_ptr<mpm::MeshLevelset<Tdim>> levelset_;
+  std::shared_ptr<mpm::MeshLevelset<Tdim>> levelset_;  // LEDT REMOVE?
   //! Interface bool
   bool interface_{false};
   //! Interface type

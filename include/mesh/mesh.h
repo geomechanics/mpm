@@ -534,7 +534,7 @@ class Mesh {
   void inject_particles(double current_time);
 
   // Create the nodal properties' map
-  void create_nodal_properties();
+  virtual void create_nodal_properties();
 
   // Initialise the nodal properties' map
   void initialise_nodal_properties();

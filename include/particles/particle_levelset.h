@@ -1,6 +1,7 @@
 #ifndef MPM_PARTICLE_LEVELSET_H_
 #define MPM_PARTICLE_LEVELSET_H_
 
+#include <Eigen/Dense>  //LEDT added
 #include <array>
 #include <limits>
 #include <memory>
@@ -22,8 +23,28 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
-  //! Initialise particle levelset properties
-  void initialise() override;
+  //! Construct a levelset particle with id and coordinates
+  //! \param[in] id Particle id
+  //! \param[in] coord Coordinates of the particles
+  ParticleLevelset(Index id, const VectorDim& coord);
+
+  //! Construct a levelset particle with id, coordinates and status
+  //! \param[in] id Particle id
+  //! \param[in] coord coordinates of the particle
+  //! \param[in] status Particle status (active / inactive)
+  ParticleLevelset(Index id, const VectorDim& coord, bool status);
+
+  //! Destructor
+  ~ParticleLevelset() override{};
+
+  //! Delete copy constructor
+  ParticleLevelset(const ParticleLevelset<Tdim>&) = delete;
+
+  //! Delete assignment operator
+  ParticleLevelset& operator=(const ParticleLevelset<Tdim>&) = delete;
+
+  // //! Initialise particle levelset properties // LEDT REMOVE
+  // void initialise() override;
 
   //! Assign nodal Levelset value to particles
   //! \param[in] dt Analysis time step
@@ -38,18 +59,18 @@ class ParticleLevelset : public Particle<Tdim> {
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
   //! \param[in] levelset_mp_radius mp radius of influence for contact
-  inline VectorDim compute_levelset_contact_force(
+  VectorDim compute_levelset_contact_force(
       double levelset, const VectorDim& levelset_normal, double levelset_mu,
       double barrier_stiffness, double slip_threshold,
       double levelset_mp_radius, double dt) noexcept;
 
  private:
+  //! Logger
+  std::unique_ptr<spdlog::logger> console_;
   //! coupling force
-  Eigen::Matrix<double, Tdim, 1> couple_force_{0.};
+  VectorDim couple_force_{VectorDim::Zero()};
   //! levelset value
   double levelset{0.};
-  //! levelset normal
-  const VectorDim& levelset_normal{0.};
   //! levelset friction
   double levelset_mu{0.};
   //! barrier stiffness
@@ -61,13 +82,15 @@ class ParticleLevelset : public Particle<Tdim> {
   //! cumulative slip magnitude
   double cumulative_slip_mag{0.};
   //! Nodes
-  using ParticleBase<Tdim>::nodes_;
+  using Particle<Tdim>::nodes_;
+  //! Cell
+  using Particle<Tdim>::cell_;
   //! Shape functions
-  Eigen::VectorXd shapefn_;  // LEDT check: node_shapefn was in particle.tcc
+  using Particle<Tdim>::shapefn_;
   //! dN/dX
-  Eigen::MatrixXd dn_dx_;
+  using Particle<Tdim>::dn_dx_;
   //! Velocity
-  Eigen::Matrix<double, Tdim, 1> velocity_;
+  using Particle<Tdim>::velocity_;
 
 };  // Particle_Levelset class
 

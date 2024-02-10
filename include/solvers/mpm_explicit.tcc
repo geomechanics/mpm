@@ -139,7 +139,6 @@ bool mpm::MPMExplicit<Tdim>::solve() {
       contact_->compute_contact_forces();
     else if (this->interface_type_ == "levelset")
       contact_->compute_contact_forces(dt_, this->levelset_mp_radius_);
-    // LEDT check if cheaper way to do this than checking each step?
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_,

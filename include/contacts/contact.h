@@ -22,8 +22,7 @@ class Contact {
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
-  virtual inline void compute_contact_forces(double dt,
-                                             const double levelset_mp_radius){};
+  virtual inline void compute_contact_forces(double dt){};
 
  protected:
   //! Mesh object

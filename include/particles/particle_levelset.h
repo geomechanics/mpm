@@ -38,9 +38,7 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Assign nodal Levelset value to particles
   //! \param[in] dt Analysis time step
-  //! \param[in] levelset_mp_radius mp radius of influence for contact
-  void map_particle_contact_force_to_nodes(
-      double dt, const double levelset_mp_radius) override;
+  void map_particle_contact_force_to_nodes(double dt) override;
 
   //! Return the approximate particle diameter
   double diameter() const override;
@@ -53,11 +51,11 @@ class ParticleLevelset : public Particle<Tdim> {
   //! \param[in] levelset_mu Levelset friction
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
-  //! \param[in] levelset_mp_radius mp radius of influence for contact
+  //! \param[in] mp_radius mp radius of influence for contact
   VectorDim compute_levelset_contact_force(
       double levelset, const VectorDim& levelset_normal, double levelset_mu,
-      double barrier_stiffness, double slip_threshold,
-      const double levelset_mp_radius, double dt) noexcept;
+      double barrier_stiffness, double slip_threshold, const double mp_radius,
+      double dt) noexcept;
 
  private:
   //! Logger

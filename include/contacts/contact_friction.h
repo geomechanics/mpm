@@ -20,6 +20,10 @@ class ContactFriction : public Contact<Tdim> {
   //! Compute contact forces
   void compute_contact_forces() override;
 
+  //! Compute contact forces
+  //! \param[in] dt Analysis time step
+  void compute_contact_forces(double dt) override;
+
  protected:
   //! Mesh object
   using mpm::Contact<Tdim>::mesh_;

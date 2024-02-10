@@ -45,7 +45,7 @@ double mpm::ParticleLevelset<Tdim>::diameter() const {
 //! Map levelset contact force
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
-    double dt, const double levelset_mp_radius) {
+    double dt) {
   // Compute levelset values at particle
   double levelset = 0;
   double levelset_mu = 0;
@@ -88,8 +88,8 @@ template <unsigned Tdim>
 typename mpm::ParticleLevelset<Tdim>::VectorDim
     mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
         double levelset, const VectorDim& levelset_normal, double levelset_mu,
-        double barrier_stiffness, double slip_threshold,
-        const double levelset_mp_radius, double dt) noexcept {
+        double barrier_stiffness, double slip_threshold, const double mp_radius,
+        double dt) noexcept {
   // Coupling force zero by default
   VectorDim couple_force_ = VectorDim::Zero();
 
@@ -98,12 +98,11 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     levelset = std::numeric_limits<double>::epsilon();
 
   // Calculate coupling force if levelset contacted
-  if ((levelset < levelset_mp_radius) && (levelset > 0.)) {
+  if ((levelset < mp_radius) && (levelset > 0.)) {
     // Calculate normal coupling force magnitude
-    double couple_force_normal_mag = barrier_stiffness *
-                                     (levelset - levelset_mp_radius) *
-                                     (2 * log(levelset / levelset_mp_radius) -
-                                      (levelset_mp_radius / levelset) + 1);
+    double couple_force_normal_mag =
+        barrier_stiffness * (levelset - mp_radius) *
+        (2 * log(levelset / mp_radius) - (mp_radius / levelset) + 1);
 
     // Calculate normal coupling force
     VectorDim couple_force_normal = couple_force_normal_mag * levelset_normal;

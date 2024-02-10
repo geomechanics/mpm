@@ -135,10 +135,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
     // Contact forces at nodes
-    if (this->interface_type_ == "multimaterial")
-      contact_->compute_contact_forces();
-    else if (this->interface_type_ == "levelset")
-      contact_->compute_contact_forces(dt_, this->levelset_mp_radius_);
+    contact_->compute_contact_forces(dt_);
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_,

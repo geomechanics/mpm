@@ -277,8 +277,6 @@ class MPMBase : public MPM {
   bool interface_{false};
   //! Interface type
   std::string interface_type_{"none"};
-  //! Levelset mp radius
-  double levelset_mp_radius_{0.};
   //! Velocity update method
   mpm::VelocityUpdate velocity_update_{mpm::VelocityUpdate::FLIP};
   //! FLIP-PIC blending ratio

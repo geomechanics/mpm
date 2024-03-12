@@ -113,9 +113,21 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     VectorDim tangent_calc = velocity_ - (vel_n * levelset_normal);
     VectorDim levelset_tangential = tangent_calc.normalized();
 
-    // Fix tangential direction if applicable // LEDT need to add 3D
+    // Fix tangential direction if applicable (special case)
     if ((Tdim == 2) && (velocity_[0] * levelset_tangential[0] < 0)) {
       levelset_tangential = -levelset_tangential;
+    }
+    if (Tdim == 3) {
+      double normal_y = levelset_normal[1];
+      double vel_y = velocity[1];
+
+      if ( ((normal_y > 0) && (vel_y > 0)) || ((normal_y < 0) && (vel_y < 0)) ) {
+        double angle_n = std::acos(abs(velocity_.dot(VectorDim(0,1,0))))
+        double angle_v = std::acos(abs(levelset_normal.dot(VectorDim(0,1,0))))
+        if (angle_v < angle_n) {
+          levelset_tangential = -levelset_tangential;
+        }
+      }
     }
 
     // Replace levelset_tangential if zero velocity
@@ -136,18 +148,6 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     VectorDim couple_force_tangential = -friction_smoothing * levelset_mu *
                                         couple_force_normal_mag *
                                         levelset_tangential;
-
-    // if (id_ == 0) {
-    //   std::cout << "levelset_normal: " << levelset_normal << std::endl;
-    //   // std::cout << "levelset_normal_mag: " << couple_force_normal_mag
-    //   //           << std::endl;
-    //   std::cout << "levelset_tangential: " << levelset_tangential <<
-    //   std::endl; std::cout << "couple_force_tangential: " <<
-    //   couple_force_tangential
-    //             << std::endl;
-    //   std::cout << "couple_force_normal: " << couple_force_normal <<
-    //   std::endl;
-    // }
 
     // Calculate total coupling force
     couple_force_ = couple_force_normal + couple_force_tangential;

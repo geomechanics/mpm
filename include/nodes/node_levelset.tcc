@@ -7,6 +7,8 @@ bool mpm::NodeLevelset<Tdim, Tdof, Tnphases>::assign_levelset(
   try {
     if (levelset_mu < 0.)
       throw std::runtime_error("Levelset mu cannot be negative");
+    if (slip_threshold == 0.)
+      slip_threshold = std::numeric_limits<double>::epsilon();  // LEDT check
     if ((barrier_stiffness <= 0.) || (slip_threshold <= 0.))
       throw std::runtime_error(
           "Barrier stiffness and slip threshold must be greater than zero");

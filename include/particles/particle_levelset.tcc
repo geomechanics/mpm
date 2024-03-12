@@ -99,6 +99,7 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
 
   // Calculate coupling force if levelset contacted
   if ((levelset < mp_radius) && (levelset > 0.)) {
+
     // Calculate normal coupling force magnitude
     double couple_force_normal_mag =
         barrier_stiffness * (levelset - mp_radius) *
@@ -109,19 +110,19 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
 
     // Calculate levelset_tangential for cumulative slip magnitude
     double vel_n = velocity_.dot(levelset_normal);
-    VectorDim levelset_tangential_expr = velocity_ - vel_n * levelset_normal;
-    VectorDim levelset_tangential_expr_norm =
-        levelset_tangential_expr.normalized();  // LEDT check normalize()
-    VectorDim levelset_tangential =
-        levelset_tangential_expr.cwiseQuotient(levelset_tangential_expr_norm);
-    // LEDT check cwiseQuotient()
+    VectorDim tangent_calc = velocity_ - (vel_n * levelset_normal);
+    VectorDim levelset_tangential = tangent_calc.normalized();
 
-    // Replace levelset_tangential if zero velocity
-    if (abs(vel_n) < std::numeric_limits<double>::epsilon()) {
-      levelset_tangential = VectorDim::Zero();
+    // Fix tangential direction if applicable // LEDT need to add 3D
+    if ((Tdim == 2) && (velocity_[0] * levelset_tangential[0] < 0)) {
+      levelset_tangential = -levelset_tangential;
     }
 
-    // Calculate cumulative slip magnitude
+    // Replace levelset_tangential if zero velocity
+    if (abs(vel_n) < std::numeric_limits<double>::epsilon())
+      levelset_tangential = VectorDim::Zero();
+
+    // Calculate cumulative slip magnitude // LEDT check: abs val? per-particle?
     cumulative_slip_mag += dt * velocity_.dot(levelset_tangential);
 
     // Calculate friction smoothing function
@@ -135,6 +136,18 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     VectorDim couple_force_tangential = -friction_smoothing * levelset_mu *
                                         couple_force_normal_mag *
                                         levelset_tangential;
+
+    // if (id_ == 0) {
+    //   std::cout << "levelset_normal: " << levelset_normal << std::endl;
+    //   // std::cout << "levelset_normal_mag: " << couple_force_normal_mag
+    //   //           << std::endl;
+    //   std::cout << "levelset_tangential: " << levelset_tangential <<
+    //   std::endl; std::cout << "couple_force_tangential: " <<
+    //   couple_force_tangential
+    //             << std::endl;
+    //   std::cout << "couple_force_normal: " << couple_force_normal <<
+    //   std::endl;
+    // }
 
     // Calculate total coupling force
     couple_force_ = couple_force_normal + couple_force_tangential;

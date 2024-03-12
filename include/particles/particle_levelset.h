@@ -2,7 +2,10 @@
 #define MPM_PARTICLE_LEVELSET_H_
 
 #include "logger.h"
+#include "math_utility.h"
 #include "particle.h"
+
+#include <cmath>
 
 namespace mpm {
 

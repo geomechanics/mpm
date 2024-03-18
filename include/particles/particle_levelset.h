@@ -85,6 +85,8 @@ class ParticleLevelset : public Particle<Tdim> {
   using Particle<Tdim>::dn_dx_;
   //! Velocity
   using Particle<Tdim>::velocity_;
+  //! Acceleration
+  using Particle<Tdim>::acceleration_;
   //! Volume
   using Particle<Tdim>::volume_;
   //! particleBase id

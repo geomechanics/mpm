@@ -38,7 +38,7 @@ template <unsigned Tdim>
 double mpm::ParticleLevelset<Tdim>::diameter() const {
   double diameter = 0.;
   if (Tdim == 2) diameter = 2.0 * std::sqrt(volume_ / M_PI);
-  if (Tdim == 3) diameter = 2.0 * std::pow(volume_ * 0.75 / M_PI, (1 / 3));
+  if (Tdim == 3) diameter = 2.0 * std::cbrt(volume_ * 0.75 / M_PI);
   return diameter;
 }
 
@@ -97,60 +97,48 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
   if (levelset < std::numeric_limits<double>::epsilon())
     levelset = std::numeric_limits<double>::epsilon();
 
-  // Calculate coupling force if levelset contacted
-  if ((levelset < mp_radius) && (levelset > 0.)) {
+  // Contact only if mp acceleration towards boundary
+  if ((acceleration_.dot(levelset_normal)) <= 0) {
 
-    // Calculate normal coupling force magnitude
-    double couple_force_normal_mag =
-        barrier_stiffness * (levelset - mp_radius) *
-        (2 * log(levelset / mp_radius) - (mp_radius / levelset) + 1);
+    // Contact only if mp within contact zone
+    if ((levelset < mp_radius) && (levelset > 0.)) {
 
-    // Calculate normal coupling force
-    VectorDim couple_force_normal = couple_force_normal_mag * levelset_normal;
+      // Calculate normal coupling force magnitude
+      double couple_force_normal_mag =
+          barrier_stiffness * (levelset - mp_radius) *
+          (2 * log(levelset / mp_radius) - (mp_radius / levelset) + 1);
 
-    // Calculate levelset_tangential for cumulative slip magnitude
-    double vel_n = velocity_.dot(levelset_normal);
-    VectorDim tangent_calc = velocity_ - (vel_n * levelset_normal);
-    VectorDim levelset_tangential = tangent_calc.normalized();
+      // Calculate normal coupling force
+      VectorDim couple_force_normal = couple_force_normal_mag * levelset_normal;
 
-    // Fix tangential direction if applicable (special case)
-    if ((Tdim == 2) && (velocity_[0] * levelset_tangential[0] < 0)) {
-      levelset_tangential = -levelset_tangential;
+      // Calculate levelset_tangential for cumulative slip magnitude
+      double vel_n = velocity_.dot(levelset_normal);
+      VectorDim tangent_calc = velocity_ - (vel_n * levelset_normal);
+      VectorDim levelset_tangential = tangent_calc.normalized();
+
+      // Replace levelset_tangential if zero velocity
+      if (abs(vel_n) < std::numeric_limits<double>::epsilon())
+        levelset_tangential = VectorDim::Zero();
+
+      // Calculate cumulative slip magnitude // LEDT check: abs val?
+      // per-particle?
+      cumulative_slip_mag += dt * velocity_.dot(levelset_tangential);
+
+      // Calculate friction smoothing function
+      double friction_smoothing = 1.0;
+      if (abs(cumulative_slip_mag) < slip_threshold)
+        friction_smoothing =
+            -(std::pow(cumulative_slip_mag, 2) / std::pow(slip_threshold, 2)) +
+            2 * abs(cumulative_slip_mag) / slip_threshold;
+
+      // Calculate tangential coupling force
+      VectorDim couple_force_tangential = -friction_smoothing * levelset_mu *
+                                          couple_force_normal_mag *
+                                          levelset_tangential;
+
+      // Calculate total coupling force
+      couple_force_ = couple_force_normal + couple_force_tangential;
     }
-    if (Tdim == 3) {
-      double normal_y = levelset_normal[1];
-      double vel_y = velocity[1];
-
-      if ( ((normal_y > 0) && (vel_y > 0)) || ((normal_y < 0) && (vel_y < 0)) ) {
-        double angle_n = std::acos(abs(velocity_.dot(VectorDim(0,1,0))))
-        double angle_v = std::acos(abs(levelset_normal.dot(VectorDim(0,1,0))))
-        if (angle_v < angle_n) {
-          levelset_tangential = -levelset_tangential;
-        }
-      }
-    }
-
-    // Replace levelset_tangential if zero velocity
-    if (abs(vel_n) < std::numeric_limits<double>::epsilon())
-      levelset_tangential = VectorDim::Zero();
-
-    // Calculate cumulative slip magnitude // LEDT check: abs val? per-particle?
-    cumulative_slip_mag += dt * velocity_.dot(levelset_tangential);
-
-    // Calculate friction smoothing function
-    double friction_smoothing = 1.0;
-    if (abs(cumulative_slip_mag) < slip_threshold)
-      friction_smoothing =
-          -(std::pow(cumulative_slip_mag, 2) / std::pow(slip_threshold, 2)) +
-          2 * abs(cumulative_slip_mag) / slip_threshold;
-
-    // Calculate tangential coupling force
-    VectorDim couple_force_tangential = -friction_smoothing * levelset_mu *
-                                        couple_force_normal_mag *
-                                        levelset_tangential;
-
-    // Calculate total coupling force
-    couple_force_ = couple_force_normal + couple_force_tangential;
   }
   return couple_force_;
 }

@@ -604,7 +604,7 @@ template <unsigned Tdim>
 double mpm::Particle<Tdim>::diameter() const {
   double diameter = 0.;
   if (Tdim == 2) diameter = 2.0 * std::sqrt(volume_ / M_PI);
-  if (Tdim == 3) diameter = 2.0 * std::pow(volume_ * 0.75 / M_PI, (1 / 3));
+  if (Tdim == 3) diameter = 2.0 * std::cbrt(volume_ * 0.75 / M_PI);
   return diameter;
 }
 

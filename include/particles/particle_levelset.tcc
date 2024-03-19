@@ -97,8 +97,8 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
   if (levelset < std::numeric_limits<double>::epsilon())
     levelset = std::numeric_limits<double>::epsilon();
 
-  // Contact only if mp acceleration towards boundary
-  if ((acceleration_.dot(levelset_normal)) <= 0) {
+  // Contact only if mp moving towards boundary
+  if ((velocity_.dot(levelset_normal)) <= 0) {
 
     // Contact only if mp within contact zone
     if ((levelset < mp_radius) && (levelset > 0.)) {

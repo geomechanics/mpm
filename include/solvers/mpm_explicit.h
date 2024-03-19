@@ -7,6 +7,8 @@
 
 #include "mpm_base.h"
 
+#include <string>
+
 namespace mpm {
 
 //! MPMExplicit class
@@ -81,13 +83,14 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
   //! Update deformation gradient
   using mpm::MPMBase<Tdim>::update_defgrad_;
+  //! Interface boolean
+  using mpm::MPMBase<Tdim>::interface_;
+  //! Interface type
+  using mpm::MPMBase<Tdim>::interface_type_;
 
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
-  //! Interface
-  bool interface_{false};
-
 };  // MPMExplicit class
 }  // namespace mpm
 

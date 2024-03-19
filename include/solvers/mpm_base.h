@@ -23,6 +23,7 @@
 #include "constraints.h"
 #include "contact.h"
 #include "contact_friction.h"
+#include "contact_levelset.h"
 #include "mpm.h"
 #include "mpm_scheme.h"
 #include "mpm_scheme_musl.h"
@@ -232,6 +233,16 @@ class MPMBase : public MPM {
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
   /**@}*/
 
+  /**
+   * \defgroup Interface Functions (includes multimaterial and levelset)
+   */
+  /**@{*/
+  //! \ingroup Interface
+  //! Return if interface and levelset are active
+  //! \retval levelset status of mesh
+  bool is_levelset();
+  /**@}*/
+
  protected:
   // Generate a unique id for the analysis
   using mpm::MPM::uuid_;
@@ -262,6 +273,10 @@ class MPMBase : public MPM {
   std::shared_ptr<mpm::MPMScheme<Tdim>> mpm_scheme_{nullptr};
   //! Interface scheme
   std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
+  //! Interface bool
+  bool interface_{false};
+  //! Interface type
+  std::string interface_type_{"none"};
   //! Velocity update method
   mpm::VelocityUpdate velocity_update_{mpm::VelocityUpdate::FLIP};
   //! FLIP-PIC blending ratio
@@ -303,6 +318,17 @@ class MPMBase : public MPM {
   unsigned cell_neighbourhood_{0};
   // Node neighbourhood: default 1 for linear element
   unsigned node_neighbourhood_{1};
+  /**@}*/
+
+  /**
+   * \defgroup Interface variables (includes multimaterial and levelset)
+   * @{
+   */
+  //! Nodal levelset inputs
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void interface_inputs(const Json& mesh_prop,
+                        const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
   /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING

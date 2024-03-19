@@ -369,6 +369,21 @@ class Mesh {
       const std::shared_ptr<FunctionBase>& mfunction, int set_id, unsigned dir,
       double force);
 
+  //! Assign nodal levelset values
+  //! \param[in] levelset Levelset value at the particle
+  //! \param[in] levelset_mu Levelset friction
+  //! \param[in] barrier_stiffness Barrier stiffness
+  //! \param[in] slip_threshold Slip threshold
+  virtual bool assign_nodal_levelset_values(
+      const std::vector<std::tuple<mpm::Index, double, double, double, double>>&
+          levelset_input_file) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(assign_nodal_levelset_values) in "
+        "Mesh:: illegal operation!");
+    return false;
+  };
+
   //! Assign particles stresses
   //! \param[in] particle_stresses Initial stresses of particle
   bool assign_particles_stresses(
@@ -518,7 +533,7 @@ class Mesh {
   void inject_particles(double current_time);
 
   // Create the nodal properties' map
-  void create_nodal_properties();
+  virtual void create_nodal_properties();
 
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
@@ -676,7 +691,7 @@ class Mesh {
   bool locate_particle_cells(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
 
- private:
+ protected:
   //! mesh id
   unsigned id_{std::numeric_limits<unsigned>::max()};
   //! Isoparametric mesh

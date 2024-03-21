@@ -380,6 +380,11 @@ class Mesh {
       const std::vector<Eigen::Matrix<double, 6, 1>>&
           particle_stresses_effective);
 
+  //! Assign particles pressure
+  //! \param[in] particle_pressures Pore pressure on particle
+  bool assign_particles_pressures(
+      const std::vector<std::tuple<mpm::Index, double>>& particle_pressures);
+
   //! Assign particles cells
   //! \param[in] particles_cells Particles and cells
   bool assign_particles_cells(

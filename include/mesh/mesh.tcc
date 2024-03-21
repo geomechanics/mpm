@@ -1551,6 +1551,35 @@ bool mpm::Mesh<Tdim>::assign_particles_stresses_effective(
   return status;
 }
 
+//! Assign particles pressures
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_pressures(
+    const std::vector<std::tuple<mpm::Index, double>>& particle_pressures) {
+  bool status = true;
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign volume");
+
+    for (const auto& particle_pressure : particle_pressures) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_pressure);
+      // Pressure
+      double pressure = std::get<1>(particle_pressure);
+
+      if (map_particles_.find(pid) != map_particles_.end())
+        map_particles_[pid]->assign_pressure(pressure);
+
+      if (!status)
+        throw std::runtime_error("Cannot assign invalid particle pressure");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Assign particle cells
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_particles_cells(

@@ -429,6 +429,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   // Read and assign particles effective stresses
   this->particles_stresses_effective(mesh_props, particle_io);
 
+  // Read and assign particles pressures (single phase)
+  this->particles_pressures(mesh_props, particle_io);
+
   // Read and assign particles initial pore pressure
   this->particles_pore_pressures(mesh_props, particle_io);
 
@@ -1565,6 +1568,31 @@ void mpm::MPMBase<Tdim>::particles_stresses_effective(
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle effective stresses are undefined {} ",
                    __LINE__, exception.what());
+  }
+}
+
+// Particles pressures
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_pressures(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("particles_pressures") != mesh_props.end()) {
+      std::string fparticles_pressures =
+          mesh_props["particles_pressures"].template get<std::string>();
+      if (!io_->file_name(fparticles_pressures).empty()) {
+        bool particles_pressures = mesh_->assign_particles_pressures(
+            particle_io->read_particles_volumes(
+                io_->file_name(fparticles_pressures)));
+        if (!particles_pressures)
+          throw std::runtime_error(
+              "Particles pressures are not properly assigned");
+      }
+    } else
+      throw std::runtime_error("Particle pressures JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle pressures are undefined {} ", __LINE__,
+                   exception.what());
   }
 }
 

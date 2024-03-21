@@ -37,12 +37,15 @@ class LinearElastic : public Material<Tdim> {
   //! Initialise history variables
   //! \retval state_vars State variables with history
   mpm::dense_map initialise_state_variables() override {
-    mpm::dense_map state_vars;
+    mpm::dense_map state_vars = {{"pressure", 0.}};
     return state_vars;
   }
 
   //! State variables
-  std::vector<std::string> state_variables() const override { return {}; }
+  std::vector<std::string> state_variables() const override {
+    const std::vector<std::string> state_vars = {"pressure"};
+    return state_vars;
+  }
 
   //! Compute stress
   //! \param[in] stress Stress

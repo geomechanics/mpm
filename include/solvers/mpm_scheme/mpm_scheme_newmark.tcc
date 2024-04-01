@@ -150,8 +150,10 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
     {
       // Spawn a task for internal force
       // Iterate over each particle to compute nodal internal force
-      mesh_->iterate_over_particles(std::bind(
-          &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
+      // Include particle-wise constant pore pressure (effective stress)
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::map_internal_force_pressure,
+                    std::placeholders::_1));
     }
   }  // Wait for tasks to finish
 }

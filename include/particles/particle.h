@@ -226,6 +226,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
+  //! Map internal force with constant pore pressure
+  inline void map_internal_force_pressure() noexcept override;
+
   //! Assign velocity to the particle
   //! \param[in] velocity A vector of particle velocity
   //! \retval status Assignment status

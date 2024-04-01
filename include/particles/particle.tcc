@@ -981,6 +981,72 @@ inline void mpm::Particle<3>::map_internal_force() noexcept {
   }
 }
 
+//! Map internal force with constant pore pressure
+template <>
+inline void mpm::Particle<1>::map_internal_force_pressure() noexcept {
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 1, 1> force;
+    force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
+
+    // Constant pore pressure is saved in particles as tension positive
+    const double p = this->pressure();
+    force[0] += -1 * dn_dx_(i, 0) * volume_ * p;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
+//! Map internal force with constant pore pressure
+template <>
+inline void mpm::Particle<2>::map_internal_force_pressure() noexcept {
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 2, 1> force;
+    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
+    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
+
+    // Constant pore pressure is saved in particles as tension positive
+    const double p = this->pressure();
+    force[0] += dn_dx_(i, 0) * p;
+    force[1] += dn_dx_(i, 1) * p;
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
+//! Map internal force with constant pore pressure
+template <>
+inline void mpm::Particle<3>::map_internal_force_pressure() noexcept {
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 3, 1> force;
+    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
+               dn_dx_(i, 2) * stress_[5];
+
+    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
+               dn_dx_(i, 2) * stress_[4];
+
+    force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
+               dn_dx_(i, 0) * stress_[5];
+
+    // Constant pore pressure is saved in particles as tension positive
+    const double p = this->pressure();
+    force[0] += dn_dx_(i, 0) * p;
+    force[1] += dn_dx_(i, 1) * p;
+    force[2] += dn_dx_(i, 2) * p;
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
 // Assign velocity to the particle
 template <unsigned Tdim>
 bool mpm::Particle<Tdim>::assign_velocity(

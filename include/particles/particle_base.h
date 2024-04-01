@@ -275,6 +275,9 @@ class ParticleBase {
   //! Map internal force
   virtual void map_internal_force() noexcept = 0;
 
+  //! Map internal force with constant pressure
+  virtual void map_internal_force_pressure() noexcept = 0;
+
   //! Map particle pressure to nodes
   virtual bool map_pressure_to_nodes(
       unsigned phase = mpm::ParticlePhase::Solid) noexcept = 0;

@@ -4,6 +4,7 @@
 #include <array>
 #include <exception>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <memory>
 #include <tuple>
@@ -97,6 +98,13 @@ class IOMesh {
   virtual void write_particles_cells(
       const std::string& particles_cells_file,
       const std::vector<std::array<mpm::Index, 2>>& particles_cells) = 0;
+
+  //! Write particles stresses file
+  //! \param[in] particles_stresses List of particles stresses
+  //! \param[in] particles_stresses_file file name with particle stresses
+  virtual void write_particles_stresses(
+      const std::string& particles_stresses_file,
+      const std::vector<std::array<double, 6>>& particles_stresses) = 0;
 
   //! Read velocity constraints file
   //! \param[in] velocity_constraints_file file name with constraints

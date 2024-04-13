@@ -1625,6 +1625,38 @@ std::vector<std::array<mpm::Index, 2>> mpm::Mesh<Tdim>::particles_cells()
   return particles_cells;
 }
 
+//! Return particle cells
+template <unsigned Tdim>
+std::vector<std::array<double, 6>> mpm::Mesh<Tdim>::particles_stresses(
+    bool effective) const {
+  std::vector<std::array<double, 6>> particles_stresses;
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot write stresses");
+    for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
+      // Get effective stress store in particle
+      const auto p_stresses = (*pitr)->stress();
+
+      // Get pore pressure sotre in particle (if total stress)
+      double pore_pressure = 0.;
+      if (!effective) pore_pressure = (*pitr)->pressure();
+
+      // Save stress
+      std::array<double, 6> particle_stresses;
+      for (int i = 0; i < 3; ++i) {
+        particle_stresses[i] = p_stresses(i) + pore_pressure;
+        particle_stresses[i + 3] = p_stresses(i + 3);
+      }
+      particles_stresses.emplace_back(particle_stresses);
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    particles_stresses.clear();
+  }
+  return particles_stresses;
+}
+
 //! Write particles to HDF5
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename) {

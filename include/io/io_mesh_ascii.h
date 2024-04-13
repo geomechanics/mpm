@@ -86,6 +86,13 @@ class IOMeshAscii : public IOMesh<Tdim> {
       const std::string& particles_cells_file,
       const std::vector<std::array<mpm::Index, 2>>& particles_cells) override;
 
+  //! Write particles cells file
+  //! \param[in] particles_stresses List of particles stresses
+  //! \param[in] particles_stresses_file file name with particle stresses
+  void write_particles_stresses(
+      const std::string& particles_stresses_file,
+      const std::vector<std::array<double, 6>>& particles_stresses) override;
+
   //! Read velocity constraints file
   //! \param[in] velocity_constraints_file file name with constraints
   std::vector<std::tuple<mpm::Index, unsigned, double>>

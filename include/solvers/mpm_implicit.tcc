@@ -252,6 +252,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
                      solver_end - solver_begin)
                      .count());
 
+  // Save total and effective stress
+  this->save_particles_stresses();
+
   return status;
 }
 

@@ -497,6 +497,32 @@ void mpm::IOMeshAscii<Tdim>::write_particles_cells(
   file.close();
 }
 
+//! Write particles stresses
+template <unsigned Tdim>
+void mpm::IOMeshAscii<Tdim>::write_particles_stresses(
+    const std::string& particles_stresses_file,
+    const std::vector<std::array<double, 6>>& particles_stresses) {
+
+  // Number of particles
+  const int nparticles = particles_stresses.size();
+
+  // output file stream
+  std::fstream file;
+  file.open(particles_stresses_file.c_str(), std::ios::out);
+
+  // Write header
+  file << nparticles << std::endl;
+  file << std::scientific << std::setprecision(10);
+
+  for (const auto& particle_stresses : particles_stresses) {
+    file << particle_stresses[0] << "\t" << particle_stresses[1] << "\t"
+         << particle_stresses[2] << "\t" << particle_stresses[3] << "\t"
+         << particle_stresses[4] << "\t" << particle_stresses[5] << "\n";
+  }
+
+  file.close();
+}
+
 //! Return velocity constraints of nodes or particles
 template <unsigned Tdim>
 std::vector<std::tuple<mpm::Index, unsigned, double>>

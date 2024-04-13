@@ -476,6 +476,28 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   }
 }
 
+// Initialise particles
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::save_particles_stresses() {
+  // Get mesh properties
+  auto mesh_props = io_->json_object("mesh");
+  // Get Mesh reader from JSON object
+  const std::string io_type = mesh_props["io_type"].template get<std::string>();
+  // Create a mesh reader
+  auto particle_io = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  // Write particles stresses to file
+  particle_io->write_particles_stresses(
+      io_->output_file("particles-stresses", ".txt", uuid_, 0, 0).string(),
+      mesh_->particles_stresses(false));
+
+  // Write particles stresses to file
+  particle_io->write_particles_stresses(
+      io_->output_file("particles-stresses-effective", ".txt", uuid_, 0, 0)
+          .string(),
+      mesh_->particles_stresses(true));
+}
+
 // Initialise materials
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_materials() {

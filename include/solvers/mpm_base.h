@@ -65,6 +65,9 @@ class MPMBase : public MPM {
   //! Initialise particles
   void initialise_particles() override;
 
+  //! Initialise particles
+  void save_particles_stresses() override;
+
   //! Initialise materials
   void initialise_materials() override;
 

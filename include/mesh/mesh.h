@@ -394,6 +394,11 @@ class Mesh {
   //! \retval particles_cells Particles and cells
   std::vector<std::array<mpm::Index, 2>> particles_cells() const;
 
+  //! Return particles stresses
+  //! \param[in] effective Effective stress or total stress
+  //! \retval particles_cells Particles and cells
+  std::vector<std::array<double, 6>> particles_stresses(bool effective) const;
+
   //! Return status of the mesh. A mesh is active, if at least one particle is
   //! present
   bool status() const { return particles_.size(); }

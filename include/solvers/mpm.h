@@ -49,6 +49,9 @@ class MPM {
   // Initialise particles
   virtual void initialise_particles() = 0;
 
+  // Save particles stresses
+  virtual void save_particles_stresses() = 0;
+
   // Initialise materials
   virtual void initialise_materials() = 0;
 

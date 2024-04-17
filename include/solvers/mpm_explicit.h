@@ -83,10 +83,16 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
   //! Update deformation gradient
   using mpm::MPMBase<Tdim>::update_defgrad_;
+
+  /**
+   * \defgroup Interface Variables (includes multimaterial and levelset)
+   * @{
+   */
   //! Interface boolean
   using mpm::MPMBase<Tdim>::interface_;
   //! Interface type
   using mpm::MPMBase<Tdim>::interface_type_;
+  /**@}*/
 
  private:
   //! Pressure smoothing

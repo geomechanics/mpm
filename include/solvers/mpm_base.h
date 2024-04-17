@@ -222,6 +222,24 @@ class MPMBase : public MPM {
   void initialise_particle_types();
 
   /**
+   * \defgroup Interface Functions (includes multimaterial and levelset)
+   */
+  /**@{*/
+  //! \ingroup Interface
+  //! Return if interface and levelset are active
+  //! \retval levelset status of mesh
+  bool is_levelset();
+
+  //! \ingroup Interface
+  //! Nodal levelset inputs
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void interface_inputs(const Json& mesh_prop,
+                        const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+
+  /**@}*/
+
+  /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
@@ -231,16 +249,6 @@ class MPMBase : public MPM {
   //! \param[in] mesh_io Mesh IO handle
   void nodal_displacement_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
-  /**@}*/
-
-  /**
-   * \defgroup Interface Functions (includes multimaterial and levelset)
-   */
-  /**@{*/
-  //! \ingroup Interface
-  //! Return if interface and levelset are active
-  //! \retval levelset status of mesh
-  bool is_levelset();
   /**@}*/
 
  protected:
@@ -271,12 +279,6 @@ class MPMBase : public MPM {
   std::string stress_update_{"usf"};
   //! Stress update scheme
   std::shared_ptr<mpm::MPMScheme<Tdim>> mpm_scheme_{nullptr};
-  //! Interface scheme
-  std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
-  //! Interface bool
-  bool interface_{false};
-  //! Interface type
-  std::string interface_type_{"none"};
   //! Velocity update method
   mpm::VelocityUpdate velocity_update_{mpm::VelocityUpdate::FLIP};
   //! FLIP-PIC blending ratio
@@ -311,6 +313,18 @@ class MPMBase : public MPM {
   bool update_defgrad_{false};
 
   /**
+   * \defgroup Interface Variables (includes multimaterial and levelset)
+   * @{
+   */
+  //! Interface scheme
+  std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
+  //! Interface bool
+  bool interface_{false};
+  //! Interface type
+  std::string interface_type_{"none"};
+  /**@}*/
+
+  /**
    * \defgroup Nonlocal Variables for nonlocal MPM
    * @{
    */
@@ -318,17 +332,6 @@ class MPMBase : public MPM {
   unsigned cell_neighbourhood_{0};
   // Node neighbourhood: default 1 for linear element
   unsigned node_neighbourhood_{1};
-  /**@}*/
-
-  /**
-   * \defgroup Interface variables (includes multimaterial and levelset)
-   * @{
-   */
-  //! Nodal levelset inputs
-  //! \param[in] mesh_prop Mesh properties
-  //! \param[in] mesh_io Mesh IO handle
-  void interface_inputs(const Json& mesh_prop,
-                        const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
   /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING

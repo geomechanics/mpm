@@ -54,10 +54,6 @@ class MeshLevelset : public Mesh<Tdim> {
   void create_nodal_properties() override;
 
  private:
-  //   //! mesh id
-  //   using mpm::Mesh<Tdim>::id_;
-  //   //! Isoparametric mesh
-  //   using mpm::Mesh<Tdim>::isoparametric_;
   //! mesh id
   unsigned id_{std::numeric_limits<unsigned>::max()};
   //! Isoparametric mesh

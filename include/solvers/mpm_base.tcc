@@ -13,9 +13,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   // Set mesh as isoparametric
   bool isoparametric = is_isoparametric();
 
-  // Construct mesh, use levelset mesh if interface and levelset active
-  bool levelset_active = is_levelset();
-  if (levelset_active) {
+  // Construct mesh, use levelset mesh if levelset active
+  if (is_levelset()) {
     mesh_ = std::make_shared<mpm::MeshLevelset<Tdim>>(id, isoparametric);
   } else {
     mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
@@ -1302,6 +1301,8 @@ void mpm::MPMBase<Tdim>::interface_inputs(
             throw std::runtime_error(
                 "Levelset inputs are not properly assigned");
           }
+        } else {
+          throw std::runtime_error("Levelset inputs JSON not found");
         }
       } else if (interface_type_ == "multimaterial") {
         throw std::runtime_error(

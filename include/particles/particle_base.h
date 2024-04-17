@@ -434,7 +434,7 @@ class ParticleBase {
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
 
   //! Levelset functions--------------------------------------------------------
-  //! Assign nodal Levelset value to particles
+  //! Assign nodal levelset value to particles
   //! \param[in] dt Analysis time step
   virtual void map_particle_contact_force_to_nodes(double dt) {
     throw std::runtime_error(

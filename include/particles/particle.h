@@ -232,21 +232,6 @@ class Particle : public ParticleBase<Tdim> {
     this->assign_state_variable("density", material_properties[2], phase);
     this->assign_state_variable("phi", material_properties[3], phase);
     this->assign_state_variable("cohesion", material_properties[4], phase);
-
-    std::cout
-        << "--> particle::material_properties_state() "
-           "v, E, G, kappa, rho, phi, c = "
-        << this->state_variable("poisson_ratio", mpm::ParticlePhase::Solid)
-        << ", "
-        << this->state_variable("youngs_modulus", mpm::ParticlePhase::Solid)
-        << ", "
-        << this->state_variable("shear_modulus", mpm::ParticlePhase::Solid)
-        << ", "
-        << this->state_variable("bulk_modulus", mpm::ParticlePhase::Solid)
-        << ", " << this->state_variable("density", mpm::ParticlePhase::Solid)
-        << ", " << this->state_variable("phi", mpm::ParticlePhase::Solid)
-        << ", " << this->state_variable("cohesion", mpm::ParticlePhase::Solid)
-        << std::endl;
   };
 
   //! Activate particle material properties from file

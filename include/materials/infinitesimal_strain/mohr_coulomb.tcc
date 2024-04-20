@@ -87,13 +87,6 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       {"theta", 0.},
       // Plastic deviatoric strain
       {"pdstrain", 0.}};
-  std::cout << "--> mohr_coulomb::initialise_state_variables() v, E, G, kappa, "
-               "rho, phi, c = "
-            << state_vars["poisson_ratio"] << ", "
-            << state_vars["youngs_modulus"] << ", "
-            << state_vars["shear_modulus"] << ", " << state_vars["bulk_modulus"]
-            << ", " << state_vars["density"] << ", " << state_vars["phi"]
-            << ", " << state_vars["cohesion"] << std::endl;
   return state_vars;
 }
 
@@ -506,8 +499,6 @@ Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_elastic_tensor(
   const double G = (*state_vars).at("shear_modulus");
   const double a1 = (*state_vars).at("bulk_modulus") + (4.0 / 3.0) * G;
   const double a2 = (*state_vars).at("bulk_modulus") - (2.0 / 3.0) * G;
-  std::cout << "--> mohr_coulomb::compute_elastic_tensor() G = " << G
-            << std::endl;
 
   // compute elastic stiffness matrix
   // clang-format off

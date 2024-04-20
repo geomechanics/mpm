@@ -257,6 +257,14 @@ class ParticleBase {
   //! Beginning stress
   virtual void beginning_stress(const Eigen::Matrix<double, 6, 1>&) = 0;
 
+  //! Material properties
+  virtual void material_properties_state(
+      const Eigen::Matrix<double, 5, 1>&,
+      unsigned phase = mpm::ParticlePhase::Solid) = 0;
+
+  //! Activate particle material properties from file
+  virtual void activate_particle_material_properties() = 0;
+
   //! Compute stress
   virtual void compute_stress(double dt) noexcept = 0;
 
@@ -633,6 +641,8 @@ class ParticleBase {
   std::vector<mpm::dense_map> state_variables_;
   //! Vector of particle neighbour ids
   std::vector<mpm::Index> neighbours_;
+  //! Particle material properties flag
+  bool particle_material_properties_bool_{false};
 };  // ParticleBase class
 }  // namespace mpm
 

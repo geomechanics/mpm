@@ -65,6 +65,9 @@ class MPMBase : public MPM {
   //! Initialise materials
   void initialise_materials() override;
 
+  //! Is particles material properties
+  bool is_particles_material_properties() override;
+
   //! Initialise loading
   void initialise_loads() override;
 
@@ -218,6 +221,13 @@ class MPMBase : public MPM {
       const Json& mesh_prop,
       const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  //! Particles material properties
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_material_properties(
+      const Json& mesh_prop,
+      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   // Particles pore pressures
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle
@@ -288,6 +298,8 @@ class MPMBase : public MPM {
   std::set<std::string> particle_types_;
   //! Materials
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
+  //! Particles material properties flag
+  bool particles_material_properties_bool{false};
   //! Mathematical functions
   std::map<unsigned, std::shared_ptr<mpm::FunctionBase>> math_functions_;
   //! VTK particle variables

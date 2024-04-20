@@ -397,6 +397,10 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   // Read and assign particles beginning stresses
   this->particles_stresses_beginning(mesh_props, particle_io);
 
+  // Read and assign particles material properties
+  if (is_particles_material_properties())
+    this->particles_material_properties(mesh_props, particle_io);
+
   // Read and assign particles initial pore pressure
   this->particles_pore_pressures(mesh_props, particle_io);
 
@@ -471,6 +475,83 @@ void mpm::MPMBase<Tdim>::initialise_materials() {
   }
   // Copy materials to mesh
   mesh_->initialise_material_models(this->materials_);
+}
+
+// Is particles material properties
+template <unsigned Tdim>
+bool mpm::MPMBase<Tdim>::is_particles_material_properties() {
+  bool particles_material_properties_bool = false;
+
+  // Get materials properties
+  auto materials = io_->json_object("materials");
+
+  for (const auto material_props : materials) {
+    if (material_props.find("file") != material_props.end()) {
+      particles_material_properties_bool = true;
+    }
+  }
+  return particles_material_properties_bool;
+}
+
+// Particles material properties
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_material_properties(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    // Get materials properties
+    auto materials = io_->json_object("materials");
+
+    // Get single material
+    if (materials.size() == 1) {
+      const auto& material_props = materials.front();
+
+      // Get material type
+      const std::string material_type =
+          material_props["type"].template get<std::string>();
+
+      // Get material id
+      auto material_id = material_props["id"].template get<unsigned>();
+
+      // Particle file inputs
+      if (material_props.find("file") != material_props.end()) {
+        std::string particles_materials_file =
+            material_props["file"].template get<std::string>();
+        if ((material_type == "MohrCoulomb2D") ||
+            (material_type == "MohrCoulomb3D")) {
+          if (!io_->file_name(particles_materials_file).empty()) {
+            // Get material properties of all particles
+            const auto particles_material_properties =
+                particle_io->read_particles_material_properties(
+                    io_->file_name(particles_materials_file));
+
+            // Read and assign particles stresses
+            if (!mesh_->assign_particles_material_properties(
+                    particles_material_properties)) {
+              throw std::runtime_error(
+                  "Particles material properties are not properly assigned");
+            }
+          } else {
+            throw std::runtime_error(
+                "Particles material properties file is empty");
+          }
+        } else {
+          throw std::runtime_error(
+              "Material type is not compatible with particle file input");
+        }
+      } else {
+        throw std::runtime_error(
+            "Particles material properties file not found");
+      }
+    } else {
+      throw std::runtime_error(
+          "Multiple materials not supported for particle material properties");
+    }
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle material properties are undefined {} ",
+                   __LINE__, exception.what());
+  }
 }
 
 //! Checkpoint resume

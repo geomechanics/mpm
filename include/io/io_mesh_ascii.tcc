@@ -254,6 +254,65 @@ std::vector<Eigen::Matrix<double, 6, 1>>
   return stresses;
 }
 
+//! Return stresses of particles
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, 5, 1>>
+    mpm::IOMeshAscii<Tdim>::read_particles_material_properties(
+        const std::string& particles_materials_file) {
+
+  // Particle material properties
+  std::vector<Eigen::Matrix<double, 5, 1>> material_properties;
+  material_properties.clear();
+
+  // Expected number of particles
+  mpm::Index nparticles;
+
+  // bool to check firstline
+  bool read_first_line = false;
+
+  // input file stream
+  std::fstream file;
+  file.open(particles_materials_file.c_str(), std::ios::in);
+
+  try {
+    if (file.is_open() && file.good()) {
+      // Line
+      std::string line;
+      while (std::getline(file, line)) {
+        boost::algorithm::trim(line);
+        std::istringstream istream(line);
+        // ignore comment lines (# or !) or blank lines
+        if ((line.find('#') == std::string::npos) &&
+            (line.find('!') == std::string::npos) && (line != "")) {
+          while (istream.good()) {
+            if (!read_first_line) {
+              // Read number of nodes and cells
+              istream >> nparticles;
+              material_properties.reserve(nparticles);
+              read_first_line = true;
+              break;
+            }
+            // State variables
+            Eigen::Matrix<double, 5, 1> state_vars;
+            // Read to state variables
+            for (unsigned i = 0; i < state_vars.size(); ++i)
+              istream >> state_vars[i];
+            material_properties.emplace_back(state_vars);
+            break;
+          }
+        }
+      }
+    } else {
+      throw std::runtime_error("File not open or not good!");
+    }
+    file.close();
+  } catch (std::exception& exception) {
+    console_->error("Read particle material properties: {}", exception.what());
+    file.close();
+  }
+  return material_properties;
+}
+
 //! Return particles scalar properties
 template <unsigned Tdim>
 std::vector<std::tuple<mpm::Index, double>>

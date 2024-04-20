@@ -57,6 +57,16 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       // MC parameters
       // Yield state: 0: elastic, 1: shear, 2: tensile
       {"yield_state", 0},
+      // Poisson ratio
+      {"poisson_ratio", this->poisson_ratio_},
+      // Young's modulus
+      {"youngs_modulus", this->youngs_modulus_},
+      // Shear modulus
+      {"shear_modulus", this->shear_modulus_},
+      // Bulk modulus
+      {"bulk_modulus", this->bulk_modulus_},
+      // Density
+      {"density", this->density_},
       // Friction (phi)
       {"phi", this->phi_peak_},
       // Dilation (psi)
@@ -77,15 +87,33 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       {"theta", 0.},
       // Plastic deviatoric strain
       {"pdstrain", 0.}};
+  std::cout << "--> mohr_coulomb::initialise_state_variables() v, E, G, kappa, "
+               "rho, phi, c = "
+            << state_vars["poisson_ratio"] << ", "
+            << state_vars["youngs_modulus"] << ", "
+            << state_vars["shear_modulus"] << ", " << state_vars["bulk_modulus"]
+            << ", " << state_vars["density"] << ", " << state_vars["phi"]
+            << ", " << state_vars["cohesion"] << std::endl;
   return state_vars;
 }
 
 //! Initialise state variables
 template <unsigned Tdim>
 std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
-  const std::vector<std::string> state_vars = {
-      "yield_state", "phi", "psi",   "cohesion", "tension_cutoff",
-      "epsilon",     "rho", "theta", "pdstrain"};
+  const std::vector<std::string> state_vars = {"yield_state",
+                                               "poisson_ratio",
+                                               "youngs_modulus",
+                                               "shear_modulus",
+                                               "bulk_modulus",
+                                               "density",
+                                               "phi",
+                                               "psi",
+                                               "cohesion",
+                                               "tension_cutoff",
+                                               "epsilon",
+                                               "rho",
+                                               "theta",
+                                               "pdstrain"};
   return state_vars;
 }
 
@@ -473,10 +501,14 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6> mpm::MohrCoulomb<Tdim>::compute_elastic_tensor(
     mpm::dense_map* state_vars) {
-  // Shear modulus
-  const double G = shear_modulus_;
-  const double a1 = bulk_modulus_ + (4.0 / 3.0) * G;
-  const double a2 = bulk_modulus_ - (2.0 / 3.0) * G;
+
+  // Shear modulus and bulk modulus
+  const double G = (*state_vars).at("shear_modulus");
+  const double a1 = (*state_vars).at("bulk_modulus") + (4.0 / 3.0) * G;
+  const double a2 = (*state_vars).at("bulk_modulus") - (2.0 / 3.0) * G;
+  std::cout << "--> mohr_coulomb::compute_elastic_tensor() G = " << G
+            << std::endl;
+
   // compute elastic stiffness matrix
   // clang-format off
   Matrix6x6 de = Matrix6x6::Zero();

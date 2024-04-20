@@ -1549,6 +1549,35 @@ bool mpm::Mesh<Tdim>::assign_particles_stresses_beginning(
   return status;
 }
 
+//! Assign particles material properties
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_material_properties(
+    const std::vector<Eigen::Matrix<double, 5, 1>>&
+        particles_material_properties) {
+  bool status = true;
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign material "
+          "properties");
+
+    if (particles_.size() != particles_material_properties.size())
+      throw std::runtime_error(
+          "Number of particles in mesh and materia; properties don't match");
+
+    unsigned i = 0;
+    for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
+      (*pitr)->material_properties_state(particles_material_properties.at(i));
+      (*pitr)->activate_particle_material_properties();
+      ++i;
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Assign particle blocks
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_particles_blocks(

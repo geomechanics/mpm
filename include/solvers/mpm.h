@@ -52,6 +52,9 @@ class MPM {
   // Initialise materials
   virtual void initialise_materials() = 0;
 
+  //! Is particles material properties
+  virtual bool is_particles_material_properties() = 0;
+
   // Initialise external loads
   virtual void initialise_loads() = 0;
 

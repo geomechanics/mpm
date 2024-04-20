@@ -212,6 +212,48 @@ class Particle : public ParticleBase<Tdim> {
     this->stress_beginning_ = stress;
   }
 
+  //! Material properties
+  //! \param[in] material_properties
+  //! \param[in] phase Index to indicate phase
+  void material_properties_state(
+      const Eigen::Matrix<double, 5, 1>& material_properties,
+      unsigned phase = mpm::ParticlePhase::Solid) override {
+    // Calculate elastic moduli
+    double poisson_ratio = material_properties[0];
+    double youngs_modulus = material_properties[1];
+    double bulk_modulus = youngs_modulus / (3.0 * (1. - 2. * poisson_ratio));
+    double shear_modulus = youngs_modulus / (2.0 * (1 + poisson_ratio));
+
+    // Assign state variables
+    this->assign_state_variable("poisson_ratio", poisson_ratio, phase);
+    this->assign_state_variable("youngs_modulus", youngs_modulus, phase);
+    this->assign_state_variable("shear_modulus", shear_modulus, phase);
+    this->assign_state_variable("bulk_modulus", bulk_modulus, phase);
+    this->assign_state_variable("density", material_properties[2], phase);
+    this->assign_state_variable("phi", material_properties[3], phase);
+    this->assign_state_variable("cohesion", material_properties[4], phase);
+
+    std::cout
+        << "--> particle::material_properties_state() "
+           "v, E, G, kappa, rho, phi, c = "
+        << this->state_variable("poisson_ratio", mpm::ParticlePhase::Solid)
+        << ", "
+        << this->state_variable("youngs_modulus", mpm::ParticlePhase::Solid)
+        << ", "
+        << this->state_variable("shear_modulus", mpm::ParticlePhase::Solid)
+        << ", "
+        << this->state_variable("bulk_modulus", mpm::ParticlePhase::Solid)
+        << ", " << this->state_variable("density", mpm::ParticlePhase::Solid)
+        << ", " << this->state_variable("phi", mpm::ParticlePhase::Solid)
+        << ", " << this->state_variable("cohesion", mpm::ParticlePhase::Solid)
+        << std::endl;
+  };
+
+  //! Activate particle material properties from file
+  void activate_particle_material_properties() override {
+    this->particle_material_properties_bool_ = true;
+  };
+
   //! Compute stress
   void compute_stress(double dt) noexcept override;
 
@@ -556,6 +598,8 @@ class Particle : public ParticleBase<Tdim> {
   using ParticleBase<Tdim>::state_variables_;
   //! Neighbour particles
   using ParticleBase<Tdim>::neighbours_;
+  //! Particle material properties flag
+  using ParticleBase<Tdim>::particle_material_properties_bool_;
   //! Volumetric mass density (mass / volume)
   double mass_density_{0.};
   //! Mass

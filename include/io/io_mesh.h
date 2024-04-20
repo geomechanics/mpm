@@ -64,6 +64,13 @@ class IOMesh {
   virtual std::vector<Eigen::Matrix<double, 6, 1>> read_particles_stresses(
       const std::string& particles_stresses) = 0;
 
+  //! Read particle material properties
+  //! \param[in] particles_materials_file file name with particle stresses
+  //! \retval stresses Vector of particle stresses
+  virtual std::vector<Eigen::Matrix<double, 5, 1>>
+      read_particles_material_properties(
+          const std::string& particles_materials_file) = 0;
+
   //! Read particle scalar properties
   //! \param[in] scalar_file file name with particle scalar properties
   //! \retval Vector of particles scalar properties

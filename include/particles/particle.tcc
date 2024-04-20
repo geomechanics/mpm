@@ -583,9 +583,20 @@ void mpm::Particle<Tdim>::compute_mass() noexcept {
   // Check if particle volume is set and material ptr is valid
   assert(volume_ != std::numeric_limits<double>::max() &&
          this->material() != nullptr);
+
+  // Get density from particle state variables if applicable
+  if (this->particle_material_properties_bool_) {
+    this->mass_density_ =
+        this->state_variable("density", mpm::ParticlePhase::Solid);
+    std::cout << "--> particle::compute_mass() rho = " << this->mass_density_
+              << std::endl;
+  } else {
+    this->mass_density_ =
+        (this->material())->template property<double>(std::string("density"));
+    std::cout << "--> particle::compute_mass() default" << std::endl;
+  }
+
   // Mass = volume of particle * mass_density
-  this->mass_density_ =
-      (this->material())->template property<double>(std::string("density"));
   this->mass_ = volume_ * mass_density_;
 }
 

@@ -279,9 +279,9 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
         (this->external_force_.col(phase) + this->internal_force_.col(phase)) /
         this->mass_(phase);
 
-    // Apply friction and cohesion constraints
+    // Apply friction and adhesion constraints
     this->apply_friction_constraints(dt);
-    this->apply_cohesion_constraints(dt);
+    this->apply_adhesion_constraints(dt);
 
     // Apply acceleration constraints
     this->apply_acceleration_constraints();
@@ -319,9 +319,9 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
                                 this->velocity_.col(phase).cwiseSign()) /
         this->mass_(phase);
 
-    // Apply friction and cohesion constraints
+    // Apply friction and adhesion constraints
     this->apply_friction_constraints(dt);
-    this->apply_cohesion_constraints(dt);
+    this->apply_adhesion_constraints(dt);
 
     // Apply acceleration constraints
     this->apply_acceleration_constraints();
@@ -656,11 +656,11 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_friction_constraints(double dt) {
   }
 }
 
-//! Assign cohesion constraint
+//! Assign adhesion constraint
 //! Constrain directions can take values between 0 and Dim * Nphases
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
-    unsigned dir, int sign_n, double cohesion, double h_min, int nposition) {
+bool mpm::Node<Tdim, Tdof, Tnphases>::assign_adhesion_constraint(
+    unsigned dir, int sign_n, double adhesion, double h_min, int nposition) {
   bool status = true;
   try {
     //! Constrain directions can take values between 0 and Dim * Nphases
@@ -678,7 +678,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
             nodal_area = h_min;
             break;
           default:
-            throw std::runtime_error("Invalid cohesion boundary nposition");
+            throw std::runtime_error("Invalid adhesion boundary nposition");
             break;
         }
       } else if (Tdim == 3) {  // STRUCTURED SQUARE HEXAHEDRONS
@@ -693,16 +693,16 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
             nodal_area = 4 * pow(0.5 * h_min, 2);
             break;
           default:
-            throw std::runtime_error("Invalid cohesion boundary nposition");
+            throw std::runtime_error("Invalid adhesion boundary nposition");
             break;
         }
       }
 
       // Assign to tuple
-      this->cohesion_constraint_ = std::make_tuple(
+      this->adhesion_constraint_ = std::make_tuple(
           static_cast<unsigned>(dir), static_cast<int>(sign_n),
-          static_cast<double>(cohesion), static_cast<double>(nodal_area));
-      this->cohesion_ = true;
+          static_cast<double>(adhesion), static_cast<double>(nodal_area));
+      this->adhesion_ = true;
     } else
       throw std::runtime_error("Constraint direction is out of bounds");
 
@@ -713,24 +713,24 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_cohesion_constraint(
   return status;
 }
 
-//! Apply cohesion constraints
+//! Apply adhesion constraints
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
-  if (cohesion_) {
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_adhesion_constraints(double dt) {
+  if (adhesion_) {
     auto sign = [](double value) { return (value > 0.) ? 1. : -1.; };
 
-    // Set cohesion constraint
+    // Set adhesion constraint
     // Direction value in the constraint (0, Dim)
-    const unsigned dir_n = std::get<0>(this->cohesion_constraint_);
+    const unsigned dir_n = std::get<0>(this->adhesion_constraint_);
 
-    // Sign of normal direction of cohesion
-    const double sign_n = sign(std::get<1>(this->cohesion_constraint_));
+    // Sign of normal direction of adhesion
+    const double sign_n = sign(std::get<1>(this->adhesion_constraint_));
 
-    // Cohesion or undrained shear strength
-    const double su = std::get<2>(this->cohesion_constraint_);
+    // Adhesion or undrained shear strength
+    const double alpha = std::get<2>(this->adhesion_constraint_);
 
     // Nodal area
-    const double nodal_area = std::get<3>(this->cohesion_constraint_);
+    const double nodal_area = std::get<3>(this->adhesion_constraint_);
 
     const unsigned phase = 0;
 
@@ -770,16 +770,16 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
       if ((acc_n * sign_n) > 0.0) {
         if (vel_t != 0.0) {  // kinetic
           const double vel_net = dt * acc_t + vel_t;
-          const double vel_cohesional = dt * su * nodal_area / mass_(phase);
-          if (std::abs(vel_net) <= vel_cohesional)
+          const double vel_adhesional = dt * alpha * nodal_area / mass_(phase);
+          if (std::abs(vel_net) <= vel_adhesional)
             acc_t = -vel_t / dt;
           else
-            acc_t -= sign(vel_net) * su * nodal_area / mass_(phase);
+            acc_t -= sign(vel_net) * alpha * nodal_area / mass_(phase);
         } else {  // static
-          if (std::abs(acc_t) <= su * nodal_area / mass_(phase))
+          if (std::abs(acc_t) <= alpha * nodal_area / mass_(phase))
             acc_t = 0.0;
           else
-            acc_t -= sign(acc_t) * su * nodal_area / mass_(phase);
+            acc_t -= sign(acc_t) * alpha * nodal_area / mass_(phase);
         }
 
         if (!generic_boundary_constraints_) {
@@ -832,33 +832,33 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_cohesion_constraints(double dt) {
         // kinetic
         if (vel_t != 0.0) {
           Eigen::Matrix<double, 2, 1> vel_net;
-          // cohesion is applied opposite to the vel_net
+          // adhesion is applied opposite to the vel_net
           vel_net(0) = vel(dir_t0) + acc(dir_t0) * dt;
           vel_net(1) = vel(dir_t1) + acc(dir_t1) * dt;
           const double vel_net_t = vel_net.norm();
-          const double vel_cohesion = dt * su * nodal_area / mass_(phase);
+          const double vel_adhesion = dt * alpha * nodal_area / mass_(phase);
 
-          if (vel_net_t <= vel_cohesion) {
+          if (vel_net_t <= vel_adhesion) {
             acc(dir_t0) = -vel(dir_t0) / dt;
             acc(dir_t1) = -vel(dir_t1) / dt;
           } else {
             acc(dir_t0) -=
-                (su * nodal_area / mass_(phase)) * (vel_net(0) / vel_net_t);
+                (alpha * nodal_area / mass_(phase)) * (vel_net(0) / vel_net_t);
             acc(dir_t1) -=
-                (su * nodal_area / mass_(phase)) * (vel_net(1) / vel_net_t);
+                (alpha * nodal_area / mass_(phase)) * (vel_net(1) / vel_net_t);
           }
         } else {
           // static
-          if (acc_t <= su * nodal_area / mass_(phase)) {
+          if (acc_t <= alpha * nodal_area / mass_(phase)) {
             // since acc_t is positive
             acc(dir_t0) = 0;
             acc(dir_t1) = 0;
           } else {
-            acc_t -= su * nodal_area / mass_(phase);
+            acc_t -= alpha * nodal_area / mass_(phase);
             acc(dir_t0) -=
-                (su * nodal_area / mass_(phase)) * (acc(dir_t0) / acc_t);
+                (alpha * nodal_area / mass_(phase)) * (acc(dir_t0) / acc_t);
             acc(dir_t1) -=
-                (su * nodal_area / mass_(phase)) * (acc(dir_t1) / acc_t);
+                (alpha * nodal_area / mass_(phase)) * (acc(dir_t1) / acc_t);
           }
         }
 

@@ -692,20 +692,20 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double>>
   return constraints;
 }
 
-//! Return cohesion constraints of particles
+//! Return adhesion constraints of particles
 template <unsigned Tdim>
 std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
-    mpm::IOMeshAscii<Tdim>::read_cohesion_constraints(
-        const std::string& cohesion_constraints_file) {
+    mpm::IOMeshAscii<Tdim>::read_adhesion_constraints(
+        const std::string& adhesion_constraints_file) {
 
-  // Nodal cohesion constraints
+  // Nodal adhesion constraints
   std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
       constraints;
   constraints.clear();
 
   // input file stream
   std::fstream file;
-  file.open(cohesion_constraints_file.c_str(), std::ios::in);
+  file.open(adhesion_constraints_file.c_str(), std::ios::in);
 
   try {
     if (file.is_open() && file.good()) {
@@ -723,17 +723,17 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
           unsigned dir;
           // Sign of normal direction
           int sign_n;
-          // Cohesion
-          double cohesion;
+          // Adhesion
+          double adhesion;
           // Cell height
           double h_min;
           // Node nposition
           int nposition = 0;
           while (istream.good()) {
             // Read stream
-            istream >> id >> dir >> sign_n >> cohesion >> h_min >> nposition;
+            istream >> id >> dir >> sign_n >> adhesion >> h_min >> nposition;
             constraints.emplace_back(
-                std::make_tuple(id, dir, sign_n, cohesion, h_min, nposition));
+                std::make_tuple(id, dir, sign_n, adhesion, h_min, nposition));
           }
         }
       }
@@ -742,7 +742,7 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
     }
     file.close();
   } catch (std::exception& exception) {
-    console_->error("Read cohesion constraints: {}", exception.what());
+    console_->error("Read adhesion constraints: {}", exception.what());
     file.close();
   }
   return constraints;

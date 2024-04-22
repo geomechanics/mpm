@@ -435,8 +435,8 @@ bool write_json_friction(unsigned dim, bool resume, const std::string& analysis,
   return true;
 }
 
-// Write JSON Configuration file for cohesion constraint
-bool write_json_cohesion(unsigned dim, bool resume, const std::string& analysis,
+// Write JSON Configuration file for adhesion constraint
+bool write_json_adhesion(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& file_name, const unsigned dir) {
   // Make json object with input files
   // 2D
@@ -472,11 +472,11 @@ bool write_json_cohesion(unsigned dim, bool resume, const std::string& analysis,
                       {"isoparametric", false},
                       {"node_type", node_type},
                       {"boundary_conditions",
-                       {{"cohesion_constraints",
+                       {{"adhesion_constraints",
                          {{{"nset_id", 1},
                            {"dir", dir},
                            {"sign_n", -1},
-                           {"cohesion", 100},
+                           {"adhesion", 100},
                            {"h_min", 0.25},
                            {"nposition", 3}}}}}},
                       {"cell_type", cell_type}}},

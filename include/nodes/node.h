@@ -252,19 +252,19 @@ class Node : public NodeBase<Tdim> {
   //! \param[in] dt Time-step
   void apply_friction_constraints(double dt) override;
 
-  //! Assign cohesion constraint
+  //! Assign adhesion constraint
   //! Directions can take values between 0 and Dim * Nphases
-  //! \param[in] dir Direction of cohesion constraint (normal)
-  //! \param[in] sign_n Sign of normal wrt coordinate system for cohesion
-  //! \param[in] cohesion Applied cohesion constraint
+  //! \param[in] dir Direction of adhesion constraint (normal)
+  //! \param[in] sign_n Sign of normal wrt coordinate system for adhesion
+  //! \param[in] adhesion Applied adhesion constraint
   //! \param[in] h_min Characteristic length (cell height)
   //! \param[in] nposition Nodal location, nposition, along boundary
-  bool assign_cohesion_constraint(unsigned dir, int sign_n, double cohesion,
+  bool assign_adhesion_constraint(unsigned dir, int sign_n, double adhesion,
                                   double h_min, int nposition) override;
 
-  //! Apply cohesion constraints
+  //! Apply adhesion constraints
   //! \param[in] dt Time-step
-  void apply_cohesion_constraints(double dt) override;
+  void apply_adhesion_constraints(double dt) override;
 
   //! Apply absorbing constraint
   //! \param[in] dir Direction of p-wave propagation in model
@@ -709,9 +709,9 @@ class Node : public NodeBase<Tdim> {
   //! Frictional constraints
   bool friction_{false};
   std::tuple<unsigned, int, double> friction_constraint_;
-  //! Cohesion constraints
-  bool cohesion_{false};
-  std::tuple<unsigned, int, double, double> cohesion_constraint_;
+  //! Adhesion constraints
+  bool adhesion_{false};
+  std::tuple<unsigned, int, double, double> adhesion_constraint_;
   //! Perfectly Matched Layer
   bool pml_{false};
   //! Mathematical function for pressure

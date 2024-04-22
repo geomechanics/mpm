@@ -158,10 +158,10 @@ class MPMBase : public MPM {
   void nodal_frictional_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
-  //! Nodal cohesional constraints
+  //! Nodal adhesional constraints
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] mesh_io Mesh IO handle
-  void nodal_cohesional_constraints(
+  void nodal_adhesional_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
   //! Nodal pressure constraints

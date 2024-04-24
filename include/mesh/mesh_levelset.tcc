@@ -1,8 +1,8 @@
 //! Assign mesh levelset values to nodes
 template <unsigned Tdim>
 bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
-    const std::vector<std::tuple<mpm::Index, double, double, double, double>>&
-        levelset_input_file) {
+    const std::vector<std::tuple<mpm::Index, double, double, double, double,
+                                 double>>& levelset_input_file) {
   bool status = true;
   try {
     if (!nodes_.size())
@@ -14,16 +14,19 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
       mpm::Index nid = std::get<0>(levelset_info);
       // Levelset
       double levelset = std::get<1>(levelset_info);
-      // Levelset mu
+      // Levelset friction
       double levelset_mu = std::get<2>(levelset_info);
+      // Levelset adhesion coefficient
+      double levelset_alpha = std::get<3>(levelset_info);
       // Barrier stiffness
-      double barrier_stiffness = std::get<3>(levelset_info);
+      double barrier_stiffness = std::get<4>(levelset_info);
       // Slip threshold
-      double slip_threshold = std::get<4>(levelset_info);
+      double slip_threshold = std::get<5>(levelset_info);
 
       if (map_nodes_.find(nid) != map_nodes_.end())
         status = map_nodes_[nid]->assign_levelset(
-            levelset, levelset_mu, barrier_stiffness, slip_threshold);
+            levelset, levelset_mu, levelset_alpha, barrier_stiffness,
+            slip_threshold);
 
       if (!status)
         throw std::runtime_error("Cannot assign invalid nodal levelset values");
@@ -68,6 +71,8 @@ void mpm::MeshLevelset<Tdim>::create_nodal_properties() {
     nodal_properties_->create_property("levelsets", nodes_.size(),
                                        materials_.size());
     nodal_properties_->create_property("levelset_mus", nodes_.size(),
+                                       materials_.size());
+    nodal_properties_->create_property("levelset_alphas", nodes_.size(),
                                        materials_.size());
     nodal_properties_->create_property("barrier_stiffnesses", nodes_.size(),
                                        materials_.size());

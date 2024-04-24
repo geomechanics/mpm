@@ -750,12 +750,12 @@ std::vector<std::tuple<mpm::Index, unsigned, int, double, double, int>>
 
 //! Return nodal levelset information
 template <unsigned Tdim>
-std::vector<std::tuple<mpm::Index, double, double, double, double>>
+std::vector<std::tuple<mpm::Index, double, double, double, double, double>>
     mpm::IOMeshAscii<Tdim>::read_levelset_input(
         const std::string& levelset_input_file) {
 
   // Nodal levelset information
-  std::vector<std::tuple<mpm::Index, double, double, double, double>>
+  std::vector<std::tuple<mpm::Index, double, double, double, double, double>>
       levelset_inputs;
   levelset_inputs.clear();
 
@@ -779,16 +779,19 @@ std::vector<std::tuple<mpm::Index, double, double, double, double>>
           double levelset;
           // Friction
           double levelset_mu;
+          // Adhesion coefficient
+          double levelset_alpha;
           // Barrier stiffness
           double barrier_stiffness;
           // Slip threshold
           double slip_threshold;
           while (istream.good()) {
             // Read stream
-            istream >> id >> levelset >> levelset_mu >> barrier_stiffness >>
-                slip_threshold;
-            levelset_inputs.emplace_back(std::make_tuple(
-                id, levelset, levelset_mu, barrier_stiffness, slip_threshold));
+            istream >> id >> levelset >> levelset_mu >> levelset_alpha >>
+                barrier_stiffness >> slip_threshold;
+            levelset_inputs.emplace_back(
+                std::make_tuple(id, levelset, levelset_mu, levelset_alpha,
+                                barrier_stiffness, slip_threshold));
           }
         }
       }

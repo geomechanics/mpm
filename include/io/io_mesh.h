@@ -125,7 +125,8 @@ class IOMesh {
 
   //! Read levelset file
   //! \param[in] levelset_input_file file name with levelset values
-  virtual std::vector<std::tuple<mpm::Index, double, double, double, double>>
+  virtual std::vector<
+      std::tuple<mpm::Index, double, double, double, double, double>>
       read_levelset_input(const std::string& levelset_input_file) = 0;
 
   //! Read forces file

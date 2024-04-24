@@ -37,10 +37,11 @@ class NodeLevelset : public Node<Tdim, Tdof, Tnphases> {
   // Assign levelset values to nodes
   //! \param[in] levelset Levelset value at the particle
   //! \param[in] levelset_mu Levelset friction
+  //! \param[in] levelset_alpha Levelset adhesion coefficient
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
   bool assign_levelset(double levelset, double levelset_mu,
-                       double barrier_stiffness,
+                       double levelset_alpha, double barrier_stiffness,
                        double slip_threshold) override;
 
   //! Return levelset value
@@ -48,6 +49,9 @@ class NodeLevelset : public Node<Tdim, Tdof, Tnphases> {
 
   //! Return levelset friction
   inline double levelset_mu() const override { return levelset_mu_; }
+
+  //! Return levelset adhesion coefficient
+  inline double levelset_alpha() const override { return levelset_alpha_; }
 
   //! Return barrier stiffness
   inline double barrier_stiffness() const override {
@@ -64,6 +68,8 @@ class NodeLevelset : public Node<Tdim, Tdof, Tnphases> {
   double levelset_;
   //! Levelset friction
   double levelset_mu_;
+  //! Levelset adhesion coefficient
+  double levelset_alpha_;
   //! Barrier stiffness
   double barrier_stiffness_;
   //! Slip threshold

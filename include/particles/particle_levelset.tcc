@@ -49,9 +49,11 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // Compute levelset values at particle
   double levelset = 0;
   double levelset_mu = 0;
+  double levelset_alpha = 0;
   double barrier_stiffness = 0;
   double slip_threshold = 0;
   VectorDim levelset_gradient = VectorDim::Zero();
+  VectorDim contact_vel = VectorDim::Zero();
 
   for (unsigned i = 0; i < nodes_.size(); i++) {
     // Map levelset and compute gradient
@@ -60,8 +62,13 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
 
     // Map other input variables
     levelset_mu += shapefn_[i] * nodes_[i]->levelset_mu();
+    levelset_alpha += shapefn_[i] * nodes_[i]->levelset_alpha();
     barrier_stiffness += shapefn_[i] * nodes_[i]->barrier_stiffness();
     slip_threshold += shapefn_[i] * nodes_[i]->slip_threshold();
+
+    // Map contact velocity from the nodes (PIC velocity)
+    contact_vel += shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+    // LEDT update phase?
   }
 
   // Compute normals // LEDT check this once separate meshes
@@ -73,8 +80,8 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
 
   // Compute contact force in particle
   VectorDim force = compute_levelset_contact_force(
-      levelset, levelset_normal, levelset_mu, barrier_stiffness, slip_threshold,
-      mp_radius, dt);
+      levelset, levelset_normal, levelset_mu, levelset_alpha, barrier_stiffness,
+      slip_threshold, mp_radius, contact_vel, dt);
 
   // Compute nodal contact force
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -88,41 +95,42 @@ template <unsigned Tdim>
 typename mpm::ParticleLevelset<Tdim>::VectorDim
     mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
         double levelset, const VectorDim& levelset_normal, double levelset_mu,
-        double barrier_stiffness, double slip_threshold, const double mp_radius,
+        double levelset_alpha, double barrier_stiffness, double slip_threshold,
+        const double mp_radius, const VectorDim& contact_vel,
         double dt) noexcept {
   // Coupling force zero by default
   VectorDim couple_force_ = VectorDim::Zero();
 
-  // Temporary computer error minimum value // LEDT check
+  // Computer error minimum value
   if (levelset < std::numeric_limits<double>::epsilon())
     levelset = std::numeric_limits<double>::epsilon();
 
   // Contact only if mp moving towards boundary
-  if ((velocity_.dot(levelset_normal)) <= 0) {
+  if ((contact_vel.dot(levelset_normal)) <= 0) {
 
     // Contact only if mp within contact zone
     if ((levelset < mp_radius) && (levelset > 0.)) {
 
       // Calculate normal coupling force magnitude
-      double couple_force_normal_mag =
+      double couple_normal_mag =
           barrier_stiffness * (levelset - mp_radius) *
           (2 * log(levelset / mp_radius) - (mp_radius / levelset) + 1);
 
       // Calculate normal coupling force
-      VectorDim couple_force_normal = couple_force_normal_mag * levelset_normal;
+      VectorDim couple_force_normal = couple_normal_mag * levelset_normal;
 
-      // Calculate levelset_tangential for cumulative slip magnitude
-      double vel_n = velocity_.dot(levelset_normal);
-      VectorDim tangent_calc = velocity_ - (vel_n * levelset_normal);
-      VectorDim levelset_tangential = tangent_calc.normalized();
+      // Calculate levelset tangential unit vector
+      double vel_n = contact_vel.dot(levelset_normal);
+      VectorDim tangent_calc = contact_vel - (vel_n * levelset_normal);
+      VectorDim levelset_tangent = tangent_calc.normalized();
 
-      // Replace levelset_tangential if zero velocity
+      // Replace levelset tangential if zero velocity
       if (abs(vel_n) < std::numeric_limits<double>::epsilon())
-        levelset_tangential = VectorDim::Zero();
+        levelset_tangent = VectorDim::Zero();
 
-      // Calculate cumulative slip magnitude // LEDT check: abs val?
-      // per-particle?
-      cumulative_slip_mag += dt * velocity_.dot(levelset_tangential);
+      // Calculate cumulative slip magnitude
+      cumulative_slip_mag += dt * contact_vel.dot(levelset_tangent);
+      // LEDT check: abs val? per-particle?
 
       // Calculate friction smoothing function
       double friction_smoothing = 1.0;
@@ -131,13 +139,34 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
             -(std::pow(cumulative_slip_mag, 2) / std::pow(slip_threshold, 2)) +
             2 * abs(cumulative_slip_mag) / slip_threshold;
 
-      // Calculate tangential coupling force
-      VectorDim couple_force_tangential = -friction_smoothing * levelset_mu *
-                                          couple_force_normal_mag *
-                                          levelset_tangential;
+      // Calculate friction tangential coupling force magnitude
+      double tangent_friction =
+          friction_smoothing * levelset_mu * couple_normal_mag;
 
-      // Calculate total coupling force
-      couple_force_ = couple_force_normal + couple_force_tangential;
+      // Calculate adhesion tangential coupling force magnitude
+      double contact_area = std::numeric_limits<double>::epsilon();
+      if (Tdim == 2) {
+        contact_area = 2 * mp_radius;  // influence is radius by unit thickness
+      } else if (Tdim == 3) {
+        contact_area = M_PI * std::pow(mp_radius, 2);  // radial influence
+      }
+      double tangent_adhesion = levelset_alpha * contact_area;
+
+      // Calculate tangential coupling force magntiude
+      double couple_tangent_mag = tangent_friction + tangent_adhesion;
+
+      // Calculate tangential contact force magnitude
+      double contact_tangent_mag =
+          (mass_ * contact_vel / dt).dot(levelset_tangent);
+
+      // Couple must not exceed cancellation of contact tangential force
+      couple_tangent_mag = std::min(couple_tangent_mag, contact_tangent_mag);
+
+      // Calculate tangential coupling force vector
+      VectorDim couple_force_tangent = -levelset_tangent * couple_tangent_mag;
+
+      // Calculate total coupling force vector
+      couple_force_ = couple_force_normal + couple_force_tangent;
     }
   }
   return couple_force_;

@@ -48,17 +48,19 @@ class ParticleLevelset : public Particle<Tdim> {
 
  private:
   //! Compute Levelset contact force
-  //! \param[in] dt Analysis time step
   //! \param[in] levelset Levelset value at the particle
   //! \param[in] levelset_normal Normal vector towards the levelset
   //! \param[in] levelset_mu Levelset friction
+  //! \param[in] levelset_alpha Levelset adhesion coefficient
   //! \param[in] barrier_stiffness Barrier stiffness
   //! \param[in] slip_threshold Slip threshold
   //! \param[in] mp_radius mp radius of influence for contact
+  //! \param[in] contact_vel Contact velocity from nodes (PIC)
+  //! \param[in] dt Analysis time step
   VectorDim compute_levelset_contact_force(
       double levelset, const VectorDim& levelset_normal, double levelset_mu,
-      double barrier_stiffness, double slip_threshold, const double mp_radius,
-      double dt) noexcept;
+      double levelset_alpha, double barrier_stiffness, double slip_threshold,
+      const double mp_radius, const VectorDim& contact_vel, double dt) noexcept;
 
  private:
   //! Logger
@@ -69,12 +71,16 @@ class ParticleLevelset : public Particle<Tdim> {
   double levelset{0.};
   //! levelset friction
   double levelset_mu{0.};
+  //! levelset adhesion coefficient
+  double levelset_alpha{0.};
   //! barrier stiffness
   double barrier_stiffness{0.};
   //! slip threshold
   double slip_threshold{0.};
   //! cumulative slip magnitude
   double cumulative_slip_mag{0.};  // LEDT check not reseting each step
+  //! contact velocity
+  VectorDim contact_vel{VectorDim::Zero()};
   //! Nodes
   using Particle<Tdim>::nodes_;
   //! Cell
@@ -85,10 +91,10 @@ class ParticleLevelset : public Particle<Tdim> {
   using Particle<Tdim>::dn_dx_;
   //! Velocity
   using Particle<Tdim>::velocity_;
-  //! Acceleration
-  using Particle<Tdim>::acceleration_;
   //! Volume
   using Particle<Tdim>::volume_;
+  //! Mass
+  using Particle<Tdim>::mass_;
   //! particleBase id
   using Particle<Tdim>::id_;
 

@@ -930,10 +930,14 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle->assign_volume(2.0) == true);
     // Check volume
     REQUIRE(particle->volume() == Approx(2.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(1.5957691).epsilon(Tolerance));
     // Compute volume
     REQUIRE_NOTHROW(particle->compute_volume());
     // Check volume
     REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(1.1283792).epsilon(Tolerance));
 
     // Check reference location
     coords << -0.5, -0.5;
@@ -2434,10 +2438,14 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle->assign_volume(2.0) == true);
     // Check volume
     REQUIRE(particle->volume() == Approx(2.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(1.5631853).epsilon(Tolerance));
     // Compute volume
     REQUIRE_NOTHROW(particle->compute_volume());
     // Check volume
     REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(2.4814020).epsilon(Tolerance));
 
     // Check reference location
     coords << 0.5, 0.5, 0.5;

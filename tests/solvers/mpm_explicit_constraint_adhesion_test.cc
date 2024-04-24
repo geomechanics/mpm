@@ -7,14 +7,14 @@ using Json = nlohmann::json;
 #include "mpm_explicit.h"
 #include "write_mesh_particles.h"
 
-// Check MPM Explicit Cohesion Constraint
-TEST_CASE("MPM 2D Explicit Cohesion Constraint is checked",
-          "[MPM][2D][Explicit][Cohesion]") {
+// Check MPM Explicit Adhesion Constraint
+TEST_CASE("MPM 2D Explicit Adhesion Constraint is checked",
+          "[MPM][2D][Explicit][Adhesion]") {
   // Dimension
   const unsigned Dim = 2;
 
   // Write JSON file
-  const std::string fname = "mpm-explicit-cohesion";
+  const std::string fname = "mpm-explicit-adhesion";
   const std::string analysis = "MPMExplicit2D";
 
   // Write JSON Entity Sets file
@@ -34,13 +34,13 @@ TEST_CASE("MPM 2D Explicit Cohesion Constraint is checked",
   // clang-format off
   char* argv[] = {(char*)"./mpm",
                   (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"mpm-explicit-cohesion-2d.json"};
+                  (char*)"-i",  (char*)"mpm-explicit-adhesion-2d.json"};
   // clang-format on
 
   SECTION("Check initialisation") {
     const bool resume = false;
     const unsigned dir = 1;
-    REQUIRE(mpm_test::write_json_cohesion(2, resume, analysis, fname, dir) ==
+    REQUIRE(mpm_test::write_json_adhesion(2, resume, analysis, fname, dir) ==
             true);
 
     // Create an IO object
@@ -74,14 +74,14 @@ TEST_CASE("MPM 2D Explicit Cohesion Constraint is checked",
   }
 }
 
-// Check MPM Explicit Cohesion Constraint
-TEST_CASE("MPM 3D Explicit Cohesion Constraint is checked",
-          "[MPM][3D][Explicit][Cohesion]") {
+// Check MPM Explicit Adhesion Constraint
+TEST_CASE("MPM 3D Explicit Adhesion Constraint is checked",
+          "[MPM][3D][Explicit][Adhesion]") {
   // Dimension
   const unsigned Dim = 3;
 
   // Write JSON file
-  const std::string fname = "mpm-explicit-cohesion";
+  const std::string fname = "mpm-explicit-adhesion";
   const std::string analysis = "MPMExplicit3D";
 
   // Write JSON Entity Sets file
@@ -101,13 +101,13 @@ TEST_CASE("MPM 3D Explicit Cohesion Constraint is checked",
   // clang-format off
   char* argv[] = {(char*)"./mpm",
                   (char*)"-f",  (char*)"./",
-                  (char*)"-i",  (char*)"mpm-explicit-cohesion-3d.json"};
+                  (char*)"-i",  (char*)"mpm-explicit-adhesion-3d.json"};
   // clang-format on
 
   SECTION("Check initialisation") {
     const bool resume = false;
     const unsigned dir = 1;
-    REQUIRE(mpm_test::write_json_cohesion(3, resume, analysis, fname, dir) ==
+    REQUIRE(mpm_test::write_json_adhesion(3, resume, analysis, fname, dir) ==
             true);
 
     // Create an IO object

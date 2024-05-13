@@ -95,6 +95,8 @@ class ParticleLevelset : public Particle<Tdim> {
   using Particle<Tdim>::volume_;
   //! Mass
   using Particle<Tdim>::mass_;
+  //! Size of particle
+  using Particle<Tdim>::size_;
   //! particleBase id
   using Particle<Tdim>::id_;
 

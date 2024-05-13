@@ -37,8 +37,7 @@ mpm::ParticleLevelset<Tdim>::ParticleLevelset(Index id, const VectorDim& coord,
 template <unsigned Tdim>
 double mpm::ParticleLevelset<Tdim>::diameter() const {
   double diameter = 0.;
-  if (Tdim == 2) diameter = std::sqrt(volume_);  // rectangular
-  // if (Tdim == 2) diameter = 2.0 * std::sqrt(volume_ / M_PI); // radial
+  if (Tdim == 2) diameter = 2.0 * std::sqrt(volume_ / M_PI);         // radial
   if (Tdim == 3) diameter = 2.0 * std::cbrt(volume_ * 0.75 / M_PI);  // radial
   return diameter;
 }
@@ -58,7 +57,7 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
 
   for (unsigned i = 0; i < nodes_.size(); i++) {
     // Map levelset and compute gradient
-    levelset += shapefn_[i] * nodes_[i]->levelset();  // LEDT TODO check!!
+    levelset += shapefn_[i] * nodes_[i]->levelset();
     levelset_gradient += dn_dx_.row(i).transpose() * nodes_[i]->levelset();
 
     // Map other input variables
@@ -74,9 +73,8 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // Compute normals // LEDT check this once separate meshes
   VectorDim levelset_normal = levelset_gradient.normalized();
 
-  // Get radius
-  const double mp_radius =
-      0.5 * diameter() + std::numeric_limits<double>::epsilon();
+  // Approximate radius of influence
+  double mp_radius = 0.5 * diameter();  // radial
 
   // Compute contact force in particle
   VectorDim force = compute_levelset_contact_force(
@@ -86,7 +84,7 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // Compute nodal contact force
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                     (shapefn_[i] * force));  // LEDT check!!
+                                     (shapefn_[i] * force));
   }
 }
 
@@ -106,26 +104,24 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     levelset = std::numeric_limits<double>::epsilon();
 
   // Contact only if mp within contact zone
-  double zone = mp_radius * 1.05;  // increase contact zone by 5%
-  if ((levelset < zone) && (levelset > 0.)) {
+  if ((levelset < mp_radius) && (levelset > 0.)) {
 
     // Calculate normal coupling force magnitude
     double couple_normal_mag =
         barrier_stiffness * (levelset - mp_radius) *
         (2 * log(levelset / mp_radius) - (mp_radius / levelset) + 1);
+    double normal_force = couple_normal_mag;
 
-    // Normal couple only if mp moving towards boundary
-    if ((contact_vel.dot(levelset_normal)) > 0) {
-      couple_normal_mag = 0;
-    }
+    // Apply normal couple only if mp moving towards boundary
+    if ((contact_vel.dot(levelset_normal)) > 0) couple_normal_mag = 0;
 
     // Calculate normal coupling force
     VectorDim couple_force_normal = couple_normal_mag * levelset_normal;
 
     // Calculate levelset tangential unit vector
+    VectorDim levelset_tangent = VectorDim::Zero();
     double vel_n = contact_vel.dot(levelset_normal);
     VectorDim tangent_calc = contact_vel - (vel_n * levelset_normal);
-    VectorDim levelset_tangent = VectorDim::Zero();
     if (tangent_calc.norm() > std::numeric_limits<double>::epsilon())
       levelset_tangent = tangent_calc.normalized();
 
@@ -141,17 +137,10 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
           2 * abs(cumulative_slip_mag) / slip_threshold;
 
     // Calculate friction tangential coupling force magnitude
-    double tangent_friction =
-        friction_smoothing * levelset_mu * couple_normal_mag;
+    double tangent_friction = friction_smoothing * levelset_mu * normal_force;
 
     // Calculate adhesion tangential coupling force magnitude
-    double contact_area = std::numeric_limits<double>::epsilon();
-    if (Tdim == 2) {
-      contact_area = 2 * mp_radius;  // rectangular
-      // contact_area = M_PI * std::pow(mp_radius, 2);  // radial
-    } else if (Tdim == 3) {
-      contact_area = M_PI * std::pow(mp_radius, 2);  // radial
-    }
+    double contact_area = volume_ / size_[0];
     double tangent_adhesion = levelset_alpha * contact_area;
 
     // Calculate tangential coupling force magntiude

@@ -125,16 +125,18 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     if (tangent_calc.norm() > std::numeric_limits<double>::epsilon())
       levelset_tangent = tangent_calc.normalized();
 
-    // Calculate cumulative slip magnitude
-    cumulative_slip_mag += dt * contact_vel.dot(levelset_tangent);
-    // LEDT check: abs val? per-particle?
-
-    // Calculate friction smoothing function
+    // Apply friction smoothing function, if applicable
     double friction_smoothing = 1.0;
-    if (abs(cumulative_slip_mag) < slip_threshold)
-      friction_smoothing =
-          -(std::pow(cumulative_slip_mag, 2) / std::pow(slip_threshold, 2)) +
-          2 * abs(cumulative_slip_mag) / slip_threshold;
+    if (slip_threshold > 0.) {
+      // Calculate cumulative slip magnitude // LEDT check: abs val? per-MP?
+      cumulative_slip_mag += dt * contact_vel.dot(levelset_tangent);
+      // Calculate friction smoothing
+      if (abs(cumulative_slip_mag) < slip_threshold) {
+        friction_smoothing =
+            -(std::pow(cumulative_slip_mag, 2) / std::pow(slip_threshold, 2)) +
+            2 * abs(cumulative_slip_mag) / slip_threshold;
+      }
+    }
 
     // Calculate friction tangential coupling force magnitude
     double tangent_friction = friction_smoothing * levelset_mu * normal_force;

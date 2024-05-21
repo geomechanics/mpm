@@ -15,10 +15,14 @@ class ContactFriction : public Contact<Tdim> {
   ContactFriction(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh);
 
   //! Intialize
-  virtual inline void initialise() override;
+  void initialise() override;
 
   //! Compute contact forces
-  virtual inline void compute_contact_forces() override;
+  void compute_contact_forces() override;
+
+  //! Compute contact forces
+  //! \param[in] dt Analysis time step
+  void compute_contact_forces(double dt) override;
 
  protected:
   //! Mesh object

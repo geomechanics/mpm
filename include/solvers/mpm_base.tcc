@@ -13,12 +13,17 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   // Set mesh as isoparametric
   bool isoparametric = is_isoparametric();
 
-  mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
+  // Construct mesh, use levelset mesh if levelset active
+  if (is_levelset()) {
+    mesh_ = std::make_shared<mpm::MeshLevelset<Tdim>>(id, isoparametric);
+  } else {
+    mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
+  }
 
   // Create constraints
   constraints_ = std::make_shared<mpm::Constraints<Tdim>>(mesh_);
 
-  // Empty all materials
+  // Empty all materSials
   materials_.clear();
 
   // Variable list
@@ -290,6 +295,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign absorbing constraintes
   this->nodal_absorbing_constraints(mesh_props, mesh_io);
+
+  // Read and assign interface (includes multimaterial and levelset)
+  this->interface_inputs(mesh_props, mesh_io);
 
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();
@@ -761,6 +769,34 @@ bool mpm::MPMBase<Tdim>::is_isoparametric() {
     isoparametric = true;
   }
   return isoparametric;
+}
+
+//! Return if interface and levelset are active
+template <unsigned Tdim>
+bool mpm::MPMBase<Tdim>::is_levelset() {
+  bool levelset_active = true;
+
+  try {
+    const auto mesh_props = io_->json_object("mesh");
+    if (mesh_props.find("interface") != mesh_props.end()) {
+      this->interface_ = true;
+      this->interface_type_ =
+          mesh_props["interface"]["interface_type"].template get<std::string>();
+      if (interface_type_ != "levelset") {
+        levelset_active = false;
+        throw std::runtime_error("Interface type is not levelset in JSON");
+      }
+    } else {
+      levelset_active = false;
+      throw std::runtime_error("Interface is not found in JSON");
+    }
+
+  } catch (std::exception& exception) {
+    console_->warn("{} #{}: Levelset interface is not active in mesh {}",
+                   __FILE__, __LINE__, exception.what());
+  }
+
+  return levelset_active;
 }
 
 //! Initialise loads
@@ -1239,6 +1275,50 @@ void mpm::MPMBase<Tdim>::nodal_adhesional_constraints(
   }
 }
 
+// Interface inputs (includes multimaterial and levelset)
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::interface_inputs(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign interface inputs
+    if (mesh_props.find("interface") != mesh_props.end()) {
+      this->interface_ = true;
+      // Get interface type
+      this->interface_type_ =
+          mesh_props["interface"]["interface_type"].template get<std::string>();
+      if (interface_type_ == "levelset") {
+        // Check if levelset inputs are specified in a file
+        if (mesh_props["interface"].find("location") !=
+            mesh_props["interface"].end()) {
+          // Retrieve the file name
+          std::string levelset_input_file =
+              mesh_props["interface"]["location"].template get<std::string>();
+          // Retrieve levelset info from file
+          bool levelset_info =
+              mesh_->assign_nodal_levelset_values(mesh_io->read_levelset_input(
+                  io_->file_name(levelset_input_file)));
+          if (!levelset_info) {
+            throw std::runtime_error(
+                "Levelset inputs are not properly assigned");
+          }
+        } else {
+          throw std::runtime_error("Levelset inputs JSON not found");
+        }
+      } else if (interface_type_ == "multimaterial") {
+        throw std::runtime_error(
+            "Multimaterial interface inputs not supported");
+      } else {
+        throw std::runtime_error("Interface type not supported");
+      }
+    } else {
+      throw std::runtime_error("Interface inputs JSON not found");
+    }
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Interface conditions are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
 // Nodal pressure constraints
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::nodal_pressure_constraints(
@@ -1551,7 +1631,7 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
         if (!io_->file_name(fparticles_pore_pressures).empty()) {
           // Read and assign particles pore pressures
           if (!mesh_->assign_particles_pore_pressures(
-                  particle_io->read_particles_scalar_properties(
+                  particle_io->read_scalar_properties(
                       io_->file_name(fparticles_pore_pressures))))
             throw std::runtime_error(
                 "Particles pore pressures are not properly assigned");

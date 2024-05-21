@@ -20,6 +20,10 @@ class Contact {
   //! Compute contact forces
   virtual inline void compute_contact_forces(){};
 
+  //! Compute contact forces
+  //! \param[in] dt Analysis time step
+  virtual inline void compute_contact_forces(double dt){};
+
  protected:
   //! Mesh object
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;

@@ -1790,6 +1790,13 @@ void mpm::MPMBase<Tdim>::particles_pml_properties(
 
       // Activate PML boundary boolean
       this->pml_boundary_ = true;
+
+      // Distinguish PML TYPE
+      const std::string pml_type =
+          mesh_props["particles_pml_distance_functions"]["pml_type"]
+              .template get<std::string>();
+      this->pml_type_ = (pml_type == "split");
+
     } else
       throw std::runtime_error("Particle PML distance function JSON not found");
 

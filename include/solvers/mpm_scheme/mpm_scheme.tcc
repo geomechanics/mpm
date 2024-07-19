@@ -192,7 +192,8 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 
 // Assign PML Boundary Properties
 template <unsigned Tdim>
-inline void mpm::MPMScheme<Tdim>::initialise_pml_boundary_properties() {
+inline void mpm::MPMScheme<Tdim>::initialise_pml_boundary_properties(
+    const bool& pml_type) {
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
 
@@ -204,7 +205,7 @@ inline void mpm::MPMScheme<Tdim>::initialise_pml_boundary_properties() {
   // Recompute velocity for PML nodes
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::compute_pml_velocity,
-                std::placeholders::_1),
+                std::placeholders::_1, pml_type),
       std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
 }
 

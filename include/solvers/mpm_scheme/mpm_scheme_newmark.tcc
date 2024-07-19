@@ -189,8 +189,9 @@ template <unsigned Tdim>
 inline void
     mpm::MPMSchemeNewmark<Tdim>::update_particle_stress_strain_volume() {
   // Iterate over each particle to update particle stress and strain
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::update_stress_strain,
+                std::placeholders::_1, dt_));
 }
 
 //! Postcompute nodal kinematics - map mass and momentum to nodes
@@ -206,7 +207,8 @@ inline std::string mpm::MPMSchemeNewmark<Tdim>::scheme() const {
 
 // Assign PML Boundary Properties
 template <unsigned Tdim>
-inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties() {
+inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties(
+    const bool& pml_type) {
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
 
@@ -218,6 +220,6 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties() {
   // Recompute velocity for PML nodes
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::compute_pml_velocity_acceleration,
-                std::placeholders::_1),
+                std::placeholders::_1, pml_type),
       std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
 }

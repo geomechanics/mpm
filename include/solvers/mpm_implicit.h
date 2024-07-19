@@ -123,6 +123,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::update_defgrad_;
   //! Perfectly Matched Layer Boundary
   using mpm::MPMBase<Tdim>::pml_boundary_;
+  //! Perfectly Matched Layer Boundary Type
+  using mpm::MPMBase<Tdim>::pml_type_;
   //! Pressure smoothing
   bool pressure_smoothing_{false};
 

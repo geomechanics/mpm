@@ -217,7 +217,7 @@ inline Eigen::Matrix<double, 6, 1>
 
 // Update stress and strain after convergence of Newton-Raphson iteration
 template <unsigned Tdim>
-void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain() noexcept {
+void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain(double dt) noexcept {
   // Update converged stress
   this->stress_ =
       (this->material())

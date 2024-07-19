@@ -337,7 +337,7 @@ void mpm::Particle<Tdim>::compute_updated_position_newmark(double dt) noexcept {
 
 // Update stress and strain after convergence of Newton-Raphson iteration
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::update_stress_strain() noexcept {
+void mpm::Particle<Tdim>::update_stress_strain(double dt) noexcept {
   // Update converged stress
   this->stress_ =
       (this->material())

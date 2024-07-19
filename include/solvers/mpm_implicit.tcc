@@ -147,21 +147,19 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   }
 
   // Create nodal properties
-  if (pml_boundary_) mesh_->create_nodal_properties_pml();
+  if (pml_boundary_) mesh_->create_nodal_properties_pml(pml_type_);
 
   // Initialise loading conditions
   this->initialise_loads();
 
   // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
-
   // Initialise matrix
   bool matrix_status = this->initialise_matrix();
   if (!matrix_status) {
     status = false;
     throw std::runtime_error("Initialisation of matrix failed");
   }
-
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
   for (; step_ < nsteps_; ++step_) {
@@ -177,20 +175,16 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
     // Inject particles
     mesh_->inject_particles(step_ * dt_);
-
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
-
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
-
     // Apply PML specific routines
-    if (pml_boundary_) mpm_scheme_->initialise_pml_boundary_properties();
-
+    if (pml_boundary_)
+      mpm_scheme_->initialise_pml_boundary_properties(pml_type_);
     // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
                                                  newmark_gamma_, pml_boundary_);
-
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
     if (!matrix_reinitialization_status) {
@@ -401,7 +395,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
                                 set_node_concentrated_force_, quasi_static_);
 
     // Add rayleigh damping to stiffness matrix and force
-    if (pml_boundary_ && damping_type_ == mpm::Damping::Rayleigh) {
+    if (pml_boundary_) {
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::map_rayleigh_damping_matrix_to_cell,
           std::placeholders::_1, newmark_gamma_, newmark_beta_, dt_,
@@ -410,7 +404,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
       // Iterate over each particle to compute nodal internal force
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::map_rayleigh_damping_force,
-                    std::placeholders::_1, damping_factor_));
+                    std::placeholders::_1, damping_factor_, dt_));
     }
 
     // Assemble global stiffness matrix

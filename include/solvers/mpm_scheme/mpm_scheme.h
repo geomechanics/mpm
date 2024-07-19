@@ -66,7 +66,7 @@ class MPMScheme {
   virtual inline void absorbing_boundary_properties();
 
   //! Assign relevant properties for perfectly matched layer boundary
-  virtual inline void initialise_pml_boundary_properties();
+  virtual inline void initialise_pml_boundary_properties(const bool& pml_type);
 
   //! Finalise perfectly matched layer boundary
   virtual inline void finalise_pml_boundary_properties();

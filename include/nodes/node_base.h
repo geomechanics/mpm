@@ -333,11 +333,11 @@ class NodeBase {
   virtual void assign_pml(bool pml) = 0;
 
   //! Compute velocity from the momentum and damped mass vector for PML nodes
-  virtual void compute_pml_velocity() = 0;
+  virtual void compute_pml_velocity(const bool& pml_type) = 0;
 
   //! Compute velocity and acceleration from the momentum, inertia and damped
   //! mass vector for PML nodes
-  virtual void compute_pml_velocity_acceleration() = 0;
+  virtual void compute_pml_velocity_acceleration(const bool& pml_type) = 0;
 
   //! Return previous displacement of pml nodes
   //! \ingroup PML
@@ -354,7 +354,7 @@ class NodeBase {
 
   //! Apply pml displacement constraints
   //! \ingroup PML
-  virtual void apply_pml_displacement_constraints() = 0;
+  virtual void apply_pml_displacement_constraints(const bool&) = 0;
 
   //! Compute acceleration and velocity with cundall damping factor considering
   //! damped mass vector for PML nodes

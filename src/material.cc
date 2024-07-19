@@ -7,6 +7,7 @@
 #include "mohr_coulomb.h"
 #include "newtonian.h"
 #include "norsand.h"
+#include "pml_unsplit.h"
 
 // Bingham 2D
 static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
@@ -33,6 +34,14 @@ static Register<mpm::Material<2>, mpm::LinearElasticPML<2>, unsigned,
 static Register<mpm::Material<3>, mpm::LinearElasticPML<3>, unsigned,
                 const Json&>
     linear_elastic_pml_3d("LinearElasticPML3D");
+
+// LinearElastic for Perfectly Matched Layer 2D
+static Register<mpm::Material<2>, mpm::UnsplitPML<2>, unsigned, const Json&>
+    unsplit_pml_2d("UnsplitPML2D");
+
+// LinearElastic for Perfectly Matched Layer 3D
+static Register<mpm::Material<3>, mpm::UnsplitPML<3>, unsigned, const Json&>
+    unsplit_pml_3d("UnsplitPML3D");
 
 // ModifiedCamClay 2D
 static Register<mpm::Material<2>, mpm::ModifiedCamClay<2>, unsigned,

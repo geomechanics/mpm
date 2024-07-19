@@ -52,19 +52,19 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Map particle mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
-  void map_mass_momentum_to_nodes(
+  virtual void map_mass_momentum_to_nodes(
       mpm::VelocityUpdate velocity_update =
           mpm::VelocityUpdate::FLIP) noexcept override;
 
-  // ! Map damped mass vector to nodes
-  void map_pml_properties_to_nodes() noexcept override;
+  //! Map damped mass vector to nodes
+  virtual void map_pml_properties_to_nodes() noexcept override;
 
   // ! Finalise pml properties
   void finalise_pml_properties(double dt) noexcept override;
 
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
-  void map_body_force(const VectorDim& pgravity) noexcept override;
+  virtual void map_body_force(const VectorDim& pgravity) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -72,14 +72,14 @@ class ParticlePML : public mpm::Particle<Tdim> {
   /**@{*/
   //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
-  void map_mass_momentum_inertia_to_nodes() noexcept override;
+  virtual void map_mass_momentum_inertia_to_nodes() noexcept override;
 
   //! Map inertial force
   //! \ingroup Implicit
-  void map_inertial_force() noexcept override;
+  virtual void map_inertial_force() noexcept override;
 
   //! Map internal force
-  void map_internal_force(double dt) noexcept override;
+  virtual void map_internal_force(double dt) noexcept override;
 
   /**@}*/
 
@@ -91,18 +91,21 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] dt time step
-  inline bool map_material_stiffness_matrix_to_cell(double dt) override;
+  virtual inline bool map_material_stiffness_matrix_to_cell(double dt) override;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt time step
-  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
+  virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
+                                              double dt) override;
 
   //! Map PML rayleigh damping force
   //! \ingroup Implicit
   //! \param[in] damping_factor Rayleigh damping factor
-  void map_rayleigh_damping_force(double damping_factor) noexcept override;
+  //! \param[in] dt parameter beta of Newmark scheme
+  virtual void map_rayleigh_damping_force(double damping_factor,
+                                          double dt) noexcept override;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)
@@ -111,7 +114,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter beta of Newmark scheme
   //! \param[in] damping_factor Rayleigh damping factor
-  inline bool map_rayleigh_damping_matrix_to_cell(
+  virtual inline bool map_rayleigh_damping_matrix_to_cell(
       double newmark_gamma, double newmark_beta, double dt,
       double damping_factor) override;
   /**@}*/
@@ -123,25 +126,25 @@ class ParticlePML : public mpm::Particle<Tdim> {
   /**@{*/
   //! Map particle mass and momentum to nodes for affine transformation
   //! \ingroup AdvancedMapping
-  void map_mass_momentum_to_nodes_affine() noexcept override;
+  virtual void map_mass_momentum_to_nodes_affine() noexcept override;
 
   //! Map particle mass and momentum to nodes for approximate taylor expansion
   //! \ingroup AdvancedMapping
-  void map_mass_momentum_to_nodes_taylor() noexcept override;
+  virtual void map_mass_momentum_to_nodes_taylor() noexcept override;
 
   /**@}*/
 
   //! Function to recompute particle damping functions
-  void compute_damping_functions(mpm::dense_map& state_vars) noexcept;
+  virtual void compute_damping_functions(mpm::dense_map& state_vars) noexcept;
 
   //! Function to return mass damping functions
   VectorDim mass_damping_functions() const noexcept;
 
   //! Compute PML stiffness matrix
-  inline Eigen::MatrixXd compute_pml_stiffness_matrix() noexcept;
+  virtual inline Eigen::MatrixXd compute_pml_stiffness_matrix() noexcept;
 
   //! Function to update displacement functions
-  void update_pml_displacement_functions(double dt) noexcept;
+  virtual void update_pml_properties(double dt) noexcept;
 
  protected:
   //! particle id

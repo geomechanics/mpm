@@ -246,7 +246,7 @@ void mpm::ParticlePML<Tdim>::map_pml_properties_to_nodes() noexcept {
 //! Finalise pml properties
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::finalise_pml_properties(double dt) noexcept {
-  this->update_pml_displacement_functions(dt);
+  this->update_pml_properties(dt);
 }
 
 //! Map body force
@@ -354,8 +354,7 @@ void mpm::ParticlePML<Tdim>::map_internal_force(double dt) noexcept {
 
 //! Function to update pml displacement functions
 template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::update_pml_displacement_functions(
-    double dt) noexcept {
+void mpm::ParticlePML<Tdim>::update_pml_properties(double dt) noexcept {
   // Check if visco_elastic is needed
   bool viscoelastic =
       (this->material())
@@ -558,8 +557,8 @@ inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
 
 //! Map PML rayleigh damping force
 template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::map_rayleigh_damping_force(
-    double damping_factor) noexcept {
+void mpm::ParticlePML<Tdim>::map_rayleigh_damping_force(double damping_factor,
+                                                        double dt) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 

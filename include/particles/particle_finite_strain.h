@@ -92,7 +92,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
   inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
                                            bool quasi_static) override;
@@ -107,7 +107,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
+  //! \param[in] dt Analysis time step
+  void update_stress_strain(double dt) noexcept override;
   /**@}*/
 
  protected:

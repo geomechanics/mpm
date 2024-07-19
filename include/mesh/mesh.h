@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <numeric>
@@ -533,7 +534,7 @@ class Mesh {
   void create_nodal_properties();
 
   // Create the nodal properties' map for analysis with perfectly matched layer
-  void create_nodal_properties_pml();
+  void create_nodal_properties_pml(const bool& pml_type);
 
   // Initialise the nodal properties' map
   void initialise_nodal_properties();

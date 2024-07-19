@@ -7,7 +7,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-
+#include <iostream>
 // CSV-parser
 #include "csv/csv.h"
 
@@ -297,6 +297,8 @@ class MPMBase : public MPM {
   bool absorbing_boundary_{false};
   //! Perfectly Matched Layer Boundary
   bool pml_boundary_{false};
+  //! Perfectly Matched Layer Boundary Type
+  bool pml_type_{true};
   //! Boolean to update deformation gradient
   bool update_defgrad_{false};
 

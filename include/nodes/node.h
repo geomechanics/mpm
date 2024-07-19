@@ -5,6 +5,7 @@
 #include "mutex.h"
 #include "nodal_properties.h"
 #include "node_base.h"
+#include <iostream>
 
 namespace mpm {
 
@@ -338,10 +339,10 @@ class Node : public NodeBase<Tdim> {
   }
 
   //! Compute velocity from the momentum and damped mass vector for PML nodes
-  void compute_pml_velocity() override;
+  void compute_pml_velocity(const bool& pml_type) override;
 
   //! Compute velocity from the momentum and damped mass vector for PML nodes
-  void compute_pml_velocity_acceleration() override;
+  void compute_pml_velocity_acceleration(const bool& pml_type) override;
 
   //! Compute acceleration and velocity with cundall damping factor considering
   //! damped mass vector for PML nodes
@@ -403,7 +404,7 @@ class Node : public NodeBase<Tdim> {
 
   //! Apply displacement constraints
   //! \ingroup PML
-  void apply_pml_displacement_constraints() override;
+  void apply_pml_displacement_constraints(const bool& pml_type) override;
 
   //! Compute velocity and acceleration from the momentum and inertia
   //! \ingroup Implicit

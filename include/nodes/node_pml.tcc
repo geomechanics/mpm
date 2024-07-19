@@ -1,6 +1,7 @@
 //! Compute PML velocity
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity() {
+void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity(
+    const bool& pml_type) {
   const double tolerance = 1.E-16;
 
   // Damped mass vector
@@ -24,12 +25,13 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity() {
   this->apply_velocity_constraints();
 
   // Apply pml displacement constraints.
-  this->apply_pml_displacement_constraints();
+  this->apply_pml_displacement_constraints(pml_type);
 }
 
 //! Compute PML velocity
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity_acceleration() {
+void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity_acceleration(
+    const bool& pml_type) {
   const double tolerance = 1.E-16;
 
   // Damped mass vector
@@ -54,7 +56,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_velocity_acceleration() {
   }
 
   // Apply pml displacement constraints.
-  this->apply_pml_displacement_constraints();
+  this->apply_pml_displacement_constraints(pml_type);
 }
 
 //! Compute PML nodal acceleration and velocity
@@ -99,7 +101,8 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_pml_acceleration_velocity(
 
 //! Apply pml displacement constraints
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-void mpm::Node<Tdim, Tdof, Tnphases>::apply_pml_displacement_constraints() {
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_pml_displacement_constraints(
+    const bool& pml_type) {
   // Set displacement constraint
   for (const auto& constraint : this->displacement_constraints_) {
     // Direction value in the constraint (0, Dim * Nphases)
@@ -119,34 +122,36 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_pml_displacement_constraints() {
     property_handle_->assign_property("damped_mass_displacements", prop_id_, 0,
                                       damped_mass_disp, Tdim);
 
-    // Displacement constraints of historical boundary
-    // j = 1
-    VectorDim damped_mass_disp_j1 = property_handle_->property(
-        "damped_mass_displacements_j1", prop_id_, 0, Tdim);
-    damped_mass_disp_j1(direction) = 0.0;
-    property_handle_->assign_property("damped_mass_displacements_j1", prop_id_,
-                                      0, damped_mass_disp_j1, Tdim);
+    if (pml_type) {
+      // Displacement constraints of historical boundary
+      // j = 1
+      VectorDim damped_mass_disp_j1 = property_handle_->property(
+          "damped_mass_displacements_j1", prop_id_, 0, Tdim);
+      damped_mass_disp_j1(direction) = 0.0;
+      property_handle_->assign_property("damped_mass_displacements_j1",
+                                        prop_id_, 0, damped_mass_disp_j1, Tdim);
 
-    // j = 2
-    VectorDim damped_mass_disp_j2 = property_handle_->property(
-        "damped_mass_displacements_j2", prop_id_, 0, Tdim);
-    damped_mass_disp_j2(direction) = 0.0;
-    property_handle_->assign_property("damped_mass_displacements_j2", prop_id_,
-                                      0, damped_mass_disp_j2, Tdim);
+      // j = 2
+      VectorDim damped_mass_disp_j2 = property_handle_->property(
+          "damped_mass_displacements_j2", prop_id_, 0, Tdim);
+      damped_mass_disp_j2(direction) = 0.0;
+      property_handle_->assign_property("damped_mass_displacements_j2",
+                                        prop_id_, 0, damped_mass_disp_j2, Tdim);
 
-    // j = 3
-    VectorDim damped_mass_disp_j3 = property_handle_->property(
-        "damped_mass_displacements_j3", prop_id_, 0, Tdim);
-    damped_mass_disp_j3(direction) = 0.0;
-    property_handle_->assign_property("damped_mass_displacements_j3", prop_id_,
-                                      0, damped_mass_disp_j3, Tdim);
+      // j = 3
+      VectorDim damped_mass_disp_j3 = property_handle_->property(
+          "damped_mass_displacements_j3", prop_id_, 0, Tdim);
+      damped_mass_disp_j3(direction) = 0.0;
+      property_handle_->assign_property("damped_mass_displacements_j3",
+                                        prop_id_, 0, damped_mass_disp_j3, Tdim);
 
-    // j = 4
-    VectorDim damped_mass_disp_j4 = property_handle_->property(
-        "damped_mass_displacements_j4", prop_id_, 0, Tdim);
-    damped_mass_disp_j4(direction) = 0.0;
-    property_handle_->assign_property("damped_mass_displacements_j4", prop_id_,
-                                      0, damped_mass_disp_j4, Tdim);
+      // j = 4
+      VectorDim damped_mass_disp_j4 = property_handle_->property(
+          "damped_mass_displacements_j4", prop_id_, 0, Tdim);
+      damped_mass_disp_j4(direction) = 0.0;
+      property_handle_->assign_property("damped_mass_displacements_j4",
+                                        prop_id_, 0, damped_mass_disp_j4, Tdim);
+    }
   }
 }
 

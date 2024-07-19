@@ -79,6 +79,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
   //! Perfectly Matched Layer Boundary
   using mpm::MPMBase<Tdim>::pml_boundary_;
+  //! Perfectly Matched Layer Boundary Type
+  using mpm::MPMBase<Tdim>::pml_type_;
   //! Update deformation gradient
   using mpm::MPMBase<Tdim>::update_defgrad_;
 

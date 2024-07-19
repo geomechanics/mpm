@@ -101,7 +101,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   /**@}*/
 
   //! Assign relevant properties for perfectly matched layer boundary
-  inline void initialise_pml_boundary_properties() override;
+  inline void initialise_pml_boundary_properties(const bool& pml_type) override;
 
  protected:
   //! Mesh object

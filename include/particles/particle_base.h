@@ -389,7 +389,7 @@ class ParticleBase {
   //! equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
   virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
                                                    double dt,
@@ -422,7 +422,8 @@ class ParticleBase {
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  virtual void update_stress_strain() = 0;
+  //! \param[in] dt Analysis time step
+  virtual void update_stress_strain(double dt) = 0;
 
   //! Assign acceleration to the particle (used for test)
   //! \ingroup Implicit
@@ -441,7 +442,8 @@ class ParticleBase {
 
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor
-  virtual void map_rayleigh_damping_force(double damping_factor) = 0;
+  //! \param[in] dt parameter beta of Newmark scheme
+  virtual void map_rayleigh_damping_force(double damping_factor, double dt) = 0;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)

@@ -2221,7 +2221,7 @@ void mpm::Mesh<Tdim>::create_nodal_properties() {
 
 // Create the nodal properties' map for analysis with perfectly matched layer
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::create_nodal_properties_pml() {
+void mpm::Mesh<Tdim>::create_nodal_properties_pml(const bool& pml_type) {
   // Initialise the shared pointer to nodal properties
   nodal_properties_ = std::make_shared<mpm::NodalProperties>();
 
@@ -2234,14 +2234,18 @@ void mpm::Mesh<Tdim>::create_nodal_properties_pml() {
     // object. Properties must be named in the plural form
     nodal_properties_->create_property("damped_masses", nrows, 1);
     nodal_properties_->create_property("damped_mass_displacements", nrows, 1);
-    nodal_properties_->create_property("damped_mass_displacements_j1", nrows,
-                                       1);
-    nodal_properties_->create_property("damped_mass_displacements_j2", nrows,
-                                       1);
-    nodal_properties_->create_property("damped_mass_displacements_j3", nrows,
-                                       1);
-    nodal_properties_->create_property("damped_mass_displacements_j4", nrows,
-                                       1);
+
+    // Properties specific to a given PML implementation
+    if (pml_type) {
+      nodal_properties_->create_property("damped_mass_displacements_j1", nrows,
+                                         1);
+      nodal_properties_->create_property("damped_mass_displacements_j2", nrows,
+                                         1);
+      nodal_properties_->create_property("damped_mass_displacements_j3", nrows,
+                                         1);
+      nodal_properties_->create_property("damped_mass_displacements_j4", nrows,
+                                         1);
+    }
 
     // Iterate over all nodes to initialise the property handle in each node
     // and assign its node id as the prop id in the nodal property data pool
@@ -2303,6 +2307,20 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
             map_particles_[pid]->assign_state_variable("distance_function_z",
                                                        pdist_functions(2));
             L_z = std::max(L_z, pdist_functions(2));
+
+            if (pdist_functions(1) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function y cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_y",
+                                                       pdist_functions(1));
+            L_y = std::max(L_y, pdist_functions(1));
+
+            if (pdist_functions(0) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function x cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_x",
+                                                       pdist_functions(0));
+            L_x = std::max(L_x, pdist_functions(0));
           case (2):
             if (pdist_functions(1) < 0.0)
               throw std::runtime_error(
@@ -2310,6 +2328,13 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
             map_particles_[pid]->assign_state_variable("distance_function_y",
                                                        pdist_functions(1));
             L_y = std::max(L_y, pdist_functions(1));
+
+            if (pdist_functions(0) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function x cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_x",
+                                                       pdist_functions(0));
+            L_x = std::max(L_x, pdist_functions(0));
           case (1):
             if (pdist_functions(0) < 0.0)
               throw std::runtime_error(
@@ -2330,7 +2355,7 @@ bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
       L_z = std::numeric_limits<double>::quiet_NaN();
 
     // Compute and assigned minimum boundary thickness
-    const double L = std::min(L_x, std::min(L_y, L_z));
+    const double L = std::max(L_x, std::max(L_y, L_z));
     if (!std::isnan(L)) {
       for (const auto& particle_distance_function :
            particle_distance_functions) {

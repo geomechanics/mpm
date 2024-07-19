@@ -406,7 +406,7 @@ class Particle : public ParticleBase<Tdim> {
   //! equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
   inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
                                            bool quasi_static) override;
@@ -443,7 +443,8 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
+  //! \param[in] dt Analysis time step
+  virtual void update_stress_strain(double dt) noexcept override;
 
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
@@ -453,7 +454,9 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor
-  void map_rayleigh_damping_force(double damping_factor) noexcept override{};
+  //! \param[in] dt parameter beta of Newmark scheme
+  void map_rayleigh_damping_force(double damping_factor,
+                                  double dt) noexcept override{};
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)

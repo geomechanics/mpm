@@ -108,11 +108,6 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
       double newmark_gamma, double newmark_beta, double dt,
       double damping_factor) override;
 
-  //! Update stress and strain after convergence of Newton-Raphson iteration
-  //! \ingroup Implicit
-  //! \param[in] dt Analysis time step
-  void update_stress_strain(double dt) noexcept override;
-
   /**@}*/
 
   /**
@@ -130,6 +125,9 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
 
   //! Compute PML stiffness matrix
   inline Eigen::MatrixXd compute_pml_stiffness_matrix(double dt) noexcept;
+
+  // Compute PML damping matrix
+  inline Eigen::MatrixXd compute_pml_damping_matrix(double dt) noexcept;
 
   //! Update PML Properties
   //! \param[in] dt parameter beta of Newmark scheme
@@ -166,6 +164,11 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   //! \param[in] dt parameter beta of Newmark scheme
   inline Eigen::MatrixXd compute_damped_bmatrix(
       const Eigen::VectorXd& damping_functions) noexcept;
+
+  //! Compute damping matrix for "rayleigh" damping
+  //! \param[in] dt parameter beta of Newmark scheme
+  inline Eigen::MatrixXd compute_combined_bmatrix(
+      const Eigen::VectorXd& Fa, const Eigen::VectorXd& Fb) noexcept;
 
   //! Combine damping factors
   //! \param[in] Fa First set of particle damping functions

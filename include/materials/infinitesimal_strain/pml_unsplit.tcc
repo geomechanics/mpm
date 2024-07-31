@@ -52,15 +52,15 @@ mpm::dense_map mpm::UnsplitPML<Tdim>::initialise_state_variables() {
                                {"strain_int_xx", 0.},
                                {"strain_int_yy", 0.},
                                {"strain_int_zz", 0.},
-                               {"strain_int_yz", 0.},
-                               {"strain_int_xz", 0.},
                                {"strain_int_xy", 0.},
+                               {"strain_int_xz", 0.},
+                               {"strain_int_yz", 0.},
                                {"stress_2int_xx", 0.},
                                {"stress_2int_yy", 0.},
                                {"stress_2int_zz", 0.},
-                               {"stress_2int_yz", 0.},
+                               {"stress_2int_xy", 0.},
                                {"stress_2int_xz", 0.},
-                               {"stress_2int_xy", 0.}};
+                               {"stress_2int_yz", 0.}};
   return state_vars;
 }
 
@@ -71,9 +71,9 @@ std::vector<std::string> mpm::UnsplitPML<Tdim>::state_variables() const {
       "distance_function_x", "distance_function_y", "distance_function_z",
       "boundary_thickness",  "damping_function_x",  "damping_function_y",
       "damping_function_z",  "strain_int_xx",       "strain_int_yy",
-      "strain_int_zz",       "strain_int_yz",       "strain_int_xz",
-      "strain_int_xy",       "stress_2int_xx",      "stress_2int_yy",
-      "stress_2int_zz",      "stress_2int_yz",      "stress_2int_xz",
-      "stress_2int_xy"};
+      "strain_int_zz",       "strain_int_xy",       "strain_int_xz",
+      "strain_int_yz",       "stress_2int_xx",      "stress_2int_yy",
+      "stress_2int_zz",      "stress_2int_xy",      "stress_2int_xz",
+      "stress_2int_yz"};
   return state_vars;
 }

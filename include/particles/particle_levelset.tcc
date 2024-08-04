@@ -45,7 +45,7 @@ double mpm::ParticleLevelset<Tdim>::diameter() const {
 //! Map levelset contact force
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
-    double dt) {
+    const double levelset_damping, double dt) {
   // Compute levelset values at particle
   double levelset = 0;
   double levelset_mu = 0;
@@ -79,7 +79,7 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // Compute contact force in particle
   VectorDim force = compute_levelset_contact_force(
       levelset, levelset_normal, levelset_mu, levelset_alpha, barrier_stiffness,
-      slip_threshold, mp_radius, contact_vel, dt);
+      slip_threshold, mp_radius, contact_vel, levelset_damping, dt);
 
   // Compute nodal contact force
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -95,7 +95,7 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
         double levelset, const VectorDim& levelset_normal, double levelset_mu,
         double levelset_alpha, double barrier_stiffness, double slip_threshold,
         const double mp_radius, const VectorDim& contact_vel,
-        double dt) noexcept {
+        const double levelset_damping, double dt) noexcept {
   // Coupling force zero by default
   VectorDim couple_force_ = VectorDim::Zero();
 
@@ -110,10 +110,6 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     double couple_normal_mag =
         barrier_stiffness * (levelset - mp_radius) *
         (2 * log(levelset / mp_radius) - (mp_radius / levelset) + 1);
-    double normal_force = couple_normal_mag;
-
-    // Apply normal couple only if mp moving towards boundary
-    if ((contact_vel.dot(levelset_normal)) > 0) couple_normal_mag = 0;
 
     // Calculate normal coupling force
     VectorDim couple_force_normal = couple_normal_mag * levelset_normal;
@@ -128,7 +124,7 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     // Apply friction smoothing function, if applicable
     double friction_smoothing = 1.0;
     if (slip_threshold > 0.) {
-      // Calculate cumulative slip magnitude // LEDT check: abs val? per-MP?
+      // Calculate cumulative slip magnitude // LEDT check: abs val?
       cumulative_slip_mag += dt * contact_vel.dot(levelset_tangent);
       // Calculate friction smoothing
       if (abs(cumulative_slip_mag) < slip_threshold) {
@@ -139,7 +135,8 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     }
 
     // Calculate friction tangential coupling force magnitude
-    double tangent_friction = friction_smoothing * levelset_mu * normal_force;
+    double tangent_friction =
+        friction_smoothing * levelset_mu * couple_normal_mag;
 
     // Calculate adhesion tangential coupling force magnitude
     double contact_area = volume_ / size_[0];
@@ -160,6 +157,10 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
 
     // Calculate total coupling force vector
     couple_force_ = couple_force_normal + couple_force_tangent;
+
+    // Damp couple if mp moving away from boundary
+    if ((contact_vel.dot(levelset_normal)) >= 0)
+      couple_force_ = (1 - levelset_damping) * couple_force_;
   }
   return couple_force_;
 }

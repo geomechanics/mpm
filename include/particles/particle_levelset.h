@@ -41,7 +41,9 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Assign nodal Levelset value to particles
   //! \param[in] dt Analysis time step
-  void map_particle_contact_force_to_nodes(double dt) override;
+  //! \param[in] levelset_damping Levelset damping factor
+  void map_particle_contact_force_to_nodes(const double levelset_damping,
+                                           double dt) override;
 
   //! Return the approximate particle diameter
   double diameter() const override;
@@ -56,11 +58,13 @@ class ParticleLevelset : public Particle<Tdim> {
   //! \param[in] slip_threshold Slip threshold
   //! \param[in] mp_radius mp radius of influence for contact
   //! \param[in] contact_vel Contact velocity from nodes (PIC)
+  //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] dt Analysis time step
   VectorDim compute_levelset_contact_force(
       double levelset, const VectorDim& levelset_normal, double levelset_mu,
       double levelset_alpha, double barrier_stiffness, double slip_threshold,
-      const double mp_radius, const VectorDim& contact_vel, double dt) noexcept;
+      const double mp_radius, const VectorDim& contact_vel,
+      const double levelset_damping, double dt) noexcept;
 
  private:
   //! Logger
@@ -99,7 +103,6 @@ class ParticleLevelset : public Particle<Tdim> {
   using Particle<Tdim>::size_;
   //! particleBase id
   using Particle<Tdim>::id_;
-
 };  // Particle_Levelset class
 
 }  // namespace mpm

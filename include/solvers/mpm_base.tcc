@@ -1304,6 +1304,23 @@ void mpm::MPMBase<Tdim>::interface_inputs(
         } else {
           throw std::runtime_error("Levelset inputs JSON not found");
         }
+        // double levelset_damping_ = 0.;
+        // Check if levelset damping factor is specified
+        if (mesh_props["interface"].find("damping") !=
+            mesh_props["interface"].end()) {
+          // Retrieve levelset damping factor
+          levelset_damping_ =
+              mesh_props["interface"]["damping"].template get<double>();
+          if ((levelset_damping_ < 0.) || (levelset_damping_ > 1.)) {
+            levelset_damping_ = 0.;
+            throw std::runtime_error(
+                "Levelset damping factor should be between 0. and 1., using "
+                "0. as default");
+          }
+        } else {
+          throw std::runtime_error(
+              "Levelset damping is not specified, using 0. as default");
+        }
       } else if (interface_type_ == "multimaterial") {
         throw std::runtime_error(
             "Multimaterial interface inputs not supported");

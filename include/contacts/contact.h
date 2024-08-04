@@ -22,7 +22,9 @@ class Contact {
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
-  virtual inline void compute_contact_forces(double dt){};
+  //! \param[in] levelset_damping Levelset damping factor
+  virtual inline void compute_contact_forces(const double levelset_damping,
+                                             double dt){};
 
  protected:
   //! Mesh object

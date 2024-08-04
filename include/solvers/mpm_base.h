@@ -322,6 +322,8 @@ class MPMBase : public MPM {
   bool interface_{false};
   //! Interface type
   std::string interface_type_{"none"};
+  //! Levelset damping factor
+  double levelset_damping_{0.};
   /**@}*/
 
   /**

@@ -135,7 +135,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
     // Contact forces at nodes
-    contact_->compute_contact_forces(dt_);
+    contact_->compute_contact_forces(this->levelset_damping_, dt_);
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_,

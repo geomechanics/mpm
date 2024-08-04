@@ -1304,7 +1304,6 @@ void mpm::MPMBase<Tdim>::interface_inputs(
         } else {
           throw std::runtime_error("Levelset inputs JSON not found");
         }
-        // double levelset_damping_ = 0.;
         // Check if levelset damping factor is specified
         if (mesh_props["interface"].find("damping") !=
             mesh_props["interface"].end()) {

@@ -20,6 +20,12 @@ class Contact {
   //! Compute contact forces
   virtual inline void compute_contact_forces(){};
 
+  //! Compute contact forces
+  //! \param[in] dt Analysis time step
+  //! \param[in] levelset_damping Levelset damping factor
+  virtual inline void compute_contact_forces(const double levelset_damping,
+                                             double dt){};
+
  protected:
   //! Mesh object
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;

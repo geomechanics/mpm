@@ -61,6 +61,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       if (analysis_.find("stress_rate") != analysis_.end()) {
         if (analysis_["stress_rate"].template get<std::string>() == "jaumann")
           stress_rate_ = mpm::StressRate::Jaumann;
+        else if (analysis_["stress_rate"].template get<std::string>() == "none")
+          stress_rate_ = mpm::StressRate::None;
         else
           throw std::runtime_error("Stress rate type is not supported");
       } else

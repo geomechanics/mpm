@@ -94,7 +94,9 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
-  inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                           double newmark_gamma,
+                                           double bossak_alpha, double dt,
                                            bool quasi_static) override;
 
   //! Compute deformation gradient and volume using nodal displacement

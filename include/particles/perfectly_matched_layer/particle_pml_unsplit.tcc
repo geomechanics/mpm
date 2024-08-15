@@ -40,7 +40,6 @@ void mpm::ParticleUPML<Tdim>::map_mass_momentum_to_nodes(
 
       // Damping Functions
       const auto& Fe = this->evanescent_damping_functions();
-      const auto& Fp = this->normal_damping_functions();
 
       // Damping scalar
       double f_M = Fe.prod();
@@ -81,7 +80,6 @@ void mpm::ParticleUPML<Tdim>::map_mass_momentum_to_nodes_affine() noexcept {
 
   // Damping Functions
   const auto& Fe = this->evanescent_damping_functions();
-  const auto& Fp = this->normal_damping_functions();
 
   // Damping scalar
   double f_M = Fe.prod();
@@ -115,7 +113,6 @@ void mpm::ParticleUPML<Tdim>::map_mass_momentum_to_nodes_taylor() noexcept {
 
   // Damping Functions
   const auto& Fe = this->evanescent_damping_functions();
-  const auto& Fp = this->normal_damping_functions();
 
   // Damping scalar
   double f_M = Fe.prod();
@@ -137,13 +134,13 @@ void mpm::ParticleUPML<Tdim>::map_mass_momentum_to_nodes_taylor() noexcept {
 
 //! Map particle mass, momentum and inertia to nodes
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
+void mpm::ParticleUPML<Tdim>::map_mass_momentum_inertia_to_nodes(
+    mpm::VelocityUpdate velocity_update) noexcept {
   // Map mass and momentum to nodes
-  this->map_mass_momentum_to_nodes();
+  this->map_mass_momentum_to_nodes(velocity_update);
 
   // Damping Functions
   const auto& Fe = this->evanescent_damping_functions();
-  const auto& Fp = this->normal_damping_functions();
 
   // Damping scalar
   double f_M = Fe.prod();
@@ -167,7 +164,6 @@ void mpm::ParticleUPML<Tdim>::map_pml_properties_to_nodes() noexcept {
 
   // Damping Functions
   const auto& Fe = this->evanescent_damping_functions();
-  const auto& Fp = this->normal_damping_functions();
 
   // Damping scalar
   VectorDim f_M = Fe.prod() * Eigen::VectorXd::Constant(Tdim, 1.0);
@@ -189,7 +185,6 @@ void mpm::ParticleUPML<Tdim>::map_body_force(
     const VectorDim& pgravity) noexcept {
   // Damping functions
   const auto& Fe = this->evanescent_damping_functions();
-  const auto& Fp = this->normal_damping_functions();
 
   // Damping scalar
   double f_M = Fe.prod();
@@ -204,7 +199,7 @@ void mpm::ParticleUPML<Tdim>::map_body_force(
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::map_internal_force(double dt) noexcept {
   // Compute internal force from total displacement
-  this->map_internal_force_disp();
+  this->map_internal_force_disp(dt);
 
   // Compute internal force from strain
   this->map_internal_force_strain(dt);
@@ -214,14 +209,11 @@ void mpm::ParticleUPML<Tdim>::map_internal_force(double dt) noexcept {
 
   // Compute internal force from stiffness
   this->map_internal_force_stiffness(dt);
-
-  // Compute internal force from damping
-  this->map_damping_force(dt);
 }
 
 //! Compute internal force from total displacement
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_internal_force_disp() noexcept {
+void mpm::ParticleUPML<Tdim>::map_internal_force_disp(double dt) noexcept {
   unsigned phase = mpm::ParticlePhase::SinglePhase;
   // Call damping functions
   const auto& Fp = this->normal_damping_functions();
@@ -230,8 +222,8 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_disp() noexcept {
   double f_H = Fp.prod();
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    VectorDim nodal_force = -1. * nodes_[i]->previous_pml_displacement(0) *
-                            shapefn_[i] * mass_ * f_H;
+    VectorDim nodal_force = -1.0 * nodes_[i]->previous_pml_displacement() *
+                            shapefn_[i] * mass_ * f_H * dt;
 
     // Apply force to nodes
     nodes_[i]->update_internal_force(true, phase, nodal_force);
@@ -257,9 +249,9 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_strain(double dt) noexcept {
   const auto& Frho = this->voigt_damping_functions(Fp.cwiseProduct(Fl));
 
   // Construct nodal B matrices
-  const Eigen::MatrixXd& Bee = this->compute_damped_bmatrix(Fee).transpose();
-  const Eigen::MatrixXd& Bep = this->compute_damped_bmatrix(Fep).transpose();
-  const Eigen::MatrixXd& Bpp = this->compute_damped_bmatrix(Fpp).transpose();
+  const Eigen::MatrixXd& Bee = (this->compute_damped_bmatrix(Fee)).transpose();
+  const Eigen::MatrixXd& Bep = (this->compute_damped_bmatrix(Fep)).transpose();
+  const Eigen::MatrixXd& Bpp = (this->compute_damped_bmatrix(Fpp)).transpose();
   const Eigen::MatrixXd& Bt = Bep + Bpp * dt;
   const Eigen::MatrixXd& Btt = Bee + Bt * dt;
 
@@ -267,9 +259,10 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_strain(double dt) noexcept {
   const Eigen::VectorXd& force =
       (Btt * de * Feps.matrix().asDiagonal() / dt / dt) * strain +
       (Bt * de - Btt * de * Frho.matrix().asDiagonal() / dt) * strain_int;
+
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Segment nodal force
-    VectorDim nodal_force = -1 * force.segment(i * Tdim, Tdim) * volume_;
+    VectorDim nodal_force = -1.0 * force.segment(i * Tdim, Tdim) * volume_;
 
     // Update nodes
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::SinglePhase,
@@ -295,7 +288,7 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_stress() noexcept {
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Segment nodal force
-    VectorDim nodal_force = -1. * force.segment(i * Tdim, Tdim) * volume_;
+    VectorDim nodal_force = -1.0 * force.segment(i * Tdim, Tdim) * volume_;
 
     // Update nodes
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::SinglePhase,
@@ -306,6 +299,7 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_stress() noexcept {
 //! Compute stiffness internal force from stiffness
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::map_internal_force_stiffness(double dt) noexcept {
+  unsigned phase = mpm::ParticlePhase::SinglePhase;
   // Compute local stiffness matrix
   Eigen::MatrixXd local_stiffness = this->compute_pml_stiffness_matrix(dt);
 
@@ -313,33 +307,28 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_stiffness(double dt) noexcept {
   Eigen::VectorXd disp(Tdim * nodes_.size());
   disp.setZero();
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const VectorDim& u_n = nodes_[i]->previous_pml_displacement();
-    const VectorDim& v_n = nodes_[i]->previous_pml_velocity();
-    const VectorDim& a_n = nodes_[i]->previous_pml_acceleration();
-    const VectorDim& a_new =
-        nodes_[i]->acceleration(mpm::ParticlePhase::SinglePhase);
     disp.segment(i * Tdim, Tdim) +=
-        u_n + v_n * dt + dt * dt / 2.0 * (0.5 * a_n + 0.5 * a_new);
+        nodes_[i]->previous_pml_displacement() + nodes_[i]->displacement(phase);
   }
 
   // Compute force
-  Eigen::VectorXd force = -1 * local_stiffness * disp * volume_;
+  Eigen::VectorXd force = -1.0 * local_stiffness * disp * volume_;
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Segment nodal force
     VectorDim nodal_force = force.segment(i * Tdim, Tdim);
 
     // Update nodes
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::SinglePhase,
-                                     nodal_force);
+    nodes_[i]->update_internal_force(true, phase, nodal_force);
   }
 }
 
 // Compute internal force from damping
+//! Map PML rayleigh damping force
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_damping_force(double dt) noexcept {
+void mpm::ParticleUPML<Tdim>::map_rayleigh_damping_force(double damping_factor,
+                                                         double dt) noexcept {
   // Compute local damping matrix
   Eigen::MatrixXd damping_matrix = this->compute_pml_damping_matrix(dt);
-
   // Velocity vector
   Eigen::VectorXd vel(Tdim * nodes_.size());
   vel.setZero();
@@ -349,7 +338,7 @@ void mpm::ParticleUPML<Tdim>::map_damping_force(double dt) noexcept {
   }
 
   // Compute force
-  Eigen::VectorXd force = -1 * damping_matrix * vel * volume_;
+  Eigen::VectorXd force = -1.0 * damping_matrix * vel * volume_;
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Segment nodal force
     VectorDim nodal_force = force.segment(i * Tdim, Tdim);
@@ -362,7 +351,7 @@ void mpm::ParticleUPML<Tdim>::map_damping_force(double dt) noexcept {
 
 //! Compute inertial force
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_inertial_force() noexcept {
+void mpm::ParticleUPML<Tdim>::map_inertial_force(double bossak_alpha) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
@@ -378,7 +367,7 @@ void mpm::ParticleUPML<Tdim>::map_inertial_force() noexcept {
     const VectorDim& nodal_acceleration =
         nodes_[i]->acceleration(mpm::ParticlePhase::SinglePhase);
     VectorDim nodal_force =
-        -1. * nodal_acceleration * mass_ * shapefn_(i) * f_M;
+        -1.0 * nodal_acceleration * mass_ * shapefn_[i] * f_M;
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,
                                      nodal_force);
   }
@@ -409,7 +398,7 @@ inline bool mpm::ParticleUPML<Tdim>::map_material_stiffness_matrix_to_cell(
 //! Map mass matrix to cell (used in poisson equation LHS)
 template <unsigned Tdim>
 inline bool mpm::ParticleUPML<Tdim>::map_mass_matrix_to_cell(
-    double newmark_beta, double dt) {
+    double newmark_beta, double bossak_alpha, double dt) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -493,9 +482,9 @@ inline Eigen::MatrixXd mpm::ParticleUPML<Tdim>::compute_pml_damping_matrix(
       Fe(0) * Fe(1) * Fp(2) + Fe(0) * Fe(2) * Fp(1) + Fe(1) * Fe(2) * Fp(0);
 
   // Construct nodal B matrices
-  const Eigen::MatrixXd& Bee = (this->compute_damped_bmatrix(Fee)).transpose();
-  const Eigen::MatrixXd& Bep = (this->compute_damped_bmatrix(Fep)).transpose();
-  const Eigen::MatrixXd& Bpp = (this->compute_damped_bmatrix(Fpp)).transpose();
+  const Eigen::MatrixXd& Bee = this->compute_damped_bmatrix(Fee);
+  const Eigen::MatrixXd& Bep = this->compute_damped_bmatrix(Fep);
+  const Eigen::MatrixXd& Bpp = this->compute_damped_bmatrix(Fpp);
   const Eigen::MatrixXd& Btt = Bee + Bep * dt + Bpp * dt * dt;
   const Eigen::MatrixXd& Beps = this->compute_combined_bmatrix(Feps, Fl);
 
@@ -509,12 +498,12 @@ inline Eigen::MatrixXd mpm::ParticleUPML<Tdim>::compute_pml_damping_matrix(
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     for (unsigned k = 0; k < Tdim; ++k) {
       mass_density_matrix(Tdim * i + k, Tdim * i + k) +=
-          shapefn_(i) * mass_density_mod;
+          shapefn_[i] * mass_density_mod;
     }
   }
 
   // Compute damping matrix
-  damping_matrix += mass_density_matrix + Btt * de * Beps / dt;
+  damping_matrix += mass_density_matrix + Btt.transpose() * de * Beps / dt;
 
   return damping_matrix;
 }
@@ -551,12 +540,11 @@ inline Eigen::MatrixXd mpm::ParticleUPML<Tdim>::compute_pml_stiffness_matrix(
   const Eigen::MatrixXd& Btt = Bee + Bep * dt + Bpp * dt * dt;
   const Eigen::MatrixXd& Brho = this->compute_combined_bmatrix(Frho, Fl);
 
+  double mass_density_mod = mass_density_ * (f_K + dt * f_H);
   // Construct matrix
   Eigen::MatrixXd mass_density_matrix(Tdim * nodes_.size(),
                                       Tdim * nodes_.size());
   mass_density_matrix.setZero();
-  double mass_density_mod = mass_density_ * (f_K + dt * f_H);
-  // Construct lumped shape function
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     for (unsigned k = 0; k < Tdim; ++k) {
       mass_density_matrix(Tdim * i + k, Tdim * i + k) +=
@@ -575,7 +563,10 @@ template <unsigned Tdim>
 inline Eigen::Matrix<double, 6, 1>
     mpm::ParticleUPML<Tdim>::compute_strain_increment(
         const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+  // Temporary until compute_strain_increment is determined to be required or
+  // not
   double dt = 0.005;
+
   // Damping matrices
   const auto& Fp = this->normal_damping_functions();
   const auto& Fe = this->evanescent_damping_functions();
@@ -606,126 +597,47 @@ inline Eigen::Matrix<double, 6, 1>
   Eigen::VectorXd disp(Tdim * nodes_.size());
   disp.setZero();
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const VectorDim& u_n = nodes_[i]->previous_pml_displacement();
-    const VectorDim& v_n = nodes_[i]->previous_pml_velocity();
-    const VectorDim& a_n = nodes_[i]->previous_pml_acceleration();
-    const VectorDim& a_new = nodes_[i]->acceleration(phase);
     disp.segment(i * Tdim, Tdim) +=
-        u_n + v_n * dt + dt * dt / 2.0 * (0.5 * a_n + 0.5 * a_new);
+        nodes_[i]->previous_pml_displacement() + nodes_[i]->displacement(phase);
   }
 
   // Compute new strain
-  auto reduced_strain = (Feps_voigt.matrix().asDiagonal() * strain / dt -
-                         Frho_voigt.matrix().asDiagonal() * strain_int +
-                         Beps * vel + Brho * disp) /
-                            dt -
-                        strain;
+  auto reduced_dstrain = (Beps * vel + Brho * disp +
+                          Feps_voigt.matrix().asDiagonal() * strain / dt -
+                          Frho_voigt.matrix().asDiagonal() * strain_int) /
+                             dt -
+                         strain;
 
   // Apply strain to proper dimension
-  Eigen::Matrix<double, 6, 1> new_strain;
-  new_strain.setZero();
+  Eigen::Matrix<double, 6, 1> dstrain;
+  dstrain.setZero();
   switch (Tdim) {
     case 1:
-      new_strain(0, 0) += reduced_strain(0, 0);
+      dstrain(0, 0) += reduced_dstrain(0, 0);
       break;
     case 2:
-      new_strain(0, 0) += reduced_strain(0, 0);
-      new_strain(1, 0) += reduced_strain(1, 0);
-      new_strain(3, 0) += reduced_strain(2, 0);
+      dstrain(0, 0) += reduced_dstrain(0, 0);
+      dstrain(1, 0) += reduced_dstrain(1, 0);
+      dstrain(3, 0) += reduced_dstrain(2, 0);
       break;
     case 3:
-      new_strain += reduced_strain;
+      dstrain += reduced_dstrain;
       break;
   }
-  for (unsigned i = 0; i < new_strain.size(); ++i)
-    if (std::fabs(new_strain[i]) < 1.E-15) new_strain[i] = 0.;
-  return new_strain;
-}
-
-// Update stress and strain after convergence of Newton-Raphson iteration
-template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::update_stress_strain(double dt) noexcept {
-  unsigned phase = mpm::ParticlePhase::SinglePhase;
-
-  // Damping matrices
-  const auto& Fp = this->normal_damping_functions();
-  const auto& Fe = this->evanescent_damping_functions();
-  const auto& Fl = (Fe / dt + Fp).cwiseInverse();
-  const auto& Frho = Fp.cwiseProduct(Fl);
-  const auto& Feps = Fe.cwiseProduct(Fl);
-
-  // Call reduced strain values
-  auto strain_int = this->reduce_voigt(this->call_state_var(true));
-  auto strain = this->reduce_voigt(this->strain_);
-
-  // Construct nodal B matrices
-  const Eigen::MatrixXd& Brho =
-      this->compute_damped_bmatrix(Frho.cwiseProduct(Fl));
-  const Eigen::MatrixXd& Beps =
-      this->compute_damped_bmatrix(Feps.cwiseProduct(Fl));
-
-  // Adjust voigt
-  const auto& Feps_voigt = this->voigt_damping_functions(Feps);
-  const auto& Frho_voigt = this->voigt_damping_functions(Frho);
-
-  // Velocity vector
-  Eigen::VectorXd vel(Tdim * nodes_.size());
-  vel.setZero();
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    vel.segment(i * Tdim, Tdim) += nodes_[i]->velocity(phase);
-  }
-
-  // Displacement vector
-  Eigen::VectorXd disp(Tdim * nodes_.size());
-  disp.setZero();
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    const VectorDim& u_n = nodes_[i]->previous_pml_displacement();
-    const VectorDim& v_n = nodes_[i]->previous_pml_velocity();
-    const VectorDim& a_n = nodes_[i]->previous_pml_acceleration();
-    const VectorDim& a_new = nodes_[i]->acceleration(phase);
-    disp.segment(i * Tdim, Tdim) +=
-        u_n + v_n * dt + dt * dt / 2.0 * (0.5 * a_n + 0.5 * a_new);
-  }
-
-  // Compute new strain
-  auto reduced_strain = (Feps_voigt.matrix().asDiagonal() * strain / dt -
-                         Frho_voigt.matrix().asDiagonal() * strain_int +
-                         Beps * vel + Brho * disp) /
-                        dt;
-
-  // Apply strain to proper dimension
-  Eigen::Matrix<double, 6, 1> new_strain;
-  new_strain.setZero();
-  switch (Tdim) {
-    case 1:
-      new_strain(0, 0) += reduced_strain(0, 0);
-      break;
-    case 2:
-      new_strain(0, 0) += reduced_strain(0, 0);
-      new_strain(1, 0) += reduced_strain(1, 0);
-      new_strain(3, 0) += reduced_strain(2, 0);
-      break;
-    case 3:
-      new_strain += reduced_strain;
-      break;
-  }
-  this->strain_ = new_strain;
-
-  // Update stress
-  this->stress_ = this->constitutive_matrix_ * this->strain_;
-
-  // Reset strain increment
-  this->dstrain_.setZero();
-  this->dvolumetric_strain_ = 0.;
+  for (unsigned i = 0; i < dstrain.size(); ++i)
+    if (std::fabs(dstrain[i]) < 1.E-15) dstrain[i] = 0.;
+  return dstrain;
 }
 
 //! Function to update pml displacement functions
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::update_pml_properties(double dt) noexcept {
   unsigned phase = mpm::ParticlePhase::SinglePhase;
+
   // Call PML state variables
   auto strain_int = this->call_state_var(true);
   auto stress_2int = this->call_state_var(false);
+
   // Calculate updated values
   Eigen::Matrix<double, 6, 1> new_strain_int = strain_int + this->strain_ * dt;
   Eigen::Matrix<double, 6, 1> new_stress_2int =
@@ -751,15 +663,11 @@ void mpm::ParticleUPML<Tdim>::update_pml_properties(double dt) noexcept {
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::compute_damping_functions(
     mpm::dense_map& state_vars) noexcept {
-  // PML material properties
-  const double& beta =
-      (this->material())
-          ->template property<double>(std::string("maximum_damping_ratio"));
   const double& dpower =
       (this->material())
           ->template property<double>(std::string("damping_power"));
   const double& boundary_thickness = state_vars.at("boundary_thickness");
-  const double& multiplier = beta * std::pow(1.0 / boundary_thickness, dpower);
+  const double& multiplier = std::pow(1.0 / boundary_thickness, dpower);
 
   // Compute damping functions in state variables
   state_vars.at("damping_function_x") =
@@ -775,14 +683,21 @@ template <unsigned Tdim>
 Eigen::VectorXd mpm::ParticleUPML<Tdim>::normal_damping_functions()
     const noexcept {
   Eigen::Vector3d damping_functions;
+  // PML material properties
+  const double& beta =
+      (this->material())
+          ->template property<double>(std::string("maximum_damping_ratio"));
 
   // Damping functions
-  damping_functions(0) = state_variables_[mpm::ParticlePhase::SinglePhase].at(
-      "damping_function_x");
-  damping_functions(1) = state_variables_[mpm::ParticlePhase::SinglePhase].at(
-      "damping_function_y");
-  damping_functions(2) = state_variables_[mpm::ParticlePhase::SinglePhase].at(
-      "damping_function_z");
+  damping_functions(0) =
+      beta * state_variables_[mpm::ParticlePhase::SinglePhase].at(
+                 "damping_function_x");
+  damping_functions(1) =
+      beta * state_variables_[mpm::ParticlePhase::SinglePhase].at(
+                 "damping_function_y");
+  damping_functions(2) =
+      beta * state_variables_[mpm::ParticlePhase::SinglePhase].at(
+                 "damping_function_z");
 
   return damping_functions;
 }
@@ -791,29 +706,52 @@ Eigen::VectorXd mpm::ParticleUPML<Tdim>::normal_damping_functions()
 template <unsigned Tdim>
 Eigen::VectorXd mpm::ParticleUPML<Tdim>::evanescent_damping_functions()
     const noexcept {
-  // Call normal damping functions
-  Eigen::VectorXd damping_functions = this->normal_damping_functions();
-
-  // Material constants
-  const double& E =
+  // Call necessary PML variables
+  const double& beta =
       (this->material())
-          ->template property<double>(std::string("youngs_modulus"));
-  const double& nu =
-      (this->material())
-          ->template property<double>(std::string("poisson_ratio"));
+          ->template property<double>(std::string("maximum_damping_ratio"));
   const double& h =
       (this->material())
           ->template property<double>(std::string("characteristic_length"));
-  const double& density =
-      (this->material())->template property<double>(std::string("density"));
-  const double& lambda = E * nu / (1. + nu) / (1. - 2. * nu);
-  const double& shear_modulus = E / (2.0 * (1. + nu));
-  const double& c_p = std::pow((lambda + 2. * shear_modulus) / density, 0.5);
 
-  damping_functions =
-      Eigen::VectorXd::Constant(3, 1.0) + damping_functions * h / c_p;
+  // If no normal damping, calculate evanescent damping as h = alpha
+  if (beta == 0) {
+    Eigen::Vector3d damping_functions;
+    // Damping functions
+    damping_functions(0) =
+        1.0 + h * state_variables_[mpm::ParticlePhase::SinglePhase].at(
+                      "damping_function_x");
+    damping_functions(1) =
+        1.0 + h * state_variables_[mpm::ParticlePhase::SinglePhase].at(
+                      "damping_function_y");
+    damping_functions(2) =
+        1.0 + h * state_variables_[mpm::ParticlePhase::SinglePhase].at(
+                      "damping_function_z");
 
-  return damping_functions;
+    return damping_functions;
+  } else {
+    // Call normal damping functions
+    Eigen::VectorXd damping_functions = this->normal_damping_functions();
+
+    // Call Material constants
+    const double& E =
+        (this->material())
+            ->template property<double>(std::string("youngs_modulus"));
+    const double& nu =
+        (this->material())
+            ->template property<double>(std::string("poisson_ratio"));
+    const double& density =
+        (this->material())->template property<double>(std::string("density"));
+    const double& lambda = E * nu / (1.0 + nu) / (1.0 - 2.0 * nu);
+    const double& shear_modulus = E / (2.0 * (1.0 + nu));
+    const double& c_p = std::pow((lambda + 2. * shear_modulus) / density, 0.5);
+
+    // Commpute evanescent damping functions
+    damping_functions =
+        Eigen::VectorXd::Constant(3, 1.0) + damping_functions * h / c_p;
+
+    return damping_functions;
+  }
 }
 
 // Compute 1D B matrix

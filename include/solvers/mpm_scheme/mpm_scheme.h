@@ -28,7 +28,7 @@ class MPMScheme {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   virtual inline void compute_nodal_kinematics(
-      mpm::VelocityUpdate velocity_update, unsigned phase);
+      mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step);
 
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
@@ -87,7 +87,7 @@ class MPMScheme {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   virtual inline void postcompute_nodal_kinematics(
-      mpm::VelocityUpdate velocity_update, unsigned phase) = 0;
+      mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) = 0;
 
   //! Compute particle location
   //! \param[in] locate_particles Flag to enable locate particles, if set to
@@ -124,8 +124,7 @@ class MPMScheme {
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pml_boundary Boolean to indicate the use of pml
   virtual inline void update_nodal_kinematics_newmark(
-      unsigned phase, double newmark_beta, double newmark_gamma,
-      bool pml_boundary = false) {
+      unsigned phase, bool pml_boundary = false) {
     throw std::runtime_error(
         "Calling the base class function (update_nodal_kinematics_newmark) in "
         "MPMScheme:: illegal operation!");

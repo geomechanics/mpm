@@ -72,11 +72,13 @@ class ParticlePML : public mpm::Particle<Tdim> {
   /**@{*/
   //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
-  virtual void map_mass_momentum_inertia_to_nodes() noexcept override;
+  virtual void map_mass_momentum_inertia_to_nodes(
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Map inertial force
   //! \ingroup Implicit
-  virtual void map_inertial_force() noexcept override;
+  virtual void map_inertial_force(double bossak_alpha = 0.0) noexcept override;
 
   //! Map internal force
   virtual void map_internal_force(double dt) noexcept override;
@@ -98,6 +100,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt time step
   virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
+                                              double bossak_alpha,
                                               double dt) override;
 
   //! Map PML rayleigh damping force

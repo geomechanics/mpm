@@ -1,13 +1,84 @@
 //! Map particle mass, momentum and inertia to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
+void mpm::Particle<Tdim>::map_mass_momentum_inertia_to_nodes(
+    mpm::VelocityUpdate velocity_update) noexcept {
   // Map mass and momentum to nodes
-  this->map_mass_momentum_to_nodes();
+  this->map_mass_momentum_to_nodes(velocity_update);
+
+  switch (velocity_update) {
+    case mpm::VelocityUpdate::APIC:
+      this->map_inertia_to_nodes_affine();
+      break;
+    case mpm::VelocityUpdate::ASFLIP:
+      this->map_inertia_to_nodes_affine();
+      break;
+    case mpm::VelocityUpdate::TPIC:
+      this->map_inertia_to_nodes_taylor();
+      break;
+    default:
+      // Map inertia to nodes
+      for (unsigned i = 0; i < nodes_.size(); ++i) {
+        nodes_[i]->update_inertia(true, this->phase(),
+                                  mass_ * shapefn_[i] * acceleration_);
+      }
+      break;
+  }
+}
+
+//! Map particle inertia to nodes for affine transformation
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_inertia_to_nodes_affine() noexcept {
+
+  // Initialise Mapping matrix if necessary
+  if (mapping_matrix_.rows() != Tdim) {
+    mapping_matrix_.resize(Tdim, Tdim);
+    mapping_matrix_.setZero();
+  }
+
+  // Shape tensor computation for APIC
+  Eigen::MatrixXd shape_tensor;
+  shape_tensor.resize(Tdim, Tdim);
+  shape_tensor.setZero();
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const auto& branch_vector = nodes_[i]->coordinates() - this->coordinates_;
+    shape_tensor.noalias() +=
+        shapefn_[i] * branch_vector * branch_vector.transpose();
+  }
 
   // Map inertia to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->update_inertia(true, mpm::ParticlePhase::Solid,
-                              mass_ * shapefn_[i] * acceleration_);
+    // Initialise map acceleration
+    VectorDim map_acceleration = acceleration_;
+    map_acceleration.noalias() +=
+        mapping_matrix_ * shape_tensor.inverse() *
+        (nodes_[i]->coordinates() - this->coordinates_);
+
+    // Map inertia
+    nodes_[i]->update_inertia(true, this->phase(),
+                              mass_ * shapefn_[i] * map_acceleration);
+  }
+}
+
+//! Map particle inertia to nodes for approximate taylor expansion
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_inertia_to_nodes_taylor() noexcept {
+
+  // Initialise Mapping matrix if necessary
+  if (mapping_matrix_.rows() != Tdim) {
+    mapping_matrix_.resize(Tdim, Tdim);
+    mapping_matrix_.setZero();
+  }
+
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Initialise map acceleration
+    VectorDim map_acceleration = acceleration_;
+    map_acceleration.noalias() +=
+        mapping_matrix_ * (nodes_[i]->coordinates() - this->coordinates_);
+
+    // Map inertia
+    nodes_[i]->update_inertia(true, this->phase(),
+                              mass_ * shapefn_[i] * map_acceleration);
   }
 }
 
@@ -30,23 +101,23 @@ void mpm::Particle<Tdim>::initialise_constitutive_law() noexcept {
 
 //! Map inertial force
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_inertial_force() noexcept {
+void mpm::Particle<Tdim>::map_inertial_force(double bossak_alpha) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
   // Compute nodal inertial forces
   for (unsigned i = 0; i < nodes_.size(); ++i)
     nodes_[i]->update_external_force(
-        true, mpm::ParticlePhase::Solid,
-        (-1. * nodes_[i]->acceleration(mpm::ParticlePhase::Solid) * mass_ *
-         shapefn_(i)));
+        true, this->phase(),
+        (-1. * nodes_[i]->acceleration(this->phase()) * mass_ * shapefn_(i)));
 }
 
-//! Map mass and material stiffness matrix to cell (used in poisson equation
-//! LHS)
+//! Map mass and material stiffness matrix to cell (used in Newton-raphson
+//! equation LHS)
 template <unsigned Tdim>
 inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
-    double newmark_beta, double dt, bool quasi_static) {
+    double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
+    bool quasi_static) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -56,7 +127,8 @@ inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
     this->map_material_stiffness_matrix_to_cell(dt);
 
     // Compute mass matrix
-    if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);
+    if (!quasi_static)
+      this->map_mass_matrix_to_cell(newmark_beta, bossak_alpha, dt);
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -187,6 +259,7 @@ inline Eigen::MatrixXd mpm::Particle<3>::reduce_dmatrix(
 //! Map mass matrix to cell (used in poisson equation LHS)
 template <unsigned Tdim>
 inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
+                                                         double bossak_alpha,
                                                          double dt) {
   bool status = true;
   try {
@@ -194,8 +267,9 @@ inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
     assert(this->material() != nullptr);
 
     // Compute local mass matrix
-    cell_->compute_local_mass_matrix(shapefn_, volume_,
-                                     mass_density_ / (newmark_beta * dt * dt));
+    cell_->compute_local_mass_matrix(
+        shapefn_, volume_,
+        (1 - bossak_alpha) * mass_density_ / (newmark_beta * dt * dt));
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -307,26 +381,87 @@ void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
 
 // Compute updated position of the particle by Newmark scheme
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_updated_position_newmark(double dt) noexcept {
+void mpm::Particle<Tdim>::compute_updated_position_newmark(
+    double dt, double newmark_gamma, unsigned step,
+    mpm::VelocityUpdate velocity_update, double blending_ratio) noexcept {
+  switch (velocity_update) {
+    case mpm::VelocityUpdate::FLIP:
+      this->compute_updated_position_newmark_flip(dt, newmark_gamma, step,
+                                                  blending_ratio);
+      break;
+    case mpm::VelocityUpdate::PIC:
+      this->compute_updated_position_newmark_pic();
+      break;
+  }
+}
+
+// Compute updated position of the particle by Newmark-FLIP scheme
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::compute_updated_position_newmark_flip(
+    double dt, double newmark_gamma, unsigned step,
+    double blending_ratio) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
-  // Get interpolated nodal displacement and acceleration
+  // Get interpolated nodal displacement, velocity, and acceleration
   Eigen::Matrix<double, Tdim, 1> nodal_displacement =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> nodal_velocity =
       Eigen::Matrix<double, Tdim, 1>::Zero();
   Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
       Eigen::Matrix<double, Tdim, 1>::Zero();
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodal_displacement.noalias() +=
-        shapefn_[i] * nodes_[i]->displacement(mpm::ParticlePhase::Solid);
+        shapefn_[i] * nodes_[i]->displacement(this->phase());
+    nodal_velocity.noalias() +=
+        shapefn_[i] * nodes_[i]->velocity(this->phase());
     nodal_acceleration.noalias() +=
-        shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
+        shapefn_[i] * nodes_[i]->acceleration(this->phase());
   }
 
   // Update particle velocity from interpolated nodal acceleration
-  this->velocity_.noalias() +=
-      0.5 * (this->acceleration_ + nodal_acceleration) * dt;
+  if (step > 0)
+    this->velocity_.noalias() += ((1.0 - newmark_gamma) * this->acceleration_ +
+                                  newmark_gamma * nodal_acceleration) *
+                                 dt;
+  else
+    this->velocity_.noalias() += nodal_acceleration * dt;
+
+  // If intermediate scheme is considered
+  this->velocity_ = blending_ratio * this->velocity_ +
+                    (1.0 - blending_ratio) * nodal_velocity;
 
   // Update acceleration
+  this->acceleration_ = nodal_acceleration;
+
+  // New position  current position + displacement increment
+  this->coordinates_.noalias() += nodal_displacement;
+  // Update displacement
+  this->displacement_.noalias() += nodal_displacement;
+}
+
+// Compute updated position of the particle by Newmark-PIC scheme
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::compute_updated_position_newmark_pic() noexcept {
+  // Check if particle has a valid cell ptr
+  assert(cell_ != nullptr);
+  // Get interpolated nodal displacement, velocity, and acceleration
+  Eigen::Matrix<double, Tdim, 1> nodal_displacement =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> nodal_velocity =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodal_displacement.noalias() +=
+        shapefn_[i] * nodes_[i]->displacement(this->phase());
+    nodal_velocity.noalias() +=
+        shapefn_[i] * nodes_[i]->velocity(this->phase());
+    nodal_acceleration.noalias() +=
+        shapefn_[i] * nodes_[i]->acceleration(this->phase());
+  }
+
+  // Update velocity and acceleration
+  this->velocity_ = nodal_velocity;
   this->acceleration_ = nodal_acceleration;
 
   // New position  current position + displacement increment
@@ -437,4 +572,26 @@ inline Eigen::Matrix<double, 3, 3>
     }
   }
   return deformation_gradient_increment;
+}
+
+//! Compute ASFLIP beta parameter using displacement
+template <unsigned Tdim>
+inline double mpm::Particle<Tdim>::compute_asflip_beta() noexcept {
+  double beta = 1.0;
+  // Check if particle is located nearby imposed boundary
+  for (unsigned i = 0; i < this->nodes_.size(); ++i) {
+    const auto& disp_constraints = nodes_[i]->displacement_constraints();
+    if (disp_constraints.size() > 0) {
+      beta = 0.0;
+      break;
+    }
+  }
+
+  // Check if the incremental Jacobian is in compressive mode
+  const auto def_grad_increment =
+      this->compute_deformation_gradient_increment(this->dn_dx_, this->phase());
+  const double J = def_grad_increment.determinant();
+  if (J < 1.0) beta = 0.0;
+
+  return beta;
 }

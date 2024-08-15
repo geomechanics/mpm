@@ -89,6 +89,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   bool pressure_smoothing_{false};
   //! Interface
   bool interface_{false};
+  //! Phase
+  const unsigned phase_{mpm::ParticlePhase::SinglePhase};
 
 };  // MPMExplicit class
 }  // namespace mpm

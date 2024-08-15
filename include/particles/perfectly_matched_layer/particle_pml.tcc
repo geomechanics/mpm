@@ -136,9 +136,10 @@ void mpm::ParticlePML<Tdim>::map_mass_momentum_to_nodes_taylor() noexcept {
 
 //! Map particle mass, momentum and inertia to nodes
 template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
+void mpm::ParticlePML<Tdim>::map_mass_momentum_inertia_to_nodes(
+    mpm::VelocityUpdate velocity_update) noexcept {
   // Map mass and momentum to nodes
-  this->map_mass_momentum_to_nodes();
+  this->map_mass_momentum_to_nodes(velocity_update);
 
   // Damping functions
   const VectorDim& damping_functions = this->mass_damping_functions();
@@ -445,7 +446,7 @@ void mpm::ParticlePML<Tdim>::update_pml_properties(double dt) noexcept {
 
 //! Map inertial force
 template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::map_inertial_force() noexcept {
+void mpm::ParticlePML<Tdim>::map_inertial_force(double bossak_alpha) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
@@ -516,12 +517,14 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell(
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
   }
+
   return status;
 }
 
 //! Map mass matrix to cell (used in poisson equation LHS)
 template <unsigned Tdim>
 inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
+                                                            double bossak_alpha,
                                                             double dt) {
   bool status = true;
   try {
@@ -552,6 +555,7 @@ inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
   }
+
   return status;
 }
 
@@ -656,6 +660,7 @@ inline bool mpm::ParticlePML<Tdim>::map_rayleigh_damping_matrix_to_cell(
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
   }
+
   return status;
 }
 
@@ -706,7 +711,6 @@ Eigen::Matrix<double, Tdim, 1> mpm::ParticlePML<Tdim>::mass_damping_functions()
           std::pow((1. + c_z), 2);
       break;
   }
-
   return damping_functions;
 }
 
@@ -732,6 +736,7 @@ inline Eigen::MatrixXd
       local_stiffness.block(i * 1, j * 1, 1, 1) += k;
     }
   }
+
   return local_stiffness;
 }
 
@@ -776,6 +781,7 @@ inline Eigen::MatrixXd
       local_stiffness.block(i * 2, j * 2, 2, 2) += k;
     }
   }
+
   return local_stiffness;
 }
 
@@ -838,5 +844,6 @@ inline Eigen::MatrixXd
       local_stiffness.block(i * 3, j * 3, 3, 3) += k;
     }
   }
+
   return local_stiffness;
 }

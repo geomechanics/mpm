@@ -228,6 +228,9 @@ class ParticleBase {
   //! Return mass
   virtual double mass() const = 0;
 
+  //! Return Nodal phase
+  virtual unsigned phase() const = 0;
+
   //! Assign pressure
   virtual void assign_pressure(double pressure,
                                unsigned phase = mpm::ParticlePhase::Solid) = 0;
@@ -375,11 +378,12 @@ class ParticleBase {
   /**@{*/
   //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
-  virtual void map_mass_momentum_inertia_to_nodes() = 0;
+  virtual void map_mass_momentum_inertia_to_nodes(
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP) = 0;
 
   //! Map inertial force
   //! \ingroup Implicit
-  virtual void map_inertial_force() = 0;
+  virtual void map_inertial_force(double bossak_alpha = 0.0) = 0;
 
   //! Return acceleration
   //! \ingroup Implicit
@@ -392,6 +396,8 @@ class ParticleBase {
   //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
   virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                                   double newmark_gamma,
+                                                   double bossak_alpha,
                                                    double dt,
                                                    bool quasi_static) = 0;
 
@@ -418,7 +424,10 @@ class ParticleBase {
   //! Compute updated position by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  virtual void compute_updated_position_newmark(double dt) = 0;
+  virtual void compute_updated_position_newmark(
+      double dt, double newmark_gamma, unsigned step,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) = 0;
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
@@ -438,7 +447,7 @@ class ParticleBase {
 
   //! Return mapping matrix
   //! \ingroup AdvancedMapping
-  virtual Eigen::MatrixXd mapping_matrix() const = 0;
+  virtual Eigen::MatrixXd mapping_matrix(unsigned type = 0) const = 0;
 
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor

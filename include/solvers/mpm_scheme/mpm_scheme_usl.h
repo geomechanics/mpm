@@ -33,7 +33,8 @@ class MPMSchemeUSL : public MPMScheme<Tdim> {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   virtual inline void postcompute_nodal_kinematics(
-      mpm::VelocityUpdate velocity_update, unsigned phase) override;
+      mpm::VelocityUpdate velocity_update, unsigned phase,
+      unsigned step) override;
 
   //! Stress update scheme
   //! \retval scheme Stress update scheme

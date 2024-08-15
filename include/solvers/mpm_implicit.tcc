@@ -19,7 +19,6 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
   double residual_tolerance = 1.0e-10;
   double relative_residual_tolerance = 1.0e-6;
   if (stress_update_ == "newmark") {
-    mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(mesh_, dt_);
     if (analysis_.contains("scheme_settings")) {
       // Read boolean of nonlinear analysis
       if (analysis_["scheme_settings"].contains("nonlinear"))
@@ -37,6 +36,10 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
       if (analysis_["scheme_settings"].contains("gamma"))
         newmark_gamma_ =
             analysis_["scheme_settings"].at("gamma").template get<double>();
+      if (analysis_["scheme_settings"].contains("alpha_bossak"))
+        bossak_alpha_ = analysis_["scheme_settings"]
+                            .at("alpha_bossak")
+                            .template get<double>();
       // Read parameters of Newton-Raphson interation
       if (nonlinear_) {
         if (analysis_["scheme_settings"].contains("max_iteration"))
@@ -62,6 +65,8 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
                            .template get<unsigned>();
       }
     }
+    mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(
+        mesh_, dt_, newmark_beta_, newmark_gamma_, bossak_alpha_);
 
     // Initialise convergence criteria
     if (nonlinear_) {
@@ -178,13 +183,12 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
     // Mass momentum inertia and compute velocity and acceleration at nodes
-    mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
+    mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_, step_);
     // Apply PML specific routines
     if (pml_boundary_)
       mpm_scheme_->initialise_pml_boundary_properties(pml_type_);
     // Predict nodal kinematics -- Predictor step of Newmark scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                 newmark_gamma_, pml_boundary_);
+    mpm_scheme_->update_nodal_kinematics_newmark(phase_, pml_boundary_);
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
     if (!matrix_reinitialization_status) {
@@ -213,8 +217,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       this->solve_system_equation();
 
       // Update nodal kinematics -- Corrector step of Newmark scheme
-      mpm_scheme_->update_nodal_kinematics_newmark(
-          phase_, newmark_beta_, newmark_gamma_, pml_boundary_);
+      mpm_scheme_->update_nodal_kinematics_newmark(phase_, pml_boundary_);
 
       // Update stress and strain
       mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);
@@ -388,7 +391,8 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     // Compute local cell stiffness matrices
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
-                  std::placeholders::_1, newmark_beta_, dt_, quasi_static_));
+                  std::placeholders::_1, newmark_beta_, newmark_gamma_,
+                  bossak_alpha_, dt_, quasi_static_));
 
     // Compute local residual force
     mpm_scheme_->compute_forces(gravity_, phase_, step_,

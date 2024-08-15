@@ -134,7 +134,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     contact_->initialise();
 
     // Mass momentum and compute velocity at nodes
-    mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
+    mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_, step_);
 
     // Apply PML specific routines
     if (pml_boundary_)
@@ -162,7 +162,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
         damping_factor_, step_, update_defgrad_, pml_boundary_);
 
     // Mass momentum and compute velocity at nodes
-    mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase);
+    mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase_, step_);
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);

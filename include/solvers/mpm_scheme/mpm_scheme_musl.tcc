@@ -19,7 +19,7 @@ inline void mpm::MPMSchemeMUSL<Tdim>::postcompute_stress_strain(
 //! Postcompute nodal kinematics - map mass and momentum to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeMUSL<Tdim>::postcompute_nodal_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase) {
+    mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) {
   // Assign mass and momentum to nodes zero
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::update_mass, std::placeholders::_1, false,
@@ -31,7 +31,7 @@ inline void mpm::MPMSchemeMUSL<Tdim>::postcompute_nodal_kinematics(
                 false, phase, VectorDim::Zero()),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
-  this->compute_nodal_kinematics(velocity_update, phase);
+  this->compute_nodal_kinematics(velocity_update, phase, step);
 }
 
 //! Stress update scheme

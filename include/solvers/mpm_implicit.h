@@ -142,6 +142,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme
   double newmark_gamma_{0.5};
+  //! Parameter alpha of Bossak scheme
+  double bossak_alpha_{0.0};
   //! Current number of Newton-Raphson iteration
   unsigned current_iteration_;
   //! Max number of Newton-Raphson iteration

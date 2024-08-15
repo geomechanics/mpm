@@ -1,8 +1,12 @@
 //! Constructor
 template <unsigned Tdim>
 mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
-    const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt)
-    : mpm::MPMScheme<Tdim>(mesh, dt) {}
+    const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt, double beta,
+    double gamma, double bossak_alpha)
+    : mpm::MPMScheme<Tdim>(mesh, dt),
+      beta_(beta),
+      gamma_(gamma),
+      bossak_alpha_(bossak_alpha) {}
 
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
@@ -37,11 +41,11 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
 //! Compute nodal kinematics - map mass, momentum and inertia to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase) {
+    mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) {
   // Assign mass, momentum and inertia to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_inertia_to_nodes,
-                std::placeholders::_1));
+                std::placeholders::_1, velocity_update));
 
 #ifdef USE_MPI
   // Run if there is more than a single MPI task
@@ -74,20 +78,19 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
 //! Update nodal kinematics by Newmark scheme
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
-    unsigned phase, double newmark_beta, double newmark_gamma,
-    bool pml_boundary) {
+    unsigned phase, bool pml_boundary) {
 
   // Update nodal velocity and acceleration
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark,
-                std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
+                std::placeholders::_1, phase, beta_, gamma_, dt_),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
   if (pml_boundary)
     mesh_->iterate_over_nodes_predicate(
         std::bind(
             &mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark_pml,
-            std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
+            std::placeholders::_1, phase, beta_, gamma_, dt_),
         std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
 }
 
@@ -141,7 +144,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
       if (!quasi_static)
         mesh_->iterate_over_particles(
             std::bind(&mpm::ParticleBase<Tdim>::map_inertial_force,
-                      std::placeholders::_1));
+                      std::placeholders::_1, bossak_alpha_));
 
       // Apply particle traction and map to nodes
       mesh_->apply_traction_on_particles(step * dt_);
@@ -175,7 +178,8 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
-                std::placeholders::_1, dt_));
+                std::placeholders::_1, dt_, gamma_, step, velocity_update,
+                blending_ratio));
 
   // Iterate over each particle to update deformation gradient
   if (update_defgrad)
@@ -197,7 +201,7 @@ inline void
 //! Postcompute nodal kinematics - map mass and momentum to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::postcompute_nodal_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase) {}
+    mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) {}
 
 //! Stress update scheme
 template <unsigned Tdim>

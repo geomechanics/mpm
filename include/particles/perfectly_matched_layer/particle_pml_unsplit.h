@@ -10,6 +10,7 @@
 
 #include "logger.h"
 #include "math_utility.h"
+#include "particle.h"
 #include "particle_pml.h"
 
 namespace mpm {
@@ -70,11 +71,13 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   /**@{*/
   //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
-  void map_mass_momentum_inertia_to_nodes() noexcept override;
+  void map_mass_momentum_inertia_to_nodes(
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Map inertial force
   //! \ingroup Implicit
-  void map_inertial_force() noexcept override;
+  void map_inertial_force(double bossak_alpha = 0.0) noexcept override;
 
   //! Map internal force
   void map_internal_force(double dt) noexcept override;
@@ -95,7 +98,8 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt time step
-  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt) override;
+  inline bool map_mass_matrix_to_cell(double newmark_beta, double bossak_alpha,
+                                      double dt) override;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)
@@ -107,6 +111,14 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   inline bool map_rayleigh_damping_matrix_to_cell(
       double newmark_gamma, double newmark_beta, double dt,
       double damping_factor) override;
+
+  //! Compute strain increment
+  //! \ingroup Implicit
+  //! \param[in] dn_dx The spatial gradient of shape function
+  //! \param[in] phase Index to indicate phase
+  //! \retval strain increment at particle inside a cell
+  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
+      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
 
   /**@}*/
 
@@ -150,15 +162,18 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   void map_internal_force_stress() noexcept;
 
   //! Map internal force to nodes from stress component
-  void map_internal_force_disp() noexcept;
+  void map_internal_force_disp(double dt) noexcept;
 
   //! Map internal force to nodes from stiffness component
   //! \param[in] dt parameter beta of Newmark scheme
   void map_internal_force_stiffness(double dt) noexcept;
 
-  //! Compute damping matrix
+  //! Map PML rayleigh damping force
+  //! \ingroup Implicit
+  //! \param[in] damping_factor Rayleigh damping factor
   //! \param[in] dt parameter beta of Newmark scheme
-  void map_damping_force(double dt) noexcept;
+  void map_rayleigh_damping_force(double damping_factor,
+                                  double dt) noexcept override;
 
   //! Compute damping matrix for "rayleigh" damping
   //! \param[in] dt parameter beta of Newmark scheme

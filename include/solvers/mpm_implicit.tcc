@@ -188,8 +188,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     if (pml_boundary_)
       mpm_scheme_->initialise_pml_boundary_properties(pml_type_);
     // Predict nodal kinematics -- Predictor step of Newmark scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                 newmark_gamma_, pml_boundary_);
+    mpm_scheme_->update_nodal_kinematics_newmark(phase_, pml_boundary_);
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
     if (!matrix_reinitialization_status) {

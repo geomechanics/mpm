@@ -54,7 +54,7 @@ void mpm::ContactFriction<Tdim>::compute_contact_forces() {
 //! Compute contact forces
 template <unsigned Tdim>
 void mpm::ContactFriction<Tdim>::compute_contact_forces(
-    const double levelset_damping, double dt) {
+    const double levelset_damping, const bool levelset_pic, double dt) {
 
   // Map multimaterial properties from particles to nodes
   mesh_->iterate_over_particles(std::bind(

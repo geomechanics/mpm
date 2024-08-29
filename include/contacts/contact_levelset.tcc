@@ -17,10 +17,10 @@ void mpm::ContactLevelset<Tdim>::initialise() {
 //! Compute contact forces
 template <unsigned Tdim>
 void mpm::ContactLevelset<Tdim>::compute_contact_forces(
-    const double levelset_damping, double dt) {
+    const double levelset_damping, const bool levelset_pic, double dt) {
 
   // Compute and map contact forces to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_particle_contact_force_to_nodes,
-                std::placeholders::_1, levelset_damping, dt));
+                std::placeholders::_1, levelset_damping, levelset_pic, dt));
 }

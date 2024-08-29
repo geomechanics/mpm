@@ -23,8 +23,9 @@ class ContactFriction : public Contact<Tdim> {
   //! Compute contact forces
   //! \param[in] dt Analysis time step
   //! \param[in] levelset_damping Levelset damping factor
+  //! \param[in] levelset_pic Particle in cell method bool for contact velocity
   void compute_contact_forces(const double levelset_damping,
-                              double dt) override;
+                              const bool levelset_pic, double dt) override;
 
  protected:
   //! Mesh object

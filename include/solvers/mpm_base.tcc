@@ -1322,6 +1322,25 @@ void mpm::MPMBase<Tdim>::interface_inputs(
           throw std::runtime_error(
               "Levelset damping is not specified, using 0. as default");
         }
+        // Check if levelset contact velocity update scheme is specified
+        if (mesh_props["interface"].find("velocity_update") !=
+            mesh_props["interface"].end()) {
+          // Retrieve levelset damping factor
+          std::string levelset_velocity_update_ =
+              mesh_props["interface"]["velocity_update"]
+                  .template get<std::string>();
+          if (levelset_velocity_update_ == "pic")
+            levelset_pic_ = true;
+          else if (levelset_velocity_update_ != "global") {
+            throw std::runtime_error(
+                "Levelset contact velocity update should be either \"pic\" or "
+                "\"global\", using global velocity update as default");
+          }
+        } else {
+          throw std::runtime_error(
+              "Levelset contact velocity update is not specified, using global "
+              "velocity update as default");
+        }
       } else if (interface_type_ == "multimaterial") {
         throw std::runtime_error(
             "Multimaterial interface inputs not supported");

@@ -94,6 +94,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::interface_type_;
   //! Levelset damping factor
   using mpm::MPMBase<Tdim>::levelset_damping_;
+  //! Levelset PIC contact velocity
+  using mpm::MPMBase<Tdim>::levelset_pic_;
   /**@}*/
 
  private:

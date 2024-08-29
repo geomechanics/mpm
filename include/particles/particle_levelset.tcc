@@ -45,7 +45,7 @@ double mpm::ParticleLevelset<Tdim>::diameter() const {
 //! Map levelset contact force
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
-    const double levelset_damping, double dt) {
+    const double levelset_damping, const bool levelset_pic, double dt) {
   // Compute levelset values at particle
   double levelset = 0.;
   double levelset_mu = 0.;
@@ -54,6 +54,9 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   double slip_threshold = 0.;
   VectorDim levelset_gradient = VectorDim::Zero();
   VectorDim contact_vel = VectorDim::Zero();
+
+  // Global contact velocity update scheme
+  if (!levelset_pic) contact_vel = velocity_;
 
   for (unsigned i = 0; i < nodes_.size(); i++) {
     // Map levelset and compute gradient
@@ -66,8 +69,10 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
     barrier_stiffness += shapefn_[i] * nodes_[i]->barrier_stiffness();
     slip_threshold += shapefn_[i] * nodes_[i]->slip_threshold();
 
-    // Map contact velocity from the nodes (PIC velocity)
-    contact_vel += shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+    // PIC contact velocity update scheme (map contact velocity from the nodes)
+    if (levelset_pic)
+      contact_vel +=
+          shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
   }
 
   // Compute normals // LEDT check this once separate meshes
@@ -150,7 +155,9 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
         (mass_ * contact_vel / dt).dot(levelset_tangent);
 
     // Couple must not exceed cancellation of contact tangential force
-    couple_tangent_mag = std::min(couple_tangent_mag, contact_tangent_mag);
+    bool uphill_prevention = true;  // LEDT temporary bool for testing
+    if (uphill_prevention)
+      couple_tangent_mag = std::min(couple_tangent_mag, contact_tangent_mag);
 
     // Calculate tangential coupling force vector
     VectorDim couple_force_tangent = -levelset_tangent * couple_tangent_mag;
@@ -159,6 +166,7 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
     couple_force_ = couple_force_normal + couple_force_tangent;
 
     // Damp couple if mp moving away from boundary
+    // LEDT check if 0 tangent resistance
     if ((contact_vel.dot(levelset_normal)) >= 0.)
       couple_force_ = (1. - levelset_damping) * couple_force_;
   }

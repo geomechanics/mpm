@@ -262,7 +262,57 @@ void mpm::ParticlePML<Tdim>::map_body_force(
   // Compute nodal body forces
   for (unsigned i = 0; i < nodes_.size(); ++i)
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,
-                                     (pgravity_mod * mass_ * shapefn_(i)));
+                                     (pgravity * mass_ * shapefn_(i)));
+}
+//! Map internal force
+template <>
+void mpm::ParticlePML<1>::map_gravity_force(double dt) noexcept {
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 1, 1> force;
+    force[0] = -1. * dn_dx_(i, 0) * volume_ * initial_stress_[0];
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
+//! Map internal force
+template <>
+void mpm::ParticlePML<2>::map_gravity_force(double dt) noexcept {
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 2, 1> force;
+    force[0] = dn_dx_(i, 0) * initial_stress_[0] + dn_dx_(i, 1) * initial_stress_[3];
+    force[1] = dn_dx_(i, 1) * initial_stress_[1] + dn_dx_(i, 0) * initial_stress_[3];
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
+}
+
+//! Map internal force
+template <>
+void mpm::ParticlePML<3>::map_gravity_force(double dt) noexcept {
+  // Compute nodal internal forces
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Compute force: -pstress * volume
+    Eigen::Matrix<double, 3, 1> force;
+    force[0] = dn_dx_(i, 0) * initial_stress_[0] + dn_dx_(i, 1) * initial_stress_[3] +
+              dn_dx_(i, 2) * initial_stress_[5];
+
+    force[1] = dn_dx_(i, 1) * initial_stress_[1] + dn_dx_(i, 0) * initial_stress_[3] +
+              dn_dx_(i, 2) * initial_stress_[4];
+
+    force[2] = dn_dx_(i, 2) * initial_stress_[2] + dn_dx_(i, 1) * initial_stress_[4] +
+              dn_dx_(i, 0) * initial_stress_[5];
+
+    force *= -1. * this->volume_;
+
+    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+  }
 }
 
 //! Map internal force

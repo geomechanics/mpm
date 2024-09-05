@@ -442,6 +442,7 @@ class ParticleBase {
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor
   virtual void map_rayleigh_damping_force(double damping_factor) = 0;
+  virtual void map_gravity_force(double dt) noexcept = 0;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)

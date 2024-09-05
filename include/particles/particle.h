@@ -201,6 +201,7 @@ class Particle : public ParticleBase<Tdim> {
   void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) override {
     this->stress_ = stress;
     this->previous_stress_ = stress;
+    this->initial_stress_ = stress;
   }
 
   //! Compute stress
@@ -454,7 +455,7 @@ class Particle : public ParticleBase<Tdim> {
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor
   void map_rayleigh_damping_force(double damping_factor) noexcept override{};
-
+  void map_gravity_force(double dt) noexcept override{};
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)
   //! \param[in] newmark_gamma parameter gamma of Newmark scheme
@@ -679,6 +680,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, Tdim, 1> acceleration_;
   //! Stresses at the last time step
   Eigen::Matrix<double, 6, 1> previous_stress_;
+      //! Stresses at the last time step
+  Eigen::Matrix<double, 6, 1> initial_stress_;
   //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
   Eigen::MatrixXd constitutive_matrix_;
   /**@}*/

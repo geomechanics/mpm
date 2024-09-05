@@ -80,7 +80,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Map internal force
   void map_internal_force(double dt) noexcept override;
-
+  void map_gravity_force(double dt) noexcept override;
   /**@}*/
 
  protected:
@@ -172,6 +172,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
   using Particle<Tdim>::stress_;
   //! Stresses at the previous time step
   using Particle<Tdim>::previous_stress_;
+  using Particle<Tdim>::initial_stress_;
   //! Velocity
   using Particle<Tdim>::velocity_;
   //! Acceleration

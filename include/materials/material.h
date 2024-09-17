@@ -22,6 +22,12 @@ namespace mpm {
 template <unsigned Tdim>
 class ParticleBase;
 
+//! Objective stress rate type
+//! None: No objective stress rate
+//! Jaumann: Objective stress rate considering Jaumann rate
+//! GreenNaghdi: Objective stress rate considering Green-Naghdi rate
+enum class StressRate { None, Jaumann, GreenNaghdi };
+
 //! Material base class
 //! \brief Base class that stores the information about materials
 //! \details Material class stresses and strains
@@ -43,7 +49,7 @@ class Material {
   }
 
   //! Destructor
-  virtual ~Material(){};
+  virtual ~Material() {};
 
   //! Delete copy constructor
   Material(const Material&) = delete;
@@ -71,7 +77,7 @@ class Material {
   //! \brief Function that initialise material to be called at the beginning of
   //! time step
   //! \param[in] state_vars History-dependent state variables
-  virtual void initialise(mpm::dense_map* state_vars){};
+  virtual void initialise(mpm::dense_map* state_vars) {};
 
   /**
    * \defgroup InfinitesimalStrain Functions for infinitesimal strain

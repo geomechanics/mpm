@@ -144,8 +144,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     contact_->compute_contact_forces();
 
     // Update stress first
-    mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_,
-                                          stress_rate_);
+    mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
 
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,

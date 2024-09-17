@@ -39,7 +39,7 @@ class Particle : public ParticleBase<Tdim> {
   Particle(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~Particle() override{};
+  ~Particle() override {};
 
   //! Delete copy constructor
   Particle(const Particle<Tdim>&) = delete;
@@ -210,9 +210,7 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute stress
   //! \param[in] dt Analysis time step
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  void compute_stress(double dt, mpm::StressRate stress_rate =
-                                     mpm::StressRate::None) noexcept override;
+  void compute_stress(double dt) noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }

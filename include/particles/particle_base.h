@@ -60,7 +60,7 @@ class ParticleBase {
   ParticleBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~ParticleBase(){};
+  virtual ~ParticleBase() {};
 
   //! Delete copy constructor
   ParticleBase(const ParticleBase<Tdim>&) = delete;
@@ -254,10 +254,7 @@ class ParticleBase {
 
   //! Compute stress
   //! \param[in] dt Analysis time step
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  virtual void compute_stress(
-      double dt,
-      mpm::StressRate stress_rate = mpm::StressRate::None) noexcept = 0;
+  virtual void compute_stress(double dt) noexcept = 0;
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;

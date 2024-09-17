@@ -254,8 +254,6 @@ class MPMBase : public MPM {
   //! Logger
   using mpm::MPM::console_;
 
-  //! State rate method
-  mpm::StressRate stress_rate_{mpm::StressRate::None};
   //! Stress update method
   std::string stress_update_{"usf"};
   //! Stress update scheme

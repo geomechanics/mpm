@@ -37,7 +37,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   ParticleFiniteStrain(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~ParticleFiniteStrain() override{};
+  ~ParticleFiniteStrain() override {};
 
   //! Delete copy constructor
   ParticleFiniteStrain(const ParticleFiniteStrain<Tdim>&) = delete;
@@ -65,13 +65,13 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Update volume based on deformation gradient increment
   //! Note: Volume is updated in compute_strain() and
   //! compute_strain_volume_newmark() for particle with finite strain
-  void update_volume() noexcept override{};
+  void update_volume() noexcept override {};
 
   //! Compute deformation gradient
   //! Note: Deformation gradient is updated in update_stress_strain() and
   //! compute stress() for particle with finite strain
   void update_deformation_gradient(const std::string& type,
-                                   double dt) noexcept override{};
+                                   double dt) noexcept override {};
 
   //! Compute deformation gradient increment using nodal velocity
   //! \param[in] dt Analysis time step
@@ -79,9 +79,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
 
   //! Compute stress and update deformation gradient
   //! \param[in] dt Analysis time step
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  void compute_stress(double dt, mpm::StressRate stress_rate =
-                                     mpm::StressRate::None) noexcept override;
+  void compute_stress(double dt) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

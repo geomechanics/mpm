@@ -217,8 +217,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
                                                    newmark_gamma_);
 
       // Update stress and strain
-      mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_,
-                                             mpm::StressRate::None);
+      mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);
 
       // Check convergence of Newton-Raphson iteration
       if (nonlinear_) {

@@ -32,7 +32,19 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
   //! Constructor with id and material properties
   //! \param[in] material_properties Material properties
   InfinitesimalElastoPlastic(unsigned id, const Json& material_properties)
-      : Material<Tdim>(id, material_properties){};
+      : Material<Tdim>(id, material_properties) {
+    // Set objective stress rate type
+    if (material_properties.contains("stress_rate")) {
+      auto stress_rate =
+          material_properties["stress_rate"].template get<std::string>();
+      if (stress_rate == "Jaumann")
+        stress_rate_ = mpm::StressRate::Jaumann;
+      else if (stress_rate == "GreenNaghdi")
+        stress_rate_ = mpm::StressRate::GreenNaghdi;
+      else
+        stress_rate_ = mpm::StressRate::None;
+    }
+  };
 
   //! Destructor
   ~InfinitesimalElastoPlastic() override{};
@@ -70,6 +82,9 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
                                                   const ParticleBase<Tdim>* ptr,
                                                   mpm::dense_map* state_vars,
                                                   bool hardening = true) = 0;
+
+  //! Objective stress rate
+  mpm::StressRate stress_rate_{mpm::StressRate::None};
 
 };  // MohrCoulomb class
 }  // namespace mpm

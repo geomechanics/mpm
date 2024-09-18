@@ -93,6 +93,8 @@ class LinearElastic : public Material<Tdim> {
   double vp_{std::numeric_limits<double>::max()};
   //! Shear Wave Velocity
   double vs_{std::numeric_limits<double>::max()};
+  //! Objective stress rate
+  mpm::StressRate stress_rate_{mpm::StressRate::None};
 };  // LinearElastic class
 }  // namespace mpm
 

@@ -27,6 +27,17 @@ mpm::LinearElastic<Tdim>::LinearElastic(unsigned id,
     properties_["pwave_velocity"] = vp_;
     properties_["swave_velocity"] = vs_;
 
+    // Set objective stress rate type
+    if (properties_.contains("stress_rate")) {
+      auto stress_rate = properties_["stress_rate"].template get<std::string>();
+      if (stress_rate == "Jaumann")
+        stress_rate_ = mpm::StressRate::Jaumann;
+      else if (stress_rate == "GreenNaghdi")
+        stress_rate_ = mpm::StressRate::GreenNaghdi;
+      else
+        stress_rate_ = mpm::StressRate::None;
+    }
+
     // Set elastic tensor
     this->compute_elastic_tensor();
   } catch (Json::exception& except) {
@@ -61,7 +72,23 @@ Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
   const Vector6d dstress = this->de_ * dstrain;
-  return (stress + dstress);
+
+  // Compute new stress
+  // TODO: Implement stress rate
+  Vector6d new_stress;
+  switch (stress_rate_) {
+    case mpm::StressRate::None:
+      new_stress = stress + dstress;
+      break;
+    case mpm::StressRate::Jaumann:
+      new_stress = stress + dstress;
+      break;
+    case mpm::StressRate::GreenNaghdi:
+      new_stress = stress + dstress;
+      break;
+  }
+
+  return new_stress;
 }
 
 //! Compute consistent tangent matrix

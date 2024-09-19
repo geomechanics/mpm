@@ -1048,7 +1048,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
                 0., 1., 0.,
                 0., 0., 1.;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     auto deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -1056,7 +1057,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
         REQUIRE(deformation_grad(i, j) ==
                 Approx(def_grad(i, j)).epsilon(Tolerance));
 
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("displacement", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment());
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -1096,7 +1098,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
               0.05,1.25, 0.,
                 0.,  0., 1.;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -2549,7 +2552,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
                 0., 1., 0.,
                 0., 0., 1.;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     auto deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -2557,7 +2561,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
         REQUIRE(deformation_grad(i, j) ==
                 Approx(def_grad(i, j)).epsilon(Tolerance));
 
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("displacement", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment());
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -2604,7 +2609,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
                 -0.025, 1.075, 0.2,
                  -0.05,  0.15, 1.4;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)

@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "Eigen/Dense"
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include "material.h"
 
@@ -75,6 +76,28 @@ class LinearElastic : public Material<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
+
+  //! Compute stress using objective algorithm assuming Jaumann rate
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval updated_stress Updated value of stress with Jaumann rate
+  virtual Vector6d compute_jaumann_stress(const Vector6d& stress,
+                                          const Vector6d& dstrain,
+                                          const ParticleBase<Tdim>* ptr,
+                                          mpm::dense_map* state_vars);
+
+  //! Compute stress using objective algorithm assuming Green-Naghdi rate
+  //! \param[in] stress Stress
+  //! \param[in] dstrain Strain
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval updated_stress Updated value of stress with Green-Naghdi rate
+  virtual Vector6d compute_green_naghdi_stress(const Vector6d& stress,
+                                               const Vector6d& dstrain,
+                                               const ParticleBase<Tdim>* ptr,
+                                               mpm::dense_map* state_vars);
 
  private:
   //! Elastic stiffness matrix

@@ -251,12 +251,24 @@ class ParticleBase {
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
 
-  //! Deformation gradient
+  //! Return deformation gradient increment
+  virtual Eigen::Matrix<double, 3, 3> deformation_gradient_increment()
+      const = 0;
+
+  //! Return Deformation gradient
   virtual Eigen::Matrix<double, 3, 3> deformation_gradient() const = 0;
 
-  //! Compute deformation gradient
-  virtual void update_deformation_gradient(const std::string& type,
-                                           double dt) noexcept = 0;
+  //! Update deformation gradient increment using displacement (for implicit
+  //! schemes)
+  virtual void update_deformation_gradient_increment() noexcept = 0;
+
+  //! Update deformation gradient increment using velocity (for explicit
+  //! schemes)
+  virtual void update_deformation_gradient_increment(double dt) noexcept = 0;
+
+  //! Update deformation gradient provided that the deformation gradient
+  //! increment exists
+  virtual void update_deformation_gradient() noexcept = 0;
 
   //! Initial stress
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;

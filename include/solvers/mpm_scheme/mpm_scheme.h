@@ -77,7 +77,6 @@ class MPMScheme {
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
-  //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
       mpm::VelocityUpdate velocity_update, double blending_ratio,
       unsigned phase, const mpm::Damping damping_type, double damping_factor,

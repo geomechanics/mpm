@@ -49,7 +49,7 @@ class Material {
   }
 
   //! Destructor
-  virtual ~Material() {};
+  virtual ~Material(){};
 
   //! Delete copy constructor
   Material(const Material&) = delete;
@@ -82,7 +82,7 @@ class Material {
   //! \brief Function that initialise material to be called at the beginning of
   //! time step
   //! \param[in] state_vars History-dependent state variables
-  virtual void initialise(mpm::dense_map* state_vars) {};
+  virtual void initialise(mpm::dense_map* state_vars){};
 
   /**
    * \defgroup InfinitesimalStrain Functions for infinitesimal strain

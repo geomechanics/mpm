@@ -1894,7 +1894,6 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
         if (mesh_props["nonlocal_mesh_properties"].contains("anisotropy")) {
           anisotropy = mesh_props["nonlocal_mesh_properties"]["anisotropy"]
                            .template get<bool>();
-          update_defgrad_ = true;
         }
         nonlocal_properties.insert(
             std::pair<std::string, bool>("anisotropy", anisotropy));

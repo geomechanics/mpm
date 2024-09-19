@@ -68,11 +68,10 @@ class MPMScheme {
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
-  //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
       mpm::VelocityUpdate velocity_update, double blending_ratio,
       unsigned phase, const std::string& damping_type, double damping_factor,
-      unsigned step, bool update_defgrad);
+      unsigned step);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

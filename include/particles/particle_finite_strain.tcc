@@ -102,7 +102,7 @@ inline bool
   try {
     // Stress tensor in suitable dimension
     const Eigen::Matrix<double, Tdim, Tdim>& stress_matrix =
-        mpm::math::matrix_form<Tdim>(this->stress_);
+        mpm::math::matrix_form<Tdim>(this->stress_, 1.0);
 
     const auto& reduced_stiffness = dn_dx_ * stress_matrix * dn_dx_.transpose();
 

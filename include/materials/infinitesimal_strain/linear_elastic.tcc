@@ -79,12 +79,12 @@ Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_stress(
       new_stress = stress + this->de_ * dstrain;
       break;
     case mpm::StressRate::Jaumann:
-      new_stress =
-          this->compute_jaumann_stress(stress, dstrain, ptr, state_vars);
+      new_stress = this->compute_jaumann_stress(stress, dstrain, this->de_, ptr,
+                                                state_vars);
       break;
     case mpm::StressRate::GreenNaghdi:
-      new_stress =
-          this->compute_green_naghdi_stress(stress, dstrain, ptr, state_vars);
+      new_stress = this->compute_green_naghdi_stress(stress, dstrain, this->de_,
+                                                     ptr, state_vars);
       break;
   }
 
@@ -94,7 +94,7 @@ Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_stress(
 //! Compute stress using objective algorithm assuming Jaumann rate
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_jaumann_stress(
-    const Vector6d& stress, const Vector6d& dstrain,
+    const Vector6d& stress, const Vector6d& dstrain, const Matrix6x6& de,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
 
   // Displacement gradient
@@ -116,7 +116,7 @@ Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_jaumann_stress(
 
   // Compute new stress
   Vector6d new_stress = mpm::math::voigt_form(rot_stress, 1.0) +
-                        this->de_ * mpm::math::voigt_form(rot_strain_rate, 2.0);
+                        de * mpm::math::voigt_form(rot_strain_rate, 2.0);
 
   return new_stress;
 }
@@ -125,7 +125,7 @@ Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_jaumann_stress(
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1>
     mpm::LinearElastic<Tdim>::compute_green_naghdi_stress(
-        const Vector6d& stress, const Vector6d& dstrain,
+        const Vector6d& stress, const Vector6d& dstrain, const Matrix6x6& de,
         const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
 
   // Displacement and deformation gradient
@@ -154,7 +154,7 @@ Eigen::Matrix<double, 6, 1>
 
   // Compute new stress
   Vector6d new_stress = mpm::math::voigt_form(rot_stress, 1.0) +
-                        this->de_ * mpm::math::voigt_form(rot_strain_rate, 2.0);
+                        de * mpm::math::voigt_form(rot_strain_rate, 2.0);
 
   return new_stress;
 }

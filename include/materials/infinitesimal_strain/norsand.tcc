@@ -535,7 +535,8 @@ Eigen::Matrix<double, 6, 1> mpm::NorSand<Tdim>::compute_stress(
   const Matrix6x6 de = this->compute_elastic_tensor(stress, state_vars);
 
   // Trial stress - elastic
-  Vector6d trial_stress = stress_neg + (de * dstrain_neg);
+  Vector6d trial_stress =
+      this->compute_trial_stress(stress_neg, dstrain_neg, de, ptr, state_vars);
 
   // Compute image parameters at current stress
   this->compute_image_parameters(state_vars);

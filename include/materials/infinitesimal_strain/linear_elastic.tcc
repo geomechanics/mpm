@@ -30,9 +30,9 @@ mpm::LinearElastic<Tdim>::LinearElastic(unsigned id,
     // Set objective stress rate type
     if (properties_.contains("stress_rate")) {
       auto stress_rate = properties_["stress_rate"].template get<std::string>();
-      if (stress_rate == "Jaumann")
+      if (stress_rate == "jaumann")
         stress_rate_ = mpm::StressRate::Jaumann;
-      else if (stress_rate == "GreenNaghdi")
+      else if (stress_rate == "green_naghdi")
         stress_rate_ = mpm::StressRate::GreenNaghdi;
       else
         stress_rate_ = mpm::StressRate::None;

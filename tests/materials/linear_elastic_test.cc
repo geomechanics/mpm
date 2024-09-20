@@ -161,7 +161,7 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
       "LinearElastic check objective stress-rate - Jaumann rate, simple "
       "shear") {
     unsigned id = 0;
-    jmaterial["stress_rate"] = "Jaumann";
+    jmaterial["stress_rate"] = "jaumann";
     jmaterial["youngs_modulus"] = 210.E9;
     jmaterial["poisson_ratio"] = 0.3;
     auto material =
@@ -286,7 +286,7 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
       "LinearElastic check objective stress-rate - Green-Naghdi rate, simple "
       "shear") {
     unsigned id = 0;
-    jmaterial["stress_rate"] = "GreenNaghdi";
+    jmaterial["stress_rate"] = "green_naghdi";
     jmaterial["youngs_modulus"] = 210.E9;
     jmaterial["poisson_ratio"] = 0.3;
     auto material =

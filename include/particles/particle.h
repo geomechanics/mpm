@@ -189,6 +189,18 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval dvolumetric strain at centroid
   double dvolumetric_strain() const override { return dvolumetric_strain_; }
 
+  //! Assign deformation gradient increment
+  void assign_deformation_gradient_increment(
+      Eigen::Matrix<double, 3, 3> F_inc) noexcept override {
+    deformation_gradient_increment_ = F_inc;
+  }
+
+  //! Assign deformation gradient
+  void assign_deformation_gradient(
+      Eigen::Matrix<double, 3, 3> F) noexcept override {
+    deformation_gradient_ = F;
+  }
+
   //! Return deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment() const override {
     return deformation_gradient_increment_;

@@ -251,6 +251,14 @@ class ParticleBase {
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
 
+  //! Assign deformation gradient increment
+  virtual void assign_deformation_gradient_increment(
+      Eigen::Matrix<double, 3, 3> F_inc) noexcept = 0;
+
+  //! Assign deformation gradient increment
+  virtual void assign_deformation_gradient(
+      Eigen::Matrix<double, 3, 3> F) noexcept = 0;
+
   //! Return deformation gradient increment
   virtual Eigen::Matrix<double, 3, 3> deformation_gradient_increment()
       const = 0;

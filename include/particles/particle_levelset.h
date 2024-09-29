@@ -50,7 +50,7 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Return the approximate particle diameter
   double diameter() const override;
 
- private:
+ protected:
   //! Compute Levelset contact force
   //! \param[in] levelset Levelset value at the particle
   //! \param[in] levelset_normal Normal vector towards the levelset
@@ -68,7 +68,7 @@ class ParticleLevelset : public Particle<Tdim> {
       const double mp_radius, const VectorDim& contact_vel,
       const double levelset_damping, double dt) noexcept;
 
- private:
+ protected:
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! coupling force

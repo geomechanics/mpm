@@ -1346,6 +1346,139 @@ TEST_CASE("Mesh is checked for 3D case", "[mesh][3D]") {
                       set_id, absorbing_constraint) == false);
         }
 
+        // Test assign non-conforming traction constraint
+        SECTION("Check assign non-conforming traction constraint to nodes") {
+          // Vector of particle coordinates
+          std::vector<Eigen::Matrix<double, Dim, 1>> coordinates;
+          coordinates.clear();
+
+          // Particle coordinates
+          Eigen::Matrix<double, Dim, 1> particle;
+
+          // Cell 0
+          // Particle 0
+          particle << 0.125, 0.125, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 1
+          particle << 0.375, 0.125, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 2
+          particle << 0.375, 0.375, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 3
+          particle << 0.125, 0.375, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 4
+          particle << 0.125, 0.125, 0.375;
+          coordinates.emplace_back(particle);
+          // Particle 5
+          particle << 0.375, 0.125, 0.375;
+          coordinates.emplace_back(particle);
+          // Particle 6
+          particle << 0.375, 0.375, 0.375;
+          coordinates.emplace_back(particle);
+          // Particle 7
+          particle << 0.125, 0.375, 0.375;
+          coordinates.emplace_back(particle);
+
+          // Initialise material models in mesh
+          mesh->initialise_material_models(materials);
+
+          SECTION("Check addition of particles to mesh") {
+            // Particle type 2D
+            const std::string particle_type = "P3D";
+            // Create particles from file
+            bool status = mesh->create_particles(particle_type, coordinates,
+                                                 mids, 0, false);
+
+            // Check if mesh has added particles
+            REQUIRE(mesh->nparticles() == coordinates.size());
+
+            // Vector of particle cells
+            std::vector<std::array<mpm::Index, 2>> particles_cells;
+            // Particle cells
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({0, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({1, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({2, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({3, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({4, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({5, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({6, 0}));
+            particles_cells.emplace_back(std::array<mpm::Index, 2>({7, 0}));
+
+            REQUIRE(mesh->assign_particles_cells(particles_cells) == true);
+
+            // Locate particles
+            auto missing_particles = mesh->locate_particles_mesh();
+            REQUIRE(missing_particles.size() == 0);
+
+            REQUIRE(mesh->particles_cells().size() == mesh->nparticles());
+
+            mesh->iterate_over_particles(
+                std::bind(&mpm::ParticleBase<Dim>::compute_shapefn,
+                          std::placeholders::_1));
+          }
+
+          // Add cell neighbors
+          auto cells = mesh->cells();
+          unsigned count = 1;
+          for (auto citr = cells.cbegin(); citr != cells.cend(); ++citr) {
+            REQUIRE((*citr)->add_neighbour(count) == true);
+            count -= 1;
+          }
+
+          // Update nodal mass
+          auto nodes = mesh->nodes();
+          for (auto nitr = nodes.cbegin(); nitr != nodes.cend(); ++nitr) {
+            if ((*nitr) != nullptr) {
+              (*nitr)->update_mass(false, 0, 100.);
+            }
+          }
+
+          // Define bounding box
+          std::vector<double> bounding_box{-5., 5., -5., 5., -5., 5.};
+
+          // Constraint for hydrostatic case
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.) ==
+                  true);
+          // Constraint for hydrostatic case (above datum)
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 0., 1000., -10., true, true, nullptr, 0.) ==
+                  true);
+          // Constraint for hydrostatic case (outside bounding box)
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 2., 1000., -10., true, false, nullptr,
+                      0.) == true);
+          // Constraint for constant case
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 2., 1000., -10., false, true, mfunction,
+                      100.) == true);
+          // Constraint for constant case (no mathfunction)
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 2., 1000., -10., false, true, nullptr,
+                      100.) == true);
+
+          bounding_box.at(0) = 5.;
+          bounding_box.at(1) = -5.;
+          // Constraint for hydrostatic case (outside bounding box)
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.) ==
+                  true);
+          // Constraint for hydrostatic case (outside bounding box)
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 2., 1000., -10., true, false, nullptr,
+                      0.) == true);
+
+          // Constraint fails due to pressure = 0. && !hydrostatic
+          REQUIRE(mesh->create_nonconforming_traction_constraint(
+                      bounding_box, 2., 1000., -10., false, true, mfunction,
+                      0.) == false);
+
+          // Apply constraint
+          mesh->apply_nonconforming_traction_constraint(10.);
+        }
+
         // Test assign acceleration constraints to nodes
         SECTION("Check assign acceleration constraints to nodes") {
           tsl::robin_map<mpm::Index, std::vector<mpm::Index>> node_sets;

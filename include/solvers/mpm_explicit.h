@@ -77,8 +77,10 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Constraints Pointer
   using mpm::MPMBase<Tdim>::constraints_;
-  //! Absorbing Boundary
+  //! Absorbing boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
+  //! Non-conforming traction boundary
+  using mpm::MPMBase<Tdim>::nonconforming_traction_;
   //! Update deformation gradient
   using mpm::MPMBase<Tdim>::update_defgrad_;
 

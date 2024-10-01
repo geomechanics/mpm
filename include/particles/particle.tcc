@@ -1745,15 +1745,6 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 
   return beta;
 }
-//! Minus the mass of the virtual fluid
-template <unsigned Tdim>
-void mpm::Particle<Tdim>::minus_virtual_fluid_mass(double fluid_density) {
-
-  // Map mass and momentum to nodes
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->update_fluid_mass(true, -fluid_density * volume_ * shapefn_[i]);
-  }
-}
 
 //! Minus the internal force of the virtual stress field
 template <unsigned Tdim>

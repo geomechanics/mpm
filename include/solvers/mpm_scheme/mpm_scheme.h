@@ -31,23 +31,19 @@ class MPMScheme {
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
   virtual inline void compute_stress_strain(unsigned phase,
-                                            bool pressure_smoothing,
-                                            mpm::StressRate stress_rate);
+                                            bool pressure_smoothing);
 
   //! Precompute stress and strain (empty call)
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
   virtual inline void precompute_stress_strain(unsigned phase,
-                                               bool pressure_smoothing,
-                                               mpm::StressRate stress_rate) = 0;
+                                               bool pressure_smoothing) = 0;
 
   //! Postcompute stress and strain (empty call)
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  virtual inline void postcompute_stress_strain(
-      unsigned phase, bool pressure_smoothing, mpm::StressRate stress_rate) = 0;
+  virtual inline void postcompute_stress_strain(unsigned phase,
+                                                bool pressure_smoothing) = 0;
 
   //! Pressure smoothing
   //! \param[in] phase Phase to smooth pressure
@@ -72,11 +68,10 @@ class MPMScheme {
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
-  //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
       mpm::VelocityUpdate velocity_update, double blending_ratio,
       unsigned phase, const std::string& damping_type, double damping_factor,
-      unsigned step, bool update_defgrad);
+      unsigned step);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

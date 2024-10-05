@@ -55,8 +55,6 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::graph_;
 #endif
 
-  //! Stress rate method
-  using mpm::MPMBase<Tdim>::stress_rate_;
   //! velocity update
   using mpm::MPMBase<Tdim>::velocity_update_;
   //! FLIP-PIC blending ratio
@@ -79,8 +77,6 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::constraints_;
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
-  //! Update deformation gradient
-  using mpm::MPMBase<Tdim>::update_defgrad_;
 
  private:
   //! Pressure smoothing

@@ -21,18 +21,14 @@ class MPMSchemeUSL : public MPMScheme<Tdim> {
   //! Precompute stress
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
   virtual inline void precompute_stress_strain(
-      unsigned phase, bool pressure_smoothing,
-      mpm::StressRate stress_rate) override;
+      unsigned phase, bool pressure_smoothing) override;
 
   //! Postcompute stress
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
   virtual inline void postcompute_stress_strain(
-      unsigned phase, bool pressure_smoothing,
-      mpm::StressRate stress_rate) override;
+      unsigned phase, bool pressure_smoothing) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

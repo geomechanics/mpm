@@ -137,8 +137,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     contact_->compute_contact_forces();
 
     // Update stress first
-    mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_,
-                                          stress_rate_);
+    mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
 
     // Compute forces
     mpm_scheme_->compute_forces(gravity_, phase, step_,
@@ -153,14 +152,13 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
                                              phase, "Cundall", damping_factor_,
-                                             step_, update_defgrad_);
+                                             step_);
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase);
 
     // Update Stress Last
-    mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_,
-                                           stress_rate_);
+    mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);

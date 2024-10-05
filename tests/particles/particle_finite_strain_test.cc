@@ -258,6 +258,7 @@ TEST_CASE("ParticleFiniteStrain is checked for 2D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain
+    particle->update_deformation_gradient_increment(dt);
     particle->compute_strain(dt);
     // Deformation gradient increment
     Eigen::Matrix<double, 3, 3> deformation_gradient_increment;
@@ -296,6 +297,14 @@ TEST_CASE("ParticleFiniteStrain is checked for 2D case",
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
+
+    // Check deformation gradient
+    particle->update_deformation_gradient();
+    for (unsigned i = 0; i < deformation_gradient_increment.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient_increment.cols(); ++j)
+        REQUIRE(
+            particle->deformation_gradient()(i, j) ==
+            Approx(deformation_gradient_increment(i, j)).epsilon(Tolerance));
 
     // Internal force
     Eigen::Matrix<double, 4, 2> internal_force;
@@ -610,6 +619,7 @@ TEST_CASE("ParticleFiniteStrain is checked for 3D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute deformation gradient increment
+    particle->update_deformation_gradient_increment(dt);
     particle->compute_strain(dt);
     // Deformation gradient increment
     Eigen::Matrix<double, 3, 3> deformation_gradient_increment;
@@ -647,6 +657,14 @@ TEST_CASE("ParticleFiniteStrain is checked for 3D case",
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
+
+    // Check deformation gradient
+    particle->update_deformation_gradient();
+    for (unsigned i = 0; i < deformation_gradient_increment.rows(); ++i)
+      for (unsigned j = 0; j < deformation_gradient_increment.cols(); ++j)
+        REQUIRE(
+            particle->deformation_gradient()(i, j) ==
+            Approx(deformation_gradient_increment(i, j)).epsilon(Tolerance));
 
     // Internal force
     Eigen::Matrix<double, 8, 3> internal_force;

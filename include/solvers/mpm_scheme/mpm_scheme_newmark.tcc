@@ -86,7 +86,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
 //! Compute stress and strain by Newmark scheme
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
-    unsigned phase, bool pressure_smoothing, mpm::StressRate stress_rate) {
+    unsigned phase, bool pressure_smoothing) {
 
   // Iterate over each particle to calculate strain and volume using nodal
   // displacement
@@ -105,13 +105,13 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
 //! Precompute stresses and strains
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::precompute_stress_strain(
-    unsigned phase, bool pressure_smoothing, mpm::StressRate stress_rate) {}
+    unsigned phase, bool pressure_smoothing) {}
 
 //! Postcompute stresses and strains
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::postcompute_stress_strain(
-    unsigned phase, bool pressure_smoothing, mpm::StressRate stress_rate) {
-  this->compute_stress_strain(phase, pressure_smoothing, stress_rate);
+    unsigned phase, bool pressure_smoothing) {
+  this->compute_stress_strain(phase, pressure_smoothing);
 }
 
 // Compute forces
@@ -160,19 +160,12 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step,
-    bool update_defgrad) {
+    const std::string& damping_type, double damping_factor, unsigned step) {
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
                 std::placeholders::_1, dt_));
-
-  // Iterate over each particle to update deformation gradient
-  if (update_defgrad)
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
-                  std::placeholders::_1, "displacement", dt_));
 }
 
 // Update particle stress, strain and volume

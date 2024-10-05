@@ -265,4 +265,22 @@ TEST_CASE("materials utility is checked", "[material]") {
     double pdstrain = mpm::materials::pdstrain(strain);
     REQUIRE(pdstrain == Approx(0.001999444367263).epsilon(Tolerance));
   }
+
+  SECTION("Check for compute rotation matrix") {
+    Eigen::Matrix<double, 3, 3> deformation_gradient;
+    deformation_gradient << 1. / 4., -5. / 4., 0.0, 2.0, 1.0, 0.0, 0.0, 0.0,
+        1.0;
+
+    Eigen::Matrix3d rotation_matrix =
+        mpm::materials::compute_rotation_tensor(deformation_gradient);
+
+    Eigen::Matrix3d R_solution;
+    R_solution << 0.358979079308869, -0.933345606203059, 0.0, 0.933345606203060,
+        0.358979079308869, 0.0, 0.0, 0.0, 1.0;
+
+    for (unsigned i = 0; i < 3; ++i)
+      for (unsigned j = 0; j < 3; ++j)
+        REQUIRE(rotation_matrix(i, j) ==
+                Approx(R_solution(i, j)).epsilon(Tolerance));
+  }
 }

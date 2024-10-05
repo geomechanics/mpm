@@ -10,6 +10,7 @@
 #include "logger.h"
 #include "map.h"
 #include "material_utility.h"
+#include "math_utility.h"
 #include "particle.h"
 #include "particle_base.h"
 
@@ -21,6 +22,12 @@ namespace mpm {
 // Forward declaration of ParticleBase
 template <unsigned Tdim>
 class ParticleBase;
+
+//! Objective stress rate type
+//! None: No objective stress rate
+//! Jaumann: Objective stress rate considering Jaumann rate
+//! GreenNaghdi: Objective stress rate considering Green-Naghdi rate
+enum class StressRate { None, Jaumann, GreenNaghdi };
 
 //! Material base class
 //! \brief Base class that stores the information about materials

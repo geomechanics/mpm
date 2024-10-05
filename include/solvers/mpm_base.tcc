@@ -51,23 +51,6 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
     if (analysis_.find("locate_particles") != analysis_.end())
       locate_particles_ = analysis_["locate_particles"].template get<bool>();
 
-    // Stress rate method (None/Jaumann)
-    try {
-      if (analysis_.find("stress_rate") != analysis_.end()) {
-        if (analysis_["stress_rate"].template get<std::string>() == "jaumann")
-          stress_rate_ = mpm::StressRate::Jaumann;
-        else if (analysis_["stress_rate"].template get<std::string>() == "none")
-          stress_rate_ = mpm::StressRate::None;
-        else
-          throw std::runtime_error("Stress rate type is not supported");
-      } else
-        throw std::runtime_error("No stress rate type specified");
-    } catch (std::exception& exception) {
-      console_->warn(
-          "{} #{}: {}. Using Cauchy stress rate (non-objective) as default",
-          __FILE__, __LINE__, exception.what());
-    }
-
     // Stress update method (USF/USL/MUSL/Newmark)
     try {
       if (analysis_.find("mpm_scheme") != analysis_.end())
@@ -1911,7 +1894,6 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
         if (mesh_props["nonlocal_mesh_properties"].contains("anisotropy")) {
           anisotropy = mesh_props["nonlocal_mesh_properties"]["anisotropy"]
                            .template get<bool>();
-          update_defgrad_ = true;
         }
         nonlocal_properties.insert(
             std::pair<std::string, bool>("anisotropy", anisotropy));

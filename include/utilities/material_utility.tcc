@@ -219,3 +219,27 @@ inline double mpm::materials::pdstrain(
 
   return pdstrain;
 }
+
+// Compute rotation tensor from a deformation gradient using polar decomposition
+inline const Eigen::Matrix3d mpm::materials::compute_rotation_tensor(
+    const Eigen::Matrix3d& deformation_gradient) {
+  // Compute the right Cauchy-Green tensor C = F' * F
+  Eigen::Matrix3d C = deformation_gradient.transpose() * deformation_gradient;
+
+  // Perform the eigen decomposition of C to find V (eigenvectors) and D
+  // (eigenvalues)
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(C);
+  Eigen::Matrix3d V =
+      eigen_solver.eigenvectors();  // Eigenvectors (orthogonal matrix)
+  Eigen::Matrix3d D =
+      eigen_solver.eigenvalues().asDiagonal();  // Eigenvalues as a diagonal
+                                                // matrix
+
+  // Compute the right stretch tensor U = V * sqrt(D) * V'
+  Eigen::Matrix3d U = V * D.cwiseSqrt() * V.transpose();
+
+  // Compute the rotation tensor R = F * inv(U)
+  Eigen::Matrix3d R = deformation_gradient * U.inverse();
+
+  return R;
+}

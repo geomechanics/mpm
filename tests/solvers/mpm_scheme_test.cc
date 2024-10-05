@@ -187,10 +187,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
         mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
 
     // Update stress first
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, false, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, true, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
@@ -198,19 +196,17 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step, false));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step, false));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, false));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step, false));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step));
 
     // Update Stress Last
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, true, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, false, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, false));
 
     // Locate particles
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(true));
@@ -233,10 +229,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
         mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
 
     // Update stress first
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, false, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, true, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
@@ -244,19 +238,17 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step, true));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step, true));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, true));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step, true));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step));
 
     // Update Stress Last
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, true, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, false, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, false));
 
     // Locate particles
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(true));
@@ -279,10 +271,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
         mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
 
     // Update stress first
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, false, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, true, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
@@ -290,19 +280,17 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step, true));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step, true));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, true));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step, true));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step));
 
     // Update Stress Last
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, true, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, false, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, false));
 
     // Locate particles
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(true));
@@ -329,10 +317,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
         mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
 
     // Update stress first
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, false, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(
-        phase, true, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
+    REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
     REQUIRE_NOTHROW(
@@ -342,15 +328,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, true));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step, false));
+        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
 
     // Update Stress Last
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, true, mpm::StressRate::None));
-    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(
-        phase, false, mpm::StressRate::None));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
+    REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, false));
 
     // Locate particles
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(true));

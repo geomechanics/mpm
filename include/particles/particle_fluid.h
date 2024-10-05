@@ -37,9 +37,7 @@ class FluidParticle : public mpm::Particle<Tdim> {
 
   //! Compute stress
   //! \param[in] dt Analysis time step
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  void compute_stress(double dt, mpm::StressRate stress_rate =
-                                     mpm::StressRate::None) noexcept override;
+  void compute_stress(double dt) noexcept override;
 
   //! Map internal force
   inline void map_internal_force() noexcept override;

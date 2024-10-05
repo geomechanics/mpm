@@ -73,7 +73,13 @@ inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
 //! Compute stress and strain
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
-    unsigned phase, bool pressure_smoothing, mpm::StressRate stress_rate) {
+    unsigned phase, bool pressure_smoothing) {
+
+  // Iterate over each particle to update deformation gradient increment
+  mesh_->iterate_over_particles(std::bind(
+      static_cast<void (mpm::ParticleBase<Tdim>::*)(double)>(
+          &mpm::ParticleBase<Tdim>::update_deformation_gradient_increment),
+      std::placeholders::_1, dt_));
 
   // Iterate over each particle to calculate strain
   mesh_->iterate_over_particles(std::bind(
@@ -87,9 +93,13 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
   if (pressure_smoothing) this->pressure_smoothing(phase);
 
   // Iterate over each particle to compute stress
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1, dt_));
+
+  // Iterate over each particle to update deformation gradient
   mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1,
-                dt_, stress_rate));
+      std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
+                std::placeholders::_1));
 }
 
 //! Pressure smoothing
@@ -194,8 +204,7 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step,
-    bool update_defgrad) {
+    const std::string& damping_type, double damping_factor, unsigned step) {
 
   // Update nodal acceleration constraints
   mesh_->update_nodal_acceleration_constraints(step * dt_);
@@ -217,12 +226,6 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
                 std::placeholders::_1, dt_, velocity_update, blending_ratio));
-
-  // Iterate over each particle to update deformation gradient
-  if (update_defgrad)
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
-                  std::placeholders::_1, "velocity", dt_));
 
   // Apply particle velocity constraints
   mesh_->apply_particle_velocity_constraints();

@@ -50,7 +50,7 @@ class Material {
   }
 
   //! Destructor
-  virtual ~Material(){};
+  virtual ~Material() {};
 
   //! Delete copy constructor
   Material(const Material&) = delete;
@@ -68,11 +68,6 @@ class Material {
   template <typename Ttype>
   Ttype property(const std::string& key);
 
-  //! Has material property
-  //! \param[in] key Material property key
-  //! \retval result Bool indicating if material property is available or not
-  bool has_property(const std::string& key);
-
   //! Initialise history variables
   virtual mpm::dense_map initialise_state_variables() = 0;
 
@@ -83,7 +78,7 @@ class Material {
   //! \brief Function that initialise material to be called at the beginning of
   //! time step
   //! \param[in] state_vars History-dependent state variables
-  virtual void initialise(mpm::dense_map* state_vars){};
+  virtual void initialise(mpm::dense_map* state_vars) {};
 
   /**
    * \defgroup InfinitesimalStrain Functions for infinitesimal strain

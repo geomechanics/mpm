@@ -11,11 +11,3 @@ Ttype mpm::Material<Tdim>::property(const std::string& key) {
         "Property call to material parameter not found or invalid type");
   }
 }
-
-//! Has material property
-template <unsigned Tdim>
-bool mpm::Material<Tdim>::has_property(const std::string& key) {
-  bool status = false;
-  if (properties_.contains(key)) status = true;
-  return status;
-}

@@ -1,24 +1,23 @@
-#ifndef MPM_CONTACT_FRICTION_H_
-#define MPM_CONTACT_FRICTION_H_
+#ifndef MPM_CONTACT_LEVELSET_H_
+#define MPM_CONTACT_LEVELSET_H_
 
 #include "contact.h"
+#include "mesh_levelset.h"
+#include "particle_levelset.h"
 
 namespace mpm {
 
-//! ContactFriction class
-//! \brief ContactFriction base class
+//! ContactLevelset class
+//! \brief ContactLevelset base class
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class ContactFriction : public Contact<Tdim> {
+class ContactLevelset : public Contact<Tdim> {
  public:
   //! Default constructor with mesh class
-  ContactFriction(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh);
+  ContactLevelset(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh);
 
   //! Intialize
   void initialise() override;
-
-  //! Compute contact forces
-  void compute_contact_forces() override;
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
@@ -27,12 +26,16 @@ class ContactFriction : public Contact<Tdim> {
   void compute_contact_forces(const double levelset_damping,
                               const bool levelset_pic, double dt) override;
 
+  //! Mesh levelset object
+  std::shared_ptr<mpm::MeshLevelset<Tdim>> mesh_levelset_;
+
  protected:
   //! Mesh object
   using mpm::Contact<Tdim>::mesh_;
-};  // Contactfriction class
+
+};  // ContactLevelset class
 }  // namespace mpm
 
-#include "contact_friction.tcc"
+#include "contact_levelset.tcc"
 
-#endif  // MPM_CONTACT_FRICTION_H_
+#endif  // MPM_CONTACT_LEVELSET_H_

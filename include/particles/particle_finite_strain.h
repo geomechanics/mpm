@@ -57,21 +57,10 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
     return strain;
   }
 
-  //! Return deformation gradient increment of the particle
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment() const {
-    return deformation_gradient_increment_;
-  }
-
   //! Update volume based on deformation gradient increment
   //! Note: Volume is updated in compute_strain() and
   //! compute_strain_volume_newmark() for particle with finite strain
   void update_volume() noexcept override{};
-
-  //! Compute deformation gradient
-  //! Note: Deformation gradient is updated in update_stress_strain() and
-  //! compute stress() for particle with finite strain
-  void update_deformation_gradient(const std::string& type,
-                                   double dt) noexcept override{};
 
   //! Compute deformation gradient increment using nodal velocity
   //! \param[in] dt Analysis time step
@@ -79,9 +68,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
 
   //! Compute stress and update deformation gradient
   //! \param[in] dt Analysis time step
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  void compute_stress(double dt, mpm::StressRate stress_rate =
-                                     mpm::StressRate::None) noexcept override;
+  void compute_stress(double dt) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -174,8 +161,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
   //! Deformation gradient increment
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_{
-      Eigen::Matrix<double, 3, 3>::Identity()};
+  using Particle<Tdim>::deformation_gradient_increment_;
   //! Shape function gradient at the reference configuration
   Eigen::MatrixXd reference_dn_dx_;
   /**@}*/

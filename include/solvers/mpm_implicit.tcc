@@ -217,8 +217,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
                                                    newmark_gamma_);
 
       // Update stress and strain
-      mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_,
-                                             mpm::StressRate::None);
+      mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);
 
       // Check convergence of Newton-Raphson iteration
       if (nonlinear_) {
@@ -512,7 +511,7 @@ void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
   // Particle kinematics and volume
   mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
                                            phase_, "Cundall", damping_factor_,
-                                           step_, update_defgrad_);
+                                           step_);
 
   // Particle stress, strain and volume
   mpm_scheme_->update_particle_stress_strain_volume();

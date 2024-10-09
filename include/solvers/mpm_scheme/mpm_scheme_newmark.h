@@ -30,23 +30,20 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  inline void compute_stress_strain(unsigned phase, bool pressure_smoothing,
-                                    mpm::StressRate stress_rate) override;
+  inline void compute_stress_strain(unsigned phase,
+                                    bool pressure_smoothing) override;
 
   //! Precompute stress
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  inline void precompute_stress_strain(unsigned phase, bool pressure_smoothing,
-                                       mpm::StressRate stress_rate) override;
+  inline void precompute_stress_strain(unsigned phase,
+                                       bool pressure_smoothing) override;
 
   //! Postcompute stress
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
-  //! \param[in] stress_rate Use Cauchy or Jaumann rate of stress
-  inline void postcompute_stress_strain(unsigned phase, bool pressure_smoothing,
-                                        mpm::StressRate stress_rate) override;
+  inline void postcompute_stress_strain(unsigned phase,
+                                        bool pressure_smoothing) override;
 
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Method to update particle velocity
@@ -54,12 +51,11 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
-  //! \param[in] update_defgrad Update deformation gradient
   inline void compute_particle_kinematics(mpm::VelocityUpdate velocity_update,
                                           double blending_ratio, unsigned phase,
                                           const std::string& damping_type,
-                                          double damping_factor, unsigned step,
-                                          bool update_defgrad) override;
+                                          double damping_factor,
+                                          unsigned step) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

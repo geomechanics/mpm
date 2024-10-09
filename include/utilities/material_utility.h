@@ -79,6 +79,13 @@ inline const Eigen::Matrix<double, 6, 1> dtheta_dsigma(
 //! \retval plastic deviatoric strain
 inline double pdstrain(const Eigen::Matrix<double, 6, 1>& plastic_strain);
 
+//! Compute the rotation tensor from a deformation gradient using polar
+//! decomposition
+//! \param[in] deformation_gradient The deformation gradient matrix (3x3)
+//! \retval rotation_tensor The computed rotation tensor (3x3)
+inline const Eigen::Matrix3d compute_rotation_tensor(
+    const Eigen::Matrix3d& deformation_gradient);
+
 }  // namespace materials
 }  // namespace mpm
 

@@ -577,7 +577,8 @@ Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
   //-------------------------------------------------------------------------
   // Elastic step
   // Compute trial stress
-  const Vector6d trial_stress = stress + (de * dstrain);
+  const Vector6d trial_stress =
+      this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
   // Initialise vector n
   Vector6d n_trial = Vector6d::Zero();
   // Compute trial stress invariants

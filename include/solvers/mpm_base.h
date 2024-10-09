@@ -273,8 +273,6 @@ class MPMBase : public MPM {
   //! Logger
   using mpm::MPM::console_;
 
-  //! State rate method
-  mpm::StressRate stress_rate_{mpm::StressRate::None};
   //! Stress update method
   std::string stress_update_{"usf"};
   //! Stress update scheme
@@ -309,8 +307,6 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
-  //! Boolean to update deformation gradient
-  bool update_defgrad_{false};
 
   /**
    * \defgroup Interface Variables (includes multimaterial and levelset)

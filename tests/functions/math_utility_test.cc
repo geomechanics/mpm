@@ -19,77 +19,61 @@ TEST_CASE("math utility is checked", "[math]") {
     stress.setZero();
 
     // Vector to matrix conversion
-    auto stress_1d = mpm::math::matrix_form<1>(stress);
+    double shear_multiplier = 1.0;
+    auto stress_1d = mpm::math::matrix_form<1>(stress, shear_multiplier);
     REQUIRE(stress_1d.cols() == 1);
     REQUIRE(stress_1d.rows() == 1);
     for (unsigned i = 0; i < 1; i++)
       for (unsigned j = 0; j < 1; j++)
         REQUIRE(stress_1d(i, j) == Approx(0.).epsilon(Tolerance));
 
-    auto stress_2d = mpm::math::matrix_form<2>(stress);
+    auto stress_2d = mpm::math::matrix_form<2>(stress, shear_multiplier);
     REQUIRE(stress_2d.cols() == 2);
     REQUIRE(stress_2d.rows() == 2);
     for (unsigned i = 0; i < 2; i++)
       for (unsigned j = 0; j < 2; j++)
         REQUIRE(stress_2d(i, j) == Approx(0.).epsilon(Tolerance));
 
-    auto stress_3d = mpm::math::matrix_form<3>(stress);
+    auto stress_3d = mpm::math::matrix_form<3>(stress, shear_multiplier);
     REQUIRE(stress_3d.cols() == 3);
     REQUIRE(stress_3d.rows() == 3);
     for (unsigned i = 0; i < 3; i++)
       for (unsigned j = 0; j < 3; j++)
         REQUIRE(stress_3d(i, j) == Approx(0.).epsilon(Tolerance));
 
-    stress_3d = mpm::math::matrix_form(stress);
+    stress_3d = mpm::math::matrix_form(stress, shear_multiplier);
     REQUIRE(stress_3d.cols() == 3);
     REQUIRE(stress_3d.rows() == 3);
     for (unsigned i = 0; i < 3; i++)
       for (unsigned j = 0; j < 3; j++)
         REQUIRE(stress_3d(i, j) == Approx(0.).epsilon(Tolerance));
 
-    auto voigt_stress_1d = mpm::math::voigt_form<1>(stress_1d);
+    auto voigt_stress_1d =
+        mpm::math::voigt_form<1>(stress_1d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_1d(i) == Approx(stress(i)).epsilon(Tolerance));
 
-    auto voigt_stress_2d = mpm::math::voigt_form<2>(stress_2d);
+    auto voigt_stress_2d =
+        mpm::math::voigt_form<2>(stress_2d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_2d(i) == Approx(stress(i)).epsilon(Tolerance));
 
-    auto voigt_stress_3d = mpm::math::voigt_form<3>(stress_3d);
+    auto voigt_stress_3d =
+        mpm::math::voigt_form<3>(stress_3d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_3d(i) == Approx(stress(i)).epsilon(Tolerance));
 
-    voigt_stress_3d = mpm::math::voigt_form(stress_3d);
+    voigt_stress_3d = mpm::math::voigt_form(stress_3d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_3d(i) == Approx(stress(i)).epsilon(Tolerance));
-
-    // Compute principal stresses and directions from voigt notation
-    auto principal_stresses = mpm::math::principal_tensor(stress);
-    REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(0.).epsilon(Tolerance));
-
-    Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-    principal_stresses = mpm::math::principal_tensor(stress, directors);
-    REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(0, 0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(0, 1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(0, 2) == Approx(1.).epsilon(Tolerance));
-    REQUIRE(directors(1, 0) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(1, 1) == Approx(1.).epsilon(Tolerance));
-    REQUIRE(directors(1, 2) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(2, 0) == Approx(1.).epsilon(Tolerance));
-    REQUIRE(directors(2, 1) == Approx(0.).epsilon(Tolerance));
-    REQUIRE(directors(2, 2) == Approx(0.).epsilon(Tolerance));
 
     // Compute principal stresses and directions from matrix form
-    principal_stresses = mpm::math::principal_tensor(stress_3d);
+    auto principal_stresses = mpm::math::principal_tensor(stress_3d);
     REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
     REQUIRE(principal_stresses(1) == Approx(0.).epsilon(Tolerance));
     REQUIRE(principal_stresses(2) == Approx(0.).epsilon(Tolerance));
 
+    Eigen::Matrix<double, 3, 3> directors;
     directors.setZero();
     principal_stresses = mpm::math::principal_tensor(stress_3d, directors);
     REQUIRE(principal_stresses(0) == Approx(0.).epsilon(Tolerance));
@@ -145,7 +129,8 @@ TEST_CASE("math utility is checked", "[math]") {
     stress_matrix(2, 0) = -33.;
 
     // Vector to matrix conversion
-    auto stress_1d = mpm::math::matrix_form<1>(stress);
+    double shear_multiplier = 1.0;
+    auto stress_1d = mpm::math::matrix_form<1>(stress, shear_multiplier);
     REQUIRE(stress_1d.cols() == 1);
     REQUIRE(stress_1d.rows() == 1);
     for (unsigned i = 0; i < 1; i++)
@@ -153,7 +138,7 @@ TEST_CASE("math utility is checked", "[math]") {
         REQUIRE(stress_1d(i, j) ==
                 Approx(stress_matrix(i, j)).epsilon(Tolerance));
 
-    auto stress_2d = mpm::math::matrix_form<2>(stress);
+    auto stress_2d = mpm::math::matrix_form<2>(stress, shear_multiplier);
     REQUIRE(stress_2d.cols() == 2);
     REQUIRE(stress_2d.rows() == 2);
     for (unsigned i = 0; i < 2; i++)
@@ -161,7 +146,7 @@ TEST_CASE("math utility is checked", "[math]") {
         REQUIRE(stress_2d(i, j) ==
                 Approx(stress_matrix(i, j)).epsilon(Tolerance));
 
-    auto stress_3d = mpm::math::matrix_form<3>(stress);
+    auto stress_3d = mpm::math::matrix_form<3>(stress, shear_multiplier);
     REQUIRE(stress_3d.cols() == 3);
     REQUIRE(stress_3d.rows() == 3);
     for (unsigned i = 0; i < 3; i++)
@@ -169,7 +154,7 @@ TEST_CASE("math utility is checked", "[math]") {
         REQUIRE(stress_3d(i, j) ==
                 Approx(stress_matrix(i, j)).epsilon(Tolerance));
 
-    stress_3d = mpm::math::matrix_form(stress);
+    stress_3d = mpm::math::matrix_form(stress, shear_multiplier);
     REQUIRE(stress_3d.cols() == 3);
     REQUIRE(stress_3d.rows() == 3);
     for (unsigned i = 0; i < 3; i++)
@@ -177,64 +162,33 @@ TEST_CASE("math utility is checked", "[math]") {
         REQUIRE(stress_3d(i, j) ==
                 Approx(stress_matrix(i, j)).epsilon(Tolerance));
 
-    auto voigt_stress_1d = mpm::math::voigt_form<1>(stress_1d);
+    auto voigt_stress_1d =
+        mpm::math::voigt_form<1>(stress_1d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_1d(i) == Approx(stress_1dim(i)).epsilon(Tolerance));
 
-    auto voigt_stress_2d = mpm::math::voigt_form<2>(stress_2d);
+    auto voigt_stress_2d =
+        mpm::math::voigt_form<2>(stress_2d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_2d(i) == Approx(stress_2dim(i)).epsilon(Tolerance));
 
-    auto voigt_stress_3d = mpm::math::voigt_form<3>(stress_3d);
+    auto voigt_stress_3d =
+        mpm::math::voigt_form<3>(stress_3d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_3d(i) == Approx(stress(i)).epsilon(Tolerance));
 
-    voigt_stress_3d = mpm::math::voigt_form(stress_3d);
+    voigt_stress_3d = mpm::math::voigt_form(stress_3d, shear_multiplier);
     for (unsigned i = 0; i < 6; i++)
       REQUIRE(voigt_stress_3d(i) == Approx(stress(i)).epsilon(Tolerance));
-
-    // Compute principal stresses and directions from voigt notation
-    auto principal_stresses = mpm::math::principal_tensor(stress);
-
-    REQUIRE(principal_stresses(0) == Approx(-98.9515).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(-163.611442455).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(-237.837).epsilon(Tolerance));
-
-    Eigen::Matrix<double, 3, 3> directors = Eigen::Matrix<double, 3, 3>::Zero();
-    principal_stresses = mpm::math::principal_tensor(stress, directors);
-
-    REQUIRE(principal_stresses(0) == Approx(-98.9515).epsilon(Tolerance));
-    REQUIRE(principal_stresses(1) == Approx(-163.611442455).epsilon(Tolerance));
-    REQUIRE(principal_stresses(2) == Approx(-237.837).epsilon(Tolerance));
-    REQUIRE(directors(0, 0) == Approx(-0.5187).epsilon(Tolerance));
-    REQUIRE(directors(0, 1) == Approx(0.079565).epsilon(Tolerance));
-    REQUIRE(directors(0, 2) == Approx(0.851246).epsilon(Tolerance));
-    REQUIRE(directors(1, 0) == Approx(-0.674829).epsilon(Tolerance));
-    REQUIRE(directors(1, 1) == Approx(0.573224).epsilon(Tolerance));
-    REQUIRE(directors(1, 2) == Approx(-0.464781).epsilon(Tolerance));
-    REQUIRE(directors(2, 0) == Approx(0.524935).epsilon(Tolerance));
-    REQUIRE(directors(2, 1) == Approx(0.815527).epsilon(Tolerance));
-    REQUIRE(directors(2, 2) == Approx(0.243639).epsilon(Tolerance));
-
-    Eigen::Matrix<double, 3, 3> eigen = Eigen::Matrix<double, 3, 3>::Zero();
-    eigen(0, 0) = principal_stresses(0);
-    eigen(1, 1) = principal_stresses(1);
-    eigen(2, 2) = principal_stresses(2);
-    auto initial_stress = directors * eigen * directors.transpose();
-    REQUIRE(initial_stress(0, 0) == Approx(-200.).epsilon(Tolerance));
-    REQUIRE(initial_stress(1, 1) == Approx(-150.2).epsilon(Tolerance));
-    REQUIRE(initial_stress(2, 2) == Approx(-150.2).epsilon(Tolerance));
-    REQUIRE(initial_stress(0, 1) == Approx(52.).epsilon(Tolerance));
-    REQUIRE(initial_stress(1, 2) == Approx(-14.5).epsilon(Tolerance));
-    REQUIRE(initial_stress(0, 2) == Approx(-33.).epsilon(Tolerance));
 
     // Compute principal stresses and directions from matrix form
-    principal_stresses = mpm::math::principal_tensor(stress_matrix);
+    auto principal_stresses = mpm::math::principal_tensor(stress_matrix);
 
     REQUIRE(principal_stresses(0) == Approx(-98.9515).epsilon(Tolerance));
     REQUIRE(principal_stresses(1) == Approx(-163.611442455).epsilon(Tolerance));
     REQUIRE(principal_stresses(2) == Approx(-237.837).epsilon(Tolerance));
 
+    Eigen::Matrix<double, 3, 3> directors;
     directors.setZero();
     principal_stresses = mpm::math::principal_tensor(stress_matrix, directors);
 
@@ -251,6 +205,7 @@ TEST_CASE("math utility is checked", "[math]") {
     REQUIRE(directors(2, 1) == Approx(0.815527).epsilon(Tolerance));
     REQUIRE(directors(2, 2) == Approx(0.243639).epsilon(Tolerance));
 
+    Eigen::Matrix<double, 3, 3> eigen;
     eigen.setZero();
     eigen(0, 0) = principal_stresses(0);
     eigen(1, 1) = principal_stresses(1);

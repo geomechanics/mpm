@@ -343,7 +343,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombParticle<Tdim>::compute_stress(
       (*state_vars).at("cohesion") =
           cohesion_residual_ +
           ((cohesion_peak - cohesion_residual) *
-           (pdstrain - pdstrain_residual) / (pdstrain_residual));
+           (pdstrain - pdstrain_residual) / (-pdstrain_residual));
     } else {
       (*state_vars).at("cohesion") = cohesion_residual_;
     }

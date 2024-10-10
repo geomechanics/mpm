@@ -151,7 +151,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     }
 
     if (nonconforming_traction_)
-      mesh_->apply_nonconforming_traction_constraint(step_ * dt_);
+      mesh_->apply_nonconforming_traction_constraint(step_ * dt_,
+                                                     cell_neighbourhood_);
 
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,

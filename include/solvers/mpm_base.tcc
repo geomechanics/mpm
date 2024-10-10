@@ -1388,6 +1388,11 @@ void mpm::MPMBase<Tdim>::nonconforming_traction_constraints(
 
         // Set bool flag for solve loop
         nonconforming_traction_ = true;
+        // Number of Gaussian points
+        unsigned number_gaussian_points = 1;
+        if (constraints.find("number_gaussian_points") != constraints.end())
+          number_gaussian_points =
+              constraints.at("number_gaussian_points").template get<unsigned>();
         // Bounding box
         std::vector<double> bounding_box;
         if (constraints.find("bounding_box") != constraints.end() &&
@@ -1450,7 +1455,7 @@ void mpm::MPMBase<Tdim>::nonconforming_traction_constraints(
         bool nonconforming_traction_constraint =
             mesh_->create_nonconforming_traction_constraint(
                 bounding_box, datum, fluid_density, gravity, hydrostatic,
-                inside, pfunction, pressure);
+                inside, pfunction, pressure, number_gaussian_points);
 
         if (!nonconforming_traction_constraint)
           throw std::runtime_error(

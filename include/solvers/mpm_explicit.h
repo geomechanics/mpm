@@ -49,6 +49,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::stress_update_;
   //! Interface scheme
   using mpm::MPMBase<Tdim>::contact_;
+  //! Cell neighbourhood: default 0 for linear element
+  using mpm::MPMBase<Tdim>::cell_neighbourhood_;
 
 #ifdef USE_GRAPH_PARTITIONING
   //! Graph

@@ -676,14 +676,16 @@ class Mesh {
   //! \param[in] inside True if surface is inside bounding box
   //! \param[in] mfunction Math function
   //! \param[in] pressure Pressure if constant
+  //! \param[in] number_gaussian_points Number of integration points for cell
   bool create_nonconforming_traction_constraint(
       const std::vector<double> bounding_box, const double datum,
       const double fluid_density, const double gravity, const bool hydrostatic,
       const bool inside, const std::shared_ptr<FunctionBase>& mfunction,
-      const double pressure);
+      const double pressure, const unsigned number_gaussian_points);
 
   //! Apply non-conforming traction constraint
-  void apply_nonconforming_traction_constraint(double current_time);
+  void apply_nonconforming_traction_constraint(double current_time,
+                                               unsigned cell_neighbourhood);
 
  private:
   // Read particles from file
@@ -747,7 +749,7 @@ class Mesh {
   std::vector<std::shared_ptr<mpm::VelocityConstraint>>
       particle_velocity_constraints_;
   //! Non-conforming traction constraints
-  std::vector<std::shared_ptr<mpm::NonconformingTractionConstraint>>
+  std::vector<std::shared_ptr<mpm::NonconformingTractionConstraint<Tdim>>>
       nonconforming_traction_constraints_;
   //! Vector of generators for particle injections
   std::vector<mpm::Injection> particle_injections_;

@@ -67,6 +67,10 @@ class Cell {
   //! Generate points
   std::vector<Eigen::Matrix<double, Tdim, 1>> generate_points();
 
+  //! Generate global points with given natural coornadates
+  std::vector<Eigen::Matrix<double, Tdim, 1>> generate_points(
+      const Eigen::MatrixXd& quadratures);
+
   //! Return the number of particles
   unsigned nparticles() const { return particles_.size(); }
 
@@ -434,6 +438,26 @@ class Cell {
   //! properties
   bool initialiase_nonlocal(
       const tsl::robin_map<std::string, double>& nonlocal_properties);
+
+  //! Return the dN/dx at a given local coord
+  //! \param[in] xi given local coordinates
+  Eigen::MatrixXd dn_dx(const VectorDim& xi) const {
+    Eigen::Matrix<double, Tdim, 1> zero =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+    const Eigen::Matrix<double, Tdim, Tdim> identity_matrix =
+        Eigen::Matrix<double, Tdim, Tdim>::Identity();
+    return element_->dn_dx(xi, this->nodal_coordinates_, zero, identity_matrix);
+  };
+
+  //! Evaluate shape functions at given local coordinates
+  //! \param[in] xi given local coordinates
+  Eigen::VectorXd shapefn(const VectorDim& xi) const {
+    Eigen::Matrix<double, Tdim, 1> zero =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+    const Eigen::Matrix<double, Tdim, Tdim> identity_matrix =
+        Eigen::Matrix<double, Tdim, Tdim>::Identity();
+    return element_->shapefn(xi, zero, identity_matrix);
+  };
 
   //! Return nodes id in a cell
   //! \ingroup Nonlocal

@@ -139,6 +139,58 @@ std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points() {
   return points;
 }
 
+//! Generate global points with natural coornadates
+template <unsigned Tdim>
+std::vector<Eigen::Matrix<double, Tdim, 1>> mpm::Cell<Tdim>::generate_points(
+    const Eigen::MatrixXd& quadratures) {
+
+  // Vector of gauss points
+  std::vector<Eigen::Matrix<double, Tdim, 1>> points;
+
+  // Get indices of corner nodes
+  Eigen::VectorXi indices = element_->corner_indices();
+
+  // Matrix of nodal coordinates
+  const Eigen::MatrixXd nodal_coords = nodal_coordinates_.transpose();
+
+  // Zeros
+  Eigen::Matrix<double, Tdim, 1> zeros = Eigen::Matrix<double, Tdim, 1>::Zero();
+  const Eigen::Matrix<double, Tdim, Tdim> zeros_matrix =
+      Eigen::Matrix<double, Tdim, Tdim>::Zero();
+
+  // Get local coordinates of gauss points and transform to global
+  for (unsigned i = 0; i < quadratures.cols(); ++i) {
+    const auto lpoint = quadratures.col(i);
+    // Get shape functions
+    const auto& sf = element_->shapefn_local(lpoint, zeros, zeros_matrix);
+    const auto point = nodal_coords.block(0, 0, Tdim, sf.rows()) * sf;
+    const auto xi = this->transform_real_to_unit_cell(point);
+    bool status = true;
+
+    // Check if point is within the cell
+    if ((Tdim == 2 && indices.size() == 3) or
+        (Tdim == 3 && indices.size() == 4)) {
+      if (xi.sum() > 1.)
+        status = false;
+      else {
+        for (unsigned i = 0; i < xi.size(); ++i)
+          if (xi(i) < 0. || std::isnan(xi(i))) status = false;
+      }
+    } else {
+      for (unsigned i = 0; i < xi.size(); ++i)
+        if (xi(i) < -1. || xi(i) > 1. || std::isnan(xi(i))) status = false;
+    }
+
+    if (status)
+      points.emplace_back(point);
+    else
+      console_->warn("Cannot generate point: ({}, {}) in cell xi: ({}, {})",
+                     point(0), point(1), xi(0), xi(1));
+  }
+
+  return points;
+}
+
 //! Add a node pointer and return the status of addition of a node
 template <unsigned Tdim>
 bool mpm::Cell<Tdim>::add_node(

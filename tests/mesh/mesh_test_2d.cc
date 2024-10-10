@@ -1537,43 +1537,43 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
 
           // Constraint for hydrostatic case
           REQUIRE(mesh->create_nonconforming_traction_constraint(
-                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.) ==
-                  true);
+                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.,
+                      1) == true);
           // Constraint for hydrostatic case (above datum)
           REQUIRE(mesh->create_nonconforming_traction_constraint(
-                      bounding_box, 0., 1000., -10., true, true, nullptr, 0.) ==
-                  true);
+                      bounding_box, 0., 1000., -10., true, true, nullptr, 0.,
+                      1) == true);
           // Constraint for hydrostatic case (outside bounding box)
           REQUIRE(mesh->create_nonconforming_traction_constraint(
-                      bounding_box, 2., 1000., -10., true, false, nullptr,
-                      0.) == true);
+                      bounding_box, 2., 1000., -10., true, false, nullptr, 0.,
+                      1) == true);
           // Constraint for constant case
           REQUIRE(mesh->create_nonconforming_traction_constraint(
                       bounding_box, 2., 1000., -10., false, true, mfunction,
-                      100.) == true);
+                      100., 1) == true);
           // Constraint for constant case (no mathfunction)
           REQUIRE(mesh->create_nonconforming_traction_constraint(
-                      bounding_box, 2., 1000., -10., false, true, nullptr,
-                      100.) == true);
+                      bounding_box, 2., 1000., -10., false, true, nullptr, 100.,
+                      1) == true);
 
           bounding_box.at(0) = 5.;
           bounding_box.at(1) = -5.;
           // Constraint for hydrostatic case (outside bounding box)
           REQUIRE(mesh->create_nonconforming_traction_constraint(
-                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.) ==
-                  true);
+                      bounding_box, 2., 1000., -10., true, true, nullptr, 0.,
+                      1) == true);
           // Constraint for hydrostatic case (outside bounding box)
           REQUIRE(mesh->create_nonconforming_traction_constraint(
-                      bounding_box, 2., 1000., -10., true, false, nullptr,
-                      0.) == true);
+                      bounding_box, 2., 1000., -10., true, false, nullptr, 0.,
+                      1) == true);
 
           // Constraint fails due to pressure = 0. && !hydrostatic
           REQUIRE(mesh->create_nonconforming_traction_constraint(
-                      bounding_box, 2., 1000., -10., false, true, mfunction,
-                      0.) == false);
+                      bounding_box, 2., 1000., -10., false, true, mfunction, 0.,
+                      1) == false);
 
           // Apply constraint
-          mesh->apply_nonconforming_traction_constraint(10.);
+          mesh->apply_nonconforming_traction_constraint(10., 0);
         }
 
         // Test assign acceleration constraints to nodes

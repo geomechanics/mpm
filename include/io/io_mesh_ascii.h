@@ -54,7 +54,7 @@ class IOMeshAscii : public IOMesh<Tdim> {
   //! Read particle material properties
   //! \param[in] particles_materials_file file name with particle stresses
   //! \retval stresses Vector of particle stresses
-  std::vector<Eigen::Matrix<double, 5, 1>> read_particles_material_properties(
+  std::vector<Eigen::Matrix<double, 7, 1>> read_particles_material_properties(
       const std::string& particles_materials_file) override;
 
   //! Read particle scalar properties

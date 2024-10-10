@@ -517,8 +517,8 @@ void mpm::MPMBase<Tdim>::particles_material_properties(
       if (material_props.find("file") != material_props.end()) {
         std::string particles_materials_file =
             material_props["file"].template get<std::string>();
-        if ((material_type == "MohrCoulomb2D") ||
-            (material_type == "MohrCoulomb3D")) {
+        if ((material_type == "MohrCoulombParticle2D") ||
+            (material_type == "MohrCoulombParticle3D")) {
           if (!io_->file_name(particles_materials_file).empty()) {
             // Get material properties of all particles
             const auto particles_material_properties =

@@ -384,7 +384,7 @@ class Mesh {
   //! Assign particles material properties
   //! \param[in] particles_material_properties Material properties of particle
   bool assign_particles_material_properties(
-      const std::vector<Eigen::Matrix<double, 5, 1>>&
+      const std::vector<Eigen::Matrix<double, 7, 1>>&
           particles_material_properties);
 
   //! Assign particles blocks

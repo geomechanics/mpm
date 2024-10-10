@@ -216,7 +216,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] material_properties
   //! \param[in] phase Index to indicate phase
   void material_properties_state(
-      const Eigen::Matrix<double, 5, 1>& material_properties,
+      const Eigen::Matrix<double, 7, 1>& material_properties,
       unsigned phase = mpm::ParticlePhase::Solid) override {
     // Calculate elastic moduli
     double poisson_ratio = material_properties[0];
@@ -232,6 +232,10 @@ class Particle : public ParticleBase<Tdim> {
     this->assign_state_variable("density", material_properties[2], phase);
     this->assign_state_variable("phi", material_properties[3], phase);
     this->assign_state_variable("cohesion", material_properties[4], phase);
+    this->assign_state_variable("cohesion_residual", material_properties[5],
+                                phase);
+    this->assign_state_variable("pdstrain_residual", material_properties[6],
+                                phase);
   };
 
   //! Activate particle material properties from file

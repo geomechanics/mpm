@@ -1552,7 +1552,7 @@ bool mpm::Mesh<Tdim>::assign_particles_stresses_beginning(
 //! Assign particles material properties
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_particles_material_properties(
-    const std::vector<Eigen::Matrix<double, 5, 1>>&
+    const std::vector<Eigen::Matrix<double, 7, 1>>&
         particles_material_properties) {
   bool status = true;
   try {

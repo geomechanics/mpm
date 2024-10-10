@@ -256,12 +256,12 @@ std::vector<Eigen::Matrix<double, 6, 1>>
 
 //! Return stresses of particles
 template <unsigned Tdim>
-std::vector<Eigen::Matrix<double, 5, 1>>
+std::vector<Eigen::Matrix<double, 7, 1>>
     mpm::IOMeshAscii<Tdim>::read_particles_material_properties(
         const std::string& particles_materials_file) {
 
   // Particle material properties
-  std::vector<Eigen::Matrix<double, 5, 1>> material_properties;
+  std::vector<Eigen::Matrix<double, 7, 1>> material_properties;
   material_properties.clear();
 
   // Expected number of particles
@@ -293,7 +293,7 @@ std::vector<Eigen::Matrix<double, 5, 1>>
               break;
             }
             // State variables
-            Eigen::Matrix<double, 5, 1> state_vars;
+            Eigen::Matrix<double, 7, 1> state_vars;
             // Read to state variables
             for (unsigned i = 0; i < state_vars.size(); ++i)
               istream >> state_vars[i];

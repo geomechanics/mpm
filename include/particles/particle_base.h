@@ -259,7 +259,7 @@ class ParticleBase {
 
   //! Material properties
   virtual void material_properties_state(
-      const Eigen::Matrix<double, 5, 1>&,
+      const Eigen::Matrix<double, 7, 1>&,
       unsigned phase = mpm::ParticlePhase::Solid) = 0;
 
   //! Activate particle material properties from file

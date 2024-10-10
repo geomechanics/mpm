@@ -67,7 +67,7 @@ class IOMesh {
   //! Read particle material properties
   //! \param[in] particles_materials_file file name with particle stresses
   //! \retval stresses Vector of particle stresses
-  virtual std::vector<Eigen::Matrix<double, 5, 1>>
+  virtual std::vector<Eigen::Matrix<double, 7, 1>>
       read_particles_material_properties(
           const std::string& particles_materials_file) = 0;
 

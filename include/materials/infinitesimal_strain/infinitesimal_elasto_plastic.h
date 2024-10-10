@@ -71,7 +71,7 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
                                                   mpm::dense_map* state_vars,
                                                   bool hardening = true) = 0;
 
-};  // MohrCoulomb class
+};  // InfinitesimalElastoPlastic class
 }  // namespace mpm
 
 #include "infinitesimal_elasto_plastic.tcc"

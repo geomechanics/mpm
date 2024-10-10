@@ -1,5 +1,5 @@
-#ifndef MPM_MATERIAL_MOHR_COULOMB_H_
-#define MPM_MATERIAL_MOHR_COULOMB_H_
+#ifndef MPM_MATERIAL_MOHR_COULOMB_PARTICLE_H_
+#define MPM_MATERIAL_MOHR_COULOMB_PARTICLE_H_
 
 #include <cmath>
 
@@ -11,17 +11,17 @@
 
 namespace mpm {
 
-namespace mohrcoulomb {
+namespace mohrcoulombparticle {
 //! Failure state
 enum FailureState { Elastic = 0, Shear = 1, Tensile = 2 };
-}  // namespace mohrcoulomb
+}  // namespace mohrcoulombparticle
 
-//! MohrCoulomb class
-//! \brief Mohr Coulomb material model
+//! MohrCoulombParticle class
+//! \brief Mohr Coulomb material model on particle-wise basis
 //! \details Mohr Coulomb material model with softening
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
+class MohrCoulombParticle : public InfinitesimalElastoPlastic<Tdim> {
  public:
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
@@ -30,16 +30,16 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
 
   //! Constructor with id and material properties
   //! \param[in] material_properties Material properties
-  MohrCoulomb(unsigned id, const Json& material_properties);
+  MohrCoulombParticle(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~MohrCoulomb() override{};
+  ~MohrCoulombParticle() override{};
 
   //! Delete copy constructor
-  MohrCoulomb(const MohrCoulomb&) = delete;
+  MohrCoulombParticle(const MohrCoulombParticle&) = delete;
 
   //! Delete assignement operator
-  MohrCoulomb& operator=(const MohrCoulomb&) = delete;
+  MohrCoulombParticle& operator=(const MohrCoulombParticle&) = delete;
 
   //! Initialise history variables
   //! \retval state_vars State variables with history
@@ -75,7 +75,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! Compute yield function and yield state
   //! \param[in] state_vars History-dependent state variables
   //! \retval yield_type Yield type (elastic, shear or tensile)
-  mpm::mohrcoulomb::FailureState compute_yield_state(
+  mpm::mohrcoulombparticle::FailureState compute_yield_state(
       Eigen::Matrix<double, 2, 1>* yield_function,
       const mpm::dense_map& state_vars);
 
@@ -87,7 +87,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] dp_dsigma dP/dSigma
   //! \param[in] dp_dq dP / dq
   //! \param[in] softening Softening parameter
-  void compute_df_dp(mpm::mohrcoulomb::FailureState yield_type,
+  void compute_df_dp(mpm::mohrcoulombparticle::FailureState yield_type,
                      const mpm::dense_map* state_vars, const Vector6d& stress,
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
                      double* softening);
@@ -140,14 +140,8 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   double psi_peak_{std::numeric_limits<double>::max()};
   //! Maximum cohesion
   double cohesion_peak_{std::numeric_limits<double>::max()};
-  //! Residual friction angle phi
-  double phi_residual_{std::numeric_limits<double>::max()};
-  //! Residual dilation angle psi
-  double psi_residual_{std::numeric_limits<double>::max()};
   //! Residual cohesion
   double cohesion_residual_{std::numeric_limits<double>::max()};
-  //! Peak plastic deviatoric strain
-  double pdstrain_peak_{std::numeric_limits<double>::max()};
   //! Residual plastic deviatoric strain
   double pdstrain_residual_{std::numeric_limits<double>::max()};
   //! Tension cutoff
@@ -155,13 +149,13 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! softening
   bool softening_{false};
   //! Failure state map
-  std::map<int, mpm::mohrcoulomb::FailureState> yield_type_ = {
-      {0, mpm::mohrcoulomb::FailureState::Elastic},
-      {1, mpm::mohrcoulomb::FailureState::Shear},
-      {2, mpm::mohrcoulomb::FailureState::Tensile}};
-};  // MohrCoulomb class
+  std::map<int, mpm::mohrcoulombparticle::FailureState> yield_type_ = {
+      {0, mpm::mohrcoulombparticle::FailureState::Elastic},
+      {1, mpm::mohrcoulombparticle::FailureState::Shear},
+      {2, mpm::mohrcoulombparticle::FailureState::Tensile}};
+};  // MohrCoulombParticle class
 }  // namespace mpm
 
-#include "mohr_coulomb.tcc"
+#include "mohr_coulomb_particle.tcc"
 
-#endif  // MPM_MATERIAL_MOHR_COULOMB_H_
+#endif  // MPM_MATERIAL_MOHR_COULOMB_PARTICLE_H_

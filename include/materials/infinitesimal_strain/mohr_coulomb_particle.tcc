@@ -341,11 +341,11 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulombParticle<Tdim>::compute_stress(
   if (softening_ && pdstrain_residual > 0.) {
     if (pdstrain < pdstrain_residual) {
       (*state_vars).at("cohesion") =
-          cohesion_residual_ +
+          cohesion_residual +
           ((cohesion_peak - cohesion_residual) *
            (pdstrain - pdstrain_residual) / (-pdstrain_residual));
     } else {
-      (*state_vars).at("cohesion") = cohesion_residual_;
+      (*state_vars).at("cohesion") = cohesion_residual;
     }
     // Modify tension cutoff acoording to softening law
     const double apex =

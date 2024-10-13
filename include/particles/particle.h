@@ -232,6 +232,7 @@ class Particle : public ParticleBase<Tdim> {
     this->assign_state_variable("density", material_properties[2], phase);
     this->assign_state_variable("phi", material_properties[3], phase);
     this->assign_state_variable("cohesion", material_properties[4], phase);
+    this->assign_state_variable("cohesion_peak", material_properties[4], phase);
     this->assign_state_variable("cohesion_residual", material_properties[5],
                                 phase);
     this->assign_state_variable("pdstrain_residual", material_properties[6],

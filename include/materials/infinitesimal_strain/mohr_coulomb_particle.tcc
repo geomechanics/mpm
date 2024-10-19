@@ -69,10 +69,7 @@ mpm::dense_map mpm::MohrCoulombParticle<Tdim>::initialise_state_variables() {
       // Residual cohesion
       {"cohesion_residual", this->cohesion_residual_},
       // Tensile cutoff (automatically adjusted according to the apex value)
-      {"tension_cutoff",
-       check_low((tension_cutoff_ < cohesion_peak_ / std::tan(phi_peak_))
-                     ? tension_cutoff_
-                     : cohesion_peak_ / std::tan(phi_peak_))},
+      {"tension_cutoff", this->tension_cutoff_},
       // Stress invariants
       // Epsilon
       {"epsilon", 0.},

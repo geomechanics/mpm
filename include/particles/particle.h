@@ -212,6 +212,11 @@ class Particle : public ParticleBase<Tdim> {
     this->stress_beginning_ = stress;
   }
 
+  //! Inline ternary function to check negative or zero numbers
+  inline double check_low(double val) {
+    return (val > 1.0e-15 ? val : 1.0e-15);
+  }
+
   //! Material properties
   //! \param[in] material_properties
   //! \param[in] phase Index to indicate phase
@@ -224,19 +229,28 @@ class Particle : public ParticleBase<Tdim> {
     double bulk_modulus = youngs_modulus / (3.0 * (1. - 2. * poisson_ratio));
     double shear_modulus = youngs_modulus / (2.0 * (1 + poisson_ratio));
 
+    // Calculate tension cutoff
+    double phi = material_properties[3] * M_PI / 180.;
+    double cohesion_pk = material_properties[4];
+    double tension_cutoff = state_variable("tension_cutoff", phase);
+    tension_cutoff = check_low((tension_cutoff < cohesion_pk / std::tan(phi))
+                                   ? tension_cutoff
+                                   : cohesion_pk / std::tan(phi));
+
     // Assign state variables
     this->assign_state_variable("poisson_ratio", poisson_ratio, phase);
     this->assign_state_variable("youngs_modulus", youngs_modulus, phase);
     this->assign_state_variable("shear_modulus", shear_modulus, phase);
     this->assign_state_variable("bulk_modulus", bulk_modulus, phase);
     this->assign_state_variable("density", material_properties[2], phase);
-    this->assign_state_variable("phi", material_properties[3], phase);
-    this->assign_state_variable("cohesion", material_properties[4], phase);
-    this->assign_state_variable("cohesion_peak", material_properties[4], phase);
+    this->assign_state_variable("phi", phi, phase);
+    this->assign_state_variable("cohesion", cohesion_pk, phase);
+    this->assign_state_variable("cohesion_peak", cohesion_pk, phase);
     this->assign_state_variable("cohesion_residual", material_properties[5],
                                 phase);
     this->assign_state_variable("pdstrain_residual", material_properties[6],
                                 phase);
+    this->assign_state_variable("tension_cutoff", tension_cutoff, phase);
   };
 
   //! Activate particle material properties from file

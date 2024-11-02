@@ -509,11 +509,11 @@ TEST_CASE("Twophase Node is checked for 1D case", "[node][1D][2Phase]") {
       REQUIRE(node->assign_friction_constraint(-1, 1., 0.5) == false);
       REQUIRE(node->assign_friction_constraint(3, 1., 0.5) == false);
 
-      // Apply cohesion constraints
-      REQUIRE(node->assign_cohesion_constraint(0, -1., 100, 0.25, 2) == true);
-      // Apply cohesion constraints
-      REQUIRE(node->assign_cohesion_constraint(-1, -1., 100, 0.25, 2) == false);
-      REQUIRE(node->assign_cohesion_constraint(3, -1., 100, 0.25, 2) == false);
+      // Apply adhesion constraints
+      REQUIRE(node->assign_adhesion_constraint(0, -1., 100, 0.25, 2) == true);
+      // Apply adhesion constraints
+      REQUIRE(node->assign_adhesion_constraint(-1, -1., 100, 0.25, 2) == false);
+      REQUIRE(node->assign_adhesion_constraint(3, -1., 100, 0.25, 2) == false);
 
       // Test acceleration with constraints
       solid_acceleration[0] = 0.5 * solid_acceleration[0];
@@ -1660,8 +1660,8 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
                   Approx(acceleration(i)).epsilon(Tolerance));
       }
 
-      SECTION("Check cartesian cohesion constraints") {
-        // Case: static, cohesion fully mobilized, edge
+      SECTION("Check cartesian adhesion constraints") {
+        // Case: static, adhesion fully mobilized, edge
         // Assign mass
         mass = 100.;
         node->update_mass(false, mpm::NodePhase::NSolid, mass);
@@ -1672,15 +1672,15 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
         // Assign acceleration
         acceleration << 10., -6.;
         node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
-        // Apply cohesion constraints
-        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 2) ==
+        // Apply adhesion constraints
+        REQUIRE(node->assign_adhesion_constraint(1, -1., 1000, 0.25, 2) ==
                 true);
         // Check out of bounds condition
-        REQUIRE(node->assign_cohesion_constraint(2, -1., 1000, 0.25, 2) ==
+        REQUIRE(node->assign_adhesion_constraint(2, -1., 1000, 0.25, 2) ==
                 false);
 
-        // Apply cohesion constraints
-        node->apply_cohesion_constraints(dt);
+        // Apply adhesion constraints
+        node->apply_adhesion_constraints(dt);
 
         // Check apply constraints
         acceleration << 7.5, -6.;
@@ -1690,8 +1690,8 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
         }
       }
 
-      SECTION("Check general cohesion constraints in 1 direction") {
-        // Case: static, cohesion fully mobilized, edge
+      SECTION("Check general adhesion constraints in 1 direction") {
+        // Case: static, adhesion fully mobilized, edge
         // Assign mass
         mass = 1000.;
         node->update_mass(false, mpm::NodePhase::NSolid, mass);
@@ -1702,8 +1702,8 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
         // Assign acceleration
         acceleration << 0., -9.81;
         node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
-        // Apply cohesion constraints
-        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 2) ==
+        // Apply adhesion constraints
+        REQUIRE(node->assign_adhesion_constraint(1, -1., 1000, 0.25, 2) ==
                 true);
 
         // Apply rotation matrix with Euler angles alpha = -30 deg, beta = 0 deg
@@ -1714,8 +1714,8 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
         node->assign_rotation_matrix(rotation_matrix);
         const auto inverse_rotation_matrix = rotation_matrix.inverse();
 
-        // Apply general cohesion constraints
-        node->apply_cohesion_constraints(dt);
+        // Apply general adhesion constraints
+        node->apply_adhesion_constraints(dt);
 
         // Check applied constraints on acceleration in the global coordinates
         acceleration << -0.2165063509, -9.685;
@@ -2660,8 +2660,8 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
                    node->acceleration(mpm::NodePhase::NSolid))(i) ==
                   Approx(acceleration(i)).epsilon(Tolerance));
       }
-      SECTION("Check cartesian cohesion constraints") {
-        // Case: static, cohesion fully mobilized, face
+      SECTION("Check cartesian adhesion constraints") {
+        // Case: static, adhesion fully mobilized, face
         // Assign mass
         mass = 100.;
         node->update_mass(false, mpm::NodePhase::NSolid, mass);
@@ -2673,15 +2673,15 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         // Assign acceleration
         acceleration << 10., -6., 0.;
         node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
-        // Apply cohesion constraints
-        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+        // Apply adhesion constraints
+        REQUIRE(node->assign_adhesion_constraint(1, -1., 1000, 0.25, 3) ==
                 true);
         // Check out of bounds condition
-        REQUIRE(node->assign_cohesion_constraint(3, -1., 1000, 0.25, 3) ==
+        REQUIRE(node->assign_adhesion_constraint(3, -1., 1000, 0.25, 3) ==
                 false);
 
-        // Apply cohesion constraints
-        node->apply_cohesion_constraints(dt);
+        // Apply adhesion constraints
+        node->apply_adhesion_constraints(dt);
 
         // Check apply constraints
         acceleration << 9.3333333333, -6., 0.;
@@ -2691,8 +2691,8 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         }
       }
 
-      SECTION("Check general cohesion constraints in 1 direction") {
-        // Case: static, cohesion fully mobilized, face
+      SECTION("Check general adhesion constraints in 1 direction") {
+        // Case: static, adhesion fully mobilized, face
         // Assign mass
         mass = 2000.;
         node->update_mass(false, mpm::NodePhase::NSolid, mass);
@@ -2704,8 +2704,8 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         // Assign acceleration
         acceleration << 0., -9.81, 0.;
         node->update_acceleration(false, mpm::NodePhase::NSolid, acceleration);
-        // Apply cohesion constraints
-        REQUIRE(node->assign_cohesion_constraint(1, -1., 1000, 0.25, 3) ==
+        // Apply adhesion constraints
+        REQUIRE(node->assign_adhesion_constraint(1, -1., 1000, 0.25, 3) ==
                 true);
 
         // Apply rotation matrix with Euler angles alpha = -30 deg, beta = 0 deg
@@ -2717,8 +2717,8 @@ TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
         node->assign_rotation_matrix(rotation_matrix);
         const auto inverse_rotation_matrix = rotation_matrix.inverse();
 
-        // Apply general cohesion constraints
-        node->apply_cohesion_constraints(dt);
+        // Apply general adhesion constraints
+        node->apply_adhesion_constraints(dt);
 
         // Check applied constraints on acceleration in the global coordinates
         acceleration << -0.027236821, -9.7942748, 0.;

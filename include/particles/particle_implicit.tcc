@@ -274,6 +274,11 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
   this->volume_ /= (1. + dvolumetric_strain_);
   this->mass_density_ *= (1. + dvolumetric_strain_);
 
+  // Compute deformation gradient increment from previous time step
+  this->deformation_gradient_increment_ =
+      this->compute_deformation_gradient_increment(this->dn_dx_,
+                                                   mpm::ParticlePhase::Solid);
+
   // Compute strain increment from previous time step
   this->dstrain_ =
       this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
@@ -352,6 +357,13 @@ void mpm::Particle<Tdim>::update_stress_strain() noexcept {
   // Reset strain increment
   this->dstrain_.setZero();
   this->dvolumetric_strain_ = 0.;
+
+  // Update deformation gradient
+  this->deformation_gradient_ =
+      this->deformation_gradient_increment_ * this->deformation_gradient_;
+
+  // Reset deformation gradient increment
+  this->deformation_gradient_increment_.setIdentity();
 }
 
 // Assign acceleration to the particle

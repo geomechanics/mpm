@@ -19,13 +19,14 @@ class MPMSchemeUSL : public MPMScheme<Tdim> {
   MPMSchemeUSL(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt);
 
   //! Precompute stress
-  //! \param[in] phase Phase to smooth postssure
-  //! \param[in] postssure_smoothing Enable or disable postssure smoothing
+  //! \param[in] phase Phase to smooth pressure
+  //! \param[in] pressure_smoothing Enable or disable pressure smoothing
   virtual inline void precompute_stress_strain(
       unsigned phase, bool pressure_smoothing) override;
+
   //! Postcompute stress
-  //! \param[in] phase Phase to smooth postssure
-  //! \param[in] postssure_smoothing Enable or disable postssure smoothing
+  //! \param[in] phase Phase to smooth pressure
+  //! \param[in] pressure_smoothing Enable or disable pressure smoothing
   virtual inline void postcompute_stress_strain(
       unsigned phase, bool pressure_smoothing) override;
 

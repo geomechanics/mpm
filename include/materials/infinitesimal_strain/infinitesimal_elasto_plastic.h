@@ -7,7 +7,7 @@
 
 #include "Eigen/Dense"
 
-#include "material.h"
+#include "linear_elastic.h"
 
 // JSON
 using Json = nlohmann::json;
@@ -18,7 +18,7 @@ namespace mpm {
 //! \details Base class of all elasto-plastic material model with infinitesimal
 //! strain \tparam Tdim Dimension
 template <unsigned Tdim>
-class InfinitesimalElastoPlastic : public Material<Tdim> {
+class InfinitesimalElastoPlastic : public LinearElastic<Tdim> {
  public:
   //! Define a vector of 3 dof
   using Vector3d = Eigen::Matrix<double, 3, 1>;
@@ -32,7 +32,7 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
   //! Constructor with id and material properties
   //! \param[in] material_properties Material properties
   InfinitesimalElastoPlastic(unsigned id, const Json& material_properties)
-      : Material<Tdim>(id, material_properties){};
+      : LinearElastic<Tdim>(id, material_properties){};
 
   //! Destructor
   ~InfinitesimalElastoPlastic() override{};
@@ -57,6 +57,19 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
       mpm::dense_map* state_vars) override;
 
  protected:
+  //! Compute trial stress
+  //! \param[in] stress Stress (Voigt)
+  //! \param[in] dstrain Strain (Voigt)
+  //! \param[in] de Elastic constitutive tensor (Voigt)
+  //! \param[in] particle Constant point to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \retval updated_stress Updated value of stress
+  virtual Vector6d compute_trial_stress(const Vector6d& stress,
+                                        const Vector6d& dstrain,
+                                        const Matrix6x6& de,
+                                        const ParticleBase<Tdim>* ptr,
+                                        mpm::dense_map* state_vars);
+
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
@@ -70,6 +83,9 @@ class InfinitesimalElastoPlastic : public Material<Tdim> {
                                                   const ParticleBase<Tdim>* ptr,
                                                   mpm::dense_map* state_vars,
                                                   bool hardening = true) = 0;
+
+  //! Objective stress rate
+  using LinearElastic<Tdim>::stress_rate_;
 
 };  // MohrCoulomb class
 }  // namespace mpm

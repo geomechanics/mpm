@@ -182,10 +182,10 @@ class MPMBase : public MPM {
   void nodal_frictional_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
-  //! Nodal cohesional constraints
+  //! Nodal adhesional constraints
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] mesh_io Mesh IO handle
-  void nodal_cohesional_constraints(
+  void nodal_adhesional_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
   //! Nodal pressure constraints
@@ -323,8 +323,6 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
-  //! Boolean to update deformation gradient
-  bool update_defgrad_{false};
 
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM

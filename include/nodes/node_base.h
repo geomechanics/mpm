@@ -252,20 +252,20 @@ class NodeBase {
   //! \param[in] dt Time-step
   virtual void apply_friction_constraints(double dt) = 0;
 
-  //! Assign cohesion constraint
+  //! Assign adhesion constraint
   //! Directions can take values between 0 and Dim * Nphases
-  //! \param[in] dir Direction of cohesion constraint (normal)
-  //! \param[in] sign_n Sign of normal wrt coordinate system for cohesion
-  //! \param[in] cohesion Applied cohesion constraint
+  //! \param[in] dir Direction of adhesion constraint (normal)
+  //! \param[in] sign_n Sign of normal wrt coordinate system for adhesion
+  //! \param[in] adhesion Applied adhesion constraint
   //! \param[in] h_min Characteristic length (cell height)
   //! \param[in] nposition Nodal location, nposition, along boundary
-  virtual bool assign_cohesion_constraint(unsigned dir, int sign_n,
-                                          double cohesion, double h_min,
+  virtual bool assign_adhesion_constraint(unsigned dir, int sign_n,
+                                          double adhesion, double h_min,
                                           int nposition) = 0;
 
-  //! Apply cohesion constraints
+  //! Apply adhesion constraints
   //! \param[in] dt Time-step
-  virtual void apply_cohesion_constraints(double dt) = 0;
+  virtual void apply_adhesion_constraints(double dt) = 0;
 
   //! Apply absorbing constraint
   //! \param[in] dir Direction of p-wave propagation in model
@@ -379,6 +379,10 @@ class NodeBase {
   virtual bool assign_displacement_constraint(
       const unsigned dir, const double displacement,
       const std::shared_ptr<FunctionBase>& function) = 0;
+
+  //! Apply displacement constraints
+  //! \ingroup Implicit
+  virtual void apply_displacement_constraints() = 0;
 
   //! Return displacement constraint
   //! \ingroup Implicit

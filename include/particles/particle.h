@@ -9,6 +9,7 @@
 
 #include "cell.h"
 #include "logger.h"
+#include "math_utility.h"
 #include "particle_base.h"
 
 namespace mpm {
@@ -178,17 +179,40 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval dvolumetric strain at centroid
   double dvolumetric_strain() const override { return dvolumetric_strain_; }
 
-  //! Deformation gradient
+  //! Assign deformation gradient increment
+  void assign_deformation_gradient_increment(
+      Eigen::Matrix<double, 3, 3> F_inc) noexcept override {
+    deformation_gradient_increment_ = F_inc;
+  }
+
+  //! Assign deformation gradient
+  void assign_deformation_gradient(
+      Eigen::Matrix<double, 3, 3> F) noexcept override {
+    deformation_gradient_ = F;
+  }
+
+  //! Return deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment() const override {
+    return deformation_gradient_increment_;
+  }
+
+  //! Return Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient() const override {
     return deformation_gradient_;
   }
 
-  //! Compute deformation gradient
-  //! \param[in] type Type of interpolation variables: "displacement" or
-  //! "velocity"
+  //! Update deformation gradient increment using displacement (for implicit
+  //! schemes)
+  void update_deformation_gradient_increment() noexcept override;
+
+  //! Update deformation gradient increment using velocity (for explicit
+  //! schemes)
   //! \param[in] dt Analysis time step
-  void update_deformation_gradient(const std::string& type,
-                                   double dt) noexcept override;
+  void update_deformation_gradient_increment(double dt) noexcept override;
+
+  //! Update deformation gradient provided that the deformation gradient
+  //! increment exists
+  void update_deformation_gradient() noexcept override;
 
   //! Initial stress
   //! \param[in] stress Initial sress
@@ -198,7 +222,8 @@ class Particle : public ParticleBase<Tdim> {
   }
 
   //! Compute stress
-  void compute_stress() noexcept override;
+  //! \param[in] dt Analysis time step
+  void compute_stress(double dt) noexcept override;
 
   //! Return stress of the particle
   Eigen::Matrix<double, 6, 1> stress() const override { return stress_; }
@@ -662,6 +687,8 @@ class Particle : public ParticleBase<Tdim> {
   /**@{*/
   //! Deformation gradient
   Eigen::Matrix<double, 3, 3> deformation_gradient_;
+  //! Deformation gradient increment
+  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_;
   /**@}*/
 
 };  // Particle class

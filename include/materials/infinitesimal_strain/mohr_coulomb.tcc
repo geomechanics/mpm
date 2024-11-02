@@ -351,7 +351,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // Elastic-predictor stage: compute the trial stress
   (*state_vars).at("yield_state") = 0;
   Matrix6x6 de = this->compute_elastic_tensor(state_vars);
-  Vector6d trial_stress = stress + (de * dstrain);
+  Vector6d trial_stress =
+      this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
   // Compute stress invariants based on trial stress
   this->compute_stress_invariants(trial_stress, state_vars);
   // Compute yield function based on the trial stress

@@ -230,6 +230,7 @@ class ParticleBase {
   virtual double pressure(unsigned phase = mpm::ParticlePhase::Solid) const = 0;
 
   //! Compute strain
+  //! \param[in] dt Analysis time step
   virtual void compute_strain(double dt) noexcept = 0;
 
   //! Strain
@@ -241,18 +242,39 @@ class ParticleBase {
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
 
-  //! Deformation gradient
+  //! Assign deformation gradient increment
+  virtual void assign_deformation_gradient_increment(
+      Eigen::Matrix<double, 3, 3> F_inc) noexcept = 0;
+
+  //! Assign deformation gradient increment
+  virtual void assign_deformation_gradient(
+      Eigen::Matrix<double, 3, 3> F) noexcept = 0;
+
+  //! Return deformation gradient increment
+  virtual Eigen::Matrix<double, 3, 3> deformation_gradient_increment()
+      const = 0;
+
+  //! Return Deformation gradient
   virtual Eigen::Matrix<double, 3, 3> deformation_gradient() const = 0;
 
-  //! Compute deformation gradient
-  virtual void update_deformation_gradient(const std::string& type,
-                                           double dt) noexcept = 0;
+  //! Update deformation gradient increment using displacement (for implicit
+  //! schemes)
+  virtual void update_deformation_gradient_increment() noexcept = 0;
+
+  //! Update deformation gradient increment using velocity (for explicit
+  //! schemes)
+  virtual void update_deformation_gradient_increment(double dt) noexcept = 0;
+
+  //! Update deformation gradient provided that the deformation gradient
+  //! increment exists
+  virtual void update_deformation_gradient() noexcept = 0;
 
   //! Initial stress
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;
 
   //! Compute stress
-  virtual void compute_stress() noexcept = 0;
+  //! \param[in] dt Analysis time step
+  virtual void compute_stress(double dt) noexcept = 0;
 
   //! Return stress
   virtual Eigen::Matrix<double, 6, 1> stress() const = 0;

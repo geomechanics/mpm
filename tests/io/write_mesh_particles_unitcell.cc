@@ -13,6 +13,7 @@ bool write_json_unitcell(unsigned dim, const std::string& analysis,
   auto node_type = "N2D";
   auto cell_type = "ED2Q4";
   auto io_type = "Ascii2D";
+  auto stress_rate = "jaumann";
   std::string material = "LinearElastic2D";
   std::vector<unsigned> material_id{{1}};
   std::vector<double> gravity{{0., -9.81}};
@@ -26,6 +27,7 @@ bool write_json_unitcell(unsigned dim, const std::string& analysis,
     node_type = "N3D";
     cell_type = "ED3H8";
     io_type = "Ascii3D";
+    stress_rate = "error";
     material = "LinearElastic3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
@@ -55,11 +57,13 @@ bool write_json_unitcell(unsigned dim, const std::string& analysis,
        {{{"id", 0},
          {"type", material},
          {"density", 1000.},
+         {"stress_rate", stress_rate},
          {"youngs_modulus", 1.0E+8},
          {"poisson_ratio", 0.495}},
         {{"id", 1},
          {"type", material},
          {"density", 2300.},
+         {"stress_rate", stress_rate},
          {"youngs_modulus", 1.5E+6},
          {"poisson_ratio", 0.25}}}},
       {"external_loading_conditions",

@@ -197,7 +197,6 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
   mesh_->iterate_over_points(
       std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
                 std::placeholders::_1, dt_));
-
 }
 
 // Update particle stress, strain and volume

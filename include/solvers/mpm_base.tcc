@@ -1880,7 +1880,7 @@ void mpm::MPMBase<Tdim>::initialise_linear_solver(
     if (solver_type != "KrylovPETSC" && mpi_size > 1) {
       console_->warn(
           "The linear solver for DOF \"{}\" in MPI setting is "
-          "automatically set to defaul, \"KrylovPETSC\"; Only "
+          "automatically set to default, \"KrylovPETSC\"; Only "
           "\"KrylovPETSC\" solver is supported for MPI",
           dof);
       solver_type = "KrylovPETSC";

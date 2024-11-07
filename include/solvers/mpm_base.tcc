@@ -761,25 +761,14 @@ template <unsigned Tdim>
 bool mpm::MPMBase<Tdim>::is_levelset() {
   bool levelset_active = true;
 
-  try {
-    const auto mesh_props = io_->json_object("mesh");
-    if (mesh_props.find("interface") != mesh_props.end()) {
-      this->interface_ = true;
-      this->interface_type_ =
-          mesh_props["interface"]["interface_type"].template get<std::string>();
-      if (interface_type_ != "levelset") {
-        levelset_active = false;
-        throw std::runtime_error("Interface type is not levelset in JSON");
-      }
-    } else {
-      levelset_active = false;
-      throw std::runtime_error("Interface is not found in JSON");
-    }
-
-  } catch (std::exception& exception) {
-    console_->warn("{} #{}: Levelset interface is not active in mesh {}",
-                   __FILE__, __LINE__, exception.what());
-  }
+  const auto mesh_props = io_->json_object("mesh");
+  if (mesh_props.find("interface") != mesh_props.end()) {
+    this->interface_ = true;
+    this->interface_type_ =
+        mesh_props["interface"]["interface_type"].template get<std::string>();
+    if (interface_type_ != "levelset") levelset_active = false;
+  } else
+    levelset_active = false;
 
   return levelset_active;
 }
@@ -1284,10 +1273,13 @@ void mpm::MPMBase<Tdim>::interface_inputs(
                   io_->file_name(levelset_input_file)));
           if (!levelset_info) {
             throw std::runtime_error(
-                "Levelset inputs are not properly assigned");
+                "Levelset interface is undefined; Levelset inputs are not "
+                "properly assigned");
           }
         } else {
-          throw std::runtime_error("Levelset inputs JSON not found");
+          throw std::runtime_error(
+              "Levelset interface is undefined; Levelset location is not "
+              "specified");
         }
         // Check if levelset damping factor is specified
         if (mesh_props["interface"].find("damping") !=
@@ -1298,7 +1290,7 @@ void mpm::MPMBase<Tdim>::interface_inputs(
           if ((levelset_damping_ < 0.) || (levelset_damping_ > 1.)) {
             levelset_damping_ = 0.;
             throw std::runtime_error(
-                "Levelset damping factor should be between 0. and 1., using "
+                "Levelset damping factor is not properly specified, using "
                 "0. as default");
           }
         } else {
@@ -1316,26 +1308,28 @@ void mpm::MPMBase<Tdim>::interface_inputs(
             levelset_pic_ = true;
           else if (levelset_velocity_update_ != "global") {
             throw std::runtime_error(
-                "Levelset contact velocity update should be either \"pic\" or "
-                "\"global\", using global velocity update as default");
+                "Levelset contact velocity update is not properly specified, "
+                " using \"global\" as default");
           }
         } else {
           throw std::runtime_error(
-              "Levelset contact velocity update is not specified, using global "
-              "velocity update as default");
+              "Levelset contact velocity update is not specified, "
+              " using \"global\" as default");
         }
       } else if (interface_type_ == "multimaterial") {
         throw std::runtime_error(
-            "Multimaterial interface inputs not supported");
+            "Interfaces are undefined; Interface type \"multimaterial\" not "
+            "supported");
       } else {
-        throw std::runtime_error("Interface type not supported");
+        throw std::runtime_error(
+            "Interfaces are undefined; Interface type not properly specified");
       }
     } else {
-      throw std::runtime_error("Interface inputs JSON not found");
+      throw std::runtime_error(
+          "Interfaces are undefined; Interfaces JSON data not found");
     }
   } catch (std::exception& exception) {
-    console_->warn("#{}: Interface conditions are undefined {} ", __LINE__,
-                   exception.what());
+    console_->warn("#{}: {}", __LINE__, exception.what());
   }
 }
 

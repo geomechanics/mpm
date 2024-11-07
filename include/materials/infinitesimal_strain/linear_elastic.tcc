@@ -4,6 +4,19 @@ mpm::LinearElastic<Tdim>::LinearElastic(unsigned id,
                                         const Json& material_properties)
     : Material<Tdim>(id, material_properties) {
   try {
+
+    // Set objective stress rate type
+    if (material_properties.contains("stress_rate")) {
+      auto stress_rate =
+          material_properties["stress_rate"].template get<std::string>();
+      if (stress_rate == "jaumann")
+        stress_rate_ = mpm::StressRate::Jaumann;
+      else if (stress_rate == "green_naghdi")
+        stress_rate_ = mpm::StressRate::GreenNaghdi;
+      else
+        stress_rate_ = mpm::StressRate::None;
+    }
+
     density_ = material_properties.at("density").template get<double>();
     youngs_modulus_ =
         material_properties.at("youngs_modulus").template get<double>();
@@ -26,17 +39,6 @@ mpm::LinearElastic<Tdim>::LinearElastic(unsigned id,
     properties_ = material_properties;
     properties_["pwave_velocity"] = vp_;
     properties_["swave_velocity"] = vs_;
-
-    // Set objective stress rate type
-    if (properties_.contains("stress_rate")) {
-      auto stress_rate = properties_["stress_rate"].template get<std::string>();
-      if (stress_rate == "jaumann")
-        stress_rate_ = mpm::StressRate::Jaumann;
-      else if (stress_rate == "green_naghdi")
-        stress_rate_ = mpm::StressRate::GreenNaghdi;
-      else
-        stress_rate_ = mpm::StressRate::None;
-    }
 
     // Set elastic tensor
     this->compute_elastic_tensor();

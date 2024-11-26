@@ -407,7 +407,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
       {
         mesh_->iterate_over_points(
             std::bind(&mpm::PointBase<Tdim>::map_stiffness_matrix_to_cell,
-                      std::placeholders::_1));
+                      std::placeholders::_1, newmark_beta_, newmark_gamma_, dt_));
       }
     }
 

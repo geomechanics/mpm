@@ -1965,6 +1965,78 @@ void mpm::MPMBase<Tdim>::point_velocity_constraints() {
   }
 }
 
+// Point velocity constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  try {
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("points_kelvin_voigt_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over velocity constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["points_kelvin_voigt_constraints"]) {
+
+        // Set id
+        int pset_id = constraints.at("pset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Incidence
+        double incidence_a = constraints.at("incidence_a").template get<double>();
+        double incidence_b = constraints.at("incidence_b").template get<double>();
+        // Penalty factor
+        double h_min = constraints.at("characteristic_length").template get<double>();
+
+        // Normal vector
+        // Assume cartesian in which case it will be based on the dir provided
+        std::string normal_type = "cartesian";
+        if (constraints.contains("normal_type"))
+          normal_type =
+              constraints.at("normal_type").template get<std::string>();
+        Eigen::Matrix<double, Tdim, 1> normal =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        // If assigned, then prescribe the normal vector
+        if (normal_type == "assign") {
+          if (constraints.contains("normal") &&
+              constraints.at("normal").is_array() &&
+              constraints.at("normal").size() == normal.size()) {
+            for (unsigned i = 0; i < normal.size(); ++i) {
+              normal[i] = constraints.at("normal").at(i);
+            }
+          }
+        }
+        // If automatic, then throw error
+        if (normal_type == "auto") {
+          console_->error(
+              "#{}: Automatic normal computation has not been implemented. "
+              "Available options are \'cartesian\'(default) or \'assign\'.",
+              __LINE__);
+        }
+
+        // Add absorbing constraint to mesh
+        auto absorbing_constraint =
+            std::make_shared<mpm::AbsorbingConstraint>(pset_id, dir, delta, 
+                                                       h_min, incidence_a, incidence_b, 
+                                                       position);
+
+        mesh_->create_point_kelvin_voigt_constraint(pset_id, absorbing_constraint,
+                                                constraint_type, penalty_factor,
+                                                normal_type, normal);
+      }
+    } else
+      throw std::runtime_error("Point velocity constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point velocity constraints are undefined {} ",
+                   __LINE__, exception.what());
+  }
+}
+
 //! Particle entity sets
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::particle_entity_sets(bool check_duplicates) {

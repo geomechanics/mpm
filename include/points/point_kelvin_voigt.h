@@ -1,5 +1,5 @@
-#ifndef MPM_POINT_DIRICHLET_PENALTY_H_
-#define MPM_POINT_DIRICHLET_PENALTY_H_
+#ifndef MPM_POINT_KELVIN_VOIGT_H_
+#define MPM_POINT_KELVIN_VOIGT_H_
 
 // MPI
 #ifdef USE_MPI
@@ -29,10 +29,10 @@ enum class NormalType : unsigned int {
 template <unsigned Tdim>
 class Material;
 
-//! Point class to impose nonconforming displacement BC with penalty method
+//! Point class to impose nonconforming Kelvin Voigt BC
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class PointDirichletPenalty : public PointBase<Tdim> {
+class PointKelvinVoigt : public PointBase<Tdim> {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
@@ -40,22 +40,22 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   //! Constructor with id and coordinates
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
-  PointDirichletPenalty(Index id, const VectorDim& coord);
+  PointKelvinVoigt(Index id, const VectorDim& coord);
 
   //! Constructor with id, coordinates and status
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
   //! \param[in] status Point status (active / inactive)
-  PointDirichletPenalty(Index id, const VectorDim& coord, bool status);
+  PointKelvinVoigt(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~PointDirichletPenalty() override{};
+  ~PointKelvinVoigt() override{};
 
   //! Delete copy constructor
-  PointDirichletPenalty(const PointDirichletPenalty<Tdim>&) = delete;
+  PointKelvinVoigt(const PointKelvinVoigt<Tdim>&) = delete;
 
   //! Delete assignement operator
-  PointDirichletPenalty& operator=(const PointDirichletPenalty<Tdim>&) = delete;
+  PointKelvinVoigt& operator=(const PointKelvinVoigt<Tdim>&) = delete;
 
   //! Initialise properties
   void initialise() override;
@@ -70,17 +70,20 @@ class PointDirichletPenalty : public PointBase<Tdim> {
 
   //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell(double newmark_beta,
-  double newmark_gamma, double dt) override;
+                     double newmark_gamma, double dt) override;
+  
+  //! Map spring stiffness matrix to cell
+  inline void map_spring_stiffness_matrix_to_cell() override;
+  
+  //! Map dashpot damping matrix to cell
+  inline void map_dashpot_damping_matrix_to_cell(double newmark_beta,
+                     double newmark_gamma, double dt) override;
 
   //! Map enforcement boundary force to node
   //! \param[in] phase Index corresponding to the phase
   void map_boundary_force(unsigned phase) override;
 
-  //! Apply point velocity constraints
-  //! \param[in] dir Direction of point velocity constraint
-  //! \param[in] velocity Applied point velocity constraint
-  void apply_point_velocity_constraints(unsigned dir, double velocity) override;
-
+ 
   //! Serialize
   //! \retval buffer Serialized buffer data
   std::vector<uint8_t> serialize() override;
@@ -98,12 +101,6 @@ class PointDirichletPenalty : public PointBase<Tdim> {
                                 double penalty_factor,
                                 const std::string& normal_type,
                                 const VectorDim& normal_vector) override {
-    penalty_factor_ = penalty_factor;
-    if ((constraint_type == "slip") || (constraint_type == "contact_slip"))
-      slip_ = true;
-    if ((constraint_type == "contact") || (constraint_type == "contact_slip"))
-      contact_ = true;
-
     if (normal_type == "cartesian")
       normal_type_ = mpm::NormalType::Cartesian;
     else if (normal_type == "assign")
@@ -163,9 +160,9 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   //! Normal vector
   VectorDim normal_;
 
-};  // PointDirichletPenalty class
+};  // PointKelvinVoigt class
 }  // namespace mpm
 
-#include "point_dirichlet_penalty.tcc"
+#include "point_KELVIN_VOIGT.tcc"
 
-#endif  // MPM_POINT_DIRICHLET_PENALTY_H_
+#endif  // MPM_POINT_KELVIN_VOIGT_H_

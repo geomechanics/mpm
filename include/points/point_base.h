@@ -178,7 +178,8 @@ class PointBase {
   };
 
   //! Map point stiffness matrix to cell
-  virtual inline bool map_stiffness_matrix_to_cell() {
+  virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+  double newmark_gamma, double dt) {
     throw std::runtime_error(
         "Calling the base class function (map_stiffness_matrix_to_cell) in "
         "PointBase:: illegal operation!");

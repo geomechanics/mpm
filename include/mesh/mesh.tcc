@@ -2051,6 +2051,36 @@ bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
   return status;
 }
 
+//! Create point kelvin voigt constraint
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
+    int set_id, const std::shared_ptr<mpm::AbsorbingConstraint>& constraint,
+    const std::string& normal_type, const VectorDim& normal_vector) {
+  bool status = true;
+  try {
+    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
+      // Create a point kelvin voigt constraint
+      if (constraint->dir() < Tdim)
+        point_kelvin_voigt_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error("Invalid direction of kelvin voigt constraint");
+
+      // Assign penalty factor
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_penalty_parameter,
+                            std::placeholders::_1, constraint_type,
+                            penalty_factor, normal_type, normal_vector));
+    } else
+      throw std::runtime_error(
+          "No point set found to assign velocity constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Apply point velocity constraints
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {

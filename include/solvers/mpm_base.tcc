@@ -579,6 +579,9 @@ void mpm::MPMBase<Tdim>::initialise_points() {
 
   // Read and assign points velocity constraints
   this->point_velocity_constraints();
+
+  // Read and assign points Kelvin Voigt constraints
+  this->point_kelvin_voigt_constraints();
 }
 
 //! Checkpoint resume
@@ -1987,11 +1990,15 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
         int pset_id = constraints.at("pset_id").template get<int>();
         // Direction
         unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Delta
+        double delta = constraints.at("delta").template get<double>();
         // Incidence
         double incidence_a = constraints.at("incidence_a").template get<double>();
         double incidence_b = constraints.at("incidence_b").template get<double>();
         // Penalty factor
         double h_min = constraints.at("characteristic_length").template get<double>();
+        // Dummy Position
+        mpm::Position pos = mpm::Position::Edge;
 
         // Normal vector
         // Assume cartesian in which case it will be based on the dir provided
@@ -2023,16 +2030,14 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
         auto absorbing_constraint =
             std::make_shared<mpm::AbsorbingConstraint>(pset_id, dir, delta, 
                                                        h_min, incidence_a, incidence_b, 
-                                                       position);
+                                                       pos);
 
-        mesh_->create_point_kelvin_voigt_constraint(pset_id, absorbing_constraint,
-                                                constraint_type, penalty_factor,
-                                                normal_type, normal);
+        mesh_->create_point_kelvin_voigt_constraint(pset_id, absorbing_constraint, normal_type, normal);
       }
     } else
-      throw std::runtime_error("Point velocity constraints JSON not found");
+      throw std::runtime_error("Point Kelvin Voigt constraints JSON not found");
   } catch (std::exception& exception) {
-    console_->warn("#{}: Point velocity constraints are undefined {} ",
+    console_->warn("#{}: Point Kelvin Voigt constraints are undefined {} ",
                    __LINE__, exception.what());
   }
 }

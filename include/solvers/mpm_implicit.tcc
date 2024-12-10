@@ -138,6 +138,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     // Point entity sets and velocity constraints
     this->point_entity_sets(false);
     this->point_velocity_constraints();
+    this->point_kelvin_voigt_constraints();
   } else {
     // Initialise particles
     this->initialise_particles();

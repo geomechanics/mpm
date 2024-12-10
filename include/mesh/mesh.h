@@ -449,9 +449,22 @@ class Mesh {
       const std::string& constraint_type, double penalty_factor,
       const std::string& normal_type, const VectorDim& normal_vector);
 
+  //! Create point kelvin voigt constraints
+  //! \param[in] setid Node set id
+  //! \param[in] constraint Kelvin voigt constraint
+  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
+  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
+  //! \param[in] normal_vector Normal vector
+  bool create_point_kelvin_voigt_constraint(
+      int set_id, const std::shared_ptr<mpm::AbsorbingConstraint>& constraint,
+      const std::string& normal_type, const VectorDim& normal_vector);
+
   //! Apply points velocity constraints
   void apply_point_velocity_constraints();
 
+  //! Apply points kelvin voigt constraints
+  void apply_point_kelvin_voigt_constraints();
+  
   //! Assign nodal concentrated force
   //! \param[in] nodal_forces Force at dir on nodes
   bool assign_nodal_concentrated_forces(
@@ -885,7 +898,9 @@ class Mesh {
   //! Point velocity constraints
   std::vector<std::shared_ptr<mpm::VelocityConstraint>>
       point_velocity_constraints_;
-
+  //! Point kelvin voigt constraints
+  std::vector<std::shared_ptr<mpm::AbsorbingConstraint>>
+      point_kelvin_voigt_constraints_;
   //! Vector of generators for particle injections
   std::vector<mpm::Injection> particle_injections_;
   //! Nodal property pool

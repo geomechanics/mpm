@@ -9,6 +9,7 @@ template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
   // Apply point velocity constraints
   mesh_->apply_point_velocity_constraints();
+  mesh_->apply_point_kelvin_voigt_constraints();
 
 #pragma omp parallel sections
   {

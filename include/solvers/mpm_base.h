@@ -109,6 +109,9 @@ class MPMBase : public MPM {
   //! Point velocity constraints
   void point_velocity_constraints();
 
+  //! Point kelvin voigt constraints
+  void point_kelvin_voigt_constraints();
+
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 

@@ -163,20 +163,23 @@ class PointBase {
                                         double penalty_factor,
                                         const std::string& normal_type,
                                         const VectorDim& normal_vector) {
-    throw std::runtime_error(
-        "Calling the base class function (assign_penalty_parameter) in "
-        "PointBase:: illegal operation!");
   };
 
   //! Apply point velocity constraints
   //! \param[in] dir Direction of point velocity constraint
   //! \param[in] velocity Applied point velocity constraint
-  virtual void apply_point_velocity_constraints(unsigned dir, double velocity) {
-    throw std::runtime_error(
-        "Calling the base class function (apply_point_velocity_constraints) in "
-        "PointBase:: illegal operation!");
-  };
+  virtual void apply_point_velocity_constraints(unsigned dir, double velocity) {};
 
+  //! Apply point kelvin voigt constraints
+  //! \param[in] dir Direction of kelvin voigt constraint
+  //! \param[in] delta Spring vs. Dashpot Weighting Parameter
+  //! \param[in] h_min Characteristic length
+  //! \param[in] incidence_a Incidence parameter a
+  //! \param[in] incidence_b Incidence parameter b
+  virtual void apply_point_kelvin_voigt_constraints(
+      unsigned dir, double delta, double h_min, double incidence_a,
+      double incidence_b) {};
+  
   //! Map point stiffness matrix to cell
   virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
   double newmark_gamma, double dt) {

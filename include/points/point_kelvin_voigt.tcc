@@ -46,10 +46,16 @@ void mpm::PointKelvinVoigt<Tdim>::initialise_property(double dt) {
 
 //! Apply point velocity constraints
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::apply_point_velocity_constraints(
-    unsigned dir, double velocity) {
-  // Nothing to do here for kelvin voigt really but we'll keep the normal adjustment
+void mpm::PointKelvinVoigt<Tdim>::apply_point_kelvin_voigt_constraints(
+    unsigned dir, double delta, double h_min, double incidence_a, double incidence_b) {
+  // Adjust normal vector
   if (normal_type_ == mpm::NormalType::Cartesian) this->normal_(dir) = 1.0;
+  
+  // Assign parameters
+  this->delta_ = delta;
+  this->h_min_ = h_min;
+  this->incidence_a_ = incidence_a;
+  this->incidence_b_ = incidence_b;
 }
 
 //! Compute updated position
@@ -87,17 +93,14 @@ void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(double newm
     const unsigned matrix_size = nodes_.size() * Tdim;
     Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
     point_stiffness.setZero();
-
     // TODO: Fix input parameters pathway/pull from nodes
-    double rho = 1;
-    double vp = 2;
-    double vs = 1;
-    double a = 1;
-    double b = 1;
+    double rho = 2000;
+    double vp = 1000;
+    double vs = 707.1;
 
     // Normal and Tangent multipliers
-    const double normal_mult = a * rho * vp;
-    const double tangent_mult = b * rho * vs;
+    const double normal_mult = incidence_a_ * rho * vp;
+    const double tangent_mult = incidence_b_ * rho * vs;
 
     // Normal matrix
     normal_.normalize();
@@ -124,7 +127,7 @@ void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(double newm
                                   tangent_mult * (identity - normal_matrix)) * shape_function;
 
     // Compute local penalty stiffness matrix
-    cell_->compute_local_stiffness_block(0, 0, point_stiffness, area_, 1.0);
+    cell_->compute_local_stiffness_matrix_block(0, 0, point_stiffness, area_, newmark_gamma / (newmark_beta * dt));
 }
 
 template <unsigned Tdim>
@@ -135,14 +138,13 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
     point_stiffness.setZero();
 
     // TODO: Fix input parameters pathway/pull from nodes
-    double rho = 1;
-    double vp = 2;
-    double vs = 1;
-    double delta = 5;
+    double rho = 2000;
+    double vp = 1000;
+    double vs = 707.1;
 
     // Normal and Tangent multipliers
-    const double normal_mult = rho * vp * vp / delta;
-    const double tangent_mult = rho * vs * vs / delta;
+    const double normal_mult = rho * vp * vp / delta_;
+    const double tangent_mult = rho * vs * vs / delta_;
 
     // Normal matrix
     normal_.normalize();
@@ -169,27 +171,24 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
                                   tangent_mult * (identity - normal_matrix)) * shape_function;
 
     // Compute local penalty stiffness matrix
-    cell_->compute_local_stiffness_block(0, 0, point_stiffness, area_, 1.0);
+    cell_->compute_local_stiffness_matrix_block(0, 0, point_stiffness, area_, 1.0);
 }
 
 //! Map enforcement force
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
   // TODO: Fix input parameters pathway/pull from nodes
-  double rho = 1;
-  double vp = 2;
-  double vs = 1;
-  double delta = 5;
-  double a = 1;
-  double b = 1;
+  double rho = 2000;
+  double vp = 1000;
+  double vs = 707.1;
 
   // Normal and Tangent multipliers
-  const double normal_dashpot_mult = a * rho * vp;
-  const double tangent_dashpot_mult = b * rho * vs;
+  const double normal_dashpot_mult = incidence_a_ * rho * vp;
+  const double tangent_dashpot_mult = incidence_b_ * rho * vs;
 
   // Normal and Tangent multipliers
-  const double normal_spring_mult = rho * vp * vp / delta;
-  const double tangent_spring_mult = rho * vs * vs / delta;
+  const double normal_spring_mult = rho * vp * vp / delta_;
+  const double tangent_spring_mult = rho * vs * vs / delta_;
 
   // Normal matrix
   normal_.normalize();
@@ -225,9 +224,9 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 
   // Penalty force vector
   const auto& spring_force = shape_function.transpose() * (normal_spring_mult * normal_matrix + 
-                                tangent_spring_mult * (identity - normal_matrix)) * shape_function * nodal_disp;
+                                tangent_spring_mult * (identity - normal_matrix)) * shape_function * nodal_disp * area_;
   const auto& dashpot_force = shape_function.transpose() * (normal_dashpot_mult * normal_matrix + 
-                                tangent_dashpot_mult * (identity - normal_matrix)) * shape_function * nodal_vel;
+                                tangent_dashpot_mult * (identity - normal_matrix)) * shape_function * nodal_vel * area_;
 
   // Compute nodal external forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {

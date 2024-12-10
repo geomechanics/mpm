@@ -2063,16 +2063,13 @@ bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
       if (constraint->dir() < Tdim)
         point_kelvin_voigt_constraints_.emplace_back(constraint);
       else
-        throw std::runtime_error("Invalid direction of kelvin voigt constraint");
-
-      // Assign penalty factor
-      this->iterate_over_point_set(
-          set_id, std::bind(&mpm::PointBase<Tdim>::assign_penalty_parameter,
-                            std::placeholders::_1, constraint_type,
-                            penalty_factor, normal_type, normal_vector));
+        throw std::runtime_error("Invalid direction of Kelvin Voigt constraint");
+      if (constraint->delta() < constraint->h_min() / (2 * std::max(constraint->a(), constraint->b()))) {
+        throw std::runtime_error("Invalid delta for Kelvin Voigt constraint");
+      }
     } else
       throw std::runtime_error(
-          "No point set found to assign velocity constraint");
+          "No point set found to assign Kelvin Voigt constraint");
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -2095,6 +2092,26 @@ void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {
         set_id,
         std::bind(&mpm::PointBase<Tdim>::apply_point_velocity_constraints,
                   std::placeholders::_1, dir, velocity));
+  }
+}
+
+//! Apply point kelvin voigt constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_point_kelvin_voigt_constraints() {
+  // Iterate over all point kelvin voigt constraints
+  for (const auto& pkelvin_voigt : point_kelvin_voigt_constraints_) {
+    // If set id is -1, use all points
+    int set_id = pkelvin_voigt->setid();
+    unsigned dir = pkelvin_voigt->dir();
+    double delta = pkelvin_voigt->delta();
+    double h_min = pkelvin_voigt->h_min();
+    double a = pkelvin_voigt->a();
+    double b = pkelvin_voigt->b();
+
+    this->iterate_over_point_set(
+        set_id,
+        std::bind(&mpm::PointBase<Tdim>::apply_point_kelvin_voigt_constraints,
+                  std::placeholders::_1, dir, delta, h_min, a, b));
   }
 }
 

@@ -39,6 +39,15 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleLevelset& operator=(const ParticleLevelset<Tdim>&) = delete;
 
+  //! Initialise properties
+  void initialise() override;
+
+  //! Return normal vector
+  VectorDim levelset_couple() const override { return couple_force_; };
+
+  //! Return the approximate particle diameter
+  double diameter() const override;
+
   //! Assign nodal Levelset value to particles
   //! \param[in] dt Analysis time step
   //! \param[in] levelset_damping Levelset damping factor
@@ -46,9 +55,6 @@ class ParticleLevelset : public Particle<Tdim> {
   void map_particle_contact_force_to_nodes(const double levelset_damping,
                                            const bool levelset_pic,
                                            double dt) override;
-
-  //! Return the approximate particle diameter
-  double diameter() const override;
 
  protected:
   //! Compute Levelset contact force

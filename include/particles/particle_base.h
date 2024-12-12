@@ -462,6 +462,13 @@ class ParticleBase {
         "in ParticleBase:: illegal operation!");
   };
 
+  //! Return levelset couple vector
+  virtual VectorDim levelset_couple() const {
+    throw std::runtime_error(
+        "Calling the base class function (levelset_couple) "
+        "in ParticleBase:: illegal operation!");
+  };
+
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle
   //! \param[in] parameter parameter determining type of projection

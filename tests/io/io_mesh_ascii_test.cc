@@ -843,14 +843,14 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
       auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
 
       // Try to read particles scalar properties from a non-existant file
-      auto read_particles_scalars = io_mesh->read_particles_scalar_properties(
-          "particles-scalar-missing.txt");
+      auto read_particles_scalars =
+          io_mesh->read_scalar_properties("particles-scalar-missing.txt");
       // Check number of particles scalar properties
       REQUIRE(read_particles_scalars.size() == 0);
 
       // Check particles scalar properties
       read_particles_scalars =
-          io_mesh->read_particles_scalar_properties("particles-scalars-2d.txt");
+          io_mesh->read_scalar_properties("particles-scalars-2d.txt");
 
       // Check number of particles
       REQUIRE(read_particles_scalars.size() == particles_scalars.size());
@@ -1792,14 +1792,14 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
       auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
 
       // Try to read particles scalar properties from a non-existant file
-      auto read_particles_scalars = io_mesh->read_particles_scalar_properties(
-          "particles-scalar-missing.txt");
+      auto read_particles_scalars =
+          io_mesh->read_scalar_properties("particles-scalar-missing.txt");
       // Check number of particles scalar properties
       REQUIRE(read_particles_scalars.size() == 0);
 
       // Check particles scalar properties
       read_particles_scalars =
-          io_mesh->read_particles_scalar_properties("particles-scalars-3d.txt");
+          io_mesh->read_scalar_properties("particles-scalars-3d.txt");
 
       // Check number of particles
       REQUIRE(read_particles_scalars.size() == particles_scalars.size());

@@ -12,9 +12,13 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
   else
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeUSF<Tdim>>(mesh_, dt_);
 
-  //! Interface scheme
   if (this->interface_)
-    contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
+    if (this->interface_type_ == "multimaterial")
+      contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
+    else if (this->interface_type_ == "levelset")
+      contact_ = std::make_shared<mpm::ContactLevelset<Tdim>>(mesh_);
+    else  // default is "none"
+      contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
   else
     contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
 }
@@ -54,9 +58,6 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
   // Pressure smoothing
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
-
-  // Interface
-  interface_ = io_->analysis_bool("interface");
 
   // Initialise material
   this->initialise_materials();
@@ -127,14 +128,15 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
 
-    // Initialise nodal properties and append material ids to node
-    contact_->initialise();
+    // Initialise nodal properties
+    contact_->initialise();  // LEDT check
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
-    // Map material properties to nodes
-    contact_->compute_contact_forces();
+    // Contact forces at nodes
+    contact_->compute_contact_forces(this->levelset_damping_,
+                                     this->levelset_pic_, dt_);
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);

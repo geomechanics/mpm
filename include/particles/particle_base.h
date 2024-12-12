@@ -450,6 +450,25 @@ class ParticleBase {
   //! \ingroup AdvancedMapping
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
 
+  //! Levelset functions--------------------------------------------------------
+  //! Assign nodal levelset value to particles
+  //! \param[in] dt Analysis time step
+  //! \param[in] levelset_damping Levelset damping factor
+  //! \param[in] levelset_pic Particle in cell method bool for contact velocity
+  virtual void map_particle_contact_force_to_nodes(
+      const double levelset_damping, const bool levelset_pic, double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (map_particle_contact_force_to_nodes) "
+        "in ParticleBase:: illegal operation!");
+  };
+
+  //! Return levelset couple vector
+  virtual VectorDim levelset_couple() const {
+    throw std::runtime_error(
+        "Calling the base class function (levelset_couple) "
+        "in ParticleBase:: illegal operation!");
+  };
+
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle
   //! \param[in] parameter parameter determining type of projection

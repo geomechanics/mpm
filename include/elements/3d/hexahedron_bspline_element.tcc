@@ -400,7 +400,7 @@ double mpm::HexahedronBSplineElement<Tdim, Tpolynomial>::kernel(
   double value = 0.0;
   if ((xi >= 0) && (xi < 0.5))
     value = -xi * xi + 3. / 4.;
-  else if ((xi >= 0.5) && (xi < 1.5))
+  else if ((xi >= 0.5) && (xi <= 1.5))
     value = 0.5 * xi * xi - 1.5 * xi + 9. / 8.;
 
   return value;
@@ -418,7 +418,7 @@ double mpm::HexahedronBSplineElement<Tdim, Tpolynomial>::gradient(
   double value = 0.0;
   if ((absxi >= 0) && (absxi < 0.5))
     value = -2. * xi / spacing_length_;
-  else if ((absxi >= 0.5) && (absxi < 1.5))
+  else if ((absxi >= 0.5) && (absxi <= 1.5))
     value = (absxi - 1.5) / spacing_length_ * signxi;
   return value;
 }

@@ -146,12 +146,24 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
     return mpm::ElementDegree::Quadratic;
   };
 
+  //! Boolean for closed-form solution (vs recursive De Boor's algorithm)
+  const static bool closed_form{true};
+
  private:
+  //! Compute B-Spline Basis Function using the closed-form equation
+  //! \param[in] point_coord point coordinate in one direction
+  //! \param[in] nodal_coord nodal coordinate in one direction
+  double kernel(double point_coord, double nodal_coord) const;
+
+  //! Compute B-Spline Basis Function Gradient using the closed-form equation
+  //! \param[in] point_coord point coordinate in one direction
+  //! \param[in] nodal_coord nodal coordinate in one direction dimension
+  double gradient(double point_coord, double nodal_coord) const;
+
   //! Compute B-Spline Basis Function using the recursive De Boor's algorithm
   //! for single direction
   //! \param[in] point_coord point coordinate in one direction
   //! \param[in] nodal_coord nodal coordinate in one direction
-  //! dimension
   //! \param[in] node_type Node type associated with direction
   //! \param[in] poly_order Polynomial degree
   //! \param[in] index Index associated to local BSplineKnotVector

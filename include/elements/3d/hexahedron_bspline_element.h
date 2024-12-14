@@ -146,8 +146,8 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
     return mpm::ElementDegree::Quadratic;
   };
 
-  //! Boolean for closed-form solution (vs recursive De Boor's algorithm)
-  const static bool closed_form{true};
+  //! Setter for closed-form solution (vs recursive De Boor's algorithm)
+  void set_closed_form(bool value) { closed_form_ = value; };
 
  private:
   //! Compute B-Spline Basis Function using the closed-form equation
@@ -212,6 +212,8 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
   std::vector<std::vector<double>> BSplineKnotVector;
   //! Boolean to identify kernel correction
   bool kernel_correction_{false};
+  //! Boolean for closed-form solution (vs recursive De Boor's algorithm)
+  bool closed_form_{true};
 };
 
 }  // namespace mpm

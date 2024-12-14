@@ -15,6 +15,9 @@ void mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::
   this->spacing_length_ =
       std::abs(nodal_coordinates(1, 0) - nodal_coordinates(0, 0));
 
+  //! Boolean for closed-form solution (vs recursive De Boor's algorithm)
+  set_closed_form(true);
+
   //! Identify if element is at boundary to see if kernel correction is
   //! necessary
   if (kernel_correction) {
@@ -50,7 +53,7 @@ inline Eigen::VectorXd
   try {
     bool apply_kernel_correction = false;
 
-    if (!closed_form) {
+    if (!closed_form_) {
       //! Check if we need to apply kernel correction based on particle position
       //! with respective to local element nodes
       if (kernel_correction_) {
@@ -67,7 +70,7 @@ inline Eigen::VectorXd
       pcoord.noalias() +=
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
-    if (closed_form) {
+    if (closed_form_) {
       //! Compute shape function using a closed-form quadratic B-Spline equation
       for (unsigned n = 0; n < this->nconnectivity_; ++n) {
         //! Loop over dimension
@@ -78,7 +81,7 @@ inline Eigen::VectorXd
       }
     }
 
-    if (!closed_form) {
+    if (!closed_form_) {
       //! Compute shape function following a multiplicative rule
       for (unsigned n = 0; n < this->nconnectivity_; ++n) {
         //! Loop over dimension
@@ -147,7 +150,7 @@ inline Eigen::MatrixXd
   try {
     bool apply_kernel_correction = false;
 
-    if (!closed_form) {
+    if (!closed_form_) {
       //! Check if we need to apply kernel correction based on particle position
       //! with respective to local element nodes
       if (kernel_correction_) {
@@ -164,7 +167,7 @@ inline Eigen::MatrixXd
       pcoord.noalias() +=
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
-    if (closed_form) {
+    if (closed_form_) {
       //! Compute the shape function gradient following a multiplicative rule
       for (unsigned n = 0; n < this->nconnectivity_; ++n)
         //! Loop over dimension
@@ -182,7 +185,7 @@ inline Eigen::MatrixXd
         }
     }
 
-    if (!closed_form) {
+    if (!closed_form_) {
       if (!apply_kernel_correction) {
         //! Compute the shape function gradient following a multiplicative rule
         for (unsigned n = 0; n < this->nconnectivity_; ++n)

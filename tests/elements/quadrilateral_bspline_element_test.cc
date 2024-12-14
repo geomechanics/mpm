@@ -20,6 +20,11 @@ TEST_CASE("Quadrilateral bspline elements are checked",
     std::shared_ptr<mpm::Element<Dim>> quad =
         std::make_shared<mpm::QuadrilateralBSplineElement<Dim, npolynomials>>();
 
+    // Cast quad to access the derived type QuadrilateralBSplineElement
+    auto quad_bspline = std::dynamic_pointer_cast<
+        mpm::QuadrilateralBSplineElement<Dim, npolynomials>>(quad);
+    quad_bspline->set_closed_form(true);  // closed-form algorithm
+
     // Check degree and shapefn type
     REQUIRE(quad->degree() == mpm::ElementDegree::Quadratic);
     REQUIRE(quad->shapefn_type() == mpm::ShapefnType::BSPLINE);
@@ -99,6 +104,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
 
         REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props));
+        quad_bspline->set_closed_form(true);  // closed-form algorithm
 
         // Coordinates is (0,0) after upgrade
         SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
@@ -291,6 +297,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         bool kernel_correction = true;
         REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props, kernel_correction));
+        quad_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0) after upgrade
         SECTION(
@@ -498,6 +505,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
 
       REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
           nodal_coords, nodal_props));
+      quad_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
       // Coordinates is (0,0) after upgrade
       SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
@@ -583,6 +591,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       bool kernel_correction = true;
       REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
           nodal_coords, nodal_props, kernel_correction));
+      quad_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
       // Coordinates is (0,0) after upgrade
       SECTION(
@@ -744,6 +753,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
 
       REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
           nodal_coords, nodal_props));
+      quad_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
       // Coordinates is (0,0) after upgrade
       SECTION("2D BSpline element for coordinates(0,0) after upgrade") {
@@ -831,6 +841,7 @@ TEST_CASE("Quadrilateral bspline elements are checked",
       bool kernel_correction = true;
       REQUIRE_NOTHROW(quad->initialise_bspline_connectivity_properties(
           nodal_coords, nodal_props, kernel_correction));
+      quad_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
       // Coordinates is (0,0) after upgrade
       SECTION(

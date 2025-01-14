@@ -42,8 +42,8 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Initialise properties
   void initialise() override;
 
-  //! Return normal vector
-  VectorDim levelset_couple() const override { return couple_force_; };
+  //! Return empty levelset couple vector
+  VectorDim levelset_couple() const override { return VectorDim::Zero(); };
 
   //! Return the approximate particle diameter
   double diameter() const override;
@@ -79,6 +79,8 @@ class ParticleLevelset : public Particle<Tdim> {
   std::unique_ptr<spdlog::logger> console_;
   //! coupling force
   VectorDim couple_force_{VectorDim::Zero()};
+  //! mp radius
+  double mp_radius{0.};
   //! levelset value
   double levelset{0.};
   //! levelset friction

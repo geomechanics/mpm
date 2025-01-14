@@ -40,19 +40,17 @@ void mpm::ParticleLevelset<Tdim>::initialise() {
   // Call the base class initialise function
   Particle<Tdim>::initialise();
 
-  // Initialise extra properties
-  couple_force_.setZero();
-  this->vector_properties_["levelset_couple"] = [this]() {
-    return this->levelset_couple();
-  };
+  // Approximate radius of influence (remains constant with time)
+  mp_radius = 0.5 * diameter();
 }
 
 //! Return the approximate particle diameter
 template <unsigned Tdim>
 double mpm::ParticleLevelset<Tdim>::diameter() const {
   double diameter = 0.;
-  if (Tdim == 2) diameter = 2.0 * std::sqrt(volume_ / M_PI);         // radial
-  if (Tdim == 3) diameter = 2.0 * std::cbrt(volume_ * 0.75 / M_PI);  // radial
+  double volume = 1.5625e-06;  // LEDT TODO fix hardcode
+  if (Tdim == 2) diameter = 2.0 * std::sqrt(volume / M_PI);         // radial
+  if (Tdim == 3) diameter = 2.0 * std::cbrt(volume * 0.75 / M_PI);  // radial
   return diameter;
 }
 
@@ -69,13 +67,10 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   VectorDim levelset_gradient = VectorDim::Zero();
   VectorDim contact_vel = VectorDim::Zero();
 
-  // Initialise levelset couple vector data property
-  this->vector_properties_["levelset_couple"] = []() {
-    return VectorDim::Zero();
+  // Initialise levelset vtk data properties
+  this->vector_properties_["levelset_couple"] = [this]() {
+    return this->levelset_couple();
   };
-
-  // Approximate radius of influence
-  double mp_radius = 0.5 * diameter();
 
   // Global contact velocity update scheme
   if (!levelset_pic) contact_vel = velocity_;
@@ -175,7 +170,7 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
   double contact_tangent_mag = (mass_ * contact_vel / dt).dot(levelset_tangent);
 
   // Couple must not exceed cancellation of contact tangential force
-  bool uphill_prevention = true;  // LEDT temporary bool for testing
+  bool uphill_prevention = true;  // LEDT TEMP bool for testing
   if (uphill_prevention)
     couple_tangent_mag = std::min(couple_tangent_mag, contact_tangent_mag);
 
@@ -190,7 +185,7 @@ typename mpm::ParticleLevelset<Tdim>::VectorDim
   if ((contact_vel.dot(levelset_normal)) >= 0.)
     couple_force_ = (1. - levelset_damping) * couple_force_;
 
-  // Store levelset couple vector data property
+  // Store levelset vtk data properties
   this->vector_properties_["levelset_couple"] = [couple_force_]() {
     return couple_force_;
   };

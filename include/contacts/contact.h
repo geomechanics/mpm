@@ -17,16 +17,18 @@ class Contact {
   //! Intialize
   virtual inline void initialise(){};
 
+  //! Update time-independent levelset properties
+  //! \param[in] levelset_damping Levelset damping factor
+  //! \param[in] levelset_pic Particle in cell method bool for contact velocity
+  virtual inline void update_levelset_properties(const double levelset_damping,
+                                                 const bool levelset_pic){};
+
   //! Compute contact forces
   virtual inline void compute_contact_forces(){};
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
-  //! \param[in] levelset_damping Levelset damping factor
-  //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  virtual inline void compute_contact_forces(const double levelset_damping,
-                                             const bool levelset_pic,
-                                             double dt){};
+  virtual inline void compute_contact_forces(double dt){};
 
  protected:
   //! Mesh object

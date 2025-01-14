@@ -453,12 +453,27 @@ class ParticleBase {
   //! Levelset functions--------------------------------------------------------
   //! Assign nodal levelset value to particles
   //! \param[in] dt Analysis time step
-  //! \param[in] levelset_damping Levelset damping factor
-  //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  virtual void map_particle_contact_force_to_nodes(
-      const double levelset_damping, const bool levelset_pic, double dt) {
+  virtual void map_particle_contact_force_to_nodes(double dt) {
     throw std::runtime_error(
         "Calling the base class function (map_particle_contact_force_to_nodes) "
+        "in ParticleBase:: illegal operation!");
+  };
+
+  // //! Update time-independent static levelset properties
+  // //! \param[in] levelset_damping Levelset damping factor
+  // //! \param[in] levelset_pic Particle in cell method bool for contact
+  // velocity virtual void update_levelset_static_properties(const double
+  // levelset_damping,
+  //                                                const bool levelset_pic) {
+  //   throw std::runtime_error(
+  //       "Calling the base class function (update_levelset_static_properties)
+  //       " "in ParticleBase:: illegal operation!");
+  // };
+
+  //! Update time-independent mp levelset properties
+  virtual void update_levelset_mp_properties() {
+    throw std::runtime_error(
+        "Calling the base class function (update_levelset_mp_properties) "
         "in ParticleBase:: illegal operation!");
   };
 

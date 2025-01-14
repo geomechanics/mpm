@@ -39,62 +39,59 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleLevelset& operator=(const ParticleLevelset<Tdim>&) = delete;
 
-  //! Initialise properties
-  void initialise() override;
-
   //! Return empty levelset couple vector
   VectorDim levelset_couple() const override { return VectorDim::Zero(); };
 
-  //! Return the approximate particle diameter
-  double diameter() const override;
-
   //! Assign nodal Levelset value to particles
   //! \param[in] dt Analysis time step
+  void map_particle_contact_force_to_nodes(double dt) override;
+
+  //! Update time-independent static levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  void map_particle_contact_force_to_nodes(const double levelset_damping,
-                                           const bool levelset_pic,
-                                           double dt) override;
+  static void update_levelset_static_properties(const double levelset_damping,
+                                                const bool levelset_pic);
+
+  //! Update time-independent mp levelset properties
+  void update_levelset_mp_properties() override;
 
  protected:
   //! Compute Levelset contact force
-  //! \param[in] levelset Levelset value at the particle
-  //! \param[in] levelset_normal Normal vector towards the levelset
-  //! \param[in] levelset_mu Levelset friction
-  //! \param[in] levelset_alpha Levelset adhesion coefficient
-  //! \param[in] barrier_stiffness Barrier stiffness
-  //! \param[in] slip_threshold Slip threshold
-  //! \param[in] mp_radius mp radius of influence for contact
-  //! \param[in] contact_vel Contact velocity from nodes (PIC)
-  //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] dt Analysis time step
-  VectorDim compute_levelset_contact_force(
-      double levelset, const VectorDim& levelset_normal, double levelset_mu,
-      double levelset_alpha, double barrier_stiffness, double slip_threshold,
-      const double mp_radius, const VectorDim& contact_vel,
-      const double levelset_damping, double dt) noexcept;
+  void compute_levelset_contact_force(double dt) noexcept;
 
  protected:
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+
+  //! levelset_damping_
+  static double levelset_damping_;
+  //! levelset_pic_
+  static bool levelset_pic_;
+  //! mp radius
+  double mp_radius_{0.};
+  //! levelset value
+  double levelset_{0.};
+  //! levelset friction
+  double levelset_mu_{0.};
+  //! levelset adhesion coefficient
+  double levelset_alpha_{0.};
+  //! barrier stiffness
+  double barrier_stiffness_{0.};
+  //! slip threshold
+  double slip_threshold_{0.};
+  //! cumulative slip magnitude
+  double cumulative_slip_mag_{0.};  // LEDT check not reseting each step
+  //! levelset gradient
+  VectorDim levelset_gradient_{VectorDim::Zero()};
+  //! contact velocity
+  VectorDim contact_vel_{VectorDim::Zero()};
+  //! levelset normal
+  VectorDim levelset_normal_{VectorDim::Zero()};
+  //! levelset tangent
+  VectorDim levelset_tangent_{VectorDim::Zero()};
   //! coupling force
   VectorDim couple_force_{VectorDim::Zero()};
-  //! mp radius
-  double mp_radius{0.};
-  //! levelset value
-  double levelset{0.};
-  //! levelset friction
-  double levelset_mu{0.};
-  //! levelset adhesion coefficient
-  double levelset_alpha{0.};
-  //! barrier stiffness
-  double barrier_stiffness{0.};
-  //! slip threshold
-  double slip_threshold{0.};
-  //! cumulative slip magnitude
-  double cumulative_slip_mag{0.};  // LEDT check not reseting each step
-  //! contact velocity
-  VectorDim contact_vel{VectorDim::Zero()};
   //! Nodes
   using Particle<Tdim>::nodes_;
   //! Cell

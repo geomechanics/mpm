@@ -19,12 +19,15 @@ class ContactLevelset : public Contact<Tdim> {
   //! Intialize
   void initialise() override;
 
-  //! Compute contact forces
-  //! \param[in] dt Analysis time step
+  //! Update time-independent levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  void compute_contact_forces(const double levelset_damping,
-                              const bool levelset_pic, double dt) override;
+  void update_levelset_properties(const double levelset_damping,
+                                  const bool levelset_pic) override;
+
+  //! Compute contact forces
+  //! \param[in] dt Analysis time step
+  void compute_contact_forces(double dt) override;
 
   //! Mesh levelset object
   std::shared_ptr<mpm::MeshLevelset<Tdim>> mesh_levelset_;

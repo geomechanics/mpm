@@ -13,7 +13,7 @@ namespace mpm {
 
 namespace mohrcoulomb {
 //! Failure state
-enum FailureState { Elastic = 0, Shear = 1, Tensile = 2 };
+enum FailureState { Elastic = 0, Shear = 1, Tensile = 2, Separated = 3 };
 }  // namespace mohrcoulomb
 
 //! MohrCoulomb class
@@ -126,6 +126,13 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
 
   //! Density
   double density_{std::numeric_limits<double>::max()};
+  //! Grain density
+  double grain_density_{std::numeric_limits<double>::max()};
+  //! Initial packing fraction
+  double initial_packing_fraction_{std::numeric_limits<double>::max()};
+  //! Minimum packing fraction
+  double minimum_packing_fraction_{0.0};
+
   //! Youngs modulus
   double youngs_modulus_{std::numeric_limits<double>::max()};
   //! Bulk modulus
@@ -158,7 +165,8 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   std::map<int, mpm::mohrcoulomb::FailureState> yield_type_ = {
       {0, mpm::mohrcoulomb::FailureState::Elastic},
       {1, mpm::mohrcoulomb::FailureState::Shear},
-      {2, mpm::mohrcoulomb::FailureState::Tensile}};
+      {2, mpm::mohrcoulomb::FailureState::Tensile},
+      {3, mpm::mohrcoulomb::FailureState::Separated}};
 };  // MohrCoulomb class
 }  // namespace mpm
 

@@ -49,8 +49,8 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Update time-independent static levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  static void update_levelset_static_properties(const double levelset_damping,
-                                                const bool levelset_pic);
+  static void update_levelset_static_properties(double levelset_damping,
+                                                bool levelset_pic);
 
   //! Update time-independent mp levelset properties
   void update_levelset_mp_properties() override;

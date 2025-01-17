@@ -43,7 +43,7 @@ mpm::ParticleLevelset<Tdim>::ParticleLevelset(Index id, const VectorDim& coord,
 //! Update time-independent static levelset properties
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::update_levelset_static_properties(
-    const double levelset_damping, const bool levelset_pic) {
+    double levelset_damping, bool levelset_pic) {
   levelset_damping_ = levelset_damping;
   levelset_pic_ = levelset_pic;
 }

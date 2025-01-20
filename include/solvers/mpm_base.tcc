@@ -553,6 +553,10 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     if (!unlocatable_particles.empty())
       throw std::runtime_error("Particle outside the mesh domain");
 
+    if (is_levelset()) {
+      throw std::runtime_error("Resume not compatible with levelset");
+    }
+
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
 
@@ -591,6 +595,7 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
 
   // VTK PolyData writer
   auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates());
+  const std::string extension = ".vtp";
 
   // Write mesh on step 0
   // Get active node pairs use true
@@ -600,11 +605,12 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
         mesh_->nodal_coordinates(), mesh_->node_pairs(true));
 
   // Write input geometry to vtk file
-  const std::string extension = ".vtp";
-  const std::string attribute = "geometry";
-  auto meshfile =
-      io_->output_file(attribute, extension, uuid_, step, max_steps).string();
-  vtk_writer->write_geometry(meshfile);
+  // const std::string extension = ".vtp";
+  // const std::string attribute = "geometry";
+  // auto meshfile = io_->output_file(attribute, extension, uuid_, step,
+  //                                  max_steps)
+  //                     .string();
+  // vtk_writer->write_geometry(meshfile);
 
   // MPI parallel vtk file
   int mpi_rank = 0;

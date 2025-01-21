@@ -7,8 +7,6 @@
 
 #include "mpm_base.h"
 
-#include <string>
-
 namespace mpm {
 
 //! MPMExplicit class

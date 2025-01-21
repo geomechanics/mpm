@@ -42,7 +42,7 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Return empty levelset couple vector
   VectorDim levelset_couple() const override { return VectorDim::Zero(); };
 
-  //! Assign nodal Levelset value to particles
+  //! Compute particle contact forces and map to nodes
   //! \param[in] dt Analysis time step
   void map_particle_contact_force_to_nodes(double dt) override;
 
@@ -56,7 +56,7 @@ class ParticleLevelset : public Particle<Tdim> {
   void update_levelset_mp_properties() override;
 
  protected:
-  //! Compute Levelset contact force
+  //! Compute levelset contact force
   //! \param[in] dt Analysis time step
   void compute_levelset_contact_force(double dt) noexcept;
 
@@ -81,7 +81,7 @@ class ParticleLevelset : public Particle<Tdim> {
   //! slip threshold
   double slip_threshold_{0.};
   //! cumulative slip magnitude
-  double cumulative_slip_mag_{0.};  // LEDT check not reseting each step
+  double cumulative_slip_mag_{0.};
   //! levelset gradient
   VectorDim levelset_gradient_{VectorDim::Zero()};
   //! contact velocity

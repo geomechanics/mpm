@@ -1,8 +1,6 @@
 #ifndef MPM_MESH_LEVELSET_H_
 #define MPM_MESH_LEVELSET_H_
 
-#include <string>
-
 #include "logger.h"
 #include "mesh.h"
 

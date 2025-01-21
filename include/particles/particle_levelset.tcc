@@ -51,12 +51,10 @@ void mpm::ParticleLevelset<Tdim>::update_levelset_static_properties(
 //! Update time-independent mp levelset properties
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::update_levelset_mp_properties() {
-
-  // Approximate radius of influence (remains constant with time)
   this->mp_radius_ = 0.5 * this->diameter();  // radial influence
 }
 
-//! Map levelset contact force
+//! Compute particle contact forces and map to nodes
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
     double dt) {
@@ -95,14 +93,13 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
       barrier_stiffness_ += shapefn_[i] * nodes_[i]->barrier_stiffness();
       slip_threshold_ += shapefn_[i] * nodes_[i]->slip_threshold();
 
-      // PIC contact velocity update scheme (map contact velocity from the
-      // nodes)
+      // PIC contact velocity update scheme (map contact velocity from nodes)
       if (levelset_pic_)
         contact_vel_ +=
             shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
     }
 
-    // Compute normals // LEDT check this once separate meshes
+    // Compute normals
     levelset_normal_ = levelset_gradient_.normalized();
 
     // Compute couple_force_ in particle

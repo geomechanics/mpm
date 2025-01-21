@@ -162,7 +162,9 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
     for (unsigned i = 0; i < post_process_.at("vtk").size(); ++i) {
       std::string attribute =
           post_process_["vtk"][i].template get<std::string>();
-      if (variables.find(attribute) != variables.end())
+      if (attribute == "geometry")
+        geometry_vtk_ = true;
+      else if (variables.find(attribute) != variables.end())
         vtk_vars_[variables.at(attribute)].emplace_back(attribute);
       else {
         console_->warn(
@@ -604,13 +606,13 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
         io_->output_file("mesh", ".vtp", uuid_, step, max_steps).string(),
         mesh_->nodal_coordinates(), mesh_->node_pairs(true));
 
-  // Write input geometry to vtk file
-  // const std::string extension = ".vtp";
-  // const std::string attribute = "geometry";
-  // auto meshfile = io_->output_file(attribute, extension, uuid_, step,
-  //                                  max_steps)
-  //                     .string();
-  // vtk_writer->write_geometry(meshfile);
+  // VTK geometry
+  if (geometry_vtk_) {
+    auto meshfile =
+        io_->output_file("geometry", extension, uuid_, step, max_steps)
+            .string();
+    vtk_writer->write_geometry(meshfile);
+  }
 
   // MPI parallel vtk file
   int mpi_rank = 0;

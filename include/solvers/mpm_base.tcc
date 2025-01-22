@@ -1998,7 +1998,7 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
         // Penalty factor
         double h_min = constraints.at("characteristic_length").template get<double>();
         // Dummy Position
-        mpm::Position pos = mpm::Position::Edge;
+        mpm::Position pos = mpm::Position::None;
 
         // Normal vector
         // Assume cartesian in which case it will be based on the dir provided

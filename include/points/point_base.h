@@ -141,7 +141,8 @@ class PointBase {
   virtual void initialise_property(double dt) = 0;
 
   //! Compute updated position
-  virtual void compute_updated_position(double dt) noexcept = 0;
+  virtual void compute_updated_position(double dt, unsigned phase, 
+                                        mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::APIC) noexcept = 0;
 
   //! Type of point
   virtual std::string type() const = 0;
@@ -163,6 +164,13 @@ class PointBase {
                                         double penalty_factor,
                                         const std::string& normal_type,
                                         const VectorDim& normal_vector) {
+  };
+
+  //! Assign boundary normal
+  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
+  //! \param[in] normal_vector Normal vector
+  virtual void assign_boundary_normal(const std::string& normal_type,
+                                      const VectorDim& normal_vector) {
   };
 
   //! Apply point velocity constraints

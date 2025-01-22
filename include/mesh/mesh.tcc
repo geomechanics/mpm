@@ -2067,6 +2067,10 @@ bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
       if (constraint->delta() < constraint->h_min() / (2 * std::max(constraint->a(), constraint->b()))) {
         throw std::runtime_error("Invalid delta for Kelvin Voigt constraint");
       }
+      // Assign normal vecotr
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_boundary_normal,
+                            std::placeholders::_1, normal_type, normal_vector));
     } else
       throw std::runtime_error(
           "No point set found to assign Kelvin Voigt constraint");

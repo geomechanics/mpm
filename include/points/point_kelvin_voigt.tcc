@@ -44,10 +44,25 @@ void mpm::PointKelvinVoigt<Tdim>::initialise_property(double dt) {
   // Nothing to do here for kelvin voigt
 }
 
-//! Apply point velocity constraints
+// Assign boundary normal
+template <unsigned Tdim>
+void mpm::PointKelvinVoigt<Tdim>::assign_boundary_normal(
+    const std::string& normal_type, const VectorDim& normal_vector) {
+  if (normal_type == "cartesian") {
+    normal_type_ = mpm::NormalType::Cartesian;
+  } else if (normal_type == "assign") {
+    normal_type_ = mpm::NormalType::Assign;
+    this->normal_ = normal_vector;
+  } else if (normal_type == "auto") {
+    normal_type_ = mpm::NormalType::Automatic;
+  }
+  
+}
+
+// Apply point velocity constraints
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::apply_point_kelvin_voigt_constraints(
-    unsigned dir, double delta, double h_min, double incidence_a, double incidence_b) {
+    unsigned dir, double delta, double h_min, double incidence_a, double incidence_b) {  
   // Adjust normal vector
   if (normal_type_ == mpm::NormalType::Cartesian) this->normal_(dir) = 1.0;
   
@@ -58,14 +73,52 @@ void mpm::PointKelvinVoigt<Tdim>::apply_point_kelvin_voigt_constraints(
   this->incidence_b_ = incidence_b;
 }
 
-//! Compute updated position
+// Compute updated position
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::compute_updated_position(
-    double dt) noexcept {
-  // Nothing to do here for kelvin voigt
-  // Update position and displacements
-  // coordinates_.noalias() += imposed_displacement_;
-  // displacement_.noalias() += imposed_displacement_;
+    double dt, unsigned phase, mpm::VelocityUpdate velocity_update) noexcept {
+  // Define default velocity update scheme
+  double blending_ratio = 1.0;
+  switch (velocity_update) {
+    case mpm::VelocityUpdate::FLIP:
+      // this->compute_updated_position_flip(dt, blending_ratio, phase);
+      break;
+    default:
+      // Default to no position update scheme
+      break;
+  }
+}
+
+// Compute updated position of the point assuming FLIP scheme
+template <unsigned Tdim>
+void mpm::PointKelvinVoigt<Tdim>::compute_updated_position_flip(
+    double dt, double blending_ratio, unsigned phase) noexcept {
+  // Check if point has a valid cell ptr
+  assert(cell_ != nullptr);
+
+  // Get interpolated nodal velocity and acceleration
+  Eigen::Matrix<double, Tdim, 1> nodal_velocity =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodal_velocity.noalias() +=
+        shapefn_[i] * nodes_[i]->velocity(phase);
+    nodal_acceleration.noalias() +=
+        shapefn_[i] * nodes_[i]->acceleration(phase);
+  }
+
+  //// Update particle velocity from interpolated nodal acceleration
+  // this->velocity_.noalias() += nodal_acceleration * dt;
+  //// If intermediate scheme is considered
+  // this->velocity_ = blending_ratio * this->velocity_ +
+  //                  (1.0 - blending_ratio) * nodal_velocity;
+
+  // New position  current position + velocity * dt
+  //this->coordinates_.noalias() += nodal_velocity * dt;
+  // Update displacement (displacement is initialized from zero)
+  //this->displacement_.noalias() += nodal_velocity * dt;
 }
 
 //! Map penalty stiffness matrix to cell
@@ -94,9 +147,11 @@ void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(double newm
     Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
     point_stiffness.setZero();
     // TODO: Fix input parameters pathway/pull from nodes
-    double rho = 2000;
-    double vp = 1000;
-    double vs = 707.1;
+    double E = 60e6;
+    double v = 0.25;
+    double rho = 1600;
+    double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
+    double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
     // Normal and Tangent multipliers
     const double normal_mult = incidence_a_ * rho * vp;
@@ -138,9 +193,11 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
     point_stiffness.setZero();
 
     // TODO: Fix input parameters pathway/pull from nodes
-    double rho = 2000;
-    double vp = 1000;
-    double vs = 707.1;
+    double E = 60e6;
+    double v = 0.25;
+    double rho = 1600;
+    double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
+    double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
     // Normal and Tangent multipliers
     const double normal_mult = rho * vp * vp / delta_;
@@ -178,9 +235,11 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
   // TODO: Fix input parameters pathway/pull from nodes
-  double rho = 2000;
-  double vp = 1000;
-  double vs = 707.1;
+  double E = 60e6;
+  double v = 0.25;
+  double rho = 1600;
+  double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
+  double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
   // Normal and Tangent multipliers
   const double normal_dashpot_mult = incidence_a_ * rho * vp;

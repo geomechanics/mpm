@@ -66,7 +66,8 @@ class PointDirichletPenalty : public PointBase<Tdim> {
 
   //! Compute updated position
   //! \param[in] dt Analysis time step
-  void compute_updated_position(double dt) noexcept override;
+  void compute_updated_position(double dt, unsigned phase, 
+                                mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::APIC) noexcept override;
 
   //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell(double newmark_beta,

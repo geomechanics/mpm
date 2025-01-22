@@ -54,6 +54,12 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   //! \param[in] dt Time step size
   void initialise_property(double dt) override;
 
+  //! Assign boundary normal
+  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
+  //! \param[in] normal_vector Normal vector
+  void assign_boundary_normal(const std::string& normal_type,
+                              const VectorDim& normal_vector) override;
+
   //! Apply point kelvin voigt constraints
   //! \param[in] dir Direction of kelvin voigt constraint
   //! \param[in] delta Spring vs. Dashpot Weighting Parameter
@@ -66,7 +72,12 @@ class PointKelvinVoigt : public PointBase<Tdim> {
 
   //! Compute updated position
   //! \param[in] dt Analysis time step
-  void compute_updated_position(double dt) noexcept override;
+  void compute_updated_position(double dt, unsigned phase, 
+                                mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::APIC) noexcept override;
+
+  //! Compute updated position: FLIP
+  //! \param[in] dt Analysis time step
+  void compute_updated_position_flip(double dt, double blending_ratio,unsigned phase) noexcept;
 
   //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell(double newmark_beta,

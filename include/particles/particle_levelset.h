@@ -39,13 +39,6 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleLevelset& operator=(const ParticleLevelset<Tdim>&) = delete;
 
-  //! Return empty levelset couple vector
-  VectorDim levelset_couple() const override { return VectorDim::Zero(); };
-
-  //! Compute particle contact forces and map to nodes
-  //! \param[in] dt Analysis time step
-  void map_particle_contact_force_to_nodes(double dt) override;
-
   //! Update time-independent static levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
@@ -55,10 +48,26 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Update time-independent mp levelset properties
   void update_levelset_mp_properties() override;
 
- protected:
-  //! Compute levelset contact force
+  //! Update contact force due to levelset
   //! \param[in] dt Analysis time step
-  void compute_levelset_contact_force(double dt) noexcept;
+  void levelset_contact_force(double dt) override;
+
+ protected:
+  //! Map levelset to particle
+  void map_levelset_to_particle() noexcept;
+
+  //! Check if particle in contact with levelset
+  bool is_levelset_contact() noexcept;
+
+  //! Compute levelset contact force at particle
+  //! \param[in] dt Analysis time step
+  void compute_particle_contact_force(double dt) noexcept;
+
+  //! Map levelset contact force to nodes
+  void map_contact_force_to_nodes() noexcept;
+
+  //! Update levelset vtk data properties at particle
+  void update_levelset_vtk() noexcept;
 
  protected:
   //! Logger
@@ -111,7 +120,6 @@ class ParticleLevelset : public Particle<Tdim> {
   //! particleBase id
   using Particle<Tdim>::id_;
 };  // Particle_Levelset class
-
 }  // namespace mpm
 
 #include "particle_levelset.tcc"

@@ -54,10 +54,30 @@ void mpm::ParticleLevelset<Tdim>::update_levelset_mp_properties() {
   this->mp_radius_ = 0.5 * this->diameter();  // radial influence
 }
 
-//! Compute particle contact forces and map to nodes
+//! Update contact force due to levelset
 template <unsigned Tdim>
-void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
-    double dt) {
+void mpm::ParticleLevelset<Tdim>::levelset_contact_force(double dt) {
+
+  // Map levelset to particle
+  map_levelset_to_particle();
+
+  // Check if particle in contact with levelset
+  if (is_levelset_contact()) {
+
+    // Compute levelset contact force at particle
+    compute_particle_contact_force(dt);
+
+    // Map levelset contact force to nodes
+    map_contact_force_to_nodes();
+  }
+
+  // Update levelset vtk data properties at particle
+  update_levelset_vtk();
+}
+
+//! Map levelset to particle
+template <unsigned Tdim>
+void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
   // Reset mapped levelset values at particle, per step
   levelset_ = 0.;
   levelset_mu_ = 0.;
@@ -70,9 +90,6 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // Reset levelset vtk data properties
   couple_force_ = VectorDim::Zero();
 
-  // Global contact velocity update scheme
-  if (!levelset_pic_) contact_vel_ = velocity_;
-
   // Map levelset to particle
   for (unsigned i = 0; i < nodes_.size(); i++) {
     levelset_ += shapefn_[i] * nodes_[i]->levelset();
@@ -81,47 +98,42 @@ void mpm::ParticleLevelset<Tdim>::map_particle_contact_force_to_nodes(
   // Compute error minimum value
   if (levelset_ < std::numeric_limits<double>::epsilon())
     levelset_ = std::numeric_limits<double>::epsilon();
-
-  // Contact only if mp within contact zone
-  if ((levelset_ < mp_radius_) && (levelset_ > 0.)) {
-
-    // Map other levelset values to particle
-    for (unsigned i = 0; i < nodes_.size(); i++) {
-      levelset_gradient_ += dn_dx_.row(i).transpose() * nodes_[i]->levelset();
-      levelset_mu_ += shapefn_[i] * nodes_[i]->levelset_mu();
-      levelset_alpha_ += shapefn_[i] * nodes_[i]->levelset_alpha();
-      barrier_stiffness_ += shapefn_[i] * nodes_[i]->barrier_stiffness();
-      slip_threshold_ += shapefn_[i] * nodes_[i]->slip_threshold();
-
-      // PIC contact velocity update scheme (map contact velocity from nodes)
-      if (levelset_pic_)
-        contact_vel_ +=
-            shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
-    }
-
-    // Compute normals
-    levelset_normal_ = levelset_gradient_.normalized();
-
-    // Compute couple_force_ in particle
-    compute_levelset_contact_force(dt);
-
-    // Update levelset vtk data properties
-    this->vector_properties_["levelset_couple"] = [this]() {
-      return this->couple_force_;
-    };
-
-    // Compute nodal contact force
-    for (unsigned i = 0; i < nodes_.size(); ++i) {
-      nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                       (shapefn_[i] * couple_force_));
-    }
-  }
 }
 
-//! Compute levelset contact force
+//! Check if particle in contact with levelset
 template <unsigned Tdim>
-void mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
+bool mpm::ParticleLevelset<Tdim>::is_levelset_contact() noexcept {
+  if ((levelset_ < mp_radius_) && (levelset_ > 0.))
+    return true;
+  else
+    return false;
+}
+
+//! Compute levelset contact force at particle
+template <unsigned Tdim>
+void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
     double dt) noexcept {
+
+  // Global contact velocity update scheme
+  if (!levelset_pic_) contact_vel_ = velocity_;
+
+  // Map other levelset values to particle
+  for (unsigned i = 0; i < nodes_.size(); i++) {
+    levelset_gradient_ += dn_dx_.row(i).transpose() * nodes_[i]->levelset();
+    levelset_mu_ += shapefn_[i] * nodes_[i]->levelset_mu();
+    levelset_alpha_ += shapefn_[i] * nodes_[i]->levelset_alpha();
+    barrier_stiffness_ += shapefn_[i] * nodes_[i]->barrier_stiffness();
+    slip_threshold_ += shapefn_[i] * nodes_[i]->slip_threshold();
+
+    // PIC contact velocity update scheme (map contact velocity from nodes)
+    if (levelset_pic_)
+      contact_vel_ +=
+          shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+  }
+
+  // Compute normals
+  levelset_normal_ = levelset_gradient_.normalized();
+
   // Calculate normal coupling force magnitude
   double couple_normal_mag =
       barrier_stiffness_ * (levelset_ - mp_radius_) *
@@ -136,7 +148,7 @@ void mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
   if (tangent_calc.norm() > std::numeric_limits<double>::epsilon())
     levelset_tangent_ = tangent_calc.normalized();
 
-  // Apply friction smoothing function, if applicable
+  // Apply friction smoothing function, if applicable // LEDT remove?
   double friction_smoothing = 1.;
   if (slip_threshold_ > 0.) {
     // Calculate cumulative slip magnitude // LEDT check: abs val?
@@ -165,9 +177,7 @@ void mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
       (mass_ * contact_vel_ / dt).dot(levelset_tangent_);
 
   // Couple must not exceed cancellation of contact tangential force
-  bool uphill_prevention = true;  // LEDT TEMP bool for testing
-  if (uphill_prevention)
-    couple_tangent_mag = std::min(couple_tangent_mag, contact_tangent_mag);
+  couple_tangent_mag = std::min(couple_tangent_mag, contact_tangent_mag);
 
   // Calculate tangential coupling force vector
   VectorDim couple_force_tangent = -levelset_tangent_ * couple_tangent_mag;
@@ -176,7 +186,23 @@ void mpm::ParticleLevelset<Tdim>::compute_levelset_contact_force(
   couple_force_ = couple_force_normal + couple_force_tangent;
 
   // Damp couple if mp moving away from boundary
-  // LEDT check if 0 tangent resistance
   if ((contact_vel_.dot(levelset_normal_)) >= 0.)
     couple_force_ = (1. - levelset_damping_) * couple_force_;
+}
+
+//! Map levelset contact force to nodes
+template <unsigned Tdim>
+void mpm::ParticleLevelset<Tdim>::map_contact_force_to_nodes() noexcept {
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
+                                     (shapefn_[i] * couple_force_));
+  }
+}
+
+//! Update levelset vtk data properties at particle
+template <unsigned Tdim>
+void mpm::ParticleLevelset<Tdim>::update_levelset_vtk() noexcept {
+  this->vector_properties_["levelset_couple"] = [this]() {
+    return this->couple_force_;
+  };
 }

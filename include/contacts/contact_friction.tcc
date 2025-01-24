@@ -4,7 +4,7 @@ mpm::ContactFriction<Tdim>::ContactFriction(
     const std::shared_ptr<mpm::Mesh<Tdim>>& mesh)
     : mpm::Contact<Tdim>(mesh) {}
 
-//! Initialize nodal properties
+//! Initialise nodal properties
 template <unsigned Tdim>
 void mpm::ContactFriction<Tdim>::initialise() {
   // Initialise nodal properties

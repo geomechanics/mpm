@@ -451,14 +451,6 @@ class ParticleBase {
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
 
   //! Levelset functions--------------------------------------------------------
-  //! Compute particle contact forces and map to nodes
-  //! \param[in] dt Analysis time step
-  virtual void map_particle_contact_force_to_nodes(double dt) {
-    throw std::runtime_error(
-        "Calling the base class function (map_particle_contact_force_to_nodes) "
-        "in ParticleBase:: illegal operation!");
-  };
-
   //! Update time-independent mp levelset properties
   virtual void update_levelset_mp_properties() {
     throw std::runtime_error(
@@ -466,10 +458,11 @@ class ParticleBase {
         "in ParticleBase:: illegal operation!");
   };
 
-  //! Return levelset couple vector
-  virtual VectorDim levelset_couple() const {
+  //! Update contact force due to levelset
+  //! \param[in] dt Analysis time step
+  virtual void levelset_contact_force(double dt) {
     throw std::runtime_error(
-        "Calling the base class function (levelset_couple) "
+        "Calling the base class function (levelset_contact_force) "
         "in ParticleBase:: illegal operation!");
   };
 

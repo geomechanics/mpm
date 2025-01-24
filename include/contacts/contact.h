@@ -14,14 +14,14 @@ class Contact {
   //! Default constructor with mesh class
   Contact(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh);
 
-  //! Intialize
+  //! Intialise
   virtual inline void initialise(){};
 
-  //! Update time-independent levelset properties
+  //! Initialise levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  virtual inline void update_levelset_properties(const double levelset_damping,
-                                                 const bool levelset_pic){};
+  virtual inline void initialise_levelset_properties(
+      const double levelset_damping, const bool levelset_pic){};
 
   //! Compute contact forces
   virtual inline void compute_contact_forces(){};

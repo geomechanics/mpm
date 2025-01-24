@@ -16,14 +16,11 @@ class ContactLevelset : public Contact<Tdim> {
   //! Default constructor with mesh class
   ContactLevelset(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh);
 
-  //! Intialize
-  void initialise() override;
-
-  //! Update time-independent levelset properties
+  //! Initialise levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  void update_levelset_properties(const double levelset_damping,
-                                  const bool levelset_pic) override;
+  void initialise_levelset_properties(const double levelset_damping,
+                                      const bool levelset_pic) override;
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
@@ -35,7 +32,6 @@ class ContactLevelset : public Contact<Tdim> {
  protected:
   //! Mesh object
   using mpm::Contact<Tdim>::mesh_;
-
 };  // ContactLevelset class
 }  // namespace mpm
 

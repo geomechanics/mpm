@@ -102,10 +102,10 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Create nodal properties
   if (interface_ or absorbing_boundary_) mesh_->create_nodal_properties();
 
-  // Update time-independent levelset properties
+  // Initialise levelset properties
   if (this->interface_type_ == "levelset")
-    contact_->update_levelset_properties(this->levelset_damping_,
-                                         this->levelset_pic_);
+    contact_->initialise_levelset_properties(this->levelset_damping_,
+                                             this->levelset_pic_);
 
   // Initialise loading conditions
   this->initialise_loads();
@@ -133,14 +133,15 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
 
-    // Initialise nodal properties
-    contact_->initialise();
+    // Initialise multimaterial nodal properties
+    contact_->initialise();  // multimaterial interface
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
     // Contact forces at nodes
-    contact_->compute_contact_forces(dt_);
+    contact_->compute_contact_forces(dt_);  // levelset interface
+    contact_->compute_contact_forces();     // multimaterial interface
 
     // Update stress first
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);

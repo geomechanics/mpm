@@ -1,5 +1,6 @@
 #include "material.h"
 #include "bingham.h"
+#include "bingham_viscoplastic.h"
 #include "hencky_hyper_elastic.h"
 #include "linear_elastic.h"
 #include "linear_elastic_pml.h"
@@ -9,13 +10,23 @@
 #include "norsand.h"
 #include "pml_unsplit.h"
 
-// Bingham 2D
+// Bingham 2D (fluid model)
 static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
     bingham_2d("Bingham2D");
 
-// Bingham 3D
+// Bingham 3D (fluid model)
 static Register<mpm::Material<3>, mpm::Bingham<3>, unsigned, const Json&>
     bingham_3d("Bingham3D");
+
+// Bingham Visco-plastic 2D (solid model)
+static Register<mpm::Material<2>, mpm::BinghamViscoPlastic<2>, unsigned,
+                const Json&>
+    bingham_viscoplastic_2d("BinghamViscoPlastic2D");
+
+// Bingham Visco-plastic 3D (solid model)
+static Register<mpm::Material<3>, mpm::BinghamViscoPlastic<3>, unsigned,
+                const Json&>
+    bingham_viscoplastic_3d("BinghamViscoPlastic3D");
 
 // LinearElastic 2D
 static Register<mpm::Material<2>, mpm::LinearElastic<2>, unsigned, const Json&>

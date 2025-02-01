@@ -30,6 +30,8 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 2D case",
   // Tolerance
   const double Tolerance = 1.E-7;
 
+  const double dt = 1.0;
+
   // Coordinates
   Eigen::Vector2d coords;
   coords.setZero();
@@ -292,7 +294,7 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 2D case",
     particle->compute_strain_volume_newmark();
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress_newmark());
+    REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
     stress << 1027068.9206402331,
@@ -344,6 +346,8 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 3D case",
   const unsigned Nphases = 1;
   // Tolerance
   const double Tolerance = 1.E-7;
+
+  const double dt = 1.0;
 
   // Coordinates
   Eigen::Vector3d coords;
@@ -663,7 +667,7 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 3D case",
     particle->compute_strain_volume_newmark();
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress_newmark());
+    REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
     stress <<   1517827.6913974155,

@@ -33,7 +33,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Initialise material
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
-                    std::placeholders::_1));
+                    std::placeholders::_1, dt_));
     }
   }  // Wait to complete
 }
@@ -109,8 +109,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
   if (pressure_smoothing) this->pressure_smoothing(phase);
 
   // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress_newmark, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_stress_newmark,
+                std::placeholders::_1, dt_));
 }
 
 //! Precompute stresses and strains

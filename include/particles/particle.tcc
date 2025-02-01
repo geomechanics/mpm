@@ -881,7 +881,7 @@ void mpm::Particle<Tdim>::compute_stress(double dt) noexcept {
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+                           &state_variables_[mpm::ParticlePhase::Solid], dt);
 }
 
 //! Map body force

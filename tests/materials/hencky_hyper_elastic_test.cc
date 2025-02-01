@@ -19,6 +19,8 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
 
   const unsigned Dim = 2;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -126,7 +128,7 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
     mpm::dense_map state_vars = material->initialise_state_variables();
     updated_stress = material->compute_stress(
         updated_stress, deformation_gradient, deformation_gradient_increment,
-        particle.get(), &state_vars);
+        particle.get(), &state_vars, dt);
 
     // Check stressees
     REQUIRE(updated_stress(0) == Approx(0.000000e+00).epsilon(Tolerance));
@@ -146,7 +148,7 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
     // Compute updated stress
     updated_stress = material->compute_stress(
         updated_stress, deformation_gradient, deformation_gradient_increment,
-        particle.get(), &state_vars);
+        particle.get(), &state_vars, dt);
 
     // Check stressees
     REQUIRE(updated_stress(0) == Approx(2663083.5703869392).epsilon(Tolerance));
@@ -169,7 +171,7 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
     // Compute updated stress
     updated_stress = material->compute_stress(
         updated_stress, deformation_gradient, deformation_gradient_increment,
-        particle.get(), &state_vars);
+        particle.get(), &state_vars, dt);
 
     // Check stressees
     REQUIRE(updated_stress(0) == Approx(2500707.2070595203).epsilon(Tolerance));
@@ -182,7 +184,7 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
     // Compute consistent tangent matrix
     auto de = material->compute_consistent_tangent_matrix(
         updated_stress, stress, deformation_gradient,
-        deformation_gradient_increment, particle.get(), &state_vars);
+        deformation_gradient_increment, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> de_check;
@@ -217,11 +219,11 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
-    REQUIRE_THROWS(
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars));
+    REQUIRE_THROWS(material->compute_stress(stress, dstrain, particle.get(),
+                                            &state_vars, dt));
 
     REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars));
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt));
   }
 
   SECTION("HenckyHyperElastic check simple shear stresses") {
@@ -264,7 +266,7 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
 
       // Compute updated stress
       stress = material->compute_stress(stress, F, F_inc, particle.get(),
-                                        &state_vars);
+                                        &state_vars, dt);
 
       // Check stresses
       REQUIRE((stress(3) / G) ==
@@ -328,7 +330,7 @@ TEST_CASE("HenckyHyperElastic is checked in 2D",
 
       // Compute updated stress
       stress = material->compute_stress(stress, F, F_inc, particle.get(),
-                                        &state_vars);
+                                        &state_vars, dt);
 
       // Check stresses
       if (i % 10 == 0)
@@ -349,6 +351,8 @@ TEST_CASE("HenckyHyperElastic is checked in 3D",
   const double Tolerance = 1.E-7;
 
   const unsigned Dim = 3;
+
+  const double dt = 1.0;
 
   // Add particle
   mpm::Index pid = 0;
@@ -449,7 +453,7 @@ TEST_CASE("HenckyHyperElastic is checked in 3D",
     mpm::dense_map state_vars = material->initialise_state_variables();
     updated_stress = material->compute_stress(
         updated_stress, deformation_gradient, deformation_gradient_increment,
-        particle.get(), &state_vars);
+        particle.get(), &state_vars, dt);
 
     // Check stressees
     REQUIRE(updated_stress(0) == Approx(0.000000e+00).epsilon(Tolerance));
@@ -470,7 +474,7 @@ TEST_CASE("HenckyHyperElastic is checked in 3D",
     // Compute updated stress
     updated_stress = material->compute_stress(
         updated_stress, deformation_gradient, deformation_gradient_increment,
-        particle.get(), &state_vars);
+        particle.get(), &state_vars, dt);
 
     // Check stressees
     REQUIRE(updated_stress(0) == Approx(2583766.2332724314).epsilon(Tolerance));
@@ -498,7 +502,7 @@ TEST_CASE("HenckyHyperElastic is checked in 3D",
     // Compute updated stress
     updated_stress = material->compute_stress(
         updated_stress, deformation_gradient, deformation_gradient_increment,
-        particle.get(), &state_vars);
+        particle.get(), &state_vars, dt);
 
     // Check stressees
     REQUIRE(updated_stress(0) == Approx(1789169.4090916624).epsilon(Tolerance));
@@ -512,7 +516,7 @@ TEST_CASE("HenckyHyperElastic is checked in 3D",
     // Compute consistent tangent matrix
     auto de = material->compute_consistent_tangent_matrix(
         updated_stress, stress, deformation_gradient,
-        deformation_gradient_increment, particle.get(), &state_vars);
+        deformation_gradient_increment, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> de_check;

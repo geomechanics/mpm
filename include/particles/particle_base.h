@@ -164,7 +164,7 @@ class ParticleBase {
   //! Map multimaterial domain gradients to nodes
   virtual void map_multimaterial_domain_gradients_to_nodes() noexcept = 0;
 
-  // ! Map linear elastic wave velocities to nodes
+  //! Map linear elastic wave velocities to nodes
   virtual void map_wave_velocities_to_nodes() noexcept = 0;
 
   //! Assign material
@@ -618,6 +618,54 @@ class ParticleBase {
         "ParticleBase:: illegal operation!");
     return 0;
   };
+  //! OnePhase thermal functions------------------------------------------------
+  //! Initialise particle thermal properties
+  virtual void initialise_thermal() = 0;
+
+  //! Map particle heat capacity and heat to nodes
+  virtual void map_heat_to_nodes() = 0;
+
+  //! Map heat conduction to nodes
+  virtual void map_heat_conduction() = 0;
+
+  //! Map plastic heat dissipation to nodes
+  virtual void map_plastic_heat_dissipation(double dt) = 0;
+
+  //! Map heat virtual heat flux to nodes
+  virtual void map_virtual_heat_flux(bool convective, const double vfm_param1,
+                                              const double vfm_param2) = 0;
+
+  //! Compute thermal strain of the particle
+  virtual void compute_thermal_strain() noexcept = 0;
+
+  //! Compute updated temperature of the particle
+  virtual void update_particle_temperature(double dt) noexcept = 0;
+
+  //! Map heat capacity to cell
+  virtual bool map_heat_capacity_to_cell(double dt, double newmark_beta, 
+                                                    double newmark_gamma) = 0;
+
+  //! Map heat laplacian matrix to cell
+  virtual bool map_heat_conductivity_to_cell() = 0;
+
+  //! Map thermal stiffness matrix to cell
+  virtual bool map_thermal_expansivity_to_cell() = 0;
+
+  //! Compute strain and volume of the particle using nodal displacement
+  virtual void compute_strain_volume_newmark_thermal() noexcept = 0;
+
+  //! Map transient heat to nodes
+  virtual void map_heat_rate_to_nodes() = 0; 
+
+  //! Map particle heat capacity and heat to nodes
+  virtual void map_heat_to_nodes_newmark() = 0;
+
+  //! Compute updated temperature of the particle
+  virtual void compute_updated_temperature_newmark(double dt) noexcept = 0; 
+
+  //! Assign temperature
+  virtual void assign_temperature(double pressure) = 0;
+
   //----------------------------------------------------------------------------
 
  protected:

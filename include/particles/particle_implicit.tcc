@@ -39,7 +39,7 @@ void mpm::Particle<Tdim>::map_inertial_force() noexcept {
     nodes_[i]->update_external_force(
         true, mpm::ParticlePhase::Solid,
         (-1. * nodes_[i]->acceleration(mpm::ParticlePhase::Solid) * mass_ *
-         shapefn_(i)));
+          shapefn_(i)));
 }
 
 //! Map mass and material stiffness matrix to cell (used in poisson equation
@@ -277,7 +277,7 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
   // Compute deformation gradient increment from previous time step
   this->deformation_gradient_increment_ =
       this->compute_deformation_gradient_increment(this->dn_dx_,
-                                                   mpm::ParticlePhase::Solid);
+                                                    mpm::ParticlePhase::Solid);
 
   // Compute strain increment from previous time step
   this->dstrain_ =

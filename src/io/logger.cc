@@ -62,3 +62,13 @@ const std::shared_ptr<spdlog::logger>
 const std::shared_ptr<spdlog::logger>
     mpm::Logger::mpm_semi_implicit_two_phase_logger =
         spdlog::stdout_color_st("MPMSemiImplicitTwoPhase");
+
+// Create a logger for Thermo-Mechanical MPM explicit
+const std::shared_ptr<spdlog::logger>
+    mpm::Logger::mpm_explicit_thermal_logger =
+        spdlog::stdout_color_st("MPMExplicitThermal");
+
+// Create a logger for Thermo-Mechanical MPM implicit
+const std::shared_ptr<spdlog::logger>
+    mpm::Logger::mpm_implicit_thermal_logger =
+        spdlog::stdout_color_st("MPMImplicitThermal");        

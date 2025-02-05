@@ -130,6 +130,63 @@ class MPMScheme {
   }
   /**@}*/
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Initialize nodes, cells and shape functions
+  virtual inline void initialise_thermal() {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(initialise_thermal) in "
+        "MPMScheme:: illegal operation!");
+  }
+
+  //! Compute nodal temperature and temperature rate
+  virtual inline void compute_nodal_temperatures(unsigned phase, 
+                                                  double dt, Index step) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_nodal_temperatures) in "
+        "MPMScheme:: illegal operation!");
+  }
+  //! Update nodal kinematics by Newmark scheme
+  virtual inline void update_nodal_thermokinematics_newmark(
+      unsigned phase, double newmark_beta, double newmark_gamma, Index step) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(update_nodal_thermokinematics_newmark) in "
+        "MPMScheme:: illegal operation!");
+  }
+
+  //! Compute stress and strain by Newmark scheme
+  virtual inline void compute_stress_strain_thermal(
+      unsigned phase, bool pressure_smoothing) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_stress_strain_thermal) in "
+        "MPMScheme:: illegal operation!");
+  }
+
+  //! Compute forces
+  virtual inline void compute_heats(bool vfm, std::string ftype, 
+                                double vfm_param1, double vfm_param22) {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_heats) in "
+        "MPMScheme:: illegal operation!");
+  }
+
+  // Update particle temperature
+  virtual inline void compute_particle_temperature() {
+    throw std::runtime_error(
+        "Calling the base class function "
+        "(compute_particle_temperature) in "
+        "MPMScheme:: illegal operation!");
+  }
+
+  /**@}*/
+
  protected:
   //! Mesh object
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;

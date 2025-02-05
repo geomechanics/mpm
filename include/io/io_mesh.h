@@ -146,6 +146,16 @@ class IOMesh {
           const std::string& displacement_constraints_file) = 0;
   /**@}*/
 
+  /**
+   * \defgroup Thermal Functions for Thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Read temperature constraints file
+  virtual std::vector<std::tuple<mpm::Index, double>>
+      read_temperature_constraints(
+          const std::string& temperature_constraints_file) = 0;
+  /**@}*/  
+
 };  // IOMesh class
 }  // namespace mpm
 

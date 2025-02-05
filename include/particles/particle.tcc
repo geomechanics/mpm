@@ -336,6 +336,8 @@ void mpm::Particle<Tdim>::initialise() {
   this->vector_properties_["normals"] = [&]() { return normal(); };
   this->tensor_properties_["stresses"] = [&]() { return stress(); };
   this->tensor_properties_["strains"] = [&]() { return strain(); };
+
+  this->initialise_thermal();
 }
 
 //! Initialise particle material container

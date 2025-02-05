@@ -12,6 +12,7 @@
 #include "mesh.h"
 #include "pressure_constraint.h"
 #include "velocity_constraint.h"
+#include "temperature_constraint.h"
 
 namespace mpm {
 
@@ -149,6 +150,27 @@ class Constraints {
       const std::vector<std::tuple<mpm::Index, unsigned, double>>&
           displacement_constraints);
   /**@}*/
+
+  /**
+   * \defgroup Thermal Functions for Thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Assign nodal temperature constraint
+  //! \param[in] mfunction Math function if defined
+  //! \param[in] setid Node set id
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] pconstraint Temperature constraint at node
+  bool assign_nodal_temperature_constraint(
+      const std::shared_ptr<FunctionBase>& mfunction, int set_id,
+      unsigned phase, double Tconstraint);
+
+  //! Assign nodal temperatures to nodes
+  //! \param[in] temperature_constraints Constraint at node, temperature
+  bool assign_nodal_temperature_constraints(
+      const unsigned phase,
+      const std::vector<std::tuple<mpm::Index, double>>& temperature_constraints);
+  /**@}*/  
+
 
  private:
   //! Mesh object

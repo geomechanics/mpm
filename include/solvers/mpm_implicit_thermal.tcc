@@ -1,9 +1,9 @@
 //! Constructor
 template <unsigned Tdim>
-mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
+mpm::MPMImplicitThermal<Tdim>::MPMImplicitThermal(const std::shared_ptr<IO>& io)
     : mpm::MPMBase<Tdim>(io) {
   //! Logger
-  console_ = spdlog::get("MPMImplicit");
+  console_ = spdlog::get("MPMImplicitThermal");
 
   // Check if stress update is not newmark
   if (stress_update_ != "newmark") {
@@ -16,6 +16,7 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
 
   // Initialise scheme
   double displacement_tolerance = 1.0e-10;
+  double temperature_tolerance = 1.0e-6;
   double residual_tolerance = 1.0e-10;
   double relative_residual_tolerance = 1.0e-6;
   if (stress_update_ == "newmark") {
@@ -41,16 +42,20 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
       if (nonlinear_) {
         if (analysis_["scheme_settings"].contains("max_iteration"))
           max_iteration_ = analysis_["scheme_settings"]
-                               .at("max_iteration")
-                               .template get<unsigned>();
+                                .at("max_iteration")
+                                .template get<unsigned>();
         if (analysis_["scheme_settings"].contains("displacement_tolerance"))
           displacement_tolerance = analysis_["scheme_settings"]
-                                       .at("displacement_tolerance")
-                                       .template get<double>();
+                                        .at("displacement_tolerance")
+                                        .template get<double>();
+        if (analysis_["scheme_settings"].contains("temperature_tolerance"))
+          temperature_tolerance = analysis_["scheme_settings"]
+                                        .at("temperature_tolerance")
+                                        .template get<double>();
         if (analysis_["scheme_settings"].contains("residual_tolerance"))
           residual_tolerance = analysis_["scheme_settings"]
-                                   .at("residual_tolerance")
-                                   .template get<double>();
+                                    .at("residual_tolerance")
+                                    .template get<double>();
         if (analysis_["scheme_settings"].contains(
                 "relative_residual_tolerance"))
           relative_residual_tolerance = analysis_["scheme_settings"]
@@ -58,8 +63,8 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
                                             .template get<double>();
         if (analysis_["scheme_settings"].contains("verbosity"))
           verbosity_ = analysis_["scheme_settings"]
-                           .at("verbosity")
-                           .template get<unsigned>();
+                            .at("verbosity")
+                            .template get<unsigned>();
       }
     }
 
@@ -67,15 +72,17 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
     if (nonlinear_) {
       residual_criterion_ = std::make_shared<mpm::ConvergenceCriterionResidual>(
           relative_residual_tolerance, residual_tolerance, verbosity_);
-      disp_criterion_ = std::make_shared<mpm::ConvergenceCriterionSolution>(
+      displacement_criterion_ = std::make_shared<mpm::ConvergenceCriterionSolution>(
           displacement_tolerance, verbosity_);
+      temperature_criterion_ = std::make_shared<mpm::ConvergenceCriterionSolution>(
+          temperature_tolerance, verbosity_);          
     }
   }
 }
 
 //! MPM Implicit solver
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::solve() {
+bool mpm::MPMImplicitThermal<Tdim>::solve() {
   bool status = true;
 
   console_->info("MPM analysis type {}", io_->analysis_type());
@@ -105,6 +112,48 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
   // Pressure smoothing
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
+
+  // Free surface detection
+  free_surface_detection_ = "none";
+  if (analysis_.find("free_surface_detection") != analysis_.end()) {
+    free_surface_detection_ = analysis_["free_surface_detection"]["type"]
+                                  .template get<std::string>();
+    fs_vol_tolerance_ =
+        analysis_["free_surface_detection"]["volume_tolerance"]
+                                  .template get<double>();
+  }
+
+#ifdef USE_MPI
+  if (!(free_surface_detection_ == "density" ||
+        free_surface_detection_ == "none") &&
+      mpi_size > 1) {
+    console_->warn(
+        "The free-surface detection in MPI setting is automatically set to "
+        "default: "
+        "\'density\'. Only \'none\' and \'density\' free-surface detection "
+        "algorithm are supported for MPI.");
+    free_surface_detection_ = "density";
+  }
+#endif
+
+  // Virtual flux
+  if (analysis_.find("virtual_flux") != analysis_.end()) {
+    virtual_flux_ = analysis_["virtual_flux"]["virtual_flux"]
+                                                .template get<bool>();
+    std::string flux_type = analysis_["virtual_flux"]["flux_type"]
+                                                .template get<std::string>();
+    // Judge the flux type          
+    if (flux_type_ == "convective") {
+      vfm_param1_ = analysis_["virtual_flux"]["heat_transfer_coeff"]
+                                                .template get<double>();
+      vfm_param2_ = analysis_["virtual_flux"]["ambient_temperature"]
+                                                .template get<double>();
+    } else if (flux_type_ == "conductive") 
+      vfm_param1_ = analysis_["virtual_flux"]["flux"].template get<double>();
+    else         
+      throw std::runtime_error(
+          "Virtual heat flux boudary is not correctly assigned");
+  }
 
   // Initialise material
   this->initialise_materials();
@@ -162,7 +211,10 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
   for (; step_ < nsteps_; ++step_) {
-    if (mpi_rank == 0) console_->info("Step: {} of {}.\n", step_, nsteps_);
+    current_time_ += dt_;
+    if (mpi_rank == 0) console_->info(
+                    "uuid : [{}], Step: {} of {}, timestep = {}, time = {}.\n", 
+                    uuid_, step_, nsteps_, dt_, current_time_);
 
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
@@ -176,14 +228,22 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mesh_->inject_particles(step_ * dt_);
 
     // Initialise nodes, cells and shape functions
-    mpm_scheme_->initialise();
+    mpm_scheme_->initialise_thermal();
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
 
+    // Compute free surface cells, nodes, and particles
+    if (free_surface_detection_ != "none") {
+      mesh_->compute_free_surface(free_surface_detection_, fs_vol_tolerance_,
+                                  cell_neighbourhood_);
+    }
+
+    mpm_scheme_->compute_nodal_temperatures(phase_, dt_, step_);
+
     // Predict nodal kinematics -- Predictor step of Newmark scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                 newmark_gamma_);
+    mpm_scheme_->update_nodal_thermokinematics_newmark(phase_, newmark_beta_,
+                                                      newmark_gamma_, step_);
 
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
@@ -202,7 +262,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     bool convergence = false;
     if (nonlinear_)
       convergence = residual_criterion_->check_convergence(
-          assembler_->residual_force_rhs_vector(), true);
+          assembler_->global_residual_rhs_vector(), true);
 
     // Iterations
     while (!convergence && current_iteration_ < max_iteration_) {
@@ -212,12 +272,12 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       // Solve equilibrium equation
       this->solve_system_equation();
 
-      // Update nodal kinematics -- Corrector step of Newmark scheme
-      mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                   newmark_gamma_);
+      // Predict nodal kinematics -- Predictor step of Newmark scheme
+      mpm_scheme_->update_nodal_thermokinematics_newmark(phase_, newmark_beta_,
+                                                      newmark_gamma_, step_);
 
       // Update stress and strain
-      mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);
+      mpm_scheme_->compute_stress_strain_thermal(phase_, pressure_smoothing_);
 
       // Check convergence of Newton-Raphson iteration
       if (nonlinear_) {
@@ -229,6 +289,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       // Finalisation of Newton-Raphson iteration
       if (convergence || current_iteration_ == max_iteration_)
         this->finalise_newton_raphson_iteration();
+      
     }
 
     // Locate particles
@@ -256,7 +317,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
 // Initialise matrix
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
+bool mpm::MPMImplicitThermal<Tdim>::initialise_matrix() {
   bool status = true;
   try {
     // Get matrix assembler type
@@ -321,7 +382,7 @@ bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
           std::pair<
               std::string,
               std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>(
-              "displacement", lin_solver));
+              "solution", lin_solver));
     }
 
     // Assign mesh pointer to assembler
@@ -336,7 +397,7 @@ bool mpm::MPMImplicit<Tdim>::initialise_matrix() {
 
 // Reinitialise and resize matrices at the beginning of every time step
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
+bool mpm::MPMImplicitThermal<Tdim>::reinitialise_matrix() {
   bool status = true;
   try {
     // Assigning matrix id (in each MPI rank)
@@ -354,11 +415,19 @@ bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
     // Assign displacement constraints
     assembler_->assign_displacement_constraints(this->step_ * this->dt_);
 
+    // Assign temperature constraints
+    assembler_->assign_temperature_constraints(this->step_ * this->dt_);
+
     // Initialise element matrix
     mesh_->iterate_over_cells(
         std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
                   std::placeholders::_1));
-                  
+
+    // Initialise element matrix
+    mesh_->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::initialise_element_thermal_matrix,
+                  std::placeholders::_1));                  
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -368,7 +437,7 @@ bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
 
 // Reinitialise equilibrium equation
 template <unsigned Tdim>
-void mpm::MPMImplicit<Tdim>::reinitialise_system_equation() {
+void mpm::MPMImplicitThermal<Tdim>::reinitialise_system_equation() {
   // Initialise element matrix
   mesh_->iterate_over_cells(
       std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
@@ -378,11 +447,21 @@ void mpm::MPMImplicit<Tdim>::reinitialise_system_equation() {
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::initialise_force, std::placeholders::_1),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+  // Initialise element matrix
+  mesh_->iterate_over_cells(
+      std::bind(&mpm::Cell<Tdim>::initialise_element_thermal_matrix,
+                std::placeholders::_1));
+
+  // Initialise nodal forces
+  mesh_->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Tdim>::initialise_heat, std::placeholders::_1),
+      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 }
 
 // Assemble equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
+bool mpm::MPMImplicitThermal<Tdim>::assemble_system_equation() {
   bool status = true;
   try {
     // Compute local cell stiffness matrices
@@ -403,17 +482,57 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     // Apply displacement constraints
     assembler_->apply_displacement_constraints();
 
+    // Compute local cell heat conduction matrices
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::map_heat_conductivity_to_cell,
+                  std::placeholders::_1));
+
+    // Compute local cell heat capacity matrices
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::map_heat_capacity_to_cell,
+                  std::placeholders::_1, dt_, newmark_beta_, newmark_gamma_));
+
+    // Assemble heat conduction matrix
+    assembler_->assemble_thermal_conductivity_matrix();
+
+    // Compute local cell heat conduction matrices
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::
+                map_thermal_expansivity_to_cell, std::placeholders::_1));
+
+    // Assemble thermal expansion matrix
+    assembler_->assemble_thermal_expansivity_matrix();
+
+    // Assemble global stiffness matrix
+    assembler_->assemble_global_stiffness_matrix();
+
+    // Compute local residual force
+    mpm_scheme_->compute_heats(virtual_flux_, flux_type_, 
+                                vfm_param1_, vfm_param2_);
+
+    // Assemble global residual force RHS vector
+    assembler_->assemble_residual_heat_right();
+
+    // Apply temperature constraints
+    assembler_->apply_temperature_increment_constraints();
+
+    // Apply temperature and displacement coupling constraints
+    assembler_->apply_coupling_constraints();
+
+    // Assemble global residual force RHS vector
+    assembler_->assemble_global_residual_right();
+
     // Assign rank global mapper to solver and convergence criteria (only
     // necessary at the initial iteration)
     if (current_iteration_ == 0) {
 #ifdef USE_MPI
       // Assign global active dof to solver
-      linear_solver_["displacement"]->assign_global_active_dof(
-          Tdim * assembler_->global_active_dof());
+      linear_solver_["solution"]->assign_global_active_dof(
+          (Tdim +1) * assembler_->global_active_dof());
 
       // Prepare rank global mapper
       std::vector<int> system_rgm;
-      for (unsigned dir = 0; dir < Tdim; ++dir) {
+      for (unsigned dir = 0; dir < (Tdim + 1); ++dir) {
         auto dir_rgm = assembler_->rank_global_mapper();
         std::for_each(dir_rgm.begin(), dir_rgm.end(),
                       [size = assembler_->global_active_dof(),
@@ -421,14 +540,14 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
         system_rgm.insert(system_rgm.end(), dir_rgm.begin(), dir_rgm.end());
       }
       // Assign rank global mapper to solver
-      linear_solver_["displacement"]->assign_rank_global_mapper(system_rgm);
+      linear_solver_["solution"]->assign_rank_global_mapper(system_rgm);
 
       if (nonlinear_) {
-        disp_criterion_->assign_global_active_dof(
-            Tdim * assembler_->global_active_dof());
+        displacement_criterion_->assign_global_active_dof(
+            (Tdim + 1) * assembler_->global_active_dof());
         residual_criterion_->assign_global_active_dof(
-            Tdim * assembler_->global_active_dof());
-        disp_criterion_->assign_rank_global_mapper(system_rgm);
+            (Tdim + 1) * assembler_->global_active_dof());
+        displacement_criterion_->assign_rank_global_mapper(system_rgm);
         residual_criterion_->assign_rank_global_mapper(system_rgm);
       }
 #endif
@@ -443,14 +562,14 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
 
 // Solve equilibrium equation
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
+bool mpm::MPMImplicitThermal<Tdim>::solve_system_equation() {
   bool status = true;
   try {
     // Solve matrix equation and assign solution to assembler
-    assembler_->assign_displacement_increment(
-        linear_solver_["displacement"]->solve(
-            assembler_->stiffness_matrix(),
-            assembler_->residual_force_rhs_vector()));
+    assembler_->assign_solution_increment(
+        linear_solver_["solution"]->solve(
+            assembler_->global_stiffness_matrix(),
+            assembler_->global_residual_rhs_vector()));
 
     // Assign displacement increment to nodes
     mesh_->iterate_over_nodes_predicate(
@@ -458,6 +577,13 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
                   std::placeholders::_1, assembler_->displacement_increment(),
                   phase_, assembler_->active_dof()),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+    // Assign temperature increment to nodes
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::update_temperature_increment,
+                  std::placeholders::_1, assembler_->temperature_increment(),
+                  phase_, dt_, step_),
+        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));        
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -468,7 +594,7 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
 
 // Initialisation of Newton-Raphson iteration
 template <unsigned Tdim>
-void mpm::MPMImplicit<Tdim>::initialise_newton_raphson_iteration() {
+void mpm::MPMImplicitThermal<Tdim>::initialise_newton_raphson_iteration() {
   // Initialise MPI rank
   int mpi_rank = 0;
 #ifdef USE_MPI
@@ -480,16 +606,19 @@ void mpm::MPMImplicit<Tdim>::initialise_newton_raphson_iteration() {
   current_iteration_++;
   if (mpi_rank == 0 && verbosity_ > 0 && nonlinear_)
     console_->info("Newton-Raphson iteration: {} of {}.", current_iteration_,
-                   max_iteration_);
+                    max_iteration_);
 }
 
 // Check convergnece of Newton-Raphson iteration
 template <unsigned Tdim>
-bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
+bool mpm::MPMImplicitThermal<Tdim>::check_newton_raphson_convergence() {
   bool convergence;
-  // Check convergence of solution (displacement increment)
-  convergence =
-      disp_criterion_->check_convergence(assembler_->displacement_increment());
+  // Check convergence of solution (solution increment)
+  convergence = (displacement_criterion_->check_convergence(
+                          assembler_->displacement_increment()) &
+                temperature_criterion_->check_convergence(
+                          assembler_->temperature_increment()));
+
 
   if (!convergence) {
     // Reinitialise equilibrium equation
@@ -500,18 +629,21 @@ bool mpm::MPMImplicit<Tdim>::check_newton_raphson_convergence() {
 
     // Check convergence of residual
     convergence = residual_criterion_->check_convergence(
-        assembler_->residual_force_rhs_vector());
+        assembler_->global_residual_rhs_vector());
   }
   return convergence;
 }
 
 // finalisation of Newton-Raphson iteration
 template <unsigned Tdim>
-void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
+void mpm::MPMImplicitThermal<Tdim>::finalise_newton_raphson_iteration() {
   // Particle kinematics and volume
   mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
-                                           phase_, "Cundall", damping_factor_,
-                                           step_);
+                                            phase_, "Cundall", damping_factor_,
+                                            step_);
+
+  // Particle temperature
+  mpm_scheme_->compute_particle_temperature();
 
   // Particle stress, strain and volume
   mpm_scheme_->update_particle_stress_strain_volume();

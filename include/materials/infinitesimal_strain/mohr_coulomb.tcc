@@ -76,7 +76,10 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       // Theta
       {"theta", 0.},
       // Plastic deviatoric strain
-      {"pdstrain", 0.}};
+      {"pdstrain", 0.},
+      // Plastic work increment
+      {"dpwork", 0.},      
+      };
   return state_vars;
 }
 
@@ -85,7 +88,7 @@ template <unsigned Tdim>
 std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
       "yield_state", "phi", "psi",   "cohesion", "tension_cutoff",
-      "epsilon",     "rho", "theta", "pdstrain"};
+      "epsilon",     "rho", "theta", "pdstrain", "dpwork"};
   return state_vars;
 }
 
@@ -321,6 +324,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // Get previous time step state variable
   const auto prev_state_vars = (*state_vars);
   const double pdstrain = (*state_vars).at("pdstrain");
+  Vector6d previous_stress = stress;
   // Update MC parameters using a linear softening rule
   if (softening_ && pdstrain > pdstrain_peak_) {
     if (pdstrain < pdstrain_residual_) {
@@ -466,6 +470,12 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
 
   // Update plastic deviatoric strain
   (*state_vars).at("pdstrain") += dpdstrain;
+
+  // Compute incremental plastic strain tensor
+  Vector6d dstress = updated_stress - previous_stress;
+  Vector6d dpstrain = -dstrain + (de.inverse() * dstress);
+  if (Tdim == 2) dpstrain(4) = dpstrain(5) = 0.;
+  (*state_vars).at("dpwork") = updated_stress.transpose() * dpstrain;
 
   return updated_stress;
 }

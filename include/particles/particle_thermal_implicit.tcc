@@ -1,6 +1,6 @@
 // Map temperature variables to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_heat_to_nodes_newmark() {
+void mpm::ThermalParticle<Tdim>::map_heat_to_nodes_newmark() {
   this->map_heat_to_nodes();
   // get the specific_heat 
   const double specific_heat = 
@@ -17,7 +17,7 @@ void mpm::Particle<Tdim>::map_heat_to_nodes_newmark() {
 
 // Map particle heat_rate to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_heat_rate_to_nodes() {
+void mpm::ThermalParticle<Tdim>::map_heat_rate_to_nodes() {
   // get the specific_heat 
   const double specific_heat = 
         this->material(mpm::ParticlePhase::Solid)
@@ -32,7 +32,7 @@ void mpm::Particle<Tdim>::map_heat_rate_to_nodes() {
 
 // Map heat capacity to cell
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::map_heat_capacity_to_cell(double dt, 
+bool mpm::ThermalParticle<Tdim>::map_heat_capacity_to_cell(double dt, 
                             double newmark_beta, double newmark_gamma) {
   bool status = true;
   try {
@@ -53,7 +53,7 @@ bool mpm::Particle<Tdim>::map_heat_capacity_to_cell(double dt,
 
 // Map heat conductivity matrix to cell
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::map_heat_conductivity_to_cell() {
+bool mpm::ThermalParticle<Tdim>::map_heat_conductivity_to_cell() {
   bool status = true;
   try {
     // get the thermal conductivity coefficient of solid
@@ -73,7 +73,7 @@ bool mpm::Particle<Tdim>::map_heat_conductivity_to_cell() {
 
 // Map thermal stiffness matrix to cell
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::map_thermal_expansivity_to_cell() {
+bool mpm::ThermalParticle<Tdim>::map_thermal_expansivity_to_cell() {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -89,7 +89,7 @@ bool mpm::Particle<Tdim>::map_thermal_expansivity_to_cell() {
 
     // Reduce constitutive relations matrix depending on the dimension
     const Eigen::MatrixXd reduced_dmatrix =
-        this->reduce_dmatrix(constitutive_matrix_);
+        this->reduce_dmatrix(this->constitutive_matrix_);
 
     // Calculate B matrix
     const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
@@ -112,7 +112,7 @@ bool mpm::Particle<Tdim>::map_thermal_expansivity_to_cell() {
 // Compute strain and volume of the particle using nodal displacement and
 // nodal temeprature increment
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain_volume_newmark_thermal() noexcept {
+void mpm::ThermalParticle<Tdim>::compute_strain_volume_newmark_thermal() {
   // Compute the volume at the previous time step
   this->volume_ /= (1. + dvolumetric_strain_);
   this->mass_density_ *= (1. + dvolumetric_strain_);
@@ -142,7 +142,7 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark_thermal() noexcept {
 
 // Compute strain increment of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::
+inline Eigen::Matrix<double, 6, 1> mpm::ThermalParticle<1>::
                                     compute_strain_increment_thermal(
     const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept {
   // Define strain rincrement
@@ -164,7 +164,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::
 
 // Compute strain increment of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::
+inline Eigen::Matrix<double, 6, 1> mpm::ThermalParticle<2>::
                                     compute_strain_increment_thermal(
     const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept {
   // Define strain increment
@@ -192,7 +192,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::
 
 // Compute strain increment of the particle
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::
+inline Eigen::Matrix<double, 6, 1> mpm::ThermalParticle<3>::
                                     compute_strain_increment_thermal(
     const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept {
   // Define strain increment
@@ -226,7 +226,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::
 // Compute deformation gradient increment of the particle
 template <>
 inline Eigen::Matrix<double, 3, 3>
-    mpm::Particle<1>::compute_deformation_gradient_increment_thermal(
+    mpm::ThermalParticle<1>::compute_deformation_gradient_increment_thermal(
         const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept {
   // Define deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
@@ -249,7 +249,7 @@ inline Eigen::Matrix<double, 3, 3>
 // Compute deformation gradient increment of the particle
 template <>
 inline Eigen::Matrix<double, 3, 3>
-    mpm::Particle<2>::compute_deformation_gradient_increment_thermal(
+    mpm::ThermalParticle<2>::compute_deformation_gradient_increment_thermal(
         const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept {
   // Define deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
@@ -281,7 +281,7 @@ inline Eigen::Matrix<double, 3, 3>
 // Compute deformation gradient increment of the particle
 template <>
 inline Eigen::Matrix<double, 3, 3>
-    mpm::Particle<3>::compute_deformation_gradient_increment_thermal(
+    mpm::ThermalParticle<3>::compute_deformation_gradient_increment_thermal(
         const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept {
   // Define deformation gradient increment
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment =
@@ -311,8 +311,8 @@ inline Eigen::Matrix<double, 3, 3>
 
 // Compute updated temperature of the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_updated_temperature_newmark(
-                                            double dt) noexcept {
+void mpm::ThermalParticle<Tdim>::compute_updated_temperature_newmark(
+                                            double dt) {
 
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);

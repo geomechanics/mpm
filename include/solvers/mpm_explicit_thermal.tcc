@@ -141,7 +141,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
 
   // Initialise mesh
   this->initialise_mesh();
-
+// std::cout << "0" << "\n";
   // Check point resume
   if (resume) {
     bool check_resume = this->checkpoint_resume();
@@ -167,7 +167,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
   } else {
     // Initialise particles
     this->initialise_particles();
-
+// std::cout << "1" << "\n";
     // Compute mass for each phase
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
@@ -181,7 +181,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
 
   // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
-
+// std::cout << "2" << "\n";
   auto solver_begin = std::chrono::steady_clock::now();
 
   this->compute_critical_timestep_size(dt_);
@@ -216,9 +216,10 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
         mesh_->iterate_over_nodes(
             std::bind(&mpm::NodeBase<Tdim>::initialise_thermal, 
             std::placeholders::_1));
-
+// std::cout << "3" << "\n";
         mesh_->iterate_over_cells(
             std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
+// std::cout << "31" << "\n";            
       }
       // Spawn a task for particles
 #pragma omp section
@@ -226,6 +227,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+// std::cout << "32" << "\n";          
       }
     }  // Wait to complete
 
@@ -233,12 +235,12 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
                   std::placeholders::_1, velocity_update_));
-
+// std::cout << "33" << "\n";
     // Assign heat capacity and heat to nodes
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_heat_to_nodes,
                   std::placeholders::_1));
-
+// std::cout << "4" << "\n";
 #ifdef USE_MPI
     // Run if there is more than a single MPI task
     if (mpi_size > 1) {
@@ -284,7 +286,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
         std::bind(&mpm::NodeBase<Tdim>::compute_temperature_explicit,
                   std::placeholders::_1, phase, this->dt_, this->step_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));  
-
+// std::cout << "5" << "\n";
     // Update stress first
     if (this->stress_update_ == "usf") this->compute_stress_strain();
 
@@ -340,7 +342,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
         }
       }
     }
-
+// std::cout << "7" << "\n";
 #ifdef USE_MPI
     // Run if there is more than a single MPI task
     if (mpi_size > 1) {
@@ -369,7 +371,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
       //               std::placeholders::_2));
     }
 #endif
-
+// std::cout << "8" << "\n";
     // Compute nodal acceleration and update nodal velocity
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
@@ -381,7 +383,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
         std::bind(&mpm::NodeBase<Tdim>::update_temperature_explicit,
                   std::placeholders::_1, phase, this->dt_, this->step_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-
+// std::cout << "9" << "\n";
     // Iterate over each particle to compute updated temperature
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::update_particle_temperature,
@@ -391,7 +393,7 @@ bool mpm::MPMExplicitThermal<Tdim>::solve() {
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_updated_position,
         std::placeholders::_1, this->dt_, velocity_update_, blending_ratio_));
-
+// std::cout << "10" << "\n";
     // Apply particle velocity constraints
     mesh_->apply_particle_velocity_constraints();
 

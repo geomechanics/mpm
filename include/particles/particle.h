@@ -467,63 +467,63 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt Analysis time step
   void initialise_constitutive_law(double dt) noexcept override;
 
-  /**
-   * \defgroup Thermal Functions for Thermo-mechanical MPM
-   */
-  /**@{*/
-  //! Initialise particle thermal properties
-  void initialise_thermal() override;
+  // /**
+  //  * \defgroup Thermal Functions for Thermo-mechanical MPM
+  //  */
+  // /**@{*/
+  // //! Initialise particle thermal properties
+  // void initialise_thermal() override;
 
-  //! Map particle heat capacity and heat to nodes
-  void map_heat_to_nodes() override;
+  // //! Map particle heat capacity and heat to nodes
+  // void map_heat_to_nodes() override;
 
-  //! Map particle heat capacity and heat to nodes
-  void map_heat_to_nodes_newmark() override;
+  // //! Map particle heat capacity and heat to nodes
+  // void map_heat_to_nodes_newmark() override;
 
-  //! Map heat conduction to nodes
-  void map_heat_conduction() override;
+  // //! Map heat conduction to nodes
+  // void map_heat_conduction() override;
 
-  //! Map plastic heat dissipation to nodes
-  void map_plastic_heat_dissipation(double dt) override;
+  // //! Map plastic heat dissipation to nodes
+  // void map_plastic_heat_dissipation(double dt) override;
 
-  //! Map heat conduction to nodes
-  void map_virtual_heat_flux(bool convective, const double vfm_param1,
-                                              const double vfm_param2) override;
+  // //! Map heat conduction to nodes
+  // void map_virtual_heat_flux(bool convective, const double vfm_param1,
+  //                                             const double vfm_param2) override;
 
-  //! Compute thermal strain of the particle
-  void compute_thermal_strain() noexcept override;
+  // //! Compute thermal strain of the particle
+  // void compute_thermal_strain() noexcept override;
 
-  //! Compute updated temperature of the particle
-  void update_particle_temperature(double dt) noexcept override;
+  // //! Compute updated temperature of the particle
+  // void update_particle_temperature(double dt) noexcept override;
 
-  //! Map specific heat to cell
-  bool map_heat_capacity_to_cell(double dt, double newmark_beta, 
-                                            double newmark_gamma) override;
+  // //! Map specific heat to cell
+  // bool map_heat_capacity_to_cell(double dt, double newmark_beta, 
+  //                                           double newmark_gamma) override;
 
-  //! Map heat conductivity matrix to cell
-  bool map_heat_conductivity_to_cell() override;
+  // //! Map heat conductivity matrix to cell
+  // bool map_heat_conductivity_to_cell() override;
 
-  //! Map thermal expansivity matrix to cell
-  bool map_thermal_expansivity_to_cell() override;
+  // //! Map thermal expansivity matrix to cell
+  // bool map_thermal_expansivity_to_cell() override;
 
-  //! Compute strain and volume of the particle using nodal displacement and 
-  //! temperature increment
-  void compute_strain_volume_newmark_thermal() noexcept override;
+  // //! Compute strain and volume of the particle using nodal displacement and 
+  // //! temperature increment
+  // void compute_strain_volume_newmark_thermal() noexcept override;
 
-  //! Map transient heat to nodes
-  void map_heat_rate_to_nodes() override;
+  // //! Map transient heat to nodes
+  // void map_heat_rate_to_nodes() override;
 
-  // Compute updated temperature of the particle
-  void compute_updated_temperature_newmark(double dt) noexcept override; 
+  // // Compute updated temperature of the particle
+  // void compute_updated_temperature_newmark(double dt) noexcept override; 
 
-  //! Assign a state variable
-  //! \param[in] value Particle temperature to be assigned
-  //! \param[in] phase Index to indicate phase
-  void assign_temperature(double temperature) override {
-    this->temperature_ = temperature;
-  }
+  // //! Assign a state variable
+  // //! \param[in] value Particle temperature to be assigned
+  // //! \param[in] phase Index to indicate phase
+  // void assign_temperature(double temperature) override {
+  //   this->temperature_ = temperature;
+  // }
 
-  /**@}*/
+  // /**@}*/
 
  protected:
   //! Initialise particle material container
@@ -592,27 +592,27 @@ class Particle : public ParticleBase<Tdim> {
   inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
   /**@}*/
 
-  /**
-   * \defgroup Implicit Functions dealing with implicit thermo-mechanical MPM
-   */
-  /**@{*/
-  //! Compute strain increment
-  //! \ingroup Thermal Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval strain increment at particle inside a cell
-  virtual inline Eigen::Matrix<double, 6, 1> compute_strain_increment_thermal(
-      const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept;
+  // /**
+  //  * \defgroup Implicit Functions dealing with implicit thermo-mechanical MPM
+  //  */
+  // /**@{*/
+  // //! Compute strain increment
+  // //! \ingroup Thermal Implicit
+  // //! \param[in] dn_dx The spatial gradient of shape function
+  // //! \param[in] phase Index to indicate phase
+  // //! \retval strain increment at particle inside a cell
+  // virtual inline Eigen::Matrix<double, 6, 1> compute_strain_increment_thermal(
+  //     const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept;
 
-  //! Compute deformation gradient increment using nodal displacement
-  //! \ingroup Thermal Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval deformaton gradient increment at particle inside a cell
-  inline Eigen::Matrix<double, 3, 3> 
-      compute_deformation_gradient_increment_thermal(
-      const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept;
-  /**@}*/
+  // //! Compute deformation gradient increment using nodal displacement
+  // //! \ingroup Thermal Implicit
+  // //! \param[in] dn_dx The spatial gradient of shape function
+  // //! \param[in] phase Index to indicate phase
+  // //! \retval deformaton gradient increment at particle inside a cell
+  // inline Eigen::Matrix<double, 3, 3> 
+  //     compute_deformation_gradient_increment_thermal(
+  //     const Eigen::MatrixXd& dn_dx, double beta, unsigned phase) noexcept;
+  // /**@}*/
 
   /**
    * \defgroup AdvancedMapping Functions dealing with advance mapping scheme of
@@ -673,13 +673,13 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt time increment
   inline double compute_asflip_beta(double dt) noexcept;
 
-  //! Compute temperature gradient of the particle
-  inline Eigen::Matrix<double, Tdim, 1> compute_temperature_gradient(
-                                                    unsigned phase) noexcept;
+  // //! Compute temperature gradient of the particle
+  // inline Eigen::Matrix<double, Tdim, 1> compute_temperature_gradient(
+  //                                                   unsigned phase) noexcept;
 
-  //! Compute mass gradient of the particle
-  inline Eigen::Matrix<double, Tdim, 1> compute_mass_gradient(
-                                                    unsigned phase) noexcept;
+  // //! Compute mass gradient of the particle
+  // inline Eigen::Matrix<double, Tdim, 1> compute_mass_gradient(
+  //                                                   unsigned phase) noexcept;
   /**@}*/
 
   //! particle id
@@ -704,6 +704,7 @@ class Particle : public ParticleBase<Tdim> {
   using ParticleBase<Tdim>::state_variables_;
   //! Neighbour particles
   using ParticleBase<Tdim>::neighbours_;
+
   //! Volumetric mass density (mass / volume)
   double mass_density_{0.};
   //! Mass
@@ -724,6 +725,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> strain_rate_;
   //! dstrains
   Eigen::Matrix<double, 6, 1> dstrain_;
+  //! Acceleration
+  Eigen::Matrix<double, Tdim, 1> acceleration_;  
   //! Velocity
   Eigen::Matrix<double, Tdim, 1> velocity_;
   //! Displacement
@@ -762,8 +765,6 @@ class Particle : public ParticleBase<Tdim> {
    * \defgroup ImplicitVariables Variables dealing with implicit MPM
    */
   /**@{*/
-  //! Acceleration
-  Eigen::Matrix<double, Tdim, 1> acceleration_;
   //! Stresses at the last time step
   Eigen::Matrix<double, 6, 1> previous_stress_;
   //! Constitutive Tangent Matrix (dynamic allocation only for implicit scheme)
@@ -780,57 +781,57 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 3, 3> deformation_gradient_increment_;
   /**@}*/
 
-  /**
-   * \defgroup Thermal Variables for Thermo-mechanical MPM
-   */
-  /**@{*/
-  //! Scalar properties
-  //! Temperature   
-  double temperature_;
-  //! PIC temperature 
-  double temperature_pic_;
-  //! FLIP temperature
-  double temperature_flip_;
-  //! Incremental volumetric thermal strain
-  double dthermal_volumetric_strain_;
-  //! Rate of temperature
-  double temperature_rate_;  
-  //! double dot of temperature
-  double temperature_ddot_;    
-  //! Temperature increment
-  double temperature_increment_;
-  //! Heat source
-  double heat_source_;
-  //! Density
-  double density_;
+  // /**
+  //  * \defgroup Thermal Variables for Thermo-mechanical MPM
+  //  */
+  // /**@{*/
+  // //! Scalar properties
+  // //! Temperature   
+  // double temperature_;
+  // //! PIC temperature 
+  // double temperature_pic_;
+  // //! FLIP temperature
+  // double temperature_flip_;
+  // //! Incremental volumetric thermal strain
+  // double dthermal_volumetric_strain_;
+  // //! Rate of temperature
+  // double temperature_rate_;  
+  // //! double dot of temperature
+  // double temperature_ddot_;    
+  // //! Temperature increment
+  // double temperature_increment_;
+  // //! Heat source
+  // double heat_source_;
+  // //! Density
+  // double density_;
 
-  // Vector properties
-  //! temperature gradient
-  Eigen::Matrix<double, Tdim, 1> temperature_gradient_;
-  //! Mass gradient
-  Eigen::Matrix<double, Tdim, 1> mass_gradient_;  
-  //! Heat flux vector
-  Eigen::Matrix<double, Tdim, 1> heat_flux_; 
-  //! Unit outward normal
-  Eigen::Matrix<double, Tdim, 1> outward_normal_;   
+  // // Vector properties
+  // //! temperature gradient
+  // Eigen::Matrix<double, Tdim, 1> temperature_gradient_;
+  // //! Mass gradient
+  // Eigen::Matrix<double, Tdim, 1> mass_gradient_;  
+  // //! Heat flux vector
+  // Eigen::Matrix<double, Tdim, 1> heat_flux_; 
+  // //! Unit outward normal
+  // Eigen::Matrix<double, Tdim, 1> outward_normal_;   
 
-  // Tensor properties 
-  //! Thermal strain
-  Eigen::Matrix<double, 6, 1> thermal_strain_;
-  //! Incremental thermal strain
-  Eigen::Matrix<double, 6, 1> dthermal_strain_;  
+  // // Tensor properties 
+  // //! Thermal strain
+  // Eigen::Matrix<double, 6, 1> thermal_strain_;
+  // //! Incremental thermal strain
+  // Eigen::Matrix<double, 6, 1> dthermal_strain_;  
 
-  // Bool properties
-  //! Set heat source
-  bool set_heat_source_{false};
-  /**@{*/  
+  // // Bool properties
+  // //! Set heat source
+  // bool set_heat_source_{false};
+  // /**@{*/  
 
 };  // Particle class
 }  // namespace mpm
 
 #include "particle.tcc"
 #include "particle_implicit.tcc"
-#include "particle_thermal.tcc"
-#include "particle_implicit_thermal.tcc"
+// #include "particle_thermal.tcc"
+// #include "particle_implicit_thermal.tcc"
 
 #endif  // MPM_PARTICLE_H__

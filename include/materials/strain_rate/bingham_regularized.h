@@ -14,7 +14,7 @@ namespace mpm {
 //! \details Regularized Bingham class stresses and strains
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class RegularizedBingham : public Material<Tdim> {
+class BinghamRegularized : public Material<Tdim> {
     public:
     //! Define a vector of 6 dof
     using Vector6d = Eigen::Matrix<double, 6, 1>;
@@ -24,16 +24,16 @@ class RegularizedBingham : public Material<Tdim> {
     //! Constructor with id and material properties
     //! \param[in] id Material ID
     //! \param[in] material_properties Material properties
-    RegularizedBingham(unsigned id, const Json& material_properties);
+    BinghamRegularized(unsigned id, const Json& material_properties);
 
     //! Destructor
-    ~RegularizedBingham() override{};
+    ~BinghamRegularized() override{};
 
     //! Delete copy constructor
-    RegularizedBingham(const RegularizedBingham&) = delete;
+    BinghamRegularized(const BinghamRegularized&) = delete;
 
     //! Delete assignement operator
-    RegularizedBingham& operator=(const RegularizedBingham&) = delete;
+    BinghamRegularized& operator=(const BinghamRegularized&) = delete;
 
     //! Initialise history variables
     //! \retval state_vars State variables with history
@@ -65,30 +65,40 @@ class RegularizedBingham : public Material<Tdim> {
     //! Dirac delta function in Voigt notation
     Eigen::Matrix<double, 6, 1> dirac_delta() const;
 
-    //! Density
-    double density_{std::numeric_limits<double>::max()};
-    //! Bulk modulus
-    double bulk_modulus_{std::numeric_limits<double>::max()};
-    //! Equation of state parameter: lambda
-    double lambda_{std::numeric_limits<double>::max()};
-    //! Tau0 - shear yield stress in unit of [Pa]
-    double tau0_{std::numeric_limits<double>::max()};
-    //! mu - constant plastic viscosity [N s / m^2 or kg / m / s]
-    double mu_{std::numeric_limits<double>::max()};
-    //! Regularization shape factor m
-    double m_{std::numeric_limits<double>::max()};
-    //! Thixotropy parameter lambda0
-    double lambda0{std::numeric_limits<double>::max()};
-    //! Thixotropy parameter theta
-    double theta{std::numeric_limits<double>::max()};
-    //! Critical yielding shear rate
-    double critical_shear_rate_{std::numeric_limits<double>::max()};
-    //! Compressibility multiplier
-    double compressibility_multiplier_{1.0};    
+
+  //! Density
+  double density_{std::numeric_limits<double>::max()};
+  //! Bulk modulus
+  double bulk_modulus_{std::numeric_limits<double>::max()};
+  //! Shear modulus
+  double shear_modulus_{std::numeric_limits<double>::max()};
+
+  //! Volumetric wave speed
+  double c_{std::numeric_limits<double>::max()};
+  //! Gamma
+  double gamma_{std::numeric_limits<double>::max()};
+  //! Dynamic viscosity
+  double dynamic_viscosity_{std::numeric_limits<double>::max()};
+  //! Tau0
+  double tau0_{std::numeric_limits<double>::max()};
+  //! Initial flocculation state
+  double lambda0_{std::numeric_limits<double>::max()};
+  //! Flocullation parameter
+  double athix_{std::numeric_limits<double>::max()};
+  //! Thixotropy deflocculation rate
+  double alpha_{std::numeric_limits<double>::max()};
+  //! Rest time
+  double rt_{std::numeric_limits<double>::max()};  
+  //! Regularization shape factor m
+  double m_{std::numeric_limits<double>::max()};
+  //! Critical yielding shear rate
+  double critical_shear_rate_{std::numeric_limits<double>::max()};
+  //! Compressibility multiplier
+  double compressibility_multiplier_{1.0};    
 
 };  // Regularized Bingham class
 }  // namespace mpm
 
-#include "regularized_bingham.tcc"
+#include "bingham_regularized.tcc"
 
 #endif  // MPM_MATERIAL_REGULARIZED_BINGHAM_H_

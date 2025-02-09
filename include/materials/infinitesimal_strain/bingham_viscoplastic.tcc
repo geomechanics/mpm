@@ -35,11 +35,11 @@ mpm::BinghamViscoPlastic<Tdim>::BinghamViscoPlastic(
     // Parameters for return mapping algorithm
     if (material_properties.contains("rmap_absolute_tolerance")) {
       abs_tol_ = material_properties.at("rmap_absolute_tolerance")
-                     .template get<double>();
+                      .template get<double>();
     }
     if (material_properties.contains("rmap_relative_tolerance")) {
       rel_tol_ = material_properties.at("rmap_relative_tolerance")
-                     .template get<double>();
+                      .template get<double>();
     }
     if (material_properties.contains("rmap_max_iteration")) {
       max_iter_ =
@@ -57,7 +57,7 @@ mpm::BinghamViscoPlastic<Tdim>::BinghamViscoPlastic(
 template <unsigned Tdim>
 mpm::dense_map mpm::BinghamViscoPlastic<Tdim>::initialise_state_variables() {
   mpm::dense_map state_vars = {
-      // MC parameters
+      // Viscoplastic Bingham parameters
       // Yield state: 0: elastic, 1: shear, 2: tensile
       {"yield_state", 0},
       // Pressure

@@ -20,7 +20,9 @@ template <unsigned Tdim>
 mpm::Particle<Tdim>::Particle(Index id, const VectorDim& coord, bool status)
     : mpm::ParticleBase<Tdim>(id, coord, status) {
   this->initialise();
+  // Clear cell ptr
   cell_ = nullptr;
+  // Nodes
   nodes_.clear();
   // Set material containers
   this->initialise_material(1);
@@ -337,7 +339,7 @@ void mpm::Particle<Tdim>::initialise() {
   this->tensor_properties_["stresses"] = [&]() { return stress(); };
   this->tensor_properties_["strains"] = [&]() { return strain(); };
 
-  this->initialise_thermal();
+  // this->initialise_thermal();
 }
 
 //! Initialise particle material container

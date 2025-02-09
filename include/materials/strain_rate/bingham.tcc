@@ -9,7 +9,7 @@ mpm::Bingham<Tdim>::Bingham(unsigned id, const Json& material_properties)
     poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
     tau0_ = material_properties.at("tau0").template get<double>();
-    mu_ = material_properties.at("mu").template get<double>();
+    mu_ = material_properties.at("dynamic_viscosity").template get<double>();
     critical_shear_rate_ =
         material_properties["critical_shear_rate"].template get<double>();
     // Calculate bulk modulus

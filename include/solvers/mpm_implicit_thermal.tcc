@@ -157,16 +157,16 @@ bool mpm::MPMImplicitThermal<Tdim>::solve() {
 
   // Initialise material
   this->initialise_materials();
-
+std::cout << "01" << "\n";
   // Initialise mesh
   this->initialise_mesh();
-
+std::cout << "02" << "\n";
   // Check point resume
   if (resume) {
     bool check_resume = this->checkpoint_resume();
     if (!check_resume) resume = false;
   }
-
+std::cout << "0" << "\n";
   // Resume or Initialise
   bool initial_step = (resume == true) ? false : true;
   if (resume) {
@@ -186,7 +186,7 @@ bool mpm::MPMImplicitThermal<Tdim>::solve() {
   } else {
     // Initialise particles
     this->initialise_particles();
-
+std::cout << "1" << "\n";
     // Compute mass
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
@@ -197,10 +197,10 @@ bool mpm::MPMImplicitThermal<Tdim>::solve() {
 
   // Initialise loading conditions
   this->initialise_loads();
-
-  // Write initial outputs
+std::cout << "2" << "\n";
+  // // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
-
+std::cout << "3" << "\n";
   // Initialise matrix
   bool matrix_status = this->initialise_matrix();
   if (!matrix_status) {
@@ -238,7 +238,7 @@ bool mpm::MPMImplicitThermal<Tdim>::solve() {
       mesh_->compute_free_surface(free_surface_detection_, fs_vol_tolerance_,
                                   cell_neighbourhood_);
     }
-
+std::cout << "4" << "\n";
     mpm_scheme_->compute_nodal_temperatures(phase_, dt_, step_);
 
     // Predict nodal kinematics -- Predictor step of Newmark scheme

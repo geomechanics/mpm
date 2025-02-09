@@ -1,6 +1,96 @@
+//! Construct a thermal particle with id and coordinates
+template <unsigned Tdim>
+mpm::ThermalParticle<Tdim>::ThermalParticle(Index id, const VectorDim& coord)
+    : mpm::Particle<Tdim>(id, coord) {
+  this->initialise();
+  // Clear cell ptr
+  cell_ = nullptr;
+  // Nodes
+  nodes_.clear();
+  // Set material containers
+  this->initialise_material(1);
+  // Logger
+  std::string logger =
+      "thermalparticle" + std::to_string(Tdim) + "d::" + std::to_string(id);
+  console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+}
+
+//! Construct a particle with id, coordinates and status
+template <unsigned Tdim>
+mpm::ThermalParticle<Tdim>::ThermalParticle(Index id, const VectorDim& coord, 
+    bool status): mpm::Particle<Tdim>(id, coord, status) {
+  this->initialise();
+  // Clear cell ptr
+  cell_ = nullptr;
+  // Nodes
+  nodes_.clear();
+  // Set material containers
+  this->initialise_material(1);
+  //! Logger
+  std::string logger =
+      "thermalparticle" + std::to_string(Tdim) + "d::" + std::to_string(id);
+  console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
+}
+
+//! Initialise particle data from POD
+template <unsigned Tdim>
+bool mpm::ThermalParticle<Tdim>::initialise_particle(PODParticle& particle) {
+  bool status = this->mpm::Particle<Tdim>::initialise_particle(particle);
+
+  // TODO: Add thermal variables  
+  
+  return status;
+}
+
+//! Initialise particle data from POD
+template <unsigned Tdim>
+bool mpm::ThermalParticle<Tdim>::initialise_particle(
+    PODParticle& particle,
+    const std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) {
+  bool status = this->initialise_particle(particle);
+
+  assert(materials.size() == 1);
+
+  if (materials.at(mpm::ParticlePhase::Solid) != nullptr) {
+    if (this->material_id() == materials.at(mpm::ParticlePhase::Solid)->id() ||
+        this->material_id() == std::numeric_limits<unsigned>::max()) {
+      bool assign_mat =
+          this->assign_material(materials.at(mpm::ParticlePhase::Solid));
+      if (!assign_mat) throw std::runtime_error("Material assignment failed");
+      // Reinitialize state variables
+      auto mat_state_vars = (this->material())->initialise_state_variables();
+      if (mat_state_vars.size() == particle.nstate_vars) {
+        unsigned i = 0;
+        auto state_variables = (this->material())->state_variables();
+        for (const auto& state_var : state_variables) {
+          this->state_variables_[mpm::ParticlePhase::Solid].at(state_var) =
+              particle.svars[i];
+          ++i;
+        }
+      }
+    } else {
+      status = false;
+      throw std::runtime_error("Material is invalid to assign to particle!");
+    }
+  }
+  return status;
+}
+
+//! Return particle data as POD
+template <unsigned Tdim>
+std::shared_ptr<void> mpm::ThermalParticle<Tdim>::pod() const {
+  auto particle_data = this->mpm::Particle<Tdim>::pod();
+
+  // TODO: Add thermal variables
+
+  return particle_data;
+}
+
 // Initialise particle thermal properties
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::initialise_thermal() {
+void mpm::ThermalParticle<Tdim>::initialise() {
+  mpm::Particle<Tdim>::initialise();
+
   // Scalar properties
   temperature_ = 0.;
   temperature_pic_ = 0.;
@@ -27,7 +117,7 @@ void mpm::Particle<Tdim>::initialise_thermal() {
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_.insert({   
       {"temperatures",           [&]() {return this->temperature_;}},
-      {"PIC_temperatures",       [&]() {return temperature_pic_;}}   
+      {"PIC_temperatures",       [&]() {return this->temperature_pic_;}}   
   });
 
   this->vector_properties_.insert({  
@@ -44,7 +134,7 @@ void mpm::Particle<Tdim>::initialise_thermal() {
 
 // Map particle heat capacity and heat to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_heat_to_nodes() {
+void mpm::ThermalParticle<Tdim>::map_heat_to_nodes() {
   // get the specific_heat 
   const double specific_heat = 
         this->material(mpm::ParticlePhase::Solid)
@@ -54,13 +144,13 @@ void mpm::Particle<Tdim>::map_heat_to_nodes() {
     nodes_[i]->update_heat_capacity(true, mpm::ParticlePhase::Solid,
                                 mass_ * specific_heat * shapefn_[i]);
     nodes_[i]->update_heat(true, mpm::ParticlePhase::Solid,
-                  mass_ * specific_heat * shapefn_[i] * temperature_);               
+                  mass_ * specific_heat * shapefn_[i] * temperature_);
   }
 }
 
 // Map heat conduction to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_heat_conduction() {
+void mpm::ThermalParticle<Tdim>::map_heat_conduction() {
   // Assign the thermal conductivity
   const double k_conductivity = 
           this->material(mpm::ParticlePhase::Solid)
@@ -84,7 +174,7 @@ void mpm::Particle<Tdim>::map_heat_conduction() {
 
 // Map plastic heat generation to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_plastic_heat_dissipation(double dt) {
+void mpm::ThermalParticle<Tdim>::map_plastic_heat_dissipation(double dt) {
   // Assign the plastic heat transfer coefficient
   const double theta_p = this->material(mpm::ParticlePhase::Solid)
         ->template property<double>(std::string("plastic_heat_transfer_coeff"));
@@ -107,7 +197,7 @@ void mpm::Particle<Tdim>::map_plastic_heat_dissipation(double dt) {
 
 // Map virtual heat flux to nodes
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_virtual_heat_flux(bool convective, 
+void mpm::ThermalParticle<Tdim>::map_virtual_heat_flux(bool convective, 
                                           const double vfm_param1,
                                           const double vfm_param2) {
   this->compute_mass_gradient(mpm::ParticlePhase::Solid);
@@ -196,7 +286,7 @@ void mpm::Particle<Tdim>::map_virtual_heat_flux(bool convective,
 
 // Compute temperature gradient of the particle
 template <unsigned Tdim>
-inline Eigen::Matrix<double, Tdim, 1> mpm::Particle<Tdim>::
+inline Eigen::Matrix<double, Tdim, 1> mpm::ThermalParticle<Tdim>::
                       compute_temperature_gradient(unsigned phase) noexcept {
   Eigen::Matrix<double, Tdim, 1> temperature_gradient;
   temperature_gradient.setZero();
@@ -215,7 +305,7 @@ inline Eigen::Matrix<double, Tdim, 1> mpm::Particle<Tdim>::
 
 // Compute mass gradient of the particle
 template <unsigned Tdim>
-inline Eigen::Matrix<double, Tdim, 1> mpm::Particle<Tdim>::
+inline Eigen::Matrix<double, Tdim, 1> mpm::ThermalParticle<Tdim>::
                             compute_mass_gradient(unsigned phase) noexcept {
 
   Eigen::Matrix<double, Tdim, 1> mass_gradient;
@@ -235,8 +325,8 @@ inline Eigen::Matrix<double, Tdim, 1> mpm::Particle<Tdim>::
 
 // Compute updated temperature of the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::update_particle_temperature(double dt) noexcept {
-
+void mpm::ThermalParticle<Tdim>::update_particle_temperature(
+                                            double dt) {
   // Get PIC temperature
   double PIC_temperature = 0;
   temperature_rate_ = 0.;
@@ -247,7 +337,6 @@ void mpm::Particle<Tdim>::update_particle_temperature(double dt) noexcept {
         shapefn_[i] * nodes_[i]->temperature_rate(
                                               mpm::ParticlePhase::Solid);
   }
-
   // temperature increment
   temperature_increment_ = this->temperature_rate_ * dt;   
   // Get PIC temperature
@@ -260,7 +349,7 @@ void mpm::Particle<Tdim>::update_particle_temperature(double dt) noexcept {
 
 // Compute thermal strain of the particle
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_thermal_strain() noexcept {
+void mpm::ThermalParticle<Tdim>::compute_thermal_strain() {
   // get the thermal conductivity coefficient
   const double beta_solid =
     this->material(mpm::ParticlePhase::Solid)
@@ -275,10 +364,8 @@ void mpm::Particle<Tdim>::compute_thermal_strain() noexcept {
   dthermal_volumetric_strain_ = dthermal_strain_.head(Tdim).sum();
   // compute total volumetric strain increment
   dvolumetric_strain_ += dthermal_volumetric_strain_;
-
   // update thermal strain 
   thermal_strain_ += dthermal_strain_;
-
   // compute total strain increment
   dstrain_ += dthermal_strain_;
   // compute total strain

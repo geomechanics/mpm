@@ -1,8 +1,12 @@
 //! Constructor
 template <unsigned Tdim>
 mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
-    const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt)
-    : mpm::MPMScheme<Tdim>(mesh, dt) {}
+    const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt, double beta,
+    double gamma, double bossak_alpha)
+    : mpm::MPMScheme<Tdim>(mesh, dt),
+      beta_(beta),
+      gamma_(gamma),
+      bossak_alpha_(bossak_alpha) {}
 
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
@@ -55,11 +59,11 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
 //! Compute nodal kinematics - map mass, momentum and inertia to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase) {
+    mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) {
   // Assign mass, momentum and inertia to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_inertia_to_nodes,
-                std::placeholders::_1));
+                std::placeholders::_1, velocity_update));
 
 #ifdef USE_MPI
   // Run if there is more than a single MPI task
@@ -92,13 +96,20 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
 //! Update nodal kinematics by Newmark scheme
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
-    unsigned phase, double newmark_beta, double newmark_gamma) {
+    unsigned phase, bool pml_boundary) {
 
   // Update nodal velocity and acceleration
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark,
-                std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
+                std::placeholders::_1, phase, beta_, gamma_, dt_),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+  if (pml_boundary)
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(
+            &mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark_pml,
+            std::placeholders::_1, phase, beta_, gamma_, dt_),
+        std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
 }
 
 //! Compute stress and strain by Newmark scheme
@@ -151,7 +162,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
       if (!quasi_static)
         mesh_->iterate_over_particles(
             std::bind(&mpm::ParticleBase<Tdim>::map_inertial_force,
-                      std::placeholders::_1));
+                      std::placeholders::_1, bossak_alpha_));
 
       // Apply particle traction and map to nodes
       mesh_->apply_traction_on_particles(step * dt_);
@@ -168,8 +179,18 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
     {
       // Spawn a task for internal force
       // Iterate over each particle to compute nodal internal force
-      mesh_->iterate_over_particles(std::bind(
-          &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::map_internal_force,
+                    std::placeholders::_1, dt_));
+    }
+
+#pragma omp section
+    {
+      // Spawn a task for boundary force
+      // Iterate over each point to compute nodal external force
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::map_boundary_force,
+                    std::placeholders::_1, phase));
     }
 
 #pragma omp section
@@ -187,12 +208,14 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step) {
+    const std::string& damping_type, double damping_factor, unsigned step,
+    bool update_defgrad, bool pml_boundary) {
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
-                std::placeholders::_1, dt_));
+                std::placeholders::_1, dt_, gamma_, step, velocity_update,
+                blending_ratio));
 
   // Iterate over each point to compute updated position
   mesh_->iterate_over_points(
@@ -205,14 +228,15 @@ template <unsigned Tdim>
 inline void
     mpm::MPMSchemeNewmark<Tdim>::update_particle_stress_strain_volume() {
   // Iterate over each particle to update particle stress and strain
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::update_stress_strain,
+                std::placeholders::_1, dt_));
 }
 
 //! Postcompute nodal kinematics - map mass and momentum to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::postcompute_nodal_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase) {}
+    mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) {}
 
 //! Stress update scheme
 template <unsigned Tdim>
@@ -236,4 +260,23 @@ inline void mpm::MPMSchemeNewmark<Tdim>::locate_particles(
   if (!unlocatable_points.empty() && !locate_particles)
     for (const auto& remove_point : unlocatable_points)
       mesh_->remove_point(remove_point);
+}
+
+// Assign PML Boundary Properties
+template <unsigned Tdim>
+inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties(
+    const bool& pml_type) {
+  // Initialise nodal properties
+  mesh_->initialise_nodal_properties();
+
+  // Map damped mass to nodes
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::map_pml_properties_to_nodes,
+                std::placeholders::_1));
+
+  // Recompute velocity for PML nodes
+  mesh_->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Tdim>::compute_pml_velocity_acceleration,
+                std::placeholders::_1, pml_type),
+      std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
 }

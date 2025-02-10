@@ -3061,11 +3061,204 @@ void mpm::Mesh<Tdim>::create_nodal_properties() {
   }
 }
 
+// Create the nodal properties' map for analysis with perfectly matched layer
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::create_nodal_properties_pml(const bool& pml_type) {
+  // Initialise the shared pointer to nodal properties
+  nodal_properties_ = std::make_shared<mpm::NodalProperties>();
+
+  // Check if nodes_ and materials_is empty and throw runtime error if they
+  // are
+  if (nodes_.size() != 0 && materials_.size() != 0) {
+    // Compute number of rows in nodal properties for vector entities
+    const unsigned nrows = nodes_.size() * Tdim;
+    // Create pool data for each property in the nodal properties struct
+    // object. Properties must be named in the plural form
+    nodal_properties_->create_property("damped_masses", nrows, 1);
+    nodal_properties_->create_property("damped_mass_displacements", nrows, 1);
+
+    // Properties specific to a given PML implementation
+    if (pml_type) {
+      nodal_properties_->create_property("damped_mass_displacements_j1", nrows,
+                                         1);
+      nodal_properties_->create_property("damped_mass_displacements_j2", nrows,
+                                         1);
+      nodal_properties_->create_property("damped_mass_displacements_j3", nrows,
+                                         1);
+      nodal_properties_->create_property("damped_mass_displacements_j4", nrows,
+                                         1);
+    }
+
+    // Iterate over all nodes to initialise the property handle in each node
+    // and assign its node id as the prop id in the nodal property data pool
+    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+      (*nitr)->initialise_property_handle((*nitr)->id(), nodal_properties_);
+  } else {
+    throw std::runtime_error("Number of nodes or number of materials is zero");
+  }
+}
+
 // Initialise the nodal properties' map
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::initialise_nodal_properties() {
   // Call initialise_properties function from the nodal properties
   nodal_properties_->initialise_nodal_properties();
+}
+
+//! Assign particle PML distance function
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_pml_particles_distance_functions(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        particle_distance_functions) {
+  bool status = true;
+
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign PML distance "
+          "functions");
+
+    // Initialise dimension-wise maximum boundary thickness
+    double L_x, L_y, L_z;
+    L_x = L_y = L_z = 0.0;
+    for (const auto& particle_distance_function : particle_distance_functions) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_distance_function);
+      // Distance function vector
+      VectorDim pdist_functions = std::get<1>(particle_distance_function);
+
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        // Check if material state_variable has r_x, r_y, and r_z
+        if ((std::isnan(
+                map_particles_[pid]->state_variable("distance_function_x"))) or
+            (std::isnan(
+                map_particles_[pid]->state_variable("distance_function_y"))) or
+            (std::isnan(
+                map_particles_[pid]->state_variable("distance_function_z")))) {
+          status = false;
+          throw std::runtime_error("Assign PML distance function is invalid");
+          break;
+        }
+
+        // Check for every dimension
+        switch (Tdim) {
+          case (3):
+            if (pdist_functions(2) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function z cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_z",
+                                                       pdist_functions(2));
+            L_z = std::max(L_z, pdist_functions(2));
+
+            if (pdist_functions(1) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function y cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_y",
+                                                       pdist_functions(1));
+            L_y = std::max(L_y, pdist_functions(1));
+
+            if (pdist_functions(0) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function x cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_x",
+                                                       pdist_functions(0));
+            L_x = std::max(L_x, pdist_functions(0));
+          case (2):
+            if (pdist_functions(1) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function y cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_y",
+                                                       pdist_functions(1));
+            L_y = std::max(L_y, pdist_functions(1));
+
+            if (pdist_functions(0) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function x cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_x",
+                                                       pdist_functions(0));
+            L_x = std::max(L_x, pdist_functions(0));
+          case (1):
+            if (pdist_functions(0) < 0.0)
+              throw std::runtime_error(
+                  "PML distance function x cannot be negative");
+            map_particles_[pid]->assign_state_variable("distance_function_x",
+                                                       pdist_functions(0));
+            L_x = std::max(L_x, pdist_functions(0));
+        }
+      }
+    }
+
+    // Check if any of the length are zero
+    if (L_x < std::numeric_limits<double>::epsilon())
+      L_x = std::numeric_limits<double>::quiet_NaN();
+    if (L_y < std::numeric_limits<double>::epsilon())
+      L_y = std::numeric_limits<double>::quiet_NaN();
+    if (L_z < std::numeric_limits<double>::epsilon())
+      L_z = std::numeric_limits<double>::quiet_NaN();
+
+    // Compute and assigned minimum boundary thickness
+    const double L = std::max(L_x, std::max(L_y, L_z));
+    if (!std::isnan(L)) {
+      for (const auto& particle_distance_function :
+           particle_distance_functions) {
+        // Particle id
+        mpm::Index pid = std::get<0>(particle_distance_function);
+
+        if (map_particles_.find(pid) != map_particles_.end()) {
+          // Check if material state_variable has boundary_thickness
+          if (std::isnan(
+                  map_particles_[pid]->state_variable("boundary_thickness"))) {
+            status = false;
+            throw std::runtime_error(
+                "Assign PML boundary thickness is invalid");
+            break;
+          }
+
+          map_particles_[pid]->assign_state_variable("boundary_thickness", L);
+        }
+      }
+    } else {
+      throw std::runtime_error(
+          "Assign PML boundary thickness is invalid - L is NaN");
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign particle PML displacementss
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_pml_particles_displacements(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        particle_displacements) {
+  bool status = true;
+
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign PML "
+          "displacements");
+
+    // Loop over particle displacements
+    for (const auto& particle_disp : particle_displacements) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_disp);
+      // Distance function vector
+      VectorDim pdisp = std::get<1>(particle_disp);
+
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        map_particles_[pid]->assign_displacement(pdisp);
+      }
+    }
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
 }
 
 //! Upgrade cells to nonlocal cells

@@ -72,17 +72,19 @@ void mpm::ParticleFiniteStrain<Tdim>::initialise_constitutive_law() noexcept {
 //! (used in poisson equation LHS)
 template <unsigned Tdim>
 inline bool mpm::ParticleFiniteStrain<Tdim>::map_stiffness_matrix_to_cell(
-    double newmark_beta, double dt, bool quasi_static) {
+    double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
+    bool quasi_static) {
   bool status = true;
   try {
     // Check if material ptr is valid
     assert(this->material() != nullptr);
 
     // Compute material stiffness matrix
-    this->map_material_stiffness_matrix_to_cell();
+    this->map_material_stiffness_matrix_to_cell(dt);
 
     // Compute mass matrix
-    if (!quasi_static) this->map_mass_matrix_to_cell(newmark_beta, dt);
+    if (!quasi_static)
+      this->map_mass_matrix_to_cell(newmark_beta, bossak_alpha, dt);
 
     // Compute geometric stiffness matrix
     this->map_geometric_stiffness_matrix_to_cell();
@@ -207,7 +209,7 @@ inline Eigen::Matrix<double, 6, 1>
 
 // Update stress and strain after convergence of Newton-Raphson iteration
 template <unsigned Tdim>
-void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain() noexcept {
+void mpm::ParticleFiniteStrain<Tdim>::update_stress_strain(double dt) noexcept {
   // Update converged stress
   this->stress_ =
       (this->material())

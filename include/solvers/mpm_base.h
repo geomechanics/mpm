@@ -7,7 +7,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-
+#include <iostream>
 // CSV-parser
 #include "csv/csv.h"
 
@@ -43,8 +43,6 @@ enum class VariableType { Scalar, Vector, Tensor };
 
 //! Damping type
 //! None: No damping is specified
-//! Cundall: Cundall damping
-enum class Damping { None, Cundall };
 
 //! Velocity update type
 extern std::map<std::string, mpm::VelocityUpdate> VelocityUpdateType;
@@ -240,6 +238,13 @@ class MPMBase : public MPM {
   void points_areas(const Json& mesh_prop,
                     const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  // Read and assign perfectly matched layer properties
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_pml_properties(
+      const Json& mesh_prop,
+      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   //! Initialise damping
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);
@@ -326,6 +331,12 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
+  //! Perfectly Matched Layer Boundary
+  bool pml_boundary_{false};
+  //! Perfectly Matched Layer Boundary Type
+  bool pml_type_{true};
+  //! Boolean to update deformation gradient
+  bool update_defgrad_{false};
 
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM

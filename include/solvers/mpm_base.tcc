@@ -482,6 +482,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
         "found",
         __FILE__, __LINE__);
   }
+
+  // Read and assign perfectly matched layer properties
+  this->particles_pml_properties(mesh_props, particle_io);
 }
 
 // Initialise materials
@@ -2165,11 +2168,12 @@ bool mpm::MPMBase<Tdim>::initialise_damping(const Json& damping_props) {
   try {
     // Read damping type
     std::string type = damping_props.at("type").template get<std::string>();
-    if (type == "Cundall") damping_type_ = mpm::Damping::Cundall;
-
+    if (type == "Cundall")
+      damping_type_ = mpm::Damping::Cundall;
+    else if (type == "Rayleigh")
+      damping_type_ = mpm::Damping::Rayleigh;
     // Read damping factor
     damping_factor_ = damping_props.at("damping_factor").template get<double>();
-
   } catch (std::exception& exception) {
     console_->warn("#{}: Damping parameters are not properly specified; {}",
                    __LINE__, exception.what());
@@ -2280,6 +2284,80 @@ void mpm::MPMBase<Tdim>::pressure_smoothing(unsigned phase) {
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_pressure_smoothing,
                 std::placeholders::_1, phase));
+}
+
+// Read and assign perfectly matched layer properties
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_pml_properties(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    // Read PML distance function (need to be done to activate PML)
+    if (mesh_props.find("particles_pml_distance_functions") !=
+        mesh_props.end()) {
+      // Get generator type
+      const std::string type =
+          mesh_props["particles_pml_distance_functions"]["type"]
+              .template get<std::string>();
+      if (type == "file") {
+        std::string fpml_r =
+            mesh_props["particles_pml_distance_functions"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fpml_r).empty()) {
+
+          // Get pml distance function for PML particles
+          const auto particles_pml_r =
+              particle_io->read_particles_vector_properties(
+                  io_->file_name(fpml_r));
+
+          // Assign particles distance functions
+          if (!mesh_->assign_pml_particles_distance_functions(particles_pml_r))
+            throw std::runtime_error(
+                "Particles PML distance functions are not properly assigned");
+        }
+      }
+
+      // Activate PML boundary boolean
+      this->pml_boundary_ = true;
+
+      // Distinguish PML TYPE
+      const std::string pml_type =
+          mesh_props["particles_pml_distance_functions"]["pml_type"]
+              .template get<std::string>();
+      this->pml_type_ = (pml_type == "split");
+
+    } else
+      throw std::runtime_error("Particle PML distance function JSON not found");
+
+    // Read PML displacements (need to be done to resume with stresses)
+    if (mesh_props.find("particles_pml_displacements") != mesh_props.end()) {
+      // Get generator type
+      const std::string type = mesh_props["particles_pml_displacements"]["type"]
+                                   .template get<std::string>();
+      if (type == "file") {
+        std::string fpml_disp =
+            mesh_props["particles_pml_displacements"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fpml_disp).empty()) {
+
+          // Get particle displacements for PML particles
+          const auto particles_pml_disp =
+              particle_io->read_particles_vector_properties(
+                  io_->file_name(fpml_disp));
+
+          // Assign particle displacements
+          if (!mesh_->assign_pml_particles_displacements(particles_pml_disp))
+            throw std::runtime_error(
+                "Particles PML displacements are not properly assigned");
+        }
+      }
+    } else
+      throw std::runtime_error("Particle PML displacements JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle PML distance function are undefined {} ",
+                   __LINE__, exception.what());
+  }
 }
 
 //! MPM implicit solver initialization

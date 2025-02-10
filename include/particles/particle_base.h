@@ -167,6 +167,12 @@ class ParticleBase {
   // ! Map linear elastic wave velocities to nodes
   virtual void map_wave_velocities_to_nodes() noexcept = 0;
 
+  // ! Map damped mass vector to nodes
+  virtual void map_pml_properties_to_nodes() noexcept = 0;
+
+  // ! Finalise pml properties
+  virtual void finalise_pml_properties(double dt) noexcept = 0;
+
   //! Assign material
   virtual bool assign_material(const std::shared_ptr<Material<Tdim>>& material,
                                unsigned phase = mpm::ParticlePhase::Solid) = 0;
@@ -221,6 +227,9 @@ class ParticleBase {
 
   //! Return mass
   virtual double mass() const = 0;
+
+  //! Return Nodal phase
+  virtual unsigned phase() const = 0;
 
   //! Assign pressure
   virtual void assign_pressure(double pressure,
@@ -283,7 +292,7 @@ class ParticleBase {
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
 
   //! Map internal force
-  virtual void map_internal_force() noexcept = 0;
+  virtual void map_internal_force(double dt) noexcept = 0;
 
   //! Map particle pressure to nodes
   virtual bool map_pressure_to_nodes(
@@ -298,6 +307,9 @@ class ParticleBase {
 
   //! Return velocity
   virtual VectorDim velocity() const = 0;
+
+  //! Assign displacement
+  virtual bool assign_displacement(const VectorDim& displacement) = 0;
 
   //! Return displacement of the particle
   virtual VectorDim displacement() const = 0;
@@ -388,11 +400,12 @@ class ParticleBase {
   /**@{*/
   //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
-  virtual void map_mass_momentum_inertia_to_nodes() = 0;
+  virtual void map_mass_momentum_inertia_to_nodes(
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP) = 0;
 
   //! Map inertial force
   //! \ingroup Implicit
-  virtual void map_inertial_force() = 0;
+  virtual void map_inertial_force(double bossak_alpha = 0.0) = 0;
 
   //! Return acceleration
   //! \ingroup Implicit
@@ -402,17 +415,21 @@ class ParticleBase {
   //! equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
   virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                                   double newmark_gamma,
+                                                   double bossak_alpha,
                                                    double dt,
                                                    bool quasi_static) = 0;
 
   //! Reduce constitutive relations matrix depending on the dimension
+  //! \ingroup Implicit
   virtual inline Eigen::MatrixXd reduce_dmatrix(
       const Eigen::MatrixXd& dmatrix) = 0;
 
   //! Compute B matrix
+  //! \ingroup Implicit
   virtual inline Eigen::MatrixXd compute_bmatrix() = 0;
 
   //! Compute strain and volume using nodal displacement
@@ -429,11 +446,15 @@ class ParticleBase {
   //! Compute updated position by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  virtual void compute_updated_position_newmark(double dt) = 0;
+  virtual void compute_updated_position_newmark(
+      double dt, double newmark_gamma, unsigned step,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) = 0;
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  virtual void update_stress_strain() = 0;
+  //! \param[in] dt Analysis time step
+  virtual void update_stress_strain(double dt) = 0;
 
   //! Assign acceleration to the particle (used for test)
   //! \ingroup Implicit
@@ -448,7 +469,22 @@ class ParticleBase {
 
   //! Return mapping matrix
   //! \ingroup AdvancedMapping
-  virtual Eigen::MatrixXd mapping_matrix() const = 0;
+  virtual Eigen::MatrixXd mapping_matrix(unsigned type = 0) const = 0;
+
+  //! Map PML rayleigh damping force
+  //! \param[in] damping_factor Rayleigh damping factor
+  //! \param[in] dt parameter beta of Newmark scheme
+  virtual void map_rayleigh_damping_force(double damping_factor, double dt) = 0;
+
+  //! Map PML rayleigh damping matrix to cell (used in equilibrium
+  //! equation LHS)
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] damping_factor Rayleigh damping factor
+  virtual inline bool map_rayleigh_damping_matrix_to_cell(
+      double newmark_gamma, double newmark_beta, double dt,
+      double damping_factor) = 0;
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle

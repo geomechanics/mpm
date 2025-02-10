@@ -19,7 +19,7 @@ inline void mpm::MPMSchemeUSL<Tdim>::postcompute_stress_strain(
 //! Postcompute nodal kinematics - map mass and momentum to nodes
 template <unsigned Tdim>
 inline void mpm::MPMSchemeUSL<Tdim>::postcompute_nodal_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase) {}
+    mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) {}
 
 //! Stress update scheme
 template <unsigned Tdim>

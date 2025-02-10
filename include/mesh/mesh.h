@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <numeric>
@@ -485,6 +486,18 @@ class Mesh {
   bool assign_particles_stresses(
       const std::vector<Eigen::Matrix<double, 6, 1>>& particle_stresses);
 
+  //! Assign pml particles distance functions
+  //! \param[in] particle_distance_functions Particle distance functions
+  bool assign_pml_particles_distance_functions(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_distance_functions);
+
+  //! Assign pml particles displacements
+  //! \param[in] particle_displacements Particle displacements
+  bool assign_pml_particles_displacements(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_displacements);
+
   //! Assign particles cells
   //! \param[in] particles_cells Particles and cells
   bool assign_particles_cells(
@@ -659,6 +672,9 @@ class Mesh {
 
   // Create the nodal properties' map
   void create_nodal_properties();
+
+  // Create the nodal properties' map for analysis with perfectly matched layer
+  void create_nodal_properties_pml(const bool& pml_type);
 
   // Initialise the nodal properties' map
   void initialise_nodal_properties();

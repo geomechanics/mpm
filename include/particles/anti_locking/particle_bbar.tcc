@@ -91,7 +91,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleBbar<3>::compute_strain_rate(
 
 //! Map internal force
 template <>
-inline void mpm::ParticleBbar<1>::map_internal_force() noexcept {
+inline void mpm::ParticleBbar<1>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -104,7 +104,7 @@ inline void mpm::ParticleBbar<1>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::ParticleBbar<2>::map_internal_force() noexcept {
+inline void mpm::ParticleBbar<2>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -126,7 +126,7 @@ inline void mpm::ParticleBbar<2>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::ParticleBbar<3>::map_internal_force() noexcept {
+inline void mpm::ParticleBbar<3>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume

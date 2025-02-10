@@ -326,6 +326,54 @@ class NodeBase {
   //! Compute multimaterial normal unit vector
   virtual void compute_multimaterial_normal_unit_vector() = 0;
 
+  //! Return nodal PML status
+  virtual bool pml() = 0;
+
+  //! Assign nodal PML status
+  virtual void assign_pml(bool pml) = 0;
+
+  //! Compute velocity from the momentum and damped mass vector for PML nodes
+  virtual void compute_pml_velocity(const bool& pml_type) = 0;
+
+  //! Compute velocity and acceleration from the momentum, inertia and damped
+  //! mass vector for PML nodes
+  virtual void compute_pml_velocity_acceleration(const bool& pml_type) = 0;
+
+  //! Return previous displacement of pml nodes
+  //! \ingroup PML
+  //! \param[in] t_index Time index, default j=0 which refer to t = tn
+  virtual VectorDim previous_pml_displacement(unsigned t_index = 0) const = 0;
+
+  //! Return previous velocity of pml nodes
+  //! \ingroup PML
+  virtual VectorDim previous_pml_velocity() const = 0;
+
+  //! Return previous acceleration of pml nodes
+  //! \ingroup PML
+  virtual VectorDim previous_pml_acceleration() const = 0;
+
+  //! Apply pml displacement constraints
+  //! \ingroup PML
+  virtual void apply_pml_displacement_constraints(const bool&) = 0;
+
+  //! Compute acceleration and velocity with cundall damping factor considering
+  //! damped mass vector for PML nodes
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Rayleigh damping alpha
+  virtual bool compute_pml_acceleration_velocity(
+      unsigned phase, double dt, double damping_factor) noexcept = 0;
+
+  //! Update velocity and acceleration by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta Parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
+  //! \param[in] dt Time-step
+  virtual void update_velocity_acceleration_newmark_pml(unsigned phase,
+                                                        double newmark_beta,
+                                                        double newmark_gamma,
+                                                        double dt) = 0;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

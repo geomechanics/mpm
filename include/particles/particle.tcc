@@ -895,7 +895,7 @@ void mpm::Particle<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<1>::map_internal_force() noexcept {
+inline void mpm::Particle<1>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -908,7 +908,7 @@ inline void mpm::Particle<1>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<2>::map_internal_force() noexcept {
+inline void mpm::Particle<2>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -924,7 +924,7 @@ inline void mpm::Particle<2>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::Particle<3>::map_internal_force() noexcept {
+inline void mpm::Particle<3>::map_internal_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
@@ -950,6 +950,15 @@ bool mpm::Particle<Tdim>::assign_velocity(
     const Eigen::Matrix<double, Tdim, 1>& velocity) {
   // Assign velocity
   velocity_ = velocity;
+  return true;
+}
+
+// Assign displacement to the particle
+template <unsigned Tdim>
+bool mpm::Particle<Tdim>::assign_displacement(
+    const Eigen::Matrix<double, Tdim, 1>& displacement) {
+  // Assign displacement
+  displacement_ = displacement;
   return true;
 }
 
@@ -1723,4 +1732,23 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
   if (new_J < 1.0) beta = 0.0;
 
   return beta;
+}
+
+//! Map damped mass vector to nodes
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_pml_properties_to_nodes() noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // For normal particle damping scaling is not necessary
+  Eigen::Matrix<double, Tdim, 1> damping_functions =
+      Eigen::Matrix<double, Tdim, 1>::Ones();
+
+  // Map damped mass vector to nodal property
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const auto& damped_mass = mass_ * shapefn_[i] * damping_functions;
+    nodes_[i]->update_property(true, "damped_masses", damped_mass, 0, Tdim);
+    nodes_[i]->update_property(true, "damped_mass_displacements",
+                               mass_ * shapefn_[i] * displacement_, 0, Tdim);
+  }
 }

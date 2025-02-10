@@ -56,7 +56,7 @@ Eigen::Matrix<double, 6, 1>
 
 //! Map internal force
 template <>
-inline void mpm::FluidParticle<1>::map_internal_force() noexcept {
+inline void mpm::FluidParticle<1>::map_internal_force(double dt) noexcept {
   // initialise a vector of total stress (deviatoric + turbulent - pressure)
   Eigen::Matrix<double, 6, 1> total_stress = this->stress_;
   total_stress(0) -=
@@ -76,7 +76,7 @@ inline void mpm::FluidParticle<1>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::FluidParticle<2>::map_internal_force() noexcept {
+inline void mpm::FluidParticle<2>::map_internal_force(double dt) noexcept {
   // initialise a vector of total stress (deviatoric + turbulent - pressure)
   Eigen::Matrix<double, 6, 1> total_stress = this->stress_;
   total_stress(0) -=
@@ -102,7 +102,7 @@ inline void mpm::FluidParticle<2>::map_internal_force() noexcept {
 
 //! Map internal force
 template <>
-inline void mpm::FluidParticle<3>::map_internal_force() noexcept {
+inline void mpm::FluidParticle<3>::map_internal_force(double dt) noexcept {
   // initialise a vector of total stress (deviatoric + turbulent - pressure)
   Eigen::Matrix<double, 6, 1> total_stress = this->stress_;
   total_stress(0) -=

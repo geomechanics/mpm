@@ -16,7 +16,8 @@ template <unsigned Tdim>
 class MPMSchemeNewmark : public MPMScheme<Tdim> {
  public:
   //! Default constructor with mesh class
-  MPMSchemeNewmark(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt);
+  MPMSchemeNewmark(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt,
+                   double beta, double gamma, double bossak_alpha);
 
   //! Intialize
   inline void initialise() override;
@@ -25,7 +26,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   inline void compute_nodal_kinematics(mpm::VelocityUpdate velocity_update,
-                                       unsigned phase) override;
+                                       unsigned phase, unsigned step) override;
 
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
@@ -55,13 +56,16 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
                                           double blending_ratio, unsigned phase,
                                           const std::string& damping_type,
                                           double damping_factor,
-                                          unsigned step) override;
+                                          unsigned step,
+                                          bool update_defgrad,
+                                          bool pml_boundary) override;
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   inline void postcompute_nodal_kinematics(mpm::VelocityUpdate velocity_update,
-                                           unsigned phase) override;
+                                           unsigned phase,
+                                           unsigned step) override;
 
   //! Stress update scheme
   //! \retval scheme Stress update scheme
@@ -93,14 +97,17 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] newmark_beta Parameter beta of Newmark scheme
   //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
   //! \param[in] phase Phase to smooth pressure
-  inline void update_nodal_kinematics_newmark(unsigned phase,
-                                              double newmark_beta,
-                                              double newmark_gamma) override;
+  //! \param[in] pml_boundary Boolean to indicate the use of pml
+  inline void update_nodal_kinematics_newmark(
+      unsigned phase, bool pml_boundary = false) override;
 
   // Update particle stress, strain and volume
   //! \ingroup Implicit
   inline void update_particle_stress_strain_volume() override;
   /**@}*/
+
+  //! Assign relevant properties for perfectly matched layer boundary
+  inline void initialise_pml_boundary_properties(const bool& pml_type) override;
 
  protected:
   //! Mesh object
@@ -111,6 +118,13 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   using mpm::MPMScheme<Tdim>::mpi_rank_;
   //! Time increment
   using mpm::MPMScheme<Tdim>::dt_;
+  //! Newmark parameters
+  double beta_{0.25};
+  double gamma_{0.5};
+  //! Bossak parameter
+  double bossak_alpha_{0.0};
+  //! Periodic BC bool
+  bool periodic_boundary_{false};
 
 };  // MPMSchemeNewmark class
 }  // namespace mpm

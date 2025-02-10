@@ -42,7 +42,7 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
 //! Compute nodal kinematics - map mass and momentum to nodes
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
-    mpm::VelocityUpdate velocity_update, unsigned phase) {
+    mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) {
   // Assign mass and momentum to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
@@ -156,8 +156,9 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
     {
       // Spawn a task for internal force
       // Iterate over each particle to compute nodal internal force
-      mesh_->iterate_over_particles(std::bind(
-          &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
+      mesh_->iterate_over_particles(
+          std::bind(&mpm::ParticleBase<Tdim>::map_internal_force,
+                    std::placeholders::_1, dt_));
     }
   }  // Wait for tasks to finish
 
@@ -200,6 +201,34 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
       std::placeholders::_1));
 }
 
+// Assign PML Boundary Properties
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::initialise_pml_boundary_properties(
+    const bool& pml_type) {
+  // Initialise nodal properties
+  mesh_->initialise_nodal_properties();
+
+  // Map damped mass to nodes
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::map_pml_properties_to_nodes,
+                std::placeholders::_1));
+
+  // Recompute velocity for PML nodes
+  mesh_->iterate_over_nodes_predicate(
+      std::bind(&mpm::NodeBase<Tdim>::compute_pml_velocity,
+                std::placeholders::_1, pml_type),
+      std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
+}
+
+// Finalise PML Boundary Properties
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::finalise_pml_boundary_properties() {
+  // Update viscoelastic properties
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::finalise_pml_properties,
+                std::placeholders::_1, dt_));
+}
+
 // Compute particle kinematics
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
@@ -211,7 +240,7 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
-  if (damping_type == "Cundall")
+  if (damping_type == mpm::Damping::Cundall)
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
                   std::placeholders::_1, phase, dt_, damping_factor),
@@ -221,6 +250,14 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
                   std::placeholders::_1, phase, dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+  // Recompute acceleration and velocity for PML nodes
+  if (pml_boundary) {
+    mesh_->iterate_over_nodes_predicate(
+        std::bind(&mpm::NodeBase<Tdim>::compute_pml_acceleration_velocity,
+                  std::placeholders::_1, phase, dt_, damping_factor),
+        std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
+  }
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

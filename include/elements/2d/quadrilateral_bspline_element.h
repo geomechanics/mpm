@@ -220,6 +220,12 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   double kernel(double point_coord, double nodal_coord, unsigned node_type,
                 unsigned poly_order, unsigned index = 0) const;
 
+  //! Compute B-Spline Basis Function using the close-form equation
+  //! \param[in] point_coord point coordinate in one direction
+  //! \param[in] nodal_coord nodal coordinate in one direction
+  //! dimension
+  double kernel(double point_coord, double nodal_coord) const;
+
   //! Compute B-Spline Basis Function Gradient using the recursive De Boor's
   //! algorithm for single direction
   //! \param[in] point_coord point coordinate in one direction
@@ -229,6 +235,11 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   //! \param[in] index Index associated to local BSplineKnotVector
   double gradient(double point_coord, double nodal_coord, unsigned node_type,
                   unsigned poly_order, unsigned index = 0) const;
+
+  //! Compute B-Spline Basis Function Gradient using the close-form equation
+  //! \param[in] point_coord point coordinate in one direction
+  //! \param[in] nodal_coord nodal coordinate in one direction dimension
+  double gradient(double point_coord, double nodal_coord) const;
 
   //! Function that returns BSpline knot vector
   //! The order of the vectors are:
@@ -242,11 +253,6 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   std::vector<double> knot(unsigned node_type) const {
     return BSplineKnotVector[node_type];
   }
-
-  //! Function to check if particle is lying on the region where kernel
-  //! correction is necessary
-  //! \param[in] xi given local coordinates
-  bool kernel_correction_region(const VectorDim& xi) const;
 
   //! Logger
   std::unique_ptr<spdlog::logger> console_;

@@ -77,12 +77,20 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::constraints_;
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
+  //! Perfectly Matched Layer Boundary
+  using mpm::MPMBase<Tdim>::pml_boundary_;
+  //! Perfectly Matched Layer Boundary Type
+  using mpm::MPMBase<Tdim>::pml_type_;
+  //! Update deformation gradient
+  using mpm::MPMBase<Tdim>::update_defgrad_;
 
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
   //! Interface
   bool interface_{false};
+  //! Phase
+  const unsigned phase_{mpm::ParticlePhase::SinglePhase};
 
 };  // MPMExplicit class
 }  // namespace mpm

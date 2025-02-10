@@ -8,6 +8,9 @@
 #include "mesh.h"
 
 namespace mpm {
+//! Cundall: Cundall damping
+//! Rayleigh: Rayleigh damping
+enum class Damping { None, Cundall, Rayleigh };
 
 //! MPMScheme class
 //! \brief Mpmscheme base class to support different stress update schemes
@@ -25,7 +28,7 @@ class MPMScheme {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   virtual inline void compute_nodal_kinematics(
-      mpm::VelocityUpdate velocity_update, unsigned phase);
+      mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step);
 
   //! Compute stress and strain
   //! \param[in] phase Phase to smooth pressure
@@ -62,6 +65,12 @@ class MPMScheme {
   //! Assign relevant properties for absorbing boundary
   virtual inline void absorbing_boundary_properties();
 
+  //! Assign relevant properties for perfectly matched layer boundary
+  virtual inline void initialise_pml_boundary_properties(const bool& pml_type);
+
+  //! Finalise perfectly matched layer boundary
+  virtual inline void finalise_pml_boundary_properties();
+
   //! Compute acceleration velocity position
   //! \param[in] velocity_update Method to update particle velocity
   //! \param[in] blending_ratio FLIP-PIC blending ratio
@@ -77,7 +86,7 @@ class MPMScheme {
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
   virtual inline void postcompute_nodal_kinematics(
-      mpm::VelocityUpdate velocity_update, unsigned phase) = 0;
+      mpm::VelocityUpdate velocity_update, unsigned phase, unsigned step) = 0;
 
   //! Compute particle location
   //! \param[in] locate_particles Flag to enable locate particles, if set to
@@ -112,9 +121,9 @@ class MPMScheme {
   //! \param[in] newmark_beta Parameter beta of Newmark scheme
   //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
   //! \param[in] phase Phase to smooth pressure
-  virtual inline void update_nodal_kinematics_newmark(unsigned phase,
-                                                      double newmark_beta,
-                                                      double newmark_gamma) {
+  //! \param[in] pml_boundary Boolean to indicate the use of pml
+  virtual inline void update_nodal_kinematics_newmark(
+      unsigned phase, bool pml_boundary = false) {
     throw std::runtime_error(
         "Calling the base class function (update_nodal_kinematics_newmark) in "
         "MPMScheme:: illegal operation!");

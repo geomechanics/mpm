@@ -5,6 +5,7 @@
 #include "mutex.h"
 #include "nodal_properties.h"
 #include "node_base.h"
+#include <iostream>
 
 namespace mpm {
 
@@ -327,6 +328,40 @@ class Node : public NodeBase<Tdim> {
   //! Compute multimaterial normal unit vector
   void compute_multimaterial_normal_unit_vector() override;
 
+  //! Return nodal PML status
+  bool pml() override { return pml_; };
+
+  //! Assign nodal PML status
+  void assign_pml(bool pml) override {
+    node_mutex_.lock();
+    pml_ = pml;
+    node_mutex_.unlock();
+  }
+
+  //! Compute velocity from the momentum and damped mass vector for PML nodes
+  void compute_pml_velocity(const bool& pml_type) override;
+
+  //! Compute velocity from the momentum and damped mass vector for PML nodes
+  void compute_pml_velocity_acceleration(const bool& pml_type) override;
+
+  //! Compute acceleration and velocity with cundall damping factor considering
+  //! damped mass vector for PML nodes
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] damping_factor Rayleigh damping alpha
+  bool compute_pml_acceleration_velocity(
+      unsigned phase, double dt, double damping_factor) noexcept override;
+
+  //! Update velocity and acceleration by Newmark scheme
+  //! \ingroup Implicit
+  //! \param[in] newmark_beta Parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
+  //! \param[in] dt Time-step
+  void update_velocity_acceleration_newmark_pml(unsigned phase,
+                                                double newmark_beta,
+                                                double newmark_gamma,
+                                                double dt) override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
@@ -353,6 +388,23 @@ class Node : public NodeBase<Tdim> {
   VectorDim inertia(unsigned phase) const override {
     return inertia_.col(phase);
   }
+
+  //! Return previous displacement of pml nodes
+  //! \ingroup PML
+  //! \param[in] t_index Time index, default j=0 which refer to t = tn
+  VectorDim previous_pml_displacement(unsigned t_index = 0) const override;
+
+  //! Return previous velocity of pml nodes
+  //! \ingroup PML
+  VectorDim previous_pml_velocity() const override;
+
+  //! Return previous acceleration of pml nodes
+  //! \ingroup PML
+  VectorDim previous_pml_acceleration() const override;
+
+  //! Apply displacement constraints
+  //! \ingroup PML
+  void apply_pml_displacement_constraints(const bool& pml_type) override;
 
   //! Compute velocity and acceleration from the momentum and inertia
   //! \ingroup Implicit
@@ -712,5 +764,6 @@ class Node : public NodeBase<Tdim> {
 #include "node.tcc"
 #include "node_implicit.tcc"
 #include "node_multiphase.tcc"
+#include "node_pml.tcc"
 
 #endif  // MPM_NODE_H_

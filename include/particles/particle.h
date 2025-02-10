@@ -149,6 +149,12 @@ class Particle : public ParticleBase<Tdim> {
   // ! Map linear elastic wave velocities to nodes
   void map_wave_velocities_to_nodes() noexcept override;
 
+  // ! Map damped mass vector to nodes
+  void map_pml_properties_to_nodes() noexcept override;
+
+  // ! Finalise pml properties
+  void finalise_pml_properties(double dt) noexcept override{};
+
   //! Assign nodal mass to particles
   //! \param[in] mass Mass from the particles in a cell
   //! \retval status Assignment status
@@ -156,6 +162,10 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Return mass of the particles
   double mass() const override { return mass_; }
+
+  //! Return nodal phase index associated with partical
+  //! \retval phase Nodal phase index
+  unsigned phase() const override { return mpm::ParticlePhase::Solid; }
 
   //! Assign material
   //! \param[in] material Pointer to a material
@@ -233,7 +243,7 @@ class Particle : public ParticleBase<Tdim> {
   void map_body_force(const VectorDim& pgravity) noexcept override;
 
   //! Map internal force
-  inline void map_internal_force() noexcept override;
+  inline void map_internal_force(double dt) noexcept override;
 
   //! Assign velocity to the particle
   //! \param[in] velocity A vector of particle velocity
@@ -242,6 +252,11 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Return velocity of the particle
   VectorDim velocity() const override { return velocity_; }
+
+  //! Assign displacement to the particle
+  //! \param[in] displacement A vector of particle displacement
+  //! \retval status Assignment status
+  bool assign_displacement(const VectorDim& displacement) override;
 
   //! Return displacement of the particle
   VectorDim displacement() const override { return displacement_; }
@@ -400,11 +415,13 @@ class Particle : public ParticleBase<Tdim> {
   /**@{*/
   //! Map particle mass, momentum and inertia to nodes
   //! \ingroup Implicit
-  void map_mass_momentum_inertia_to_nodes() noexcept override;
+  void map_mass_momentum_inertia_to_nodes(
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::FLIP) noexcept override;
 
   //! Map inertial force
   //! \ingroup Implicit
-  void map_inertial_force() noexcept override;
+  void map_inertial_force(double bossak_alpha = 0.0) noexcept override;
 
   //! Assign acceleration to the particle (used for test)
   //! \ingroup Implicit
@@ -420,9 +437,11 @@ class Particle : public ParticleBase<Tdim> {
   //! equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
-  inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                           double newmark_gamma,
+                                           double bossak_alpha, double dt,
                                            bool quasi_static) override;
 
   //! Reduce constitutive relations matrix depending on the dimension
@@ -453,17 +472,39 @@ class Particle : public ParticleBase<Tdim> {
   //! Compute updated position of the particle by Newmark scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  void compute_updated_position_newmark(double dt) noexcept override;
+  void compute_updated_position_newmark(
+      double dt, double newmark_gamma, unsigned step,
+      mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::FLIP,
+      double blending_ratio = 1.0) noexcept override;
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
+  //! \param[in] dt Analysis time step
+  virtual void update_stress_strain(double dt) noexcept override;
 
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
   void initialise_constitutive_law() noexcept override;
   /**@}*/
+
+  //! Map PML rayleigh damping force
+  //! \param[in] damping_factor Rayleigh damping factor
+  //! \param[in] dt parameter beta of Newmark scheme
+  void map_rayleigh_damping_force(double damping_factor,
+                                  double dt) noexcept override{};
+
+  //! Map PML rayleigh damping matrix to cell (used in equilibrium
+  //! equation LHS)
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] damping_factor Rayleigh damping factor
+  inline bool map_rayleigh_damping_matrix_to_cell(
+      double newmark_gamma, double newmark_beta, double dt,
+      double damping_factor) override {
+    return false;
+  };
 
  protected:
   //! Initialise particle material container
@@ -475,7 +516,6 @@ class Particle : public ParticleBase<Tdim> {
   void initialise_material(unsigned phase_size = 1);
 
   //! Compute strain rate
-  //! \ingroup Implicit
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
   //! \retval strain rate at particle inside a cell
@@ -523,13 +563,15 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  inline bool map_material_stiffness_matrix_to_cell();
+  //! \param[in] dt parameter beta of Newmark scheme
+  virtual inline bool map_material_stiffness_matrix_to_cell(double dt);
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter beta of Newmark scheme
-  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
+  virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
+                                              double bossak_alpha, double dt);
   /**@}*/
 
   /**
@@ -539,7 +581,11 @@ class Particle : public ParticleBase<Tdim> {
   /**@{*/
   //! Return mapping matrix
   //! \ingroup AdvancedMapping
-  Eigen::MatrixXd mapping_matrix() const override { return mapping_matrix_; }
+  //! \param[in] type Type (0) velocity, (1) acceleration
+  Eigen::MatrixXd mapping_matrix(unsigned type = 0) const override {
+    if (type == 1) return mapping_matrix_;
+    return mapping_matrix_;
+  }
 
   //! Map particle mass and momentum to nodes for affine transformation
   //! \ingroup AdvancedMapping
@@ -548,6 +594,14 @@ class Particle : public ParticleBase<Tdim> {
   //! Map particle mass and momentum to nodes for approximate taylor expansion
   //! \ingroup AdvancedMapping
   virtual void map_mass_momentum_to_nodes_taylor() noexcept;
+
+  //! Map particle inertia to nodes for affine transformation
+  //! \ingroup AdvancedMapping
+  virtual void map_inertia_to_nodes_affine() noexcept;
+
+  //! Map particle inertia to nodes for approximate taylor expansion
+  //! \ingroup AdvancedMapping
+  virtual void map_inertia_to_nodes_taylor() noexcept;
 
   //! Compute updated position of the particle assuming FLIP scheme
   //! \ingroup AdvancedMapping
@@ -586,10 +640,53 @@ class Particle : public ParticleBase<Tdim> {
   inline Eigen::Matrix<double, Tdim, Tdim> compute_affine_mapping_matrix(
       const Eigen::MatrixXd& shapefn, unsigned phase) noexcept;
 
-  //! Compute ASFLIP beta parameter
+  //! Compute updated position of the particle assuming Newmark-FLIP scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  //! \param[in] newmark_gamma Newmark's gamma
+  //! \param[in] step Number of step in solver
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  void compute_updated_position_newmark_flip(
+      double dt, double newmark_gamma, unsigned step,
+      double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated position of the particle assuming Newmark-PIC scheme
+  //! \ingroup AdvancedMapping
+  void compute_updated_position_newmark_pic() noexcept;
+
+  //! Compute updated position of the particle assuming Newmark-ASFLIP scheme
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt Analysis time step
+  //! \param[in] newmark_gamma Newmark's gamma
+  //! \param[in] step Number of step in solver
+  //! \param[in] blending_ratio FLIP-PIC Blending ratio
+  void compute_updated_position_newmark_asflip(
+      double dt, double newmark_gamma, unsigned step,
+      double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated position of the particle assuming Newmark-APIC scheme
+  //! \ingroup AdvancedMapping
+  void compute_updated_position_newmark_apic() noexcept;
+
+  //! Compute updated position of the particle assuming Newmark-TFLIP scheme
+  //! \ingroup AdvancedMapping
+  void compute_updated_position_newmark_tflip(
+      double dt, double newmark_gamma, unsigned step,
+      double blending_ratio = 1.0) noexcept;
+
+  //! Compute updated position of the particle assuming Newmark-TPIC scheme
+  //! \ingroup AdvancedMapping
+  void compute_updated_position_newmark_tpic() noexcept;
+
+  //! Compute ASFLIP beta parameter using velocity
   //! \ingroup AdvancedMapping
   //! \param[in] dt time increment
   inline double compute_asflip_beta(double dt) noexcept;
+
+  //! Compute ASFLIP beta parameter using displacement
+  //! \ingroup AdvancedMapping
+  //! \param[in] dt time increment
+  inline double compute_asflip_beta() noexcept;
 
   /**@}*/
 

@@ -119,6 +119,12 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Nonlocal node neighbourhood
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
+  //! Update deformation gradient
+  using mpm::MPMBase<Tdim>::update_defgrad_;
+  //! Perfectly Matched Layer Boundary
+  using mpm::MPMBase<Tdim>::pml_boundary_;
+  //! Perfectly Matched Layer Boundary Type
+  using mpm::MPMBase<Tdim>::pml_type_;
   //! Pressure smoothing
   bool pressure_smoothing_{false};
 
@@ -136,6 +142,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   double newmark_beta_{0.25};
   //! Parameter gamma of Newmark scheme
   double newmark_gamma_{0.5};
+  //! Parameter alpha of Bossak scheme
+  double bossak_alpha_{0.0};
   //! Current number of Newton-Raphson iteration
   unsigned current_iteration_;
   //! Max number of Newton-Raphson iteration

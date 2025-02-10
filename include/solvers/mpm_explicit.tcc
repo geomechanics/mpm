@@ -99,7 +99,10 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   }
 
   // Create nodal properties
-  if (interface_ or absorbing_boundary_) mesh_->create_nodal_properties();
+  if (interface_ or absorbing_boundary_)
+    mesh_->create_nodal_properties();
+  else if (pml_boundary_)
+    mesh_->create_nodal_properties_pml(pml_type_);
 
   // Initialise loading conditions
   this->initialise_loads();
@@ -131,7 +134,11 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     contact_->initialise();
 
     // Mass momentum and compute velocity at nodes
-    mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
+    mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_, step_);
+
+    // Apply PML specific routines
+    if (pml_boundary_)
+      mpm_scheme_->initialise_pml_boundary_properties(pml_type_);
 
     // Map material properties to nodes
     contact_->compute_contact_forces();
@@ -150,15 +157,18 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     }
 
     // Particle kinematics
-    mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
-                                             phase, "Cundall", damping_factor_,
-                                             step_);
+    mpm_scheme_->compute_particle_kinematics(
+        velocity_update_, blending_ratio_, phase, damping_type_,
+        damping_factor_, step_, update_defgrad_, pml_boundary_);
 
     // Mass momentum and compute velocity at nodes
-    mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase);
+    mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase_, step_);
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
+
+    // Apply PML specific routines
+    if (pml_boundary_) mpm_scheme_->finalise_pml_boundary_properties();
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);

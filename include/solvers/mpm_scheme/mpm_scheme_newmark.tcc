@@ -221,6 +221,64 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties(
       std::bind(&mpm::ParticleBase<Tdim>::map_pml_properties_to_nodes,
                 std::placeholders::_1));
 
+// Halo exchange for all mapped pml properties
+#ifdef USE_MPI
+  // Run if there is more than a single MPI task
+  if (mpi_size_ > 1) {
+    // All reduce node boolean status of PML
+    mesh_->assign_pml_nodes();
+
+    // MPI all reduce nodal damped mass
+    mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+        std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                  "damped_masses", 0, Tdim),
+        std::bind(&mpm::NodeBase<Tdim>::update_property, std::placeholders::_1,
+                  false, "damped_masses", std::placeholders::_2, 0, Tdim));
+    // MPI all reduce nodal damped mass displacement
+    mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+        std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                  "damped_mass_displacements", 0, Tdim),
+        std::bind(&mpm::NodeBase<Tdim>::update_property, std::placeholders::_1,
+                  false, "damped_mass_displacements", std::placeholders::_2, 0,
+                  Tdim));
+
+    if (pml_type) {
+      // MPI all reduce nodal damped mass
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j1", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j1", std::placeholders::_2, 0,
+                    Tdim));
+      // MPI all reduce nodal damped mass displacement
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j2", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j2", std::placeholders::_2, 0,
+                    Tdim));
+      // MPI all reduce nodal damped mass
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j3", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j3", std::placeholders::_2, 0,
+                    Tdim));
+      // MPI all reduce nodal damped mass displacement
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j4", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j4", std::placeholders::_2, 0,
+                    Tdim));
+    }
+  }
+#endif
+
   // Recompute velocity for PML nodes
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::compute_pml_velocity_acceleration,

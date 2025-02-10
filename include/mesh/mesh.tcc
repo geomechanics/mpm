@@ -2522,3 +2522,35 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
   }
   return status;
 }
+
+//! Assign pml nodes status (only used in MPI)
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::assign_pml_nodes() {
+#ifdef USE_MPI
+  // Initialize pointer of booleans for send and receive
+  bool* send_nodal_pml_status = new bool[nnodes()];
+  memset(send_nodal_pml_status, 0, nnodes() * sizeof(bool));
+  bool* receive_nodal_pml_status = new bool[nnodes()];
+
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+    if ((*nitr)->pml()) {
+      // Read pml status for MPI solver
+      send_nodal_pml_status[(*nitr)->id()] = true;
+    }
+  }
+
+  MPI_Allreduce(send_nodal_pml_status, receive_nodal_pml_status, nnodes(),
+                MPI_CXX_BOOL, MPI_LOR, MPI_COMM_WORLD);
+
+#pragma omp parallel for schedule(runtime)
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+    if (receive_nodal_pml_status[(*nitr)->id()]) {
+      // Assign pml status for MPI solver
+      (*nitr)->assign_pml(true);
+    }
+  }
+
+  delete[] send_nodal_pml_status;
+  delete[] receive_nodal_pml_status;
+#endif
+}

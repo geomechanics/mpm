@@ -536,6 +536,9 @@ class Mesh {
   // Create the nodal properties' map for analysis with perfectly matched layer
   void create_nodal_properties_pml(const bool& pml_type);
 
+  //! Assign pml nodes status (only used in MPI)
+  void assign_pml_nodes();
+
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
 

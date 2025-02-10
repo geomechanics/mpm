@@ -307,6 +307,13 @@ class NodeBase {
   //! Set ghost id
   virtual void ghost_id(Index gid) = 0;
 
+  //! Get nodal property at the nodes
+  //! \param[in] property Property name
+  //! \param[in] mat_id Id of the material within the property data
+  //! \param[in] nprops Dimension of property (1 if scalar, Tdim if vector)
+  virtual Eigen::MatrixXd property(const std::string& property, unsigned mat_id,
+                                   unsigned nprops) noexcept = 0;
+
   //! Update nodal property at the nodes from particle
   //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] property Property name

@@ -309,6 +309,16 @@ class Node : public NodeBase<Tdim> {
   //! Set ghost id
   void ghost_id(Index gid) override { ghost_id_ = gid; }
 
+  //! Get nodal property at the nodes
+  //! \param[in] property Property name
+  //! \param[in] mat_id Id of the material within the property data
+  //! \param[in] nprops Dimension of property (1 if scalarEigen::Matrix<double,
+  //! Tdim, 1, Tdim if vector)
+  Eigen::MatrixXd property(const std::string& property, unsigned mat_id,
+                           unsigned nprops) noexcept override {
+    return property_handle_->property(property, prop_id_, mat_id, nprops);
+  }
+
   //! Update nodal property at the nodes from particle
   //! \param[in] update A boolean to update (true) or assign (false)
   //! \param[in] property Property name

@@ -338,6 +338,23 @@ void mpm::MPMBase<Tdim>::initialise_particle_types() {
   }
 }
 
+// Initialise point types
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_point_types() {
+  // Check if "points" are specified
+  if (!(io_->json_search("points"))) return;
+
+  // Get point properties
+  auto json_points = io_->json_object("points");
+
+  for (const auto& json_point : json_points) {
+    // Gather point types
+    auto point_type =
+        json_point["generator"]["point_type"].template get<std::string>();
+    point_types_.insert(point_type);
+  }
+}
+
 // Initialise particles
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_particles() {
@@ -435,11 +452,10 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
 
   // Read and assign particles velocity constraints
   this->particle_velocity_constraints();
-
   console_->info("Rank {} Create particle sets: {} ms", mpi_rank,
-                 std::chrono::duration_cast<std::chrono::milliseconds>(
-                     particles_volume_end - particles_volume_begin)
-                     .count());
+    std::chrono::duration_cast<std::chrono::milliseconds>(
+        particles_volume_end - particles_volume_begin)
+        .count());
 
   // Material id update using particle sets
   try {
@@ -500,6 +516,92 @@ void mpm::MPMBase<Tdim>::initialise_materials() {
   mesh_->initialise_material_models(this->materials_);
 }
 
+// Initialise points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::initialise_points() {
+  // Check if "points" are specified
+  if (!(io_->json_search("points"))) return;
+
+  // Initialise MPI rank and size
+  int mpi_rank = 0;
+  int mpi_size = 1;
+
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  // Get mesh properties
+  auto mesh_props = io_->json_object("mesh");
+  // Get Mesh reader from JSON object
+  const std::string io_type = mesh_props["io_type"].template get<std::string>();
+
+  // Check duplicates default set to true
+  bool check_duplicates = true;
+  if (mesh_props.find("check_duplicates") != mesh_props.end())
+    check_duplicates = mesh_props["check_duplicates"].template get<bool>();
+
+  auto points_gen_begin = std::chrono::steady_clock::now();
+
+  // Get points properties
+  auto json_points = io_->json_object("points");
+
+  for (const auto& json_point : json_points) {
+    // Generate points
+    bool gen_status = mesh_->generate_points(io_, json_point["generator"]);
+    if (!gen_status)
+      std::runtime_error("mpm::base::init_points() Generate points failed");
+  }
+
+  //! Gather point types
+  this->initialise_point_types();
+
+  auto points_gen_end = std::chrono::steady_clock::now();
+  console_->info("Rank {} Generate points: {} ms", mpi_rank,
+                 std::chrono::duration_cast<std::chrono::milliseconds>(
+                     points_gen_end - points_gen_begin)
+                     .count());
+
+  auto points_locate_begin = std::chrono::steady_clock::now();
+
+  // Create a mesh reader
+  auto point_io = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  // Locate points in cell
+  auto unlocatable_points = mesh_->locate_points_mesh();
+
+  if (!unlocatable_points.empty())
+    throw std::runtime_error(
+        "mpm::base::init_points() Point outside the mesh domain");
+
+  auto points_locate_end = std::chrono::steady_clock::now();
+  console_->info("Rank {} Locate points: {} ms", mpi_rank,
+                 std::chrono::duration_cast<std::chrono::milliseconds>(
+                     points_locate_end - points_locate_begin)
+                     .count());
+
+  auto points_area_begin = std::chrono::steady_clock::now();
+
+  // Read and assign points areas
+  this->points_areas(mesh_props, point_io);
+
+  auto points_area_end = std::chrono::steady_clock::now();
+  console_->info("Rank {} Read areas: {} ms", mpi_rank,
+                 std::chrono::duration_cast<std::chrono::milliseconds>(
+                     points_area_end - points_area_begin)
+                     .count());
+
+  // Point entity sets
+  this->point_entity_sets(check_duplicates);
+
+  // Read and assign points velocity constraints
+  this->point_velocity_constraints();
+
+  // Read and assign points Kelvin Voigt constraints
+  this->point_kelvin_voigt_constraints();
+}
+
 //! Checkpoint resume
 template <unsigned Tdim>
 bool mpm::MPMBase<Tdim>::checkpoint_resume() {
@@ -510,8 +612,9 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 #endif
 
-    // Gather particle types
+    // Gather particle and point types
     this->initialise_particle_types();
+    this->initialise_point_types();
 
     if (!analysis_["resume"]["resume"].template get<bool>())
       throw std::runtime_error("Resume analysis option is disabled");
@@ -544,6 +647,29 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     if (!unlocatable_particles.empty())
       throw std::runtime_error("Particle outside the mesh domain");
 
+    // Input point h5 file for resume
+    for (const auto ptype : point_types_) {
+      std::string attribute = mpm::PointPODTypeName.at(ptype);
+      std::string extension = ".h5";
+
+      auto points_file =
+          io_->output_file(attribute, extension, uuid_, step_, this->nsteps_)
+              .string();
+
+      // Load point information from file
+      mesh_->read_points_hdf5(points_file, attribute, ptype);
+    }
+
+    // Clear all point ids
+    mesh_->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::clear_point_ids, std::placeholders::_1));
+
+    // Locate points
+    auto unlocatable_points = mesh_->locate_points_mesh();
+
+    if (!unlocatable_points.empty())
+      throw std::runtime_error("Point outside the mesh domain");
+
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
 
@@ -559,6 +685,15 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
 //! Write HDF5 files
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
+  //! Write hdf5 files for material and interface points
+  this->write_hdf5_particles(step, max_steps);
+  this->write_hdf5_points(step, max_steps);
+}
+
+//! Write HDF5 files for material points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_hdf5_particles(mpm::Index step,
+                                              mpm::Index max_steps) {
   // Write hdf5 file for single phase particle
   for (const auto ptype : particle_types_) {
     std::string attribute = mpm::ParticlePODTypeName.at(ptype);
@@ -575,10 +710,36 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
   }
 }
 
+//! Write HDF5 files for interface points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_hdf5_points(mpm::Index step,
+                                           mpm::Index max_steps) {
+  for (const auto ptype : point_types_) {
+    std::string attribute = mpm::PointPODTypeName.at(ptype);
+    std::string extension = ".h5";
+
+    auto points_file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
+
+    // Load point information from file
+    mesh_->write_points_hdf5(points_file);
+  }
+}
+
 #ifdef USE_VTK
+
 //! Write VTK files
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
+  //! Write VTK files for material and interface points
+  this->write_vtk_particles(step, max_steps);
+  this->write_vtk_points(step, max_steps);
+}
+
+//! Write VTK files for material points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_vtk_particles(mpm::Index step,
+                                             mpm::Index max_steps) {
 
   // VTK PolyData writer
   auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates());
@@ -699,6 +860,104 @@ void mpm::MPMBase<Tdim>::write_vtk(mpm::Index step, mpm::Index max_steps) {
     }
   }
 }
+
+//! Write VTK files for interface points
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
+                                          mpm::Index max_steps) {
+
+  // VTK PolyData writer
+  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->point_coordinates());
+
+  // Write input geometry to vtk file
+  const std::string extension = ".vtp";
+  const std::string attribute = "geometry";
+  auto meshfile =
+      io_->output_file(attribute + "_point", extension, uuid_, step, max_steps)
+          .string();
+  vtk_writer->write_geometry(meshfile);
+
+  // MPI parallel vtk file
+  int mpi_rank = 0;
+  int mpi_size = 1;
+  bool write_mpi_rank = false;
+
+#ifdef USE_MPI
+  // Get MPI rank
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  // Get number of MPI ranks
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+
+  //! VTK scalar variables
+  for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Scalar)) {
+    // Write scalar
+    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
+                                 max_steps)
+                    .string();
+    vtk_writer->write_scalar_point_data(
+        file, mesh_->points_scalar_data(attribute), attribute);
+
+    // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+    if (mpi_rank == 0 && mpi_size > 1) {
+      auto parallel_file =
+          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
+                           max_steps, write_mpi_rank)
+              .string();
+
+      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
+                                     mpi_size, step, max_steps, 1);
+    }
+#endif
+  }
+
+  //! VTK vector variables
+  for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Vector)) {
+    // Write vector
+    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
+                                 max_steps)
+                    .string();
+    vtk_writer->write_vector_point_data(
+        file, mesh_->points_vector_data(attribute), attribute);
+
+    // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+    if (mpi_rank == 0 && mpi_size > 1) {
+      auto parallel_file =
+          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
+                           max_steps, write_mpi_rank)
+              .string();
+
+      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
+                                     mpi_size, step, max_steps, 3);
+    }
+#endif
+  }
+
+  //! VTK tensor variables
+  for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Tensor)) {
+    // Write vector
+    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
+                                 max_steps)
+                    .string();
+    vtk_writer->write_tensor_point_data(
+        file, mesh_->template points_tensor_data<6>(attribute), attribute);
+
+    // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+    if (mpi_rank == 0 && mpi_size > 1) {
+      auto parallel_file =
+          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
+                           max_steps, write_mpi_rank)
+              .string();
+
+      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
+                                     mpi_size, step, max_steps, 9);
+    }
+#endif
+  }
+}
 #endif
 
 #ifdef USE_PARTIO
@@ -765,13 +1024,22 @@ bool mpm::MPMBase<Tdim>::is_isoparametric() {
 //! Initialise loads
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_loads() {
+  //! Set gravity as zero
+  gravity_.setZero();
+
+  // Check if "external_loading_conditions" are specified
+  if (!(io_->json_search("external_loading_conditions"))) return;
+
   auto loads = io_->json_object("external_loading_conditions");
   // Initialise gravity loading
-  gravity_.setZero();
-  if (loads.at("gravity").is_array() &&
-      loads.at("gravity").size() == gravity_.size()) {
-    for (unsigned i = 0; i < gravity_.size(); ++i) {
-      gravity_[i] = loads.at("gravity").at(i);
+  if (loads.contains("gravity")) {
+    if (loads.at("gravity").is_array() &&
+        loads.at("gravity").size() == gravity_.size()) {
+      for (unsigned i = 0; i < gravity_.size(); ++i) {
+        gravity_[i] = loads.at("gravity").at(i);
+      }
+    } else {
+      throw std::runtime_error("Specified gravity dimension is invalid");
     }
 
     // Assign initial particle acceleration as gravity
@@ -1635,6 +1903,180 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
   }
 }
 
+// Points areas
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::points_areas(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("points_areas") != mesh_props.end()) {
+      std::string fpoints_areas =
+          mesh_props["points_areas"].template get<std::string>();
+      if (!io_->file_name(fpoints_areas).empty()) {
+        bool points_areas = mesh_->assign_points_areas(
+            particle_io->read_particles_scalar_properties(
+                io_->file_name(fpoints_areas)));
+        if (!points_areas)
+          throw std::runtime_error("Point areas are not properly assigned");
+      }
+    } else
+      throw std::runtime_error("Points areas JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Points areas are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Point velocity constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_velocity_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  try {
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("points_velocity_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over velocity constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["points_velocity_constraints"]) {
+
+        // Set id
+        int pset_id = constraints.at("pset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Velocity
+        double velocity = constraints.at("velocity").template get<double>();
+
+        // Penalty factor
+        double penalty_factor =
+            constraints.at("penalty_factor").template get<double>();
+
+        // Constraint type
+        std::string constraint_type = "fixed";
+        if (constraints.contains("constraint_type"))
+          constraint_type =
+              constraints.at("constraint_type").template get<std::string>();
+
+        // Normal vector
+        std::string normal_type = "cartesian";
+        if (constraints.contains("normal_type"))
+          normal_type =
+              constraints.at("normal_type").template get<std::string>();
+        Eigen::Matrix<double, Tdim, 1> normal =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        if (constraint_type != "fixed") {
+          if (constraints.contains("normal") &&
+              constraints.at("normal").is_array() &&
+              constraints.at("normal").size() == normal.size()) {
+            for (unsigned i = 0; i < normal.size(); ++i) {
+              normal[i] = constraints.at("normal").at(i);
+            }
+            normal_type = "assign";
+          }
+
+          if (normal_type == "auto") {
+            console_->error(
+                "#{}: Automatic normal computation has not been implemented. "
+                "Available options are \'cartesian\'(default) or \'assign\'.",
+                __LINE__);
+          }
+        }
+
+        // Add velocity constraint to mesh
+        auto velocity_constraint =
+            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
+
+        mesh_->create_point_velocity_constraint(pset_id, velocity_constraint,
+                                                constraint_type, penalty_factor,
+                                                normal_type, normal);
+      }
+    } else
+      throw std::runtime_error("Point velocity constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point velocity constraints are undefined {} ",
+                   __LINE__, exception.what());
+  }
+}
+
+// Point velocity constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  try {
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("points_kelvin_voigt_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over velocity constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["points_kelvin_voigt_constraints"]) {
+
+        // Set id
+        int pset_id = constraints.at("pset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Delta
+        double delta = constraints.at("delta").template get<double>();
+        // Incidence
+        double incidence_a = constraints.at("incidence_a").template get<double>();
+        double incidence_b = constraints.at("incidence_b").template get<double>();
+        // Penalty factor
+        double h_min = constraints.at("characteristic_length").template get<double>();
+        // Dummy Position
+        mpm::Position pos = mpm::Position::None;
+
+        // Normal vector
+        // Assume cartesian in which case it will be based on the dir provided
+        std::string normal_type = "cartesian";
+        if (constraints.contains("normal_type"))
+          normal_type =
+              constraints.at("normal_type").template get<std::string>();
+        Eigen::Matrix<double, Tdim, 1> normal =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        // If assigned, then prescribe the normal vector
+        if (normal_type == "assign") {
+          if (constraints.contains("normal") &&
+              constraints.at("normal").is_array() &&
+              constraints.at("normal").size() == normal.size()) {
+            for (unsigned i = 0; i < normal.size(); ++i) {
+              normal[i] = constraints.at("normal").at(i);
+            }
+          }
+        }
+        // If automatic, then throw error
+        if (normal_type == "auto") {
+          console_->error(
+              "#{}: Automatic normal computation has not been implemented. "
+              "Available options are \'cartesian\'(default) or \'assign\'.",
+              __LINE__);
+        }
+
+        // Add absorbing constraint to mesh
+        auto absorbing_constraint =
+            std::make_shared<mpm::AbsorbingConstraint>(pset_id, dir, delta, 
+                                                       h_min, incidence_a, incidence_b, 
+                                                       pos);
+
+        mesh_->create_point_kelvin_voigt_constraint(pset_id, absorbing_constraint, normal_type, normal);
+      }
+    } else
+      throw std::runtime_error("Point Kelvin Voigt constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point Kelvin Voigt constraints are undefined {} ",
+                   __LINE__, exception.what());
+  }
+}
+
 //! Particle entity sets
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::particle_entity_sets(bool check_duplicates) {
@@ -1658,6 +2100,58 @@ void mpm::MPMBase<Tdim>::particle_entity_sets(bool check_duplicates) {
       throw std::runtime_error("Particle entity set JSON data not found");
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle entity sets are undefined; {}", __LINE__,
+                   exception.what());
+  }
+}
+
+//! Point entity sets
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_entity_sets(bool check_duplicates) {
+  // Get mesh properties
+  auto mesh_props = io_->json_object("mesh");
+  // Read and assign point sets
+  try {
+    if (mesh_props.find("entity_sets") != mesh_props.end()) {
+      std::string entity_sets =
+          mesh_props["entity_sets"].template get<std::string>();
+      if (!io_->file_name(entity_sets).empty()) {
+        bool point_sets = mesh_->create_point_sets(
+            (io_->entity_sets(io_->file_name(entity_sets), "point_sets")),
+            check_duplicates);
+
+        if (!point_sets) throw std::runtime_error("Point set creation failed");
+      }
+    } else
+      throw std::runtime_error("Point entity set JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point sets are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+//! Point entity sets
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_entity_sets(bool check_duplicates) {
+  // Get mesh properties
+  auto mesh_props = io_->json_object("mesh");
+  // Read and assign point sets
+  try {
+    if (mesh_props.find("entity_sets") != mesh_props.end()) {
+      std::string entity_sets =
+          mesh_props["entity_sets"].template get<std::string>();
+      if (!io_->file_name(entity_sets).empty()) {
+        bool point_sets = mesh_->create_point_sets(
+            (io_->entity_sets(io_->file_name(entity_sets), "point_sets")),
+            check_duplicates);
+
+        if (!point_sets) throw std::runtime_error("Point set creation failed");
+      }
+    } else
+      throw std::runtime_error("Point entity set JSON not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point sets are undefined {} ", __LINE__,
                    exception.what());
   }
 }
@@ -1734,7 +2228,13 @@ void mpm::MPMBase<Tdim>::mpi_domain_decompose(bool initial_step) {
     if (initial_step) mesh_->remove_all_nonrank_particles();
     // Transfer non-rank particles to appropriate cells
     else
-      mesh_->transfer_nonrank_particles(exchange_cells);
+      mesh_->transfer_nonrank_particles(exchange_cells[0]);
+
+    // Delete all the points which is not in local task parititon
+    if (initial_step) mesh_->remove_all_nonrank_points();
+    // Transfer non-rank points to appropriate cells
+    else
+      mesh_->transfer_nonrank_points(exchange_cells[1]);
 
 #endif
     auto mpi_domain_end = std::chrono::steady_clock::now();

@@ -134,6 +134,11 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     //! Particle entity sets and velocity constraints
     this->particle_entity_sets(false);
     this->particle_velocity_constraints();
+
+    // Point entity sets and velocity constraints
+    this->point_entity_sets(false);
+    this->point_velocity_constraints();
+    this->point_kelvin_voigt_constraints();
   } else {
     // Initialise particles
     this->initialise_particles();
@@ -141,6 +146,9 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     // Compute mass
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
+
+    // Initialise points
+    this->initialise_points();
 
     // Domain decompose
     this->mpi_domain_decompose(initial_step);
@@ -237,6 +245,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
     mesh_->transfer_halo_particles();
+    mesh_->transfer_halo_points();
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 #endif
@@ -385,10 +394,23 @@ template <unsigned Tdim>
 bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
   bool status = true;
   try {
-    // Compute local cell stiffness matrices
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
-                  std::placeholders::_1, newmark_beta_, dt_, quasi_static_));
+#pragma omp parallel sections
+    {
+#pragma omp section
+      {
+        // Compute local cell stiffness matrices
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
+            std::placeholders::_1, newmark_beta_, dt_, quasi_static_));
+      }
+
+#pragma omp section
+      {
+        mesh_->iterate_over_points(
+            std::bind(&mpm::PointBase<Tdim>::map_stiffness_matrix_to_cell,
+                      std::placeholders::_1, newmark_beta_, newmark_gamma_, dt_));
+      }
+    }
 
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();
@@ -401,7 +423,7 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     assembler_->assemble_residual_force_right();
 
     // Apply displacement constraints
-    assembler_->apply_displacement_constraints();
+    assembler_->apply_displacement_constraints(current_iteration_);
 
     // Assign rank global mapper to solver and convergence criteria (only
     // necessary at the initial iteration)

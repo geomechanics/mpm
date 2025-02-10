@@ -124,7 +124,8 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
         std::make_shared<mpm::Particle<Dim>>(id, coords, status);
 
     // Check scalar data: mass
-    REQUIRE(particle->scalar_data("mass") == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->scalar_data("mass") ==
+            std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->scalar_data("mass") == Approx(100.5).epsilon(Tolerance));
@@ -207,7 +208,7 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
         std::make_shared<mpm::Particle<Dim>>(id, coords);
 
     // Check mass
-    REQUIRE(particle->mass() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->mass() == std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->mass() == Approx(100.5).epsilon(Tolerance));
@@ -761,7 +762,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
         std::make_shared<mpm::Particle<Dim>>(id, coords, status);
 
     // Check scalar data: mass
-    REQUIRE(particle->scalar_data("mass") == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->scalar_data("mass") ==
+            std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->scalar_data("mass") == Approx(100.5).epsilon(Tolerance));
@@ -1503,7 +1505,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
         std::make_shared<mpm::Particle<Dim>>(id, coords);
 
     // Check mass
-    REQUIRE(particle->mass() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->mass() == std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->mass() == Approx(100.5).epsilon(Tolerance));
@@ -2219,7 +2221,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
         std::make_shared<mpm::Particle<Dim>>(id, coords, status);
 
     // Check scalar data: mass
-    REQUIRE(particle->scalar_data("mass") == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->scalar_data("mass") ==
+            std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->scalar_data("mass") == Approx(100.5).epsilon(Tolerance));
@@ -3033,7 +3036,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
         std::make_shared<mpm::Particle<Dim>>(id, coords);
 
     // Check mass
-    REQUIRE(particle->mass() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle->mass() == std::numeric_limits<double>::max());
     double mass = 100.5;
     particle->assign_mass(mass);
     REQUIRE(particle->mass() == Approx(100.5).epsilon(Tolerance));

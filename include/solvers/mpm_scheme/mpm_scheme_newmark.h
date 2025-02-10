@@ -67,6 +67,11 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \retval scheme Stress update scheme
   inline std::string scheme() const override;
 
+  //! Compute particle and point location
+  //! \param[in] locate_particles Flag to enable locate particles, if set to
+  //! false, unlocated particles will be removed
+  inline void locate_particles(bool locate_particles) override;
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

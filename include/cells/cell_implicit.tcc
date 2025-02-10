@@ -51,3 +51,25 @@ inline void mpm::Cell<Tdim>::compute_local_mass_matrix(
     }
   }
 }
+
+//! Compute local penalty stiffness matrix
+template <unsigned Tdim>
+void mpm::Cell<Tdim>::compute_local_penalty_stiffness_matrix(
+    const Eigen::MatrixXd& penalty_stiffness, double parea,
+    double multiplier) noexcept {
+
+  std::lock_guard<std::mutex> guard(cell_mutex_);
+  stiffness_matrix_.noalias() += penalty_stiffness * multiplier * parea;
+}
+
+//! Compute local stiffness matrix (Used in equilibrium equation)
+template <unsigned Tdim>
+void mpm::Cell<Tdim>::compute_local_stiffness_matrix_block(
+    unsigned row_start, unsigned col_start, const Eigen::MatrixXd& stiffness,
+    double pvolume, double multiplier) noexcept {
+
+  std::lock_guard<std::mutex> guard(cell_mutex_);
+  stiffness_matrix_
+      .block(row_start, col_start, stiffness.rows(), stiffness.cols())
+      .noalias() += stiffness * multiplier * pvolume;
+}

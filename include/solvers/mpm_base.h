@@ -238,6 +238,12 @@ class MPMBase : public MPM {
   void points_areas(const Json& mesh_prop,
                     const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  //! Points areas
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void points_areas(const Json& mesh_prop,
+                    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   // Read and assign perfectly matched layer properties
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle

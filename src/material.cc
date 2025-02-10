@@ -1,6 +1,6 @@
 #include "material.h"
 #include "bingham.h"
-#include "bingham_regularized.h"
+#include "bingham_papanastasiou_roussel.h"
 #include "bingham_viscoplastic.h"
 #include "hencky_hyper_elastic.h"
 #include "linear_elastic.h"
@@ -16,13 +16,16 @@ static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
 // Bingham 3D (fluid model)
 static Register<mpm::Material<3>, mpm::Bingham<3>, unsigned, const Json&>
     bingham_3d("Bingham3D");
-// Regularized Bingham 2D
-static Register<mpm::Material<2>, mpm::BinghamRegularized<2>, unsigned, const Json&>
-    regularized_bingham_2d("BinghamRegularized2D");
 
-// Regularized Bingham 3D
-static Register<mpm::Material<3>, mpm::BinghamRegularized<3>, unsigned, const Json&>
-    regularized_bingham_3d("BinghamRegularized3D");
+// Regularized Bingham 2D (fluid model)
+static Register<mpm::Material<2>, mpm::BinghamPapanastasiouRoussel<2>, unsigned, 
+                const Json&>
+    bingham_papanastasiou_roussel_2d("BinghamPapanastasiouRoussel2D");
+
+// Regularized Bingham 3D (fluid model)
+static Register<mpm::Material<3>, mpm::BinghamPapanastasiouRoussel<3>, unsigned, 
+                const Json&>
+    bingham_papanastasiou_roussel_3d("BinghamPapanastasiouRoussel3D");
 
 // Bingham Visco-plastic 2D (solid model)
 static Register<mpm::Material<2>, mpm::BinghamViscoPlastic<2>, unsigned,

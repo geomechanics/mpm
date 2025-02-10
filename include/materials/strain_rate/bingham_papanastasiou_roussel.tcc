@@ -1,6 +1,6 @@
 //! Constructor with material properties
 template <unsigned Tdim>
-mpm::BinghamRegularized<Tdim>::BinghamRegularized(unsigned id, 
+mpm::BinghamPapanastasiouRoussel<Tdim>::BinghamPapanastasiouRoussel(unsigned id, 
     const Json& material_properties)
     : Material<Tdim>(id, material_properties) {
   try {
@@ -18,10 +18,12 @@ mpm::BinghamRegularized<Tdim>::BinghamRegularized(unsigned id,
     shear_modulus_ = youngs_modulus / (2.0 * (1 + poisson_ratio));
     // Volumetric terms
     c_ = std::sqrt(bulk_modulus_ / density_);
-    gamma_ = material_properties.at("volumetric_gamma").template get<double>();
+    gamma_ = 
+        material_properties.at("volumetric_gamma").template get<double>();
 
     // Regularization shape factor m
-    m_ = material_properties.at("regularization_parameter").template get<double>();
+    m_ = 
+      material_properties.at("regularization_parameter").template get<double>();
 
     // Shear terms
     // Dynamic viscosity: [Pa*s]
@@ -60,7 +62,8 @@ mpm::BinghamRegularized<Tdim>::BinghamRegularized(unsigned id,
 
 //! Initialise history variables
 template <unsigned Tdim>
-mpm::dense_map mpm::BinghamRegularized<Tdim>::initialise_state_variables() {
+mpm::dense_map mpm::BinghamPapanastasiouRoussel<Tdim>::
+                            initialise_state_variables() {
     mpm::dense_map state_vars = {
       // Papanastasiou–Roussel Bingham parameters
       // Pressure
@@ -70,24 +73,24 @@ mpm::dense_map mpm::BinghamRegularized<Tdim>::initialise_state_variables() {
       // Thixotropic parameters
       {"lambda", lambda0_},
       // Shear rate
-      {"shear_rate", 0}
+      {"gamma_dot", 0}
       };
     return state_vars;
 }
 
 //! State variables
 template <unsigned Tdim>
-std::vector<std::string> mpm::BinghamRegularized<Tdim>::state_variables() 
-      const {
+std::vector<std::string> mpm::BinghamPapanastasiouRoussel<Tdim>::
+      state_variables() const {
     const std::vector<std::string> state_vars = {
-        "pressure",  "volumetric_strain", "lambda"};
+        "pressure",  "volumetric_strain", "lambda", "gamma_dot"};
     return state_vars;
 }
 
 //! Compute stress
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 1> mpm::BinghamRegularized<Tdim>::compute_stress(
-    const Vector6d& stress, const Vector6d& dstrain,
+Eigen::Matrix<double, 6, 1> mpm::BinghamPapanastasiouRoussel<Tdim>::
+    compute_stress(const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // Get volumetric strain
@@ -124,7 +127,8 @@ Eigen::Matrix<double, 6, 1> mpm::BinghamRegularized<Tdim>::compute_stress(
   if (abs(shear_rate) > critical_shear_rate_) {
     if (lambda > 0) {
       // If fluid flows, deflocculation occurs and no flocculation
-      lambda_new += dt * (- alpha_ * lambda * shear_rate);
+      // lambda_new += dt * (- alpha_ * lambda * shear_rate);
+      lambda_new += dt * (athix_ / tau0_ - alpha_ * lambda * shear_rate);
       // Lambda cannot be negative
       if (lambda_new < 0) lambda_new = 0;
     } else lambda_new = 0;
@@ -151,22 +155,23 @@ Eigen::Matrix<double, 6, 1> mpm::BinghamRegularized<Tdim>::compute_stress(
 
   (*state_vars).at("volumetric_strain") = vol_strain;
   (*state_vars).at("lambda") = lambda_new;
-  (*state_vars).at("shear_rate") = shear_rate;
+  (*state_vars).at("gamma_dot") = shear_rate;
+
   return updated_stress;
 }
 
 //! Dirac delta 2D
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::BinghamRegularized<2>::dirac_delta() const {
-
+inline Eigen::Matrix<double, 6, 1> mpm::BinghamPapanastasiouRoussel<2>::
+                                                      dirac_delta() const {
 return (Eigen::Matrix<double, 6, 1>() << 1.f, 1.f, 0.f, 0.f, 0.f, 0.f)
     .finished();
 }
 
 //! Dirac delta 3D
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::BinghamRegularized<3>::dirac_delta() const {
-
+inline Eigen::Matrix<double, 6, 1> mpm::BinghamPapanastasiouRoussel<3>::
+                                                      dirac_delta() const {
 return (Eigen::Matrix<double, 6, 1>() << 1.f, 1.f, 1.f, 0.f, 0.f, 0.f)
     .finished();
 }

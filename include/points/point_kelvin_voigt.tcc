@@ -44,22 +44,7 @@ void mpm::PointKelvinVoigt<Tdim>::initialise_property(double dt) {
   // Nothing to do here for kelvin voigt
 }
 
-// Assign boundary normal
-template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::assign_boundary_normal(
-    const std::string& normal_type, const VectorDim& normal_vector) {
-  if (normal_type == "cartesian") {
-    normal_type_ = mpm::NormalType::Cartesian;
-  } else if (normal_type == "assign") {
-    normal_type_ = mpm::NormalType::Assign;
-    this->normal_ = normal_vector;
-  } else if (normal_type == "auto") {
-    normal_type_ = mpm::NormalType::Automatic;
-  }
-  
-}
-
-// Apply point velocity constraints
+//! Apply point velocity constraints
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::apply_point_kelvin_voigt_constraints(
     unsigned dir, double delta, double h_min, double incidence_a, double incidence_b) {  

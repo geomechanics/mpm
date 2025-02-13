@@ -205,4 +205,7 @@ void mpm::ParticleLevelset<Tdim>::update_levelset_vtk() noexcept {
   this->vector_properties_["levelset_couple"] = [this]() {
     return this->couple_force_;
   };
+  this->scalar_properties_["levelset"] = [this]() {
+    return this->levelset_;
+  };
 }

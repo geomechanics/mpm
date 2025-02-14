@@ -191,7 +191,7 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
     // Normal matrix
     normal_.normalize();
     Eigen::Matrix<double, Tdim, Tdim> normal_matrix = normal_ * normal_.transpose();
-
+    std::cout << "Normal matrix: " << normal_matrix << std::endl;
     // Identity matrix
     const Eigen::Matrix<double, Tdim, Tdim> identity =
         Eigen::Matrix<double, Tdim, Tdim>::Identity();

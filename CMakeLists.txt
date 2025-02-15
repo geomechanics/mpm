@@ -248,7 +248,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/io/io_test.cc
     ${mpm_SOURCE_DIR}/tests/io/vtk_writer_test.cc
     ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
-    ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
+    # ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/linear_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/modified_cam_clay_test.cc

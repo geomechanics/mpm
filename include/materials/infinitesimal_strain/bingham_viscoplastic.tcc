@@ -28,7 +28,7 @@ mpm::BinghamViscoPlastic<Tdim>::BinghamViscoPlastic(
     lambda0_ =
         material_properties.at("flocculation_state").template get<double>();
     athix_ =
-        material_properties.at("flocculation_parameter").template get<double>();
+        material_properties.at("flocculation_rate").template get<double>();
     alpha_ =
         material_properties.at("deflocculation_rate").template get<double>();
 

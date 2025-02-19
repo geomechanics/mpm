@@ -44,10 +44,9 @@ class MeshLevelset : public Mesh<Tdim> {
   //! \param[in] levelset_mu Levelset friction
   //! \param[in] levelset_alpha Levelset adhesion coefficient
   //! \param[in] barrier_stiffness Barrier stiffness
-  //! \param[in] slip_threshold Slip threshold
   bool assign_nodal_levelset_values(
-      const std::vector<std::tuple<mpm::Index, double, double, double, double,
-                                   double>>& levelset_input_file) override;
+      const std::vector<std::tuple<mpm::Index, double, double, double, double>>&
+          levelset_input_file) override;
 
   // Create the nodal properties' map
   void create_nodal_properties() override;

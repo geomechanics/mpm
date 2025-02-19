@@ -87,10 +87,6 @@ class ParticleLevelset : public Particle<Tdim> {
   double levelset_alpha_{0.};
   //! barrier stiffness
   double barrier_stiffness_{0.};
-  //! slip threshold
-  double slip_threshold_{0.};
-  //! cumulative slip magnitude
-  double cumulative_slip_mag_{0.};
   //! levelset gradient
   VectorDim levelset_gradient_{VectorDim::Zero()};
   //! contact velocity

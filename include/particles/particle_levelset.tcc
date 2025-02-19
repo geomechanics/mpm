@@ -83,7 +83,6 @@ void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
   levelset_mu_ = 0.;
   levelset_alpha_ = 0.;
   barrier_stiffness_ = 0.;
-  slip_threshold_ = 0.;
   levelset_gradient_ = VectorDim::Zero();
   contact_vel_ = VectorDim::Zero();
 
@@ -123,7 +122,6 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
     levelset_mu_ += shapefn_[i] * nodes_[i]->levelset_mu();
     levelset_alpha_ += shapefn_[i] * nodes_[i]->levelset_alpha();
     barrier_stiffness_ += shapefn_[i] * nodes_[i]->barrier_stiffness();
-    slip_threshold_ += shapefn_[i] * nodes_[i]->slip_threshold();
 
     // PIC contact velocity update scheme (map contact velocity from nodes)
     if (levelset_pic_)
@@ -148,22 +146,8 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
   if (tangent_calc.norm() > std::numeric_limits<double>::epsilon())
     levelset_tangent_ = tangent_calc.normalized();
 
-  // Apply friction smoothing function, if applicable // LEDT remove?
-  double friction_smoothing = 1.;
-  if (slip_threshold_ > 0.) {
-    // Calculate cumulative slip magnitude // LEDT check: abs val?
-    cumulative_slip_mag_ += dt * contact_vel_.dot(levelset_tangent_);
-    // Calculate friction smoothing
-    if (abs(cumulative_slip_mag_) < slip_threshold_) {
-      friction_smoothing =
-          -(std::pow(cumulative_slip_mag_, 2) / std::pow(slip_threshold_, 2)) +
-          2 * abs(cumulative_slip_mag_) / slip_threshold_;
-    }
-  }
-
   // Calculate friction tangential coupling force magnitude
-  double tangent_friction =
-      friction_smoothing * levelset_mu_ * couple_normal_mag;
+  double tangent_friction = levelset_mu_ * couple_normal_mag;
 
   // Calculate adhesion tangential coupling force magnitude
   double contact_area = volume_ / size_[0];  // rectangular influence

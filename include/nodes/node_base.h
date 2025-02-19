@@ -583,10 +583,9 @@ class NodeBase {
   //! \param[in] levelset_mu Levelset friction
   //! \param[in] levelset_alpha Levelset adhesion coefficient
   //! \param[in] barrier_stiffness Barrier stiffness
-  //! \param[in] slip_threshold Slip threshold
   virtual bool assign_levelset(double levelset, double levelset_mu,
-                               double levelset_alpha, double barrier_stiffness,
-                               double slip_threshold) {
+                               double levelset_alpha,
+                               double barrier_stiffness) {
     throw std::runtime_error(
         "Calling the base class function (assign_levelset) in NodeBase:: "
         "illegal operation!");
@@ -621,14 +620,6 @@ class NodeBase {
   virtual double barrier_stiffness() const {
     throw std::runtime_error(
         "Calling the base class function (barrier_stiffness) in NodeBase:: "
-        "illegal operation!");
-    return 0.;
-  }
-
-  //! Return slip threshold
-  virtual double slip_threshold() const {
-    throw std::runtime_error(
-        "Calling the base class function (slip_threshold) in NodeBase:: "
         "illegal operation!");
     return 0.;
   }

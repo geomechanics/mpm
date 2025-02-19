@@ -84,7 +84,7 @@ class ParticleLevelset : public Particle<Tdim> {
   //! levelset friction
   double levelset_mu_{0.};
   //! levelset adhesion coefficient
-  double levelset_alpha_{0.};
+  double levelset_alpha_{0.};  // LEDT not used for ori
   //! barrier stiffness
   double barrier_stiffness_{0.};
   //! slip threshold

@@ -44,6 +44,19 @@ void mpm::PointKelvinVoigt<Tdim>::initialise_property(double dt) {
   // Nothing to do here for kelvin voigt
 }
 
+//! Assign boundary normal
+template <unsigned Tdim>
+void mpm::PointKelvinVoigt<Tdim>::assign_boundary_normal(
+    const std::string& normal_type, const VectorDim& normal_vector) {
+  if (normal_type == "cartesian")
+    normal_type_ = mpm::NormalType::Cartesian;
+  else if (normal_type == "assign")
+    normal_type_ = mpm::NormalType::Assign;
+  else if (normal_type == "auto")
+    normal_type_ = mpm::NormalType::Automatic;
+  normal_ = normal_vector;
+}
+
 //! Apply point velocity constraints
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::apply_point_kelvin_voigt_constraints(
@@ -191,7 +204,7 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
     // Normal matrix
     normal_.normalize();
     Eigen::Matrix<double, Tdim, Tdim> normal_matrix = normal_ * normal_.transpose();
-    std::cout << "Normal matrix: " << normal_matrix << std::endl;
+    
     // Identity matrix
     const Eigen::Matrix<double, Tdim, Tdim> identity =
         Eigen::Matrix<double, Tdim, Tdim>::Identity();

@@ -445,6 +445,47 @@ class Cell {
   unsigned nfunctions_local() const;
   /**@}*/
 
+  /**
+   * \defgroup Thermal Functions for Thermo-mechanical coupling MPM
+   */
+  /**@{*/
+  //! Initialise element thermal matrix
+  bool initialise_element_thermal_matrix();
+
+  //! Compute local heat capacity matrix
+  void compute_local_heat_capacity_matrix(
+      const Eigen::VectorXd& shapefn, const double pvolume, 
+      const double multiplier) noexcept;
+
+  //! Return heat capacity matrix
+  const Eigen::MatrixXd& heat_capacity_matrix() {
+    return heat_capacity_matrix_;
+  };
+
+  //! Compute local thermal conductivity matrix
+  void compute_local_thermal_conductivity_matrix(
+      const Eigen::MatrixXd& grad_shapefn, double pvolume,
+      double multiplier) noexcept;
+
+  //! Return thermal conductivity matrix
+  const Eigen::MatrixXd& thermal_conductivity_matrix() {
+    return thermal_conductivity_matrix_;
+  };
+
+  //! Compute local thermal expansivity matrix
+  void compute_local_thermal_expansivity_matrix(
+      const Eigen::VectorXd& shapefn, const Eigen::MatrixXd& bmatrix, 
+      const Eigen::MatrixXd& dmatrix,
+      const Eigen::VectorXd& identity_vector,
+      double pvolume, double multiplier) noexcept; 
+
+  //! Return thermal expansivity matrix
+  const Eigen::MatrixXd& thermal_expansivity_matrix() {
+    return thermal_expansivity_matrix_;
+  };
+  /**@}*/
+
+
  private:
   //! Approximately check if a point is in a cell
   //! \param[in] point Coordinates of point
@@ -526,6 +567,18 @@ class Cell {
   std::vector<Eigen::MatrixXd> correction_matrix_twophase_;
   /**@}*/
 
+  /**
+   * \defgroup Thermal Variables for thermo-mechanical coupling MPM
+   * @{
+   */
+  //! Local heat capacity matrix
+  Eigen::MatrixXd heat_capacity_matrix_;
+  //! Local thermal conductivity matrix
+  Eigen::MatrixXd thermal_conductivity_matrix_;
+  //! Local thermal expansivity matrix
+  Eigen::MatrixXd thermal_expansivity_matrix_;
+  /**@}*/
+
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
 };  // Cell class
@@ -533,6 +586,7 @@ class Cell {
 
 #include "cell.tcc"
 #include "cell_implicit.tcc"
+#include "cell_implicit_thermal.tcc"
 #include "cell_multiphase.tcc"
 
 #endif  // MPM_CELL_H_

@@ -27,10 +27,14 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"mass", VariableType::Scalar},
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
+      {"temperatures", VariableType::Scalar},
+      {"PIC_temperatures", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
       {"normals", VariableType::Vector},
+      {"mass_gradients", VariableType::Vector},
+      {"outward_normals", VariableType::Vector},
       // Tensor variables
       {"strains", VariableType::Tensor},
       {"stresses", VariableType::Tensor}};
@@ -284,6 +288,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
   // Read and assign pressure constraints
   this->nodal_pressure_constraints(mesh_props, mesh_io);
 
+  // Read and assign temperature constraints
+  this->nodal_temperature_constraints(mesh_props, mesh_io);  
+
   // Read and assign absorbing constraintes
   this->nodal_absorbing_constraints(mesh_props, mesh_io);
 
@@ -424,6 +431,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   // Read and assign particles initial pore pressure
   this->particles_pore_pressures(mesh_props, particle_io);
 
+  // Read and assign particles initial temperature
+  this->particles_temperatures(mesh_props, particle_io);
+
   auto particles_volume_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Read volume, velocity and stresses: {} ms", mpi_rank,
                  std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -447,7 +457,7 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
     if (!material_sets.empty()) {
       for (const auto& material_set : material_sets) {
         unsigned material_id =
-            material_set["material_id"].template get<unsigned>();
+            material_set["material_id"].template get<unsigned>();   
         unsigned phase_id = mpm::ParticlePhase::Solid;
         if (material_set.contains("phase_id"))
           phase_id = material_set["phase_id"].template get<unsigned>();
@@ -1954,5 +1964,133 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
   } catch (std::exception& exception) {
     console_->warn("{} #{}: initialising nonlocal mesh failed; {}", __FILE__,
                    __LINE__, exception.what());
+  }
+}
+
+// Nodal temperature constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::nodal_temperature_constraints(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign temperature constraints
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find("temperature_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over temperature constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]["temperature_constraints"]) {
+        //Temperature constraint phase indice
+        unsigned constraint_phase = constraints["phase_id"];
+
+        // Temperature constraints are specified in a file
+        if (constraints.find("file") != constraints.end()) {
+          std::string temperature_constraints_file =
+              constraints.at("file").template get<std::string>();
+          bool ptemperature_constraints =
+              constraints_->assign_nodal_temperature_constraints(
+                  constraint_phase,
+                  mesh_io->read_temperature_constraints(
+                      io_->file_name(temperature_constraints_file)));
+          if (!ptemperature_constraints)
+            throw std::runtime_error(
+                "Temperature constraints are not properly assigned");
+        } else {
+          // Get the math function
+          std::shared_ptr<FunctionBase> pfunction = nullptr;
+          if (constraints.find("math_function_id") != constraints.end())
+            pfunction = math_functions_.at(
+                constraints.at("math_function_id").template get<unsigned>());
+          // Set id
+          int nset_id = constraints.at("nset_id").template get<int>();
+          // Temperature
+          double temperature = constraints.at("temperature").template get<double>();
+          // Add temperature constraint to mesh
+          constraints_->assign_nodal_temperature_constraint(
+              pfunction, nset_id, constraint_phase, temperature);
+        }
+      }
+    } else
+      throw std::runtime_error("Temperature constraints JSON data not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Nodal temperature constraints are undefined; {}",
+                   __LINE__, exception.what());
+  }
+}
+
+// // Particles temperatures
+// template <unsigned Tdim>
+// void mpm::MPMBase<Tdim>::particles_temperatures(
+//     const Json& mesh_props,
+//     const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+//   try {
+//     if (mesh_props.find("particles_temperatures") != mesh_props.end()) {
+//       // Assign initial temperature by file
+//         std::string fparticles_temperatures =
+//             mesh_props["particles_temperatures"].template get<std::string>();
+//       if (!io_->file_name(fparticles_temperatures).empty()) {
+
+//         // Get temperatures of all particles
+//         const auto all_particles_temperatures =
+//             particle_io->read_particles_temperatures(
+//                 io_->file_name(fparticles_temperatures));
+
+//           // Read and assign particles temperatures
+//           if (!mesh_->assign_particles_temperatures(all_particles_temperatures))
+//             throw std::runtime_error(
+//                 "Particles temperatures are not properly assigned");
+//         } 
+//       }else
+//        throw std::runtime_error("Particle temperatures JSON not found");
+       
+//   } catch (std::exception& exception) {
+//     console_->warn("#{}: Particle temperatures are undefined {} ", __LINE__,
+//                    exception.what());
+//   }
+// }
+
+// Particles_temperatures
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_temperatures(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("particles_temperatures") != mesh_props.end()) {
+      // Get generator type
+      const std::string type = mesh_props["particles_temperatures"]["type"]
+                                    .template get<std::string>();
+      // Assign initial temperature by file
+      if (type == "file") {
+        std::string fparticles_temperatures =
+            mesh_props["particles_temperatures"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fparticles_temperatures).empty()) {
+          // Read and assign particles temperatures
+          if (!mesh_->assign_particles_temperatures(
+                  particle_io->read_particles_scalar_properties(
+                      io_->file_name(fparticles_temperatures))))
+            throw std::runtime_error(
+                "Particles_temperatures are not properly assigned");
+        } else
+          throw std::runtime_error(
+              "Particles_temperatures JSON data not found");
+      } else if (type == "isotropic") {
+        const double temperature =
+            mesh_props["particles_temperatures"]["values"]
+                .template get<double>();
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::assign_temperature, std::placeholders::_1,
+            temperature));
+      } else
+        throw std::runtime_error(
+            "Particles_temperatures generator type is not properly "
+            "specified");
+    } else
+      throw std::runtime_error("Particles_temperatures JSON data not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particles_temperatures are undefined; {}", __LINE__,
+                    exception.what());
   }
 }

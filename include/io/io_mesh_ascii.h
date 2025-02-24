@@ -133,6 +133,16 @@ class IOMeshAscii : public IOMesh<Tdim> {
           const std::string& displacement_constraints_file) override;
   /**@}*/
 
+  /**
+   * \defgroup Thermal Functions for Thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Read temperature constraints file
+  std::vector<std::tuple<mpm::Index, double>>
+      read_temperature_constraints(
+          const std::string& temperature_constraints_file) override;
+  /**@}*/
+
  private:
   //! Logger
   std::shared_ptr<spdlog::logger> console_;

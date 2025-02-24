@@ -596,6 +596,152 @@ class Node : public NodeBase<Tdim> {
   }
   /**@}*/
 
+  /**
+   * \defgroup Thermal functions for Thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Initialise nodal properties
+  void initialise_thermal() noexcept override;
+
+  //! Assign/update heat capacity at nodes from particle
+  void update_heat_capacity(bool update, unsigned phase, 
+                            double heat_capacity) noexcept override;
+
+  //! Assign/update heat at nodes from particle
+  void update_heat(bool update, unsigned phase, double heat) noexcept override;
+
+  //! Assign/update internal heat
+  void update_internal_heat(bool update, unsigned phase, 
+                            const double internal_heat) noexcept override;
+
+  //! Assign/update external heat
+  void update_external_heat(bool update, unsigned phase, 
+                            const double external_heat) noexcept override;
+
+  //! Compute nodal temperature from heat and heat capacity
+  void compute_temperature_explicit(unsigned phase, double dt, 
+                                    Index step) noexcept override;
+
+  //! Compute nodal temperature rate and temperature
+  bool update_temperature_explicit(unsigned phase, double dt, 
+                                    Index step) noexcept override;
+
+  //! Return temperature
+  double temperature (unsigned phase) const override {
+    return temperature_(phase);
+  }
+
+  //! Return temperature rate(dot)
+  double temperature_rate (unsigned phase) const override {
+    return temperature_rate_(phase);
+  }  
+
+  //! Return internal_heat
+  double internal_heat (unsigned phase) const override {
+    return internal_heat_(phase);
+  } 
+
+  //! Return external_heat
+  double external_heat (unsigned phase) const override {
+    return external_heat_(phase);
+  } 
+
+  //! Assign temperature constraint
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] temperature Applied temperature constraint
+  //! \param[in] function math function
+  bool assign_temperature_constraint(
+      unsigned phase, double temperaturee,
+      const std::shared_ptr<FunctionBase>& function) override;
+
+  //! Apply temperature constraint
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] step Step in analysis
+  void apply_temperature_constraint(unsigned phase, double dt = 0,
+                                  Index step = 0) noexcept override;
+
+  //! Return temperature constraint
+  double temperature_constraint(const double current_time) const override {
+    double constraint = std::numeric_limits<double>::max();
+    if (temperature_constraints_.find(0) !=
+        temperature_constraints_.end()) {
+      const double scalar =
+          (temperature_function_.find(0) != temperature_function_.end())
+              ? temperature_function_.at(0)->value(current_time)
+              : 1.0;
+
+      constraint = scalar * temperature_constraints_.at(0);
+    }
+    return constraint;
+  }
+
+  //! Return map of temperature constraints
+  std::map<unsigned, double>& temperature_constraints() override {
+    return temperature_constraints_;
+  }  
+  /**@}*/
+
+  /**
+   * \defgroup Thermal functions for implicit Thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Initialise nodal heats
+  void initialise_heat() noexcept override;
+
+  //! Assign/update first-order time derivative of heat
+  void update_heat_rate(
+      bool update, unsigned phase, double heat_rate) noexcept override;
+
+  //! Assign/update second-order time derivative of heat
+  void update_heat_ddot(
+      bool update, unsigned phase, double heat_ddot) noexcept override;
+
+  //! Compute nodal temperature from heat and heat capacity
+  void compute_temperature_implicit(unsigned phase, 
+                                double dt, Index step) noexcept override;
+
+  //! Update temperature variables by Newmark scheme
+  void update_temperature_variables_newmark(
+      unsigned phase, double newmark_beta, 
+      double newmark_gamma, double dt, double step) override;
+
+  //! Update temperature increment at the node
+  void update_temperature_increment(
+      const Eigen::VectorXd& temperature_increment, unsigned phase,
+      double dt, Index step) override;
+
+  //! Return temeprature increment
+  double temperature_increment (unsigned phase) const override {
+    return temperature_increment_(phase);
+  }
+
+  //! Return second-order time derivative of temperature
+  double temperature_ddot (unsigned phase) const override {
+    return temperature_ddot_(phase);
+  }  
+
+  //! Return temperature constraint
+  double temperature_increment_constraint(
+                                const double current_time) const override {
+    double constraint = std::numeric_limits<double>::max();
+    if (temperature_constraints_.find(0) !=
+        temperature_constraints_.end()) {
+      const double scalar =
+          (temperature_function_.find(0) != temperature_function_.end())
+              ? temperature_function_.at(0)->value(current_time)
+              : 1.0;
+
+      // constraint = scalar * (temperature_constraints_.at(0) - 
+      //                         this->temperature_(0));
+
+      constraint = 0;                             
+    }
+    return constraint;
+  }
+
+  /**@}*/
+
  private:
   //! Mutex
   SpinMutex node_mutex_;
@@ -706,11 +852,46 @@ class Node : public NodeBase<Tdim> {
   //! Node type vector in each direction
   std::vector<unsigned> nonlocal_node_type_;
   /**@}*/
+
+  /**
+   * \defgroup Thermal variables for Thermo-mechanical MPM
+   * @{
+   */
+  //! Heat capacity
+  Eigen::Matrix<double, 1, Tnphases> heat_capacity_;
+  //! Heat
+  Eigen::Matrix<double, 1, Tnphases> heat_;
+  //! Intrnal heat
+  Eigen::Matrix<double, 1, Tnphases> internal_heat_;
+  //! Extenal heat
+  Eigen::Matrix<double, 1, Tnphases> external_heat_;  
+  //! Temperature
+  Eigen::Matrix<double, 1, Tnphases> temperature_;
+  //! Temperature dot
+  Eigen::Matrix<double, 1, Tnphases> temperature_rate_;
+  //! Temperature ddot
+  Eigen::Matrix<double, 1, Tnphases> temperature_ddot_;
+  //! Temperature constraint
+  std::map<unsigned, double> temperature_constraints_;
+  //! Mathematical function for ptemperature
+  std::map<unsigned, std::shared_ptr<FunctionBase>> temperature_function_;
+  //! Heat dot
+  Eigen::Matrix<double, 1, Tnphases> heat_rate_; 
+  //! Heat ddot
+  Eigen::Matrix<double, 1, Tnphases> heat_ddot_;   
+  //! Temperature increment
+  Eigen::Matrix<double, 1, Tnphases> temperature_increment_;  
+  //! Temperature increment constraint
+  std::map<unsigned, double> temperature_increment_constraints_;  
+  /**@}*/
+
 };  // Node class
 }  // namespace mpm
 
 #include "node.tcc"
 #include "node_implicit.tcc"
 #include "node_multiphase.tcc"
+#include "node_thermal.tcc"
+#include "node_implicit_thermal.tcc"
 
 #endif  // MPM_NODE_H_

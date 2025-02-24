@@ -5,6 +5,7 @@
 #include "particle_finite_strain.h"
 #include "particle_fluid.h"
 #include "particle_twophase.h"
+#include "particle_thermal.h"
 
 namespace mpm {
 // ParticleType
@@ -26,7 +27,10 @@ std::map<std::string, std::string> ParticlePODTypeName = {
     {"P2DBBAR", "particles"},
     {"P3DBBAR", "particles"},
     {"P2DFS", "particles"},
-    {"P3DFS", "particles"}};
+    {"P3DFS", "particles"},
+    {"P2DTHERMAL", "particles"},
+    {"P3DTHERMAL", "particles"}
+    };
 }  // namespace mpm
 
 // Particle2D (2 Dim)
@@ -38,6 +42,16 @@ static Register<mpm::ParticleBase<2>, mpm::Particle<2>, mpm::Index,
 static Register<mpm::ParticleBase<3>, mpm::Particle<3>, mpm::Index,
                 const Eigen::Matrix<double, 3, 1>&>
     particle3d("P3D");
+
+// Thermal particle2D (2 Dim)
+static Register<mpm::ParticleBase<2>, mpm::ThermalParticle<2>, mpm::Index,
+                const Eigen::Matrix<double, 2, 1>&>
+    particle2dthermal("P2DTHERMAL");
+
+// Thermal particle3D (3 Dim)
+static Register<mpm::ParticleBase<3>, mpm::ThermalParticle<3>, mpm::Index,
+                const Eigen::Matrix<double, 3, 1>&>
+    particle3dthermal("P3DTHERMAL");    
 
 // Single phase (fluid) particle2D (2 Dim)
 static Register<mpm::ParticleBase<2>, mpm::FluidParticle<2>, mpm::Index,

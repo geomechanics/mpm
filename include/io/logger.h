@@ -61,6 +61,15 @@ struct Logger {
   // Create a logger for MPM Semi-implicit Two Phase
   static const std::shared_ptr<spdlog::logger>
       mpm_semi_implicit_two_phase_logger;
+
+  // Create a logger for Thermo-Mechanical MPM explicit
+  static const std::shared_ptr<spdlog::logger>
+      mpm_explicit_thermal_logger;
+
+  // Create a logger for Thermo-Mechanical MPM mplicit
+  static const std::shared_ptr<spdlog::logger>
+      mpm_implicit_thermal_logger;      
+
 };
 
 }  // namespace mpm

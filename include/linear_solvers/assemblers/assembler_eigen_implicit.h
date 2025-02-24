@@ -65,6 +65,72 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
 
   /**@{*/
 
+  /**
+   * \defgroup Thermal Functions forthermo-mechancial coupling MPM
+   */
+  /**@{*/
+  //! Assemble thermal expansivity matrix
+  bool assemble_thermal_expansivity_matrix() override;
+
+  //! Assemble thermal conductivity matrix
+  bool assemble_thermal_conductivity_matrix() override;
+
+  // Assemble residual heat right vector
+  bool assemble_residual_heat_right() override;
+
+  //! Assemble global stiffness matrix
+  bool assemble_global_stiffness_matrix() override;
+
+  //! return global stiffness matrix
+  Eigen::SparseMatrix<double>& global_stiffness_matrix() {
+    return global_stiffness_matrix_;
+  }
+
+  //! Assemble global residual right
+  bool assemble_global_residual_right() override;
+
+  //! Return global residual rhs vector
+  Eigen::VectorXd& global_residual_rhs_vector() {
+    return global_residual_rhs_vector_;
+  }
+
+  //! Assign temperature constraints
+  bool assign_temperature_constraints(double current_time) override;
+
+  //! Apply temperature constraints vector
+  void apply_temperature_increment_constraints() override;
+
+  //! Apply temperature constraints vector
+  void apply_coupling_constraints() override; 
+
+  //! Assign displacement and temperature increment
+  void assign_solution_increment(
+      const Eigen::VectorXd& solution_increment) override {
+    solution_increment_ = solution_increment;
+    // Extract displacement increment (first N * Tdim elements)
+    displacement_increment_ = solution_increment.head(active_dof_ * Tdim);
+    // Extract temperature increment (last N elements)
+    temperature_increment_ = solution_increment.tail(active_dof_); 
+  }
+
+  //! Return solution increment
+  Eigen::VectorXd& solution_increment() override {
+    return solution_increment_;
+  }
+
+  //! Assign temperature increment
+  void assign_temperature_increment(
+      const Eigen::VectorXd& temperature_increment) override {
+    temperature_increment_ = temperature_increment;
+  }
+
+  //! Return temperature increment
+  Eigen::VectorXd& temperature_increment() override {
+    return temperature_increment_;
+  }
+  /**@{*/
+  
+
  protected:
   //! number of nodes
   using AssemblerBase<Tdim>::active_dof_;
@@ -85,9 +151,26 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   //! Displacement increment
   Eigen::VectorXd displacement_increment_;
 
+  //! Thermal stiffness matrix
+  Eigen::SparseMatrix<double> thermal_expansivity_matrix_;
+  //! Heat laplacian matrix
+  Eigen::SparseMatrix<double> thermal_conductivity_matrix_;
+  //! Global matrix for TM coupling equation
+  Eigen::SparseMatrix<double> global_stiffness_matrix_;
+  //! Residual heat RHS vector
+  Eigen::VectorXd residual_heat_rhs_vector_;
+  //! Residual TM coupling RHS vector
+  Eigen::VectorXd global_residual_rhs_vector_;  
+  //! Temperatue constraints
+  Eigen::SparseVector<double> temperature_increment_constraints_;
+  //! Temperature increment
+  Eigen::VectorXd temperature_increment_;
+  //! Temperature increment
+  Eigen::VectorXd solution_increment_;  
   /**@{*/
 };  // namespace mpm
 }  // namespace mpm
 
 #include "assembler_eigen_implicit.tcc"
+#include "assembler_eigen_implicit_thermal.tcc"
 #endif  // MPM_ASSEMBLER_EIGEN_IMPLICIT_H_

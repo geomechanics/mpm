@@ -160,7 +160,7 @@ TEST_CASE("Implicit Cell is checked for 2D case", "[cell][2D][Implicit]") {
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(), particle.get(),
-            &state_variables);
+            &state_variables, dt);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
     reduced_dmatrix = particle->reduce_dmatrix(dmatrix);
@@ -417,7 +417,7 @@ TEST_CASE("Implicit Cell is checked for 3D case", "[cell][3D][Implicit]") {
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(), particle.get(),
-            &state_variables);
+            &state_variables, dt);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
     reduced_dmatrix = particle->reduce_dmatrix(dmatrix);

@@ -8,7 +8,7 @@
 #include <set>
 #include <tuple>
 #include <vector>
-
+#include <iostream>
 #include <Eigen/Dense>
 
 #include "data_types.h"
@@ -547,6 +547,114 @@ class NodeBase {
   //! \ingroup Nonlocal
   virtual std::vector<unsigned> nonlocal_node_type() const = 0;
 
+  /**@}*/
+
+  /**
+   * \defgroup Thermal functions for Thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Initialise nodal properties
+  virtual void initialise_thermal() noexcept = 0;
+
+  //! Assign/update heat capacity at nodes from particle
+  virtual void update_heat_capacity(bool update, unsigned phase, 
+                            double heat_capacity) noexcept = 0;
+
+  //! Assign/update heat
+  //  Heat = \rho * c * T
+  virtual void update_heat(bool update, unsigned phase, 
+                                        double heat) noexcept = 0;
+
+  //! Assign/update internal heat
+  //  Internal_heat = heat_rate + heat conduction + heat_convection...
+  virtual void update_internal_heat(bool update, unsigned phase, 
+                              const double internal_heat) noexcept = 0;
+
+  //! Assign/update external heat
+  //  External heat = plastic work + external heat source + boundary heat flux..
+  virtual void update_external_heat(bool update, unsigned phase, 
+                              const double external_heat) noexcept = 0;
+
+  //! Compute nodal temperature from heat and heat capacity
+  virtual void compute_temperature_explicit(unsigned phase, double dt, 
+                                    Index step) noexcept = 0;
+
+  //! Compute nodal temperature rate and update nodal temperature
+  virtual bool update_temperature_explicit(unsigned phase, double dt, 
+                                                Index step) noexcept = 0;
+
+  //! Return temperature
+  virtual double temperature (unsigned phase) const = 0;
+
+  //! Return temperature rate(dot)
+  virtual double temperature_rate (unsigned phase) const = 0; 
+
+  //! Return internal heat
+  virtual double internal_heat (unsigned phase) const = 0; 
+
+  //! Return external heat
+  virtual double external_heat (unsigned phase) const = 0; 
+
+  //! Assign temperature constraint
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] temperature Applied temperature constraint
+  //! \param[in] function math function
+  virtual bool assign_temperature_constraint(
+      unsigned phase, double temperaturee,
+      const std::shared_ptr<FunctionBase>& function) = 0; 
+
+  //! Apply temperature constraint
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] dt Timestep in analysis
+  //! \param[in] step Step in analysis
+  virtual void apply_temperature_constraint(unsigned phase, double dt = 0,
+                                  Index step = 0) noexcept = 0;                                          
+
+  //! Return temperature constraint
+  virtual double temperature_constraint(const double current_time) const = 0;
+
+  //! Return map of temperature constraints
+  virtual std::map<unsigned, double>& temperature_constraints() = 0;
+  /**@}*/
+
+  /**
+   * \defgroup Thermal functions for implicit Thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Initialise nodal heats
+  virtual void initialise_heat() noexcept = 0;
+
+  //! Assign/update first-order time derivative of heat
+  virtual void update_heat_rate(
+      bool update, unsigned phase, double heat_rate) noexcept = 0;
+
+  //! Assign/update second-order time derivative of heat
+  virtual void update_heat_ddot(
+      bool update, unsigned phase, double heat_ddot) noexcept = 0;
+
+  //! Compute nodal temperature from heat and heat capacity
+  virtual void compute_temperature_implicit(unsigned phase, 
+                                        double dt, Index step) noexcept = 0;
+
+  //! Update temperature variables by Newmark scheme
+  virtual void update_temperature_variables_newmark(
+      unsigned phase, double newmark_beta,
+      double newmark_gamma, double dt, double step) = 0;  
+
+  //! Update temperature increment at the node
+  virtual void update_temperature_increment(
+      const Eigen::VectorXd& temperature_increment, unsigned phase, 
+      double dt, Index step) = 0;
+
+  //! Return temperature second-order derivative
+  virtual double temperature_ddot (unsigned phase) const = 0;
+
+  //! Return temperature increment
+  virtual double temperature_increment (unsigned phase) const = 0;
+
+  //! Return temperature increment constraint
+  virtual double temperature_increment_constraint(
+                                    const double current_time) const = 0;  
   /**@}*/
 
 };  // NodeBase class

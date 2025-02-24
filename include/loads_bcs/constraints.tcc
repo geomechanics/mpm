@@ -416,3 +416,54 @@ void mpm::Constraints<Tdim>::assign_absorbing_id_ptr(
   this->absorbing_constraint_.emplace_back(absorbing_constraint);
   this->absorbing_nset_id_.emplace_back(nset_id);
 }
+
+//! Assign nodal temperature constraints - From "node set"
+template <unsigned Tdim>
+bool mpm::Constraints<Tdim>::assign_nodal_temperature_constraint(
+    const std::shared_ptr<FunctionBase>& mfunction, int set_id, unsigned phase,
+    double Tconstraint) {
+  bool status = true;
+  try {
+    auto nset = mesh_->nodes(set_id);
+    if (nset.size() == 0)
+      throw std::runtime_error(
+          "Node set is empty for assignment of temperature constraints");
+
+#pragma omp parallel for schedule(runtime)
+    for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
+      if (!(*nitr)->assign_temperature_constraint(phase, Tconstraint, mfunction))
+        throw std::runtime_error("Setting temperature constraint failed");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign nodal temperature constraints to nodes - From "file"
+template <unsigned Tdim>
+bool mpm::Constraints<Tdim>::assign_nodal_temperature_constraints(
+    const unsigned phase,
+    const std::vector<std::tuple<mpm::Index, 
+    double>>& temperature_constraints) {
+  bool status = true;
+  try {
+    for (const auto& temperature_constraint : temperature_constraints) {
+      // Node id
+      mpm::Index nid = std::get<0>(temperature_constraint);
+      // Temperature
+      double temperature = std::get<1>(temperature_constraint);
+
+      // Apply constraint
+      if (!mesh_->node(nid)->assign_temperature_constraint(phase, temperature,
+                                                        nullptr))
+        throw std::runtime_error(
+            "Nodal temperature constraints assignment failed");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}

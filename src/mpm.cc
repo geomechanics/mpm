@@ -5,7 +5,9 @@
 #include "mpm.h"
 #include "mpm_explicit.h"
 #include "mpm_explicit_twophase.h"
+#include "mpm_explicit_thermal.h"
 #include "mpm_implicit.h"
+#include "mpm_implicit_thermal.h"
 #include "mpm_semi_implicit_navierstokes.h"
 #include "mpm_semi_implicit_twophase.h"
 
@@ -68,5 +70,25 @@ static Register<mpm::MPM, mpm::MPMSemiImplicitTwoPhase<2>,
 static Register<mpm::MPM, mpm::MPMSemiImplicitTwoPhase<3>,
                 const std::shared_ptr<mpm::IO>&>
     mpm_semi_implicit_twophase_3d("MPMSemiImplicitTwoPhase3D");
+
+// 2D Explicit Thermo-mechanical Coupled MPM
+static Register<mpm::MPM, mpm::MPMExplicitThermal<2>,
+                const std::shared_ptr<mpm::IO>&>
+    mpm_explicit_thermal_2d("MPMExplicitThermal2D");
+
+// 3D Explicit Thermo-mechanical Coupled MPM
+static Register<mpm::MPM, mpm::MPMExplicitThermal<3>,
+                const std::shared_ptr<mpm::IO>&>
+    mpm_explicit_thermal_3d("MPMExplicitThermal3D");
+
+// 2D Implicit Thermo-mechanical Coupled MPM
+static Register<mpm::MPM, mpm::MPMImplicitThermal<2>,
+                const std::shared_ptr<mpm::IO>&>
+    mpm_implicit_thermal_2d("MPMImplicitThermal2D");
+
+// 3D Implicit Thermo-mechanical Coupled MPM
+static Register<mpm::MPM, mpm::MPMImplicitThermal<3>,
+                const std::shared_ptr<mpm::IO>&>
+    mpm_implicit_thermal_3d("MPMImplicitThermal3D");
 
 }  // namespace mpm

@@ -97,6 +97,34 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   inline void update_particle_stress_strain_volume() override;
   /**@}*/
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit thermo-mechanical MPM
+   */
+  /**@{*/
+  //! Initialize nodes, cells and shape functions
+  inline void initialise_thermal() override;
+
+  //! Compute nodal temperature and temperature rate
+  inline void compute_nodal_temperatures(unsigned phase, 
+                                          double dt, Index step) override;
+
+  //! Update nodal kinematics by Newmark scheme
+  inline void update_nodal_thermokinematics_newmark(
+      unsigned phase, double newmark_beta, double newmark_gamma, 
+      Index step) override;
+
+  //! Compute stress and strain by Newmark scheme
+  inline void compute_stress_strain_thermal(
+      unsigned phase, bool pressure_smoothing) override;
+
+  //! Compute forces
+  inline void compute_heats(bool vfm, std::string ftype, 
+                            double vfm_param1, double vfm_param2) override;
+
+  // Update particle temperature
+  inline void compute_particle_temperature() override;
+  /**@}*/
+
  protected:
   //! Mesh object
   using mpm::MPMScheme<Tdim>::mesh_;
@@ -111,5 +139,6 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
 }  // namespace mpm
 
 #include "mpm_scheme_newmark.tcc"
+#include "mpm_scheme_newmark_thermal.tcc"
 
 #endif  // MPM_MPM_SCHEME_NEWMARK_H_

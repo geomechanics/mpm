@@ -23,12 +23,12 @@ inline bool mpm::ConvergenceCriterionResidual::check_convergence(
       // Initiate PETSC residual vector across the ranks
       Vec petsc_res;
       VecCreateMPI(MPI_COMM_WORLD, PETSC_DECIDE, this->global_active_dof_,
-                   &petsc_res);
+                    &petsc_res);
 
       // Copying local residual vector to petsc vector
       VecSetValues(petsc_res, this->rank_global_mapper_.size(),
-                   this->rank_global_mapper_.data(), residual_vector.data(),
-                   ADD_VALUES);
+                    this->rank_global_mapper_.data(), residual_vector.data(),
+                    ADD_VALUES);
       VecAssemblyBegin(petsc_res);
       VecAssemblyEnd(petsc_res);
 

@@ -816,3 +816,46 @@ std::array<std::vector<double>, 2> mpm::IOMeshAscii<Tdim>::read_math_functions(
 
   return xfx_values;
 }
+
+//! Read temperature constraints file
+template <unsigned Tdim>
+std::vector<std::tuple<mpm::Index, double>>
+    mpm::IOMeshAscii<Tdim>::read_temperature_constraints(
+        const std::string& temperature_constraints_file) {
+  // Particle temperature constraints
+  std::vector<std::tuple<mpm::Index, double>> constraints;
+  constraints.clear();
+
+  // input file stream
+  std::fstream file;
+  file.open(temperature_constraints_file.c_str(), std::ios::in);
+
+  try {
+    if (file.is_open() && file.good()) {
+      // Line
+      std::string line;
+      while (std::getline(file, line)) {
+        boost::algorithm::trim(line);
+        std::istringstream istream(line);
+        // ignore comment lines (# or !) or blank lines
+        if ((line.find('#') == std::string::npos) &&
+            (line.find('!') == std::string::npos) && (line != "")) {
+          while (istream.good()) {
+            // ID
+            mpm::Index id;
+            // temperature
+            double temperature;
+            // Read stream
+            istream >> id >> temperature;
+            constraints.emplace_back(std::make_tuple(id, temperature));
+          }
+        }
+      }
+    }
+    file.close();
+  } catch (std::exception& exception) {
+    console_->error("Read temperature constraints: {}", exception.what());
+    file.close();
+  }
+  return constraints;
+}

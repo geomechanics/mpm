@@ -2329,3 +2329,31 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
   }
   return status;
 }
+
+//! Assign particle temperatures
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_temperatures(
+    const std::vector<std::tuple<mpm::Index, double>>&
+        particle_temperatures) {
+  bool status = true;
+
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign temperature");
+
+    for (const auto& particle_temperature : particle_temperatures) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_temperature);
+      // Temperature
+      double temperature = std::get<1>(particle_temperature);
+
+      if (map_particles_.find(pid) != map_particles_.end())
+        map_particles_[pid]->assign_temperature(temperature);
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}

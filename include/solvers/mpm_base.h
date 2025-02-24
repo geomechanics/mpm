@@ -232,6 +232,24 @@ class MPMBase : public MPM {
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
   /**@}*/
 
+  /**
+   * \defgroup Thermal Functions
+   */
+  /**@{*/
+  //! Nodal temperature constraints
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void nodal_temperature_constraints(
+      const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+
+  // Particles temperatures
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void particles_temperatures(
+      const Json& mesh_prop,
+      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);      
+  /**@}*/
+
  protected:
   // Generate a unique id for the analysis
   using mpm::MPM::uuid_;

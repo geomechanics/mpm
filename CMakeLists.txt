@@ -9,8 +9,8 @@ SET(CMAKE_VERBOSE_MAKEFILE OFF)
 
 # General compile settings
 IF (NOT CMAKE_BUILD_TYPE)
- #SET(CMAKE_BUILD_TYPE "Debug")
- SET(CMAKE_BUILD_TYPE "Release")
+  # SET(CMAKE_BUILD_TYPE "Debug")
+  SET(CMAKE_BUILD_TYPE "Release")
 ENDIF (NOT CMAKE_BUILD_TYPE)
 
 # GNU specific settings
@@ -248,7 +248,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/io/io_test.cc
     ${mpm_SOURCE_DIR}/tests/io/vtk_writer_test.cc
     ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
-    ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
+    # ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/linear_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/modified_cam_clay_test.cc

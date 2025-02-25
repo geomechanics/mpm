@@ -50,11 +50,14 @@ class InfinitesimalElastoPlastic : public LinearElastic<Tdim> {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \retval dmatrix Constitutive relations mattrix
-  Matrix6x6 compute_consistent_tangent_matrix(
-      const Vector6d& stress, const Vector6d& prev_stress,
-      const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
-      mpm::dense_map* state_vars) override;
+  Matrix6x6 compute_consistent_tangent_matrix(const Vector6d& stress,
+                                              const Vector6d& prev_stress,
+                                              const Vector6d& dstrain,
+                                              const ParticleBase<Tdim>* ptr,
+                                              mpm::dense_map* state_vars,
+                                              double dt) override;
 
  protected:
   //! Compute trial stress
@@ -75,6 +78,7 @@ class InfinitesimalElastoPlastic : public LinearElastic<Tdim> {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \param[in] hardening Boolean to consider hardening, default=true. If
   //! perfect-plastic tensor is needed pass false
   //! \retval dmatrix Constitutive relations mattrix
@@ -82,6 +86,7 @@ class InfinitesimalElastoPlastic : public LinearElastic<Tdim> {
                                                   const Vector6d& dstrain,
                                                   const ParticleBase<Tdim>* ptr,
                                                   mpm::dense_map* state_vars,
+                                                  double dt,
                                                   bool hardening = true) = 0;
 
   //! Objective stress rate

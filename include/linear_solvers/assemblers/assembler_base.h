@@ -173,6 +173,116 @@ class AssemblerBase {
 
   /**@{*/
 
+  /**
+   * \defgroup Thermal Functions forthermo-mechancial coupling MPM
+   */
+  /**@{*/
+  //! Assemble thermal expansivity matrix
+  virtual bool assemble_thermal_expansivity_matrix() {
+    throw std::runtime_error(
+        "Calling the base class function (assemble_thermal_expansivity_matrix) "
+        "in AssemblerBase:: illegal operation!");
+    return 0;   
+  };
+
+  //! Assemble thermal conductivity matrix
+  virtual bool assemble_thermal_conductivity_matrix() {
+    throw std::runtime_error(
+        "Calling the base class function (aassemble_thermal_conductivity_"
+        "matrix) in AssemblerBase:: illegal operation!");
+    return 0;   
+  };
+
+  // Assemble residual heat right vector
+  virtual bool assemble_residual_heat_right() {
+    throw std::runtime_error(
+        "Calling the base class function (assemble_residual_heat_right) in "
+        "AssemblerBase:: illegal operation!");
+    return 0;   
+  };
+
+  //! Assemble global stiffness matrix
+  virtual bool assemble_global_stiffness_matrix() {
+    throw std::runtime_error(
+        "Calling the base class function (assemble_global_stiffness_matrix) in "
+        "AssemblerBase:: illegal operation!");
+    return 0;   
+  };
+
+  //! Return global stiffness matrix
+  virtual Eigen::SparseMatrix<double>& global_stiffness_matrix() {
+    throw std::runtime_error(
+        "Calling the base class function (global_stiffness_matrix) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Assemble global residual matrix
+  virtual bool assemble_global_residual_right() {
+    throw std::runtime_error(
+        "Calling the base class function (assemble_global_residual_right) in "
+        "AssemblerBase:: illegal operation!");   
+  };
+
+  //! Return global residual rhs vector
+  virtual Eigen::VectorXd& global_residual_rhs_vector() {
+    throw std::runtime_error(
+        "Calling the base class function (global_residual_rhs_vector) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Assign temperature constraints
+  virtual bool assign_temperature_constraints(double current_time) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_temperature_constraints) in "
+        "AssemblerBase:: illegal operation!");
+    return 0;   
+  };
+
+  //! Apply temperature increment constraints vector
+  virtual void apply_temperature_increment_constraints() {
+    throw std::runtime_error(
+        "Calling the base class function (apply_temperature_constraints) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Apply temperature constraints vector
+  virtual void apply_coupling_constraints() {
+    throw std::runtime_error(
+        "Calling the base class function (apply_coupling_constraints) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Assign solution increment
+  virtual void assign_solution_increment(
+      const Eigen::VectorXd& solution_increment) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_solution_increment) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Return solution increment
+  virtual Eigen::VectorXd& solution_increment() {
+    throw std::runtime_error(
+        "Calling the base class function (solution_increment) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Assign temperature increment
+  virtual void assign_temperature_increment(
+      const Eigen::VectorXd& temperature_increment) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_temperature_increment) in "
+        "AssemblerBase:: illegal operation!");
+  };
+
+  //! Return temperature increment
+  virtual Eigen::VectorXd& temperature_increment() {
+    throw std::runtime_error(
+        "Calling the base class function (temperature_increment) in "
+        "AssemblerBase:: illegal operation!");
+  };  
+  /**@{*/
+
   //! Navier-Stokes
   //! functions-------------------------------------------------------- Return
   //! laplacian matrix

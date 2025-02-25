@@ -29,6 +29,8 @@ TEST_CASE("Implicit Particle is checked for 2D case",
   // Tolerance
   const double Tolerance = 1.E-7;
 
+  const double dt = 1.0;
+
   // Coordinates
   Eigen::Vector2d coords;
   coords.setZero();
@@ -297,7 +299,7 @@ TEST_CASE("Implicit Particle is checked for 2D case",
     particle->compute_strain_volume_newmark();
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress_newmark());
+    REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
       stress <<  721153.8461538460 * 2.,
@@ -312,7 +314,7 @@ TEST_CASE("Implicit Particle is checked for 2D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain();
+    particle->update_stress_strain(dt);
 
     // Strain
     Eigen::Matrix<double, 6, 1> strain;
@@ -424,6 +426,8 @@ TEST_CASE("Implicit Particle is checked for 3D case",
   const unsigned Nphases = 1;
   // Tolerance
   const double Tolerance = 1.E-7;
+
+  const double dt = 1.0;
 
   // Coordinates
   Eigen::Vector3d coords;
@@ -748,7 +752,7 @@ TEST_CASE("Implicit Particle is checked for 3D case",
     particle->compute_strain_volume_newmark();
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress_newmark());
+    REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
     stress << 2740384.6153846150,
@@ -763,7 +767,7 @@ TEST_CASE("Implicit Particle is checked for 3D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain();
+    particle->update_stress_strain(dt);
 
     // Strain
     Eigen::Matrix<double, 6, 1> strain;

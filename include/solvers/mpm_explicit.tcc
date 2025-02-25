@@ -89,7 +89,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   } else {
     // Initialise particles
     this->initialise_particles();
-
+    
     // Compute mass
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
@@ -151,8 +151,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Particle kinematics
     mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
-                                             phase, "Cundall", damping_factor_,
-                                             step_);
+                                              phase, "Cundall", damping_factor_,
+                                              step_);
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase);

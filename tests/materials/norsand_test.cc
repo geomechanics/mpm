@@ -19,6 +19,8 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
   const unsigned Dim = 3;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -176,8 +178,8 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
     material->initialise(&state_vars);
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) ==
@@ -192,7 +194,7 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
@@ -230,8 +232,8 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
     REQUIRE(stress(5) == Approx(0.).epsilon(Tolerance));
 
     // Compute updated stress
-    updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    updated_stress = material->compute_stress(stress, dstrain, particle.get(),
+                                              &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) ==
@@ -249,7 +251,7 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
     // Compute consistent tangent matrix
     dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     // clang-format off
@@ -302,10 +304,10 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
     // Compute updated stress two times to get yielding
     mpm::dense_map state_vars = material->initialise_state_variables();
     material->initialise(&state_vars);
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
     updated_stress = material->compute_stress(updated_stress, dstrain,
-                                              particle.get(), &state_vars);
+                                              particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) ==
@@ -349,7 +351,7 @@ TEST_CASE("NorSand is checked in 3D non-bonded model",
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
@@ -374,6 +376,8 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
   const double Tolerance = 1.E-7;
 
   const unsigned Dim = 3;
+
+  const double dt = 1.0;
 
   // Add particle
   mpm::Index pid = 0;
@@ -543,8 +547,8 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
     material->initialise(&state_vars);
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) ==
@@ -559,7 +563,7 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
@@ -597,8 +601,8 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
     REQUIRE(stress(5) == Approx(0.).epsilon(Tolerance));
 
     // Compute updated stress
-    updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    updated_stress = material->compute_stress(stress, dstrain, particle.get(),
+                                              &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) ==
@@ -616,7 +620,7 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
 
     // Compute consistent tangent matrix
     dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     // clang-format off
@@ -669,10 +673,10 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
     // Compute updated stress two times to get yielding
     mpm::dense_map state_vars = material->initialise_state_variables();
     material->initialise(&state_vars);
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
     updated_stress = material->compute_stress(updated_stress, dstrain,
-                                              particle.get(), &state_vars);
+                                              particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) ==
@@ -718,7 +722,7 @@ TEST_CASE("NorSand is checked in 3D bonded model", "[material][NorSand][3D]") {
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;

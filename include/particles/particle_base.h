@@ -164,7 +164,7 @@ class ParticleBase {
   //! Map multimaterial domain gradients to nodes
   virtual void map_multimaterial_domain_gradients_to_nodes() noexcept = 0;
 
-  // ! Map linear elastic wave velocities to nodes
+  //! Map linear elastic wave velocities to nodes
   virtual void map_wave_velocities_to_nodes() noexcept = 0;
 
   //! Assign material
@@ -421,7 +421,8 @@ class ParticleBase {
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  virtual void compute_stress_newmark() = 0;
+  //! \param[in] dt Analysis time step
+  virtual void compute_stress_newmark(double dt) = 0;
 
   //! Return previous stress
   virtual Eigen::Matrix<double, 6, 1> previous_stress() const = 0;
@@ -433,7 +434,8 @@ class ParticleBase {
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  virtual void update_stress_strain() = 0;
+  //! \param[in] dt Analysis time step
+  virtual void update_stress_strain(double dt) = 0;
 
   //! Assign acceleration to the particle (used for test)
   //! \ingroup Implicit
@@ -444,7 +446,8 @@ class ParticleBase {
   //! Function to reinitialise constitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
-  virtual void initialise_constitutive_law() noexcept = 0;
+  //! \param[in] dt Analysis time step
+  virtual void initialise_constitutive_law(double dt) noexcept = 0;
 
   //! Return mapping matrix
   //! \ingroup AdvancedMapping
@@ -615,6 +618,112 @@ class ParticleBase {
         "ParticleBase:: illegal operation!");
     return 0;
   };
+  //! OnePhase thermal functions------------------------------------------------
+  // //! Initialise particle thermal properties
+  // virtual void initialise_thermal() = 0;
+
+  //! Map particle heat capacity and heat to nodes
+  virtual void map_heat_to_nodes() {
+    throw std::runtime_error(
+        "Calling the base class function (map_heat_to_nodes) in "
+        "ParticleBase:: illegal operation!");
+  };
+
+  //! Map heat conduction to nodes
+  virtual void map_heat_conduction() {
+    throw std::runtime_error(
+        "Calling the base class function (map_heat_conduction) in "
+        "ParticleBase:: illegal operation!");
+  };
+  //! Map plastic heat dissipation to nodes
+  virtual void map_plastic_heat_dissipation(double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (map_plastic_heat_dissipation) in "
+        "ParticleBase:: illegal operation!");
+  };
+
+  //! Map virtual heat flux to nodes
+  virtual void map_virtual_heat_flux(bool convective, const double vfm_param1,
+                                              const double vfm_param2) {
+    throw std::runtime_error(
+        "Calling the base class function (map_virtual_heat_flux) in "
+        "ParticleBase:: illegal operation!");
+  };
+
+  //! Compute thermal strain of the particle
+  virtual void compute_thermal_strain() {
+    throw std::runtime_error(
+        "Calling the base class function (compute_thermal_strain) in "
+        "ParticleBase:: illegal operation!");
+  };
+
+  //! Compute updated temperature of the particle
+  virtual void update_particle_temperature(double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (update_particle_temperature) in "
+        "ParticleBase:: illegal operation!");
+  };
+
+  //! Map heat capacity to cell
+  virtual bool map_heat_capacity_to_cell(double dt, double newmark_beta, 
+                                                    double newmark_gamma) {
+    throw std::runtime_error(
+        "Calling the base class function (map_heat_capacity_to_cell) in "
+        "ParticleBase:: illegal operation!");
+    return 0;        
+  };
+
+  //! Map heat laplacian matrix to cell
+  virtual bool map_heat_conductivity_to_cell() {
+    throw std::runtime_error(
+        "Calling the base class function (map_heat_conductivity_to_cell) in "
+        "ParticleBase:: illegal operation!");
+    return 0;
+  };
+
+  //! Map thermal expansivity matrix to cell
+  virtual bool map_thermal_expansivity_to_cell() {
+    throw std::runtime_error(
+        "Calling the base class function (map_thermal_expansivity_to_cell) in "
+        "ParticleBase:: illegal operation!");
+    return 0;
+  };
+
+  //! Compute strain and volume of the particle using nodal displacement
+  virtual void compute_strain_volume_newmark_thermal() {
+    throw std::runtime_error(
+        "Calling the base class function (compute_strain_volume_newmark_"
+        "thermal) in ParticleBase:: illegal operation!");
+  };
+
+  //! Map transient heat to nodes
+  virtual void map_heat_rate_to_nodes() {
+    throw std::runtime_error(
+        "Calling the base class function (map_heat_rate_to_nodes) in "
+        "ParticleBase:: illegal operation!");
+  };
+
+  //! Map particle heat capacity and heat to nodes
+  virtual void map_heat_to_nodes_newmark() {
+    throw std::runtime_error(
+        "Calling the base class function (map_heat_to_nodes_newmark) in "
+        "ParticleBase:: illegal operation!");
+  };
+
+  //! Compute updated temperature of the particle
+  virtual void compute_updated_temperature_newmark(double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (compute_updated_temperature_newmark) "
+        "in ParticleBase:: illegal operation!");
+  }; 
+
+  //! Assign temperature
+  virtual void assign_temperature(double pressure) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_temperature) in "
+        "ParticleBase:: illegal operation!");
+  };
+
   //----------------------------------------------------------------------------
 
  protected:

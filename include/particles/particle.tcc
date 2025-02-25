@@ -20,7 +20,9 @@ template <unsigned Tdim>
 mpm::Particle<Tdim>::Particle(Index id, const VectorDim& coord, bool status)
     : mpm::ParticleBase<Tdim>(id, coord, status) {
   this->initialise();
+  // Clear cell ptr
   cell_ = nullptr;
+  // Nodes
   nodes_.clear();
   // Set material containers
   this->initialise_material(1);
@@ -881,7 +883,7 @@ void mpm::Particle<Tdim>::compute_stress(double dt) noexcept {
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+                           &state_variables_[mpm::ParticlePhase::Solid], dt);
 }
 
 //! Map body force

@@ -666,6 +666,16 @@ class Mesh {
 
   /**@}*/
 
+  /**
+   * \defgroup Thermal Functions forthermal-mechanical coupling MPM
+   */
+  /**@{*/
+  //! Assign particles temperatures
+  bool assign_particles_temperatures(
+      const std::vector<std::tuple<mpm::Index, double>>&
+          particle_temperatures);
+  /**@}*/
+
  private:
   // Read particles from file
   //! \param[in] pset_id Set ID of the particles

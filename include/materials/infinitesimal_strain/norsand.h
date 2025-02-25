@@ -58,10 +58,11 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \retval updated_stress Updated value of stress
   Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
                           const ParticleBase<Tdim>* ptr,
-                          mpm::dense_map* state_vars) override;
+                          mpm::dense_map* state_vars, double dt) override;
 
  protected:
   //! material id
@@ -83,13 +84,14 @@ class NorSand : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \param[in] hardening Boolean to consider hardening, default=true. If
   //! perfect-plastic tensor is needed pass false
   //! \retval dmatrix Constitutive relations mattrix
   Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
                                           const Vector6d& dstrain,
                                           const ParticleBase<Tdim>* ptr,
-                                          mpm::dense_map* state_vars,
+                                          mpm::dense_map* state_vars, double dt,
                                           bool hardening = true) override;
 
   //! Compute stress invariants (p, q, lode_angle and M_theta)

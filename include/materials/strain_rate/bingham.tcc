@@ -129,7 +129,7 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
                         (1 + lambda_new) * (1. - std::exp(-m_ * shear_rate));
 
   // Compute shear stress
-  Eigen::Matrix<double, 6, 1> tau = 2 * apparent_viscosity * strain_rate_dev;
+  const Eigen::Matrix<double, 6, 1> tau = 2 * apparent_viscosity * strain_rate_dev;
 
   // Update stress
   const Eigen::Matrix<double, 6, 1> updated_stress =

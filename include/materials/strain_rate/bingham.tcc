@@ -38,7 +38,7 @@ mpm::Bingham<Tdim>::Bingham(unsigned id,
     lambda0_ =
         material_properties.at("flocculation_state").template get<double>();
     // Flocculation rate: [Pa/s]"flocculation_state"
-    // athix_ > 0.5: highly thixtropix; athix_ < 0.5: Non-thixtropix;
+    // athix_ > 0.5: highly thixtropix; athix_ < 0.1: Non-thixtropix;
     athix_ =
         material_properties.at("flocculation_parameter").template get<double>();
     // Deflocculation parameter: order of 0.01
@@ -92,11 +92,6 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
       (*state_vars).at("volumetric_strain") + ptr->dvolumetric_strain();
 
   // Update bulk modulus and pressure from equation of state
-  // Approach 1: (less stable)
-  // const double K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
-  // (*state_vars).at("pressure") = (K - bulk_modulus_) / gamma_;
-
-  // Approach 2: (More stable with pressure smoothing)
   const double K = bulk_modulus_ + gamma_ * (*state_vars).at("pressure"); 
   (*state_vars).at("pressure") += -K * ptr->dvolumetric_strain();
 
@@ -108,12 +103,14 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
   // Compute deviatoric strain rate
   Eigen::Matrix<double, 6, 1> strain_rate_dev;
   strain_rate_dev = strain_rate;
-  double volumetric_strain_rate = strain_rate.head(3).sum() / 3.0;
-  strain_rate_dev.head(3) -= Eigen::Vector3d::Constant(volumetric_strain_rate);
+  const double volumetric_strain_rate = strain_rate.head(3).sum() / 3.0;
+  strain_rate_dev.head(3).noalias() += 
+                      -Eigen::Vector3d::Constant(volumetric_strain_rate);
 
   // Compute shear rate
-  double shear_rate = std::sqrt(2. * (strain_rate_dev.dot(strain_rate_dev) +
-                      strain_rate_dev.tail(3).dot(strain_rate_dev.tail(3))));
+  const double shear_rate = std::sqrt(2. * 
+                  (strain_rate_dev.dot(strain_rate_dev) +
+                  strain_rate_dev.tail(3).dot(strain_rate_dev.tail(3))));
 
   // Get thixotropic parameters
   double lambda = (*state_vars).at("lambda");
@@ -132,7 +129,7 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
                         (1 + lambda_new) * (1. - std::exp(-m_ * shear_rate));
 
   // Compute shear stress
-  Eigen::Matrix<double, 6, 1> tau = 2 * apparent_viscosity * strain_rate;
+  Eigen::Matrix<double, 6, 1> tau = 2 * apparent_viscosity * strain_rate_dev;
 
   // Update stress
   const Eigen::Matrix<double, 6, 1> updated_stress =

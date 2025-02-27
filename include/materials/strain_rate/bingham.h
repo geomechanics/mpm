@@ -33,7 +33,7 @@ class Bingham : public Material<Tdim> {
   Bingham(const Bingham&) = delete;
 
   //! Delete assignement operator
-  Bingham& operator = (const Bingham&) = delete;
+  Bingham& operator=(const Bingham&) = delete;
 
   //! Initialise history variables
   //! \retval state_vars State variables with history
@@ -95,7 +95,7 @@ class Bingham : public Material<Tdim> {
   //! Critical yielding shear rate
   double critical_shear_rate_{std::numeric_limits<double>::max()};
   //! Compressibility multiplier
-  double compressibility_multiplier_{1.0};    
+  double compressibility_multiplier_{1.0};
 
 };  // Papanastasiou-Roussel Bingham class
 }  // namespace mpm

@@ -54,13 +54,16 @@ class ParticleLevelset : public Particle<Tdim> {
   void map_levelset_to_particle() noexcept;
 
   //! Check if particle in contact with levelset
-  bool is_levelset_contact() noexcept;
+  //! \param[in] initial_radius Particle initial radius
+  bool is_levelset_contact(double initial_radius) noexcept;
 
   //! Compute levelset contact force at particle
   //! \param[in] dt Analysis time step
+  //! \param[in] initial_radius Particle initial radius
   //! \param[in] leveset_damping Levelset damping factor
   //! \param[in] levelset_pic Method bool to compute contact velocity
-  void compute_particle_contact_force(double dt, double leveset_damping,
+  void compute_particle_contact_force(double dt, double initial_radius,
+                                      double leveset_damping,
                                       bool levelset_pic) noexcept;
 
   //! Map levelset contact force to nodes
@@ -73,8 +76,6 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
 
-  //! mp radius
-  double mp_radius_{0.};
   //! levelset value
   double levelset_{0.};
   //! levelset friction

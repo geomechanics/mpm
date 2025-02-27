@@ -451,13 +451,6 @@ class ParticleBase {
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
 
   //! Levelset functions--------------------------------------------------------
-  //! Update time-independent mp levelset properties
-  virtual void update_levelset_mp_properties() {
-    throw std::runtime_error(
-        "Calling the base class function (update_levelset_mp_properties) "
-        "in ParticleBase:: illegal operation!");
-  };
-
   //! Update contact force due to levelset
   //! \param[in] dt Analysis time step
   //! \param[in] leveset_damping Levelset damping factor

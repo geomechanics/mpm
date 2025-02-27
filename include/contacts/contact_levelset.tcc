@@ -18,11 +18,6 @@ void mpm::ContactLevelset<Tdim>::initialise_levelset_properties(
 
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
-
-  //! Update time-independent mp levelset properties
-  mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::update_levelset_mp_properties,
-                std::placeholders::_1));
 }
 
 //! Compute contact forces

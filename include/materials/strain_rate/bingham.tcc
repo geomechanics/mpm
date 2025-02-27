@@ -92,8 +92,8 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
       (*state_vars).at("volumetric_strain") + ptr->dvolumetric_strain();
 
   // Update bulk modulus and pressure from equation of state
-  const double K = bulk_modulus_ + gamma_ * (*state_vars).at("pressure"); 
-  (*state_vars).at("pressure") += -K * ptr->dvolumetric_strain();
+  const double K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
+  (*state_vars).at("pressure") = (K - bulk_modulus_) / gamma_;
 
   // Get strain rate
   auto strain_rate = ptr->strain_rate();

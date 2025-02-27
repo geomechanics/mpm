@@ -39,8 +39,8 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleLevelset& operator=(const ParticleLevelset<Tdim>&) = delete;
 
-  //! Update time-independent mp levelset properties
-  void update_levelset_mp_properties() override;
+  //! Type of particle
+  std::string type() const override { return (Tdim == 2) ? "P2DLS" : "P3DLS"; }
 
   //! Update contact force due to levelset
   //! \param[in] dt Analysis time step

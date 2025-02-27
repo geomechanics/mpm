@@ -460,7 +460,10 @@ class ParticleBase {
 
   //! Update contact force due to levelset
   //! \param[in] dt Analysis time step
-  virtual void levelset_contact_force(double dt) {
+  //! \param[in] leveset_damping Levelset damping factor
+  //! \param[in] levelset_pic Method bool to compute contact velocity
+  virtual void levelset_contact_force(double dt, double leveset_damping,
+                                      bool levelset_pic) {
     throw std::runtime_error(
         "Calling the base class function (levelset_contact_force) "
         "in ParticleBase:: illegal operation!");

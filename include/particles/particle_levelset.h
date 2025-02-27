@@ -39,18 +39,15 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Delete assignment operator
   ParticleLevelset& operator=(const ParticleLevelset<Tdim>&) = delete;
 
-  //! Update time-independent static levelset properties
-  //! \param[in] levelset_damping Levelset damping factor
-  //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  static void update_levelset_static_properties(double levelset_damping,
-                                                bool levelset_pic);
-
   //! Update time-independent mp levelset properties
   void update_levelset_mp_properties() override;
 
   //! Update contact force due to levelset
   //! \param[in] dt Analysis time step
-  void levelset_contact_force(double dt) override;
+  //! \param[in] leveset_damping Levelset damping factor
+  //! \param[in] levelset_pic Method bool to compute contact velocity
+  void levelset_contact_force(double dt, double leveset_damping,
+                              bool levelset_pic) override;
 
  protected:
   //! Map levelset to particle
@@ -61,7 +58,10 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Compute levelset contact force at particle
   //! \param[in] dt Analysis time step
-  void compute_particle_contact_force(double dt) noexcept;
+  //! \param[in] leveset_damping Levelset damping factor
+  //! \param[in] levelset_pic Method bool to compute contact velocity
+  void compute_particle_contact_force(double dt, double leveset_damping,
+                                      bool levelset_pic) noexcept;
 
   //! Map levelset contact force to nodes
   void map_contact_force_to_nodes() noexcept;
@@ -73,10 +73,6 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
 
-  //! levelset_damping_
-  static double levelset_damping_;
-  //! levelset_pic_
-  static bool levelset_pic_;
   //! mp radius
   double mp_radius_{0.};
   //! levelset value

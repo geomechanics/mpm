@@ -14,7 +14,7 @@
 
 //! \brief Check Bingham class
 //! Check Bingham 2D without thixotropy
-TEST_CASE("Bingham is checked in 2D (without thixotropy)", 
+TEST_CASE("Bingham is checked in 2D (without thixotropy)",
           "[material][bingham][2D]") {
   // Tolerance
   const double Tolerance = 1.E-7;
@@ -101,9 +101,8 @@ TEST_CASE("Bingham is checked in 2D (without thixotropy)",
     // Check if state variable is initialised
     SECTION("State variable is initialised") {
       mpm::dense_map state_variables = material->initialise_state_variables();
-      REQUIRE(state_variables.size() == 4);      
-      REQUIRE(state_variables.at("pressure") ==
-              Approx(0.).epsilon(Tolerance));
+      REQUIRE(state_variables.size() == 4);
+      REQUIRE(state_variables.at("pressure") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("volumetric_strain") ==
               Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("lambda") ==
@@ -111,7 +110,7 @@ TEST_CASE("Bingham is checked in 2D (without thixotropy)",
       REQUIRE(state_variables.at("gamma_dot") == Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-      "pressure", "volumetric_strain", "lambda", "gamma_dot"};
+          "pressure", "volumetric_strain", "lambda", "gamma_dot"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
     }
@@ -195,9 +194,8 @@ TEST_CASE("Bingham is checked in 2D (without thixotropy)",
             Approx(53239.4547055938).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
             Approx(-0.0062500000).epsilon(Tolerance));
-    REQUIRE(state_vars.at("lambda") ==
-            Approx(0.).epsilon(Tolerance));
-    REQUIRE(state_vars.at("gamma_dot") == 
+    REQUIRE(state_vars.at("lambda") == Approx(0.).epsilon(Tolerance));
+    REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0054932487).epsilon(Tolerance));
 
     // Check stressees
@@ -212,7 +210,7 @@ TEST_CASE("Bingham is checked in 2D (without thixotropy)",
 }
 
 //! Check Bingham 2D with thixotropy
-TEST_CASE("Bingham is checked in 2D (with thixotropy)", 
+TEST_CASE("Bingham is checked in 2D (with thixotropy)",
           "[material][bingham][2D]") {
   // Tolerance
   const double Tolerance = 1.E-7;
@@ -393,9 +391,8 @@ TEST_CASE("Bingham is checked in 2D (with thixotropy)",
             Approx(53239.4547055938).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
             Approx(-0.0062500000).epsilon(Tolerance));
-    REQUIRE(state_vars.at("lambda") ==
-            Approx(1.0199450675).epsilon(Tolerance));
-    REQUIRE(state_vars.at("gamma_dot") == 
+    REQUIRE(state_vars.at("lambda") == Approx(1.0199450675).epsilon(Tolerance));
+    REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0054932487).epsilon(Tolerance));
 
     // Check stressees
@@ -410,7 +407,7 @@ TEST_CASE("Bingham is checked in 2D (with thixotropy)",
 }
 
 //! Check Bingham 3D without thixotropy
-TEST_CASE("Bingham is checked in 3D (without thixotropy)", 
+TEST_CASE("Bingham is checked in 3D (without thixotropy)",
           "[material][bingham][3D]") {
   // Tolerance
   const double Tolerance = 1.E-7;
@@ -497,9 +494,8 @@ TEST_CASE("Bingham is checked in 3D (without thixotropy)",
     // Check if state variable is initialised
     SECTION("State variable is initialised") {
       mpm::dense_map state_variables = material->initialise_state_variables();
-      REQUIRE(state_variables.size() == 4);      
-      REQUIRE(state_variables.at("pressure") ==
-              Approx(0.).epsilon(Tolerance));
+      REQUIRE(state_variables.size() == 4);
+      REQUIRE(state_variables.at("pressure") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("volumetric_strain") ==
               Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("lambda") ==
@@ -507,9 +503,9 @@ TEST_CASE("Bingham is checked in 3D (without thixotropy)",
       REQUIRE(state_variables.at("gamma_dot") == Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-      "pressure", "volumetric_strain", "lambda", "gamma_dot"};
+          "pressure", "volumetric_strain", "lambda", "gamma_dot"};
       auto state_vars_test = material->state_variables();
-      REQUIRE(state_vars == state_vars_test);;
+      REQUIRE(state_vars == state_vars_test);
     }
   }
 
@@ -609,9 +605,8 @@ TEST_CASE("Bingham is checked in 3D (without thixotropy)",
             Approx(15727.9891467669).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
             Approx(-0.0018750000).epsilon(Tolerance));
-    REQUIRE(state_vars.at("lambda") ==
-            Approx(0.).epsilon(Tolerance));
-    REQUIRE(state_vars.at("gamma_dot") == 
+    REQUIRE(state_vars.at("lambda") == Approx(0.).epsilon(Tolerance));
+    REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0050513114).epsilon(Tolerance));
 
     // Check stressees
@@ -626,7 +621,7 @@ TEST_CASE("Bingham is checked in 3D (without thixotropy)",
 }
 
 //! Check Bingham 3D with thixotropy
-TEST_CASE("Bingham is checked in 3D (with thixotropy)", 
+TEST_CASE("Bingham is checked in 3D (with thixotropy)",
           "[material][bingham][3D]") {
   // Tolerance
   const double Tolerance = 1.E-7;
@@ -713,9 +708,8 @@ TEST_CASE("Bingham is checked in 3D (with thixotropy)",
     // Check if state variable is initialised
     SECTION("State variable is initialised") {
       mpm::dense_map state_variables = material->initialise_state_variables();
-      REQUIRE(state_variables.size() == 4);      
-      REQUIRE(state_variables.at("pressure") ==
-              Approx(0.).epsilon(Tolerance));
+      REQUIRE(state_variables.size() == 4);
+      REQUIRE(state_variables.at("pressure") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("volumetric_strain") ==
               Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("lambda") ==
@@ -723,9 +717,9 @@ TEST_CASE("Bingham is checked in 3D (with thixotropy)",
       REQUIRE(state_variables.at("gamma_dot") == Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-      "pressure", "volumetric_strain", "lambda", "gamma_dot"};
+          "pressure", "volumetric_strain", "lambda", "gamma_dot"};
       auto state_vars_test = material->state_variables();
-      REQUIRE(state_vars == state_vars_test);;
+      REQUIRE(state_vars == state_vars_test);
     }
   }
 
@@ -825,9 +819,8 @@ TEST_CASE("Bingham is checked in 3D (with thixotropy)",
             Approx(15727.9891467669).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
             Approx(-0.0018750000).epsilon(Tolerance));
-    REQUIRE(state_vars.at("lambda") ==
-            Approx(1.0199494869).epsilon(Tolerance));
-    REQUIRE(state_vars.at("gamma_dot") == 
+    REQUIRE(state_vars.at("lambda") == Approx(1.0199494869).epsilon(Tolerance));
+    REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0050513114).epsilon(Tolerance));
 
     // Check stressees

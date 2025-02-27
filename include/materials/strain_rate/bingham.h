@@ -63,10 +63,9 @@ class Bingham : public Material<Tdim> {
  private:
   //! Dirac delta function in Voigt notation
   Eigen::Matrix<double, 6, 1> dirac_delta() const;
-
-
   //! Density
-  double density_{std::numeric_limits<double>::max()};  //! Youngs modulus
+  double density_{std::numeric_limits<double>::max()};
+  //! Youngs modulus
   double youngs_modulus_{std::numeric_limits<double>::max()};
   //! Bulk modulus
   double bulk_modulus_{std::numeric_limits<double>::max()};
@@ -96,7 +95,6 @@ class Bingham : public Material<Tdim> {
   double critical_shear_rate_{std::numeric_limits<double>::max()};
   //! Compressibility multiplier
   double compressibility_multiplier_{1.0};
-
 };  // Papanastasiou-Roussel Bingham class
 }  // namespace mpm
 

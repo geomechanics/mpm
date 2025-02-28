@@ -124,8 +124,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (without thixotropy)",
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-          "yield_state",        "pressure",           "rmap_niteration",
-          "volumetric_strain",  "shear_stress_ratio", "lambda",
+          "yield_state",        "pressure",
+          "rmap_niteration",    "volumetric_strain",
+          "shear_stress_ratio", "lambda",
           "pgamma_dot",         "pdstrain"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
@@ -206,8 +207,7 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (without thixotropy)",
         stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check state variables
-    REQUIRE(state_vars.at("yield_state") ==
-            Approx(1.).epsilon(Tolerance));
+    REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
             Approx(4353.0047581362).epsilon(Tolerance));
     REQUIRE(state_vars.at("rmap_niteration") == Approx(2.).epsilon(Tolerance));
@@ -362,8 +362,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (with thixotropy)",
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-          "yield_state",        "pressure",           "rmap_niteration",
-          "volumetric_strain",  "shear_stress_ratio", "lambda",
+          "yield_state",        "pressure",
+          "rmap_niteration",    "volumetric_strain",
+          "shear_stress_ratio", "lambda",
           "pgamma_dot",         "pdstrain"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
@@ -444,8 +445,7 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (with thixotropy)",
         stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check state variables
-    REQUIRE(state_vars.at("yield_state") ==
-            Approx(1.).epsilon(Tolerance));
+    REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
             Approx(4353.0047581362).epsilon(Tolerance));
     REQUIRE(state_vars.at("rmap_niteration") == Approx(2.).epsilon(Tolerance));
@@ -601,8 +601,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (without thixotropy)",
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-          "yield_state",        "pressure",           "rmap_niteration",
-          "volumetric_strain",  "shear_stress_ratio", "lambda",
+          "yield_state",        "pressure",
+          "rmap_niteration",    "volumetric_strain",
+          "shear_stress_ratio", "lambda",
           "pgamma_dot",         "pdstrain"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
@@ -701,8 +702,7 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (without thixotropy)",
         stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check state variables
-    REQUIRE(state_vars.at("yield_state") ==
-            Approx(1.).epsilon(Tolerance));
+    REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
             Approx(844.3429257361).epsilon(Tolerance));
     REQUIRE(state_vars.at("rmap_niteration") == Approx(2.).epsilon(Tolerance));
@@ -858,8 +858,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (with thixotropy)",
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
 
       const std::vector<std::string> state_vars = {
-          "yield_state",        "pressure",           "rmap_niteration",
-          "volumetric_strain",  "shear_stress_ratio", "lambda",
+          "yield_state",        "pressure",
+          "rmap_niteration",    "volumetric_strain",
+          "shear_stress_ratio", "lambda",
           "pgamma_dot",         "pdstrain"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
@@ -958,8 +959,7 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (with thixotropy)",
         stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check state variables
-    REQUIRE(state_vars.at("yield_state") ==
-            Approx(1.).epsilon(Tolerance));
+    REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
             Approx(844.3429257361).epsilon(Tolerance));
     REQUIRE(state_vars.at("rmap_niteration") == Approx(2.).epsilon(Tolerance));

@@ -1278,8 +1278,8 @@ int mpm::Particle<Tdim>::compute_pack_size() const {
   MPI_Pack_size(3 * 1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
-  // Coordinates, displacement, natural size, velocity, acceleration
-  MPI_Pack_size(5 * Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  // Coordinates, displacement, size, natural size, velocity, acceleration
+  MPI_Pack_size(6 * Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
   // Stress & strain
   MPI_Pack_size(6 * 2, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
@@ -1369,6 +1369,9 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
   // Displacement
   MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
+  // Size
+  MPI_Pack(size_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
   // Natural size
   MPI_Pack(natural_size_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -1473,6 +1476,9 @@ void mpm::Particle<Tdim>::deserialize(
   // Displacement
   MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
+  // Size
+  MPI_Unpack(data_ptr, data.size(), &position, size_.data(), Tdim, MPI_DOUBLE,
+             MPI_COMM_WORLD);
   // Natural size
   MPI_Unpack(data_ptr, data.size(), &position, natural_size_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);

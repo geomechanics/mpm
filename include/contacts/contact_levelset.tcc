@@ -15,9 +15,6 @@ void mpm::ContactLevelset<Tdim>::initialise_levelset_properties(
   // Initialise levelset properties
   levelset_damping_ = levelset_damping;
   levelset_pic_ = levelset_pic;
-
-  // Initialise nodal properties
-  mesh_->initialise_nodal_properties();
 }
 
 //! Compute contact forces

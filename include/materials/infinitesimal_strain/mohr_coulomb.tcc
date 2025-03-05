@@ -7,6 +7,32 @@ mpm::MohrCoulomb<Tdim>::MohrCoulomb(unsigned id,
     // General parameters
     // Density
     density_ = material_properties.at("density").template get<double>();
+
+    // Initial Packing Fraction
+    if (material_properties.contains("packing_fraction"))
+      initial_packing_fraction_ =
+          material_properties.at("packing_fraction").template get<double>();
+    else if (material_properties.contains("porosity"))
+      initial_packing_fraction_ =
+          1. - material_properties.at("porosity").template get<double>();
+
+    // Solid grain density
+    bool is_wet = false;
+    if (material_properties.contains("is_wet"))
+      is_wet = material_properties.at("is_wet").template get<bool>();
+    else if (material_properties.contains("porosity"))
+      is_wet = true;
+    if (!is_wet)
+      grain_density_ = density_ / initial_packing_fraction_;
+    else
+      grain_density_ = density_;
+
+    // Minimum packing fraction
+    if (material_properties.contains("packing_fraction_minimum"))
+      minimum_packing_fraction_ =
+          material_properties.at("packing_fraction_minimum")
+              .template get<double>();
+
     // Young's modulus
     youngs_modulus_ =
         material_properties.at("youngs_modulus").template get<double>();
@@ -318,6 +344,11 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+
+  // Density and packing parameters
+  const double current_packing_density = ptr->mass_density();
+  const double critical_density = minimum_packing_fraction_ * grain_density_;
+
   // Get previous time step state variable
   const auto prev_state_vars = (*state_vars);
   const double pdstrain = (*state_vars).at("pdstrain");
@@ -359,6 +390,13 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   Eigen::Matrix<double, 2, 1> yield_function_trial;
   auto yield_type_trial =
       this->compute_yield_state(&yield_function_trial, (*state_vars));
+  // Separated state: current packing density is less than critical density
+  if (current_packing_density <= critical_density) {
+    const double tau_tr = mpm::materials::q(trial_stress) / sqrt(3.0);
+    (*state_vars).at("pdstrain") += tau_tr / shear_modulus_;
+    (*state_vars).at("yield_state") = 3;
+    return Vector6d::Zero();
+  }
   // Return the updated stress in elastic state
   if (yield_type_trial == mpm::mohrcoulomb::FailureState::Elastic) {
     (*state_vars).at("yield_state") = 0;
@@ -504,6 +542,11 @@ Eigen::Matrix<double, 6, 6>
   const Matrix6x6 de = this->compute_elastic_tensor(state_vars);
   if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {
     return de;
+  }
+
+  // Return zero tensor matrix in separated state
+  if (yield_type == mpm::mohrcoulomb::FailureState::Separated) {
+    return Matrix6x6::Zero();
   }
 
   //! Elasto-plastic stiffness matrix

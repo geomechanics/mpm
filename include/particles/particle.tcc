@@ -327,6 +327,7 @@ void mpm::Particle<Tdim>::initialise() {
   deformation_gradient_increment_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
+  this->scalar_properties_["id"] = [&]() { return static_cast<double>(id_); };
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
@@ -643,10 +644,9 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
       // Map mass and momentum to nodes
       for (unsigned i = 0; i < nodes_.size(); ++i) {
         // Map mass and momentum
-        nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i]);
-        nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                                   mass_ * shapefn_[i] * velocity_);
+        nodes_[i]->update_mass_momentum(true, true, mpm::ParticlePhase::Solid,
+                                        mass_ * shapefn_[i],
+                                        mass_ * shapefn_[i] * velocity_);
       }
       break;
   }
@@ -682,10 +682,9 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes_affine() noexcept {
                               (nodes_[i]->coordinates() - this->coordinates_);
 
     // Map mass and momentum
-    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                           mass_ * shapefn_[i]);
-    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i] * map_velocity);
+    nodes_[i]->update_mass_momentum(true, true, mpm::ParticlePhase::Solid,
+                                    mass_ * shapefn_[i],
+                                    mass_ * shapefn_[i] * map_velocity);
   }
 }
 
@@ -709,10 +708,9 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes_taylor() noexcept {
         mapping_matrix_ * (nodes_[i]->coordinates() - this->coordinates_);
 
     // Map mass and momentum
-    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                           mass_ * shapefn_[i]);
-    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i] * map_velocity);
+    nodes_[i]->update_mass_momentum(true, true, mpm::ParticlePhase::Solid,
+                                    mass_ * shapefn_[i],
+                                    mass_ * shapefn_[i] * map_velocity);
   }
 }
 
@@ -1281,8 +1279,8 @@ int mpm::Particle<Tdim>::compute_pack_size() const {
   MPI_Pack_size(3 * 1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
-  // Coordinates, displacement, natural size, velocity, acceleration
-  MPI_Pack_size(5 * Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  // Coordinates, displacement, size, natural size, velocity, acceleration
+  MPI_Pack_size(6 * Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
   // Stress & strain
   MPI_Pack_size(6 * 2, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
@@ -1372,6 +1370,9 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
   // Displacement
   MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
+  // Size
+  MPI_Pack(size_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
   // Natural size
   MPI_Pack(natural_size_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -1476,6 +1477,9 @@ void mpm::Particle<Tdim>::deserialize(
   // Displacement
   MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
+  // Size
+  MPI_Unpack(data_ptr, data.size(), &position, size_.data(), Tdim, MPI_DOUBLE,
+             MPI_COMM_WORLD);
   // Natural size
   MPI_Unpack(data_ptr, data.size(), &position, natural_size_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);

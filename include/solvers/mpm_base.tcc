@@ -29,6 +29,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   // Variable list
   tsl::robin_map<std::string, VariableType> variables = {
       // Scalar variables
+      {"id", VariableType::Scalar},
       {"mass", VariableType::Scalar},
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
@@ -37,7 +38,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
       {"normals", VariableType::Vector},
-      {"levelset_couple", VariableType::Vector},
+      {"levelset_couples", VariableType::Vector},
       // Tensor variables
       {"strains", VariableType::Tensor},
       {"stresses", VariableType::Tensor}};

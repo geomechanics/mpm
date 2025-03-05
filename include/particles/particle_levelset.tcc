@@ -33,6 +33,18 @@ mpm::ParticleLevelset<Tdim>::ParticleLevelset(Index id, const VectorDim& coord,
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
+// Initialise particle levelset properties
+template <unsigned Tdim>
+void mpm::ParticleLevelset<Tdim>::initialise() {
+  mpm::Particle<Tdim>::initialise();
+
+  // Initialize scalar and vector data properties
+  this->scalar_properties_["levelset"] = [this]() { return levelset(); };
+  this->vector_properties_["levelset_couples"] = [this]() {
+    return couple_force();
+  };
+}
+
 //! Update contact force due to levelset
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
@@ -57,9 +69,6 @@ void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
     // Map levelset contact force to nodes
     map_contact_force_to_nodes();
   }
-
-  // Update levelset vtk data properties at particle
-  update_levelset_vtk();
 }
 
 //! Map levelset to particle
@@ -170,13 +179,4 @@ void mpm::ParticleLevelset<Tdim>::map_contact_force_to_nodes() noexcept {
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
                                      (shapefn_[i] * couple_force_));
   }
-}
-
-//! Update levelset vtk data properties at particle
-template <unsigned Tdim>
-void mpm::ParticleLevelset<Tdim>::update_levelset_vtk() noexcept {
-  this->vector_properties_["levelset_couple"] = [this]() {
-    return this->couple_force_;
-  };
-  this->scalar_properties_["levelset"] = [this]() { return this->levelset_; };
 }

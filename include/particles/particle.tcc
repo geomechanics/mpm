@@ -327,6 +327,7 @@ void mpm::Particle<Tdim>::initialise() {
   deformation_gradient_increment_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
+  this->scalar_properties_["id"] = [&]() { return static_cast<double>(id_); };
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };

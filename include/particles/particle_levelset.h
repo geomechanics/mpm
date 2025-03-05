@@ -42,12 +42,21 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Type of particle
   std::string type() const override { return (Tdim == 2) ? "P2DLS" : "P3DLS"; }
 
+  //! Initialise particle levelset
+  void initialise() override;
+
   //! Update contact force due to levelset
   //! \param[in] dt Analysis time step
   //! \param[in] leveset_damping Levelset damping factor
   //! \param[in] levelset_pic Method bool to compute contact velocity
   void levelset_contact_force(double dt, double leveset_damping,
                               bool levelset_pic) override;
+
+  //! Return levelset value
+  double levelset() const { return levelset_; }
+
+  //! Return levelset contact force
+  VectorDim couple_force() const { return couple_force_; }
 
  protected:
   //! Map levelset to particle
@@ -68,9 +77,6 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Map levelset contact force to nodes
   void map_contact_force_to_nodes() noexcept;
-
-  //! Update levelset vtk data properties at particle
-  void update_levelset_vtk() noexcept;
 
  protected:
   //! Logger

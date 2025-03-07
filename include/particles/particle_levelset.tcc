@@ -50,20 +50,20 @@ template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
     double dt, double levelset_damping, bool levelset_pic) {
 
-  // Calculate radius
-  double initial_vol = this->size_.prod();
-  double initial_radius = 0.0;
-  if (Tdim == 2) initial_radius = std::sqrt(initial_vol / M_PI);
-  if (Tdim == 3) initial_radius = std::cbrt(initial_vol * 0.75 / M_PI);
+  // Calculate radius from volume
+  double init_vol = this->size_.prod();
+  double init_radius = 0.0;                                 // radial influence
+  if (Tdim == 2) init_radius = std::sqrt(init_vol / M_PI);  // unit cylinder
+  if (Tdim == 3) init_radius = std::cbrt(init_vol * 0.75 / M_PI);  // sphere
 
   // Map levelset to particle
   map_levelset_to_particle();
 
   // Check if particle in contact with levelset
-  if (is_levelset_contact(initial_radius)) {
+  if (is_levelset_contact(init_radius)) {
 
     // Compute levelset contact force at particle
-    compute_particle_contact_force(dt, initial_radius, levelset_damping,
+    compute_particle_contact_force(dt, init_radius, levelset_damping,
                                    levelset_pic);
 
     // Map levelset contact force to nodes
@@ -98,8 +98,8 @@ void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
 //! Check if particle in contact with levelset
 template <unsigned Tdim>
 bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(
-    double initial_radius) noexcept {
-  if ((levelset_ < initial_radius) && (levelset_ > 0.))
+    double init_radius) noexcept {
+  if ((levelset_ < init_radius) && (levelset_ > 0.))
     return true;
   else
     return false;
@@ -108,7 +108,7 @@ bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(
 //! Compute levelset contact force at particle
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
-    double dt, double initial_radius, double leveset_damping,
+    double dt, double init_radius, double leveset_damping,
     bool levelset_pic) noexcept {
 
   // Global contact velocity update scheme
@@ -131,9 +131,9 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
   levelset_normal_ = levelset_gradient_.normalized();
 
   // Calculate normal coupling force magnitude
-  double couple_normal_mag = barrier_stiffness_ * (levelset_ - initial_radius) *
-                             (2. * log(levelset_ / initial_radius) -
-                              (initial_radius / levelset_) + 1.);
+  double couple_normal_mag =
+      barrier_stiffness_ * (levelset_ - init_radius) *
+      (2. * log(levelset_ / init_radius) - (init_radius / levelset_) + 1.);
 
   // Calculate normal coupling force
   VectorDim couple_force_normal = couple_normal_mag * levelset_normal_;

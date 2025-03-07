@@ -63,15 +63,15 @@ class ParticleLevelset : public Particle<Tdim> {
   void map_levelset_to_particle() noexcept;
 
   //! Check if particle in contact with levelset
-  //! \param[in] initial_radius Particle initial radius
-  bool is_levelset_contact(double initial_radius) noexcept;
+  //! \param[in] init_radius Particle initial radius
+  bool is_levelset_contact(double init_radius) noexcept;
 
   //! Compute levelset contact force at particle
   //! \param[in] dt Analysis time step
-  //! \param[in] initial_radius Particle initial radius
+  //! \param[in] init_radius Particle initial radius
   //! \param[in] leveset_damping Levelset damping factor
   //! \param[in] levelset_pic Method bool to compute contact velocity
-  void compute_particle_contact_force(double dt, double initial_radius,
+  void compute_particle_contact_force(double dt, double init_radius,
                                       double leveset_damping,
                                       bool levelset_pic) noexcept;
 

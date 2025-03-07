@@ -11,7 +11,6 @@ mpm::ContactLevelset<Tdim>::ContactLevelset(
 template <unsigned Tdim>
 void mpm::ContactLevelset<Tdim>::initialise_levelset_properties(
     double levelset_damping, bool levelset_pic) {
-
   // Initialise levelset properties
   levelset_damping_ = levelset_damping;
   levelset_pic_ = levelset_pic;

@@ -557,10 +557,6 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     if (!unlocatable_particles.empty())
       throw std::runtime_error("Particle outside the mesh domain");
 
-    if (is_levelset()) {
-      throw std::runtime_error("Resume not compatible with levelset");
-    }
-
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
 

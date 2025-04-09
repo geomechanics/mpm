@@ -52,7 +52,7 @@ void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
 
   // Calculate radius from volume
   double init_vol = this->size_.prod();
-  double init_radius = 0.0;                                 // radial influence
+  double init_radius = 0.0;  // constant radial influence
   if (Tdim == 2) init_radius = std::sqrt(init_vol / M_PI);  // unit cylinder
   if (Tdim == 3) init_radius = std::cbrt(init_vol * 0.75 / M_PI);  // sphere
 
@@ -148,8 +148,9 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
   double tangent_friction = levelset_mu_ * couple_normal_mag;
 
   // Calculate adhesion tangential coupling force magnitude
-  if (Tdim == 2) contact_area = std::sqrt(volume_);  // rectangular influence
-  if (Tdim == 3) contact_area = std::cbrt(volume_);  // rectangular influence
+  double contact_area = 0.0;  // changing rectangular influence
+  if (Tdim == 2) contact_area = std::sqrt(volume_);  // unit hexahedron
+  if (Tdim == 3) contact_area = std::cbrt(volume_);  // cube
   double tangent_adhesion = levelset_alpha_ * contact_area;
 
   // Calculate tangential coupling force magntiude

@@ -148,7 +148,8 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
   double tangent_friction = levelset_mu_ * couple_normal_mag;
 
   // Calculate adhesion tangential coupling force magnitude
-  double contact_area = volume_ / size_[0];  // rectangular influence
+  if (Tdim == 2) contact_area = std::sqrt(volume_);  // rectangular influence
+  if (Tdim == 3) contact_area = std::cbrt(volume_);  // rectangular influence
   double tangent_adhesion = levelset_alpha_ * contact_area;
 
   // Calculate tangential coupling force magntiude

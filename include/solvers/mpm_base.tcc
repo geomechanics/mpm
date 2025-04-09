@@ -1300,10 +1300,10 @@ void mpm::MPMBase<Tdim>::interface_inputs(
           std::string levelset_input_file =
               mesh_props["interface"]["location"].template get<std::string>();
           // Retrieve levelset info from file
-          bool levelset_info =
+          bool levelset_inputs =
               mesh_->assign_nodal_levelset_values(mesh_io->read_levelset_input(
                   io_->file_name(levelset_input_file)));
-          if (!levelset_info) {
+          if (!levelset_inputs) {
             throw std::runtime_error(
                 "Levelset interface is undefined; Levelset inputs are not "
                 "properly assigned");

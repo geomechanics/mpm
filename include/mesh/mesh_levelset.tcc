@@ -9,17 +9,17 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
       throw std::runtime_error(
           "No nodes have been assigned in mesh, cannot assign levelset values");
 
-    for (const auto& levelset_info : levelset_input_file) {
+    for (const auto& levelset_inputs : levelset_input_file) {
       // Node id
-      mpm::Index nid = std::get<0>(levelset_info);
+      mpm::Index nid = std::get<0>(levelset_inputs);
       // Levelset
-      double levelset = std::get<1>(levelset_info);
+      double levelset = std::get<1>(levelset_inputs);
       // Levelset friction
-      double levelset_mu = std::get<2>(levelset_info);
+      double levelset_mu = std::get<2>(levelset_inputs);
       // Levelset adhesion coefficient
-      double levelset_alpha = std::get<3>(levelset_info);
+      double levelset_alpha = std::get<3>(levelset_inputs);
       // Barrier stiffness
-      double barrier_stiffness = std::get<4>(levelset_info);
+      double barrier_stiffness = std::get<4>(levelset_inputs);
 
       if (map_nodes_.find(nid) != map_nodes_.end())
         status = map_nodes_[nid]->assign_levelset(

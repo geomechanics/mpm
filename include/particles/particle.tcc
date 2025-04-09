@@ -40,18 +40,18 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->mass_ = particle.mass;
   // Volume
   this->volume_ = particle.volume;
-  // Compute size of particle in each direction
-  const double length = std::pow(this->volume_, static_cast<double>(1. / Tdim));
-  // Set particle size as length on each side
-  this->size_.fill(length);
 
   // Mass Density
   this->mass_density_ = particle.mass / particle.volume;
   // Set local size of particle
-  Eigen::Vector3d psize;
-  psize << particle.nsize_x, particle.nsize_y, particle.nsize_z;
+  Eigen::Vector3d psize, pnsize;
+  psize << particle.size_x, particle.size_y, particle.size_z;
+  pnsize << particle.nsize_x, particle.nsize_y, particle.nsize_z;
   // Initialise particle size
-  for (unsigned i = 0; i < Tdim; ++i) this->natural_size_(i) = psize(i);
+  for (unsigned i = 0; i < Tdim; ++i) {
+    this->size_(i) = psize(i);
+    this->natural_size_(i) = pnsize(i);
+  }
 
   // Coordinates
   Eigen::Vector3d coordinates;
@@ -198,10 +198,13 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   for (unsigned j = 0; j < Tdim; ++j) acceleration[j] = this->acceleration_[j];
 
   // Particle local size
-  Eigen::Vector3d nsize;
+  Eigen::Vector3d size, nsize;
+  size.setZero();
   nsize.setZero();
-  Eigen::VectorXd size = this->natural_size();
-  for (unsigned j = 0; j < Tdim; ++j) nsize[j] = size[j];
+  for (unsigned j = 0; j < Tdim; ++j) {
+    size[j] = size_[j];
+    nsize[j] = natural_size_[j];
+  }
 
   Eigen::Matrix<double, 6, 1> stress = this->stress_;
 
@@ -233,6 +236,10 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   particle_data->displacement_x = displacement[0];
   particle_data->displacement_y = displacement[1];
   particle_data->displacement_z = displacement[2];
+
+  particle_data->size_x = size[0];
+  particle_data->size_y = size[1];
+  particle_data->size_z = size[2];
 
   particle_data->nsize_x = nsize[0];
   particle_data->nsize_y = nsize[1];

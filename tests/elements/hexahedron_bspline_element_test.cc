@@ -20,11 +20,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
     std::shared_ptr<mpm::Element<Dim>> hex =
         std::make_shared<mpm::HexahedronBSplineElement<Dim, npolynomials>>();
 
-    // Cast hex to access the derived type HexahedronBSplineElement
-    auto hex_bspline = std::dynamic_pointer_cast<
-        mpm::HexahedronBSplineElement<Dim, npolynomials>>(hex);
-    hex_bspline->set_closed_form(true);  // closed-form algorithm
-
     // Check degree
     REQUIRE(hex->degree() == mpm::ElementDegree::Quadratic);
     REQUIRE(hex->shapefn_type() == mpm::ShapefnType::BSPLINE);
@@ -221,7 +216,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props));
-        hex_bspline->set_closed_form(true);  // closed-form algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
@@ -758,7 +752,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
         bool kernel_correction = true;
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props, kernel_correction));
-        hex_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION(
@@ -1354,7 +1347,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props));
-        hex_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
@@ -1534,7 +1526,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
         bool kernel_correction = true;
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props, kernel_correction));
-        hex_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION(
@@ -1833,7 +1824,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props));
-        hex_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
@@ -1985,7 +1975,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
         bool kernel_correction = true;
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props, kernel_correction));
-        hex_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION(
@@ -2247,7 +2236,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
 
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props));
-        hex_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION("3D BSpline element for coordinates(0,0,0) after upgrade") {
@@ -2376,7 +2364,6 @@ TEST_CASE("Hexahedron bspline elements are checked",
         bool kernel_correction = true;
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
             nodal_coords, nodal_props, kernel_correction));
-        hex_bspline->set_closed_form(false);  // recursive De Boor's algorithm
 
         // Coordinates is (0,0,0) after upgrade
         SECTION(

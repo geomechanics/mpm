@@ -293,8 +293,6 @@ class MPMBase : public MPM {
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Mathematical functions
   std::map<unsigned, std::shared_ptr<mpm::FunctionBase>> math_functions_;
-  //! VTK geometry output bool
-  bool geometry_vtk_{false};
   //! VTK particle variables
   tsl::robin_map<mpm::VariableType, std::vector<std::string>> vtk_vars_;
   //! VTK state variables

@@ -47,9 +47,9 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Update contact force due to levelset
   //! \param[in] dt Analysis time step
-  //! \param[in] leveset_damping Levelset damping factor
+  //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Method bool to compute contact velocity
-  void levelset_contact_force(double dt, double leveset_damping,
+  void levelset_contact_force(double dt, double levelset_damping,
                               bool levelset_pic) override;
 
   //! Return levelset value
@@ -69,10 +69,10 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Compute levelset contact force at particle
   //! \param[in] dt Analysis time step
   //! \param[in] init_radius Particle initial radius
-  //! \param[in] leveset_damping Levelset damping factor
+  //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Method bool to compute contact velocity
   void compute_particle_contact_force(double dt, double init_radius,
-                                      double leveset_damping,
+                                      double levelset_damping,
                                       bool levelset_pic) noexcept;
 
   //! Map levelset contact force to nodes

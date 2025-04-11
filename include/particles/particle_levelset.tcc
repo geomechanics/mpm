@@ -108,7 +108,7 @@ bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(
 //! Compute levelset contact force at particle
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
-    double dt, double init_radius, double leveset_damping,
+    double dt, double init_radius, double levelset_damping,
     bool levelset_pic) noexcept {
 
   // Global contact velocity update scheme
@@ -171,7 +171,7 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
 
   // Damp couple if mp moving away from boundary
   if ((contact_vel_.dot(levelset_normal_)) >= 0.)
-    couple_force_ = (1. - leveset_damping) * couple_force_;
+    couple_force_ = (1. - levelset_damping) * couple_force_;
 }
 
 //! Map levelset contact force to nodes

@@ -48,14 +48,11 @@ inline Eigen::VectorXd
                                                     deformation_gradient);
 
   try {
+    //! Check if we need to apply kernel correction based on particle position
+    //! with respective to local element nodes
     bool apply_kernel_correction = false;
-
-    if (!closed_form) {
-      //! Check if we need to apply kernel correction based on particle position
-      //! with respective to local element nodes
-      if (kernel_correction_) {
-        apply_kernel_correction = this->kernel_correction_region(xi);
-      }
+    if (kernel_correction_) {
+      apply_kernel_correction = this->kernel_correction_region(xi);
     }
 
     //! Convert local coordinates to real coordinates
@@ -67,60 +64,48 @@ inline Eigen::VectorXd
       pcoord.noalias() +=
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
-    if (closed_form) {
-      //! Compute shape function using a closed-form quadratic B-Spline equation
-      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-        //! Loop over dimension
-        for (unsigned i = 0; i < Tdim; ++i) {
-          double N = this->kernel(pcoord[i], nodal_coordinates_.row(n)[i]);
-          shapefn[n] = shapefn[n] * N;
+    //! Compute shape function following a multiplicative rule
+    for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+      //! Loop over dimension
+      for (unsigned i = 0; i < Tdim; ++i) {
+        double N = this->kernel(pcoord[i], nodal_coordinates_.row(n)[i],
+                                this->node_type_[n][i], Tpolynomial);
+        switch (this->node_type_[n][i]) {
+          case 1:
+            N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 5,
+                              Tpolynomial);
+            break;
+          case 4:
+            N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 6,
+                              Tpolynomial);
+            break;
         }
+
+        shapefn[n] = shapefn[n] * N;
       }
     }
 
-    if (!closed_form) {
-      //! Compute shape function following a multiplicative rule
+    //! If kernel correction is needed
+    if (apply_kernel_correction) {
+      // Compute M inverse matrix
+      Eigen::Matrix<double, Tdim + 1, Tdim + 1> M =
+          Eigen::Matrix<double, Tdim + 1, Tdim + 1>::Zero();
       for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-        //! Loop over dimension
-        for (unsigned i = 0; i < Tdim; ++i) {
-          double N = this->kernel(pcoord[i], nodal_coordinates_.row(n)[i],
-                                  this->node_type_[n][i], Tpolynomial);
-          switch (this->node_type_[n][i]) {
-            case 1:
-              N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 5,
-                                Tpolynomial);
-              break;
-            case 4:
-              N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 6,
-                                Tpolynomial);
-              break;
-          }
-
-          shapefn[n] = shapefn[n] * N;
-        }
+        Eigen::Matrix<double, Tdim + 1, 1> p;
+        p << 1.0, (nodal_coordinates_.row(n).transpose() - pcoord);
+        M.noalias() += shapefn(n) * p * p.transpose();
       }
+      const auto& M_inv = M.inverse();
+      const double C1 = M_inv(0, 0);
+      const VectorDim& C2 = M_inv.block(1, 0, Tdim, 1);
 
-      //! If kernel correction is needed
-      if (apply_kernel_correction) {
-        // Compute M inverse matrix
-        Eigen::Matrix<double, Tdim + 1, Tdim + 1> M =
-            Eigen::Matrix<double, Tdim + 1, Tdim + 1>::Zero();
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          Eigen::Matrix<double, Tdim + 1, 1> p;
-          p << 1.0, (nodal_coordinates_.row(n).transpose() - pcoord);
-          M.noalias() += shapefn(n) * p * p.transpose();
-        }
-        const auto& M_inv = M.inverse();
-        const double C1 = M_inv(0, 0);
-        const VectorDim& C2 = M_inv.block(1, 0, Tdim, 1);
-
-        // Corrected shape function calculation
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          shapefn(n) *=
-              (C1 + C2.dot(nodal_coordinates_.row(n).transpose() - pcoord));
-        }
+      // Corrected shape function calculation
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        shapefn(n) *=
+            (C1 + C2.dot(nodal_coordinates_.row(n).transpose() - pcoord));
       }
     }
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     return shapefn;
@@ -145,14 +130,11 @@ inline Eigen::MatrixXd
                                                          deformation_gradient);
 
   try {
+    //! Check if we need to apply kernel correction based on particle position
+    //! with respective to local element nodes
     bool apply_kernel_correction = false;
-
-    if (!closed_form) {
-      //! Check if we need to apply kernel correction based on particle position
-      //! with respective to local element nodes
-      if (kernel_correction_) {
-        apply_kernel_correction = this->kernel_correction_region(xi);
-      }
+    if (kernel_correction_) {
+      apply_kernel_correction = this->kernel_correction_region(xi);
     }
 
     //! Convert local coordinates to real coordinates
@@ -164,108 +146,87 @@ inline Eigen::MatrixXd
       pcoord.noalias() +=
           local_shapefn(i) * nodal_coordinates_.row(i).transpose();
 
-    if (closed_form) {
+    if (!apply_kernel_correction) {
       //! Compute the shape function gradient following a multiplicative rule
       for (unsigned n = 0; n < this->nconnectivity_; ++n)
         //! Loop over dimension
         for (unsigned i = 0; i < Tdim; ++i) {
-          double dN_dx =
-              this->gradient(pcoord[i], nodal_coordinates_.row(n)[i]);
+          double dN_dx = this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
+                                        (this->node_type_[n])[i], Tpolynomial);
+          switch (this->node_type_[n][i]) {
+            case 1:
+              dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
+                                      5, Tpolynomial);
+              break;
+            case 4:
+              dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
+                                      6, Tpolynomial);
+              break;
+          }
+
           for (unsigned j = 0; j < Tdim; ++j) {
             if (j != i) {
-              double N = this->kernel(pcoord[j], nodal_coordinates_.row(n)[j]);
+              double N = this->kernel(pcoord[j], nodal_coordinates_.row(n)[j],
+                                      this->node_type_[n][j], Tpolynomial);
+              switch (this->node_type_[n][j]) {
+                case 1:
+                  N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j], 5,
+                                    Tpolynomial);
+                  break;
+                case 4:
+                  N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j], 6,
+                                    Tpolynomial);
+                  break;
+              }
               dN_dx = dN_dx * N;
             }
           }
 
           grad_shapefn(n, i) = dN_dx;
         }
-    }
+    } else {
+      Eigen::VectorXd shapefn =
+          Eigen::VectorXd::Constant(this->nconnectivity_, 1.0);
 
-    if (!closed_form) {
-      if (!apply_kernel_correction) {
-        //! Compute the shape function gradient following a multiplicative rule
-        for (unsigned n = 0; n < this->nconnectivity_; ++n)
-          //! Loop over dimension
-          for (unsigned i = 0; i < Tdim; ++i) {
-            double dN_dx =
-                this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
-                               (this->node_type_[n])[i], Tpolynomial);
-            switch (this->node_type_[n][i]) {
-              case 1:
-                dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
-                                        5, Tpolynomial);
-                break;
-              case 4:
-                dN_dx += this->gradient(pcoord[i], nodal_coordinates_.row(n)[i],
-                                        6, Tpolynomial);
-                break;
-            }
-
-            for (unsigned j = 0; j < Tdim; ++j) {
-              if (j != i) {
-                double N = this->kernel(pcoord[j], nodal_coordinates_.row(n)[j],
-                                        this->node_type_[n][j], Tpolynomial);
-                switch (this->node_type_[n][j]) {
-                  case 1:
-                    N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j],
-                                      5, Tpolynomial);
-                    break;
-                  case 4:
-                    N += this->kernel(pcoord[j], nodal_coordinates_.row(n)[j],
-                                      6, Tpolynomial);
-                    break;
-                }
-                dN_dx = dN_dx * N;
-              }
-            }
-
-            grad_shapefn(n, i) = dN_dx;
+      //! Compute shape function following a multiplicative rule
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        //! Loop over dimension
+        for (unsigned i = 0; i < Tdim; ++i) {
+          double N = this->kernel(pcoord[i], nodal_coordinates_.row(n)[i],
+                                  this->node_type_[n][i], Tpolynomial);
+          switch (this->node_type_[n][i]) {
+            case 1:
+              N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 5,
+                                Tpolynomial);
+              break;
+            case 4:
+              N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 6,
+                                Tpolynomial);
+              break;
           }
-      } else {
-        Eigen::VectorXd shapefn =
-            Eigen::VectorXd::Constant(this->nconnectivity_, 1.0);
 
-        //! Compute shape function following a multiplicative rule
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          //! Loop over dimension
-          for (unsigned i = 0; i < Tdim; ++i) {
-            double N = this->kernel(pcoord[i], nodal_coordinates_.row(n)[i],
-                                    this->node_type_[n][i], Tpolynomial);
-            switch (this->node_type_[n][i]) {
-              case 1:
-                N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 5,
-                                  Tpolynomial);
-                break;
-              case 4:
-                N += this->kernel(pcoord[i], nodal_coordinates_.row(n)[i], 6,
-                                  Tpolynomial);
-                break;
-            }
-
-            shapefn[n] = shapefn[n] * N;
-          }
+          shapefn[n] = shapefn[n] * N;
         }
+      }
 
-        // Compute M inverse matrix
-        Eigen::Matrix<double, Tdim + 1, Tdim + 1> M =
-            Eigen::Matrix<double, Tdim + 1, Tdim + 1>::Zero();
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          Eigen::Matrix<double, Tdim + 1, 1> p;
-          p << 1.0, (nodal_coordinates_.row(n).transpose() - pcoord);
-          M.noalias() += shapefn(n) * p * p.transpose();
-        }
-        const auto& M_inv = M.inverse();
-        const VectorDim& C2 = M_inv.block(1, 0, Tdim, 1);
-        const MatrixDim& C3 = M_inv.block(1, 1, Tdim, Tdim);
+      // Compute M inverse matrix
+      Eigen::Matrix<double, Tdim + 1, Tdim + 1> M =
+          Eigen::Matrix<double, Tdim + 1, Tdim + 1>::Zero();
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        Eigen::Matrix<double, Tdim + 1, 1> p;
+        p << 1.0, (nodal_coordinates_.row(n).transpose() - pcoord);
+        M.noalias() += shapefn(n) * p * p.transpose();
+      }
+      const auto& M_inv = M.inverse();
+      const VectorDim& C2 = M_inv.block(1, 0, Tdim, 1);
+      const MatrixDim& C3 = M_inv.block(1, 1, Tdim, Tdim);
 
-        // Corrected shape function gradient calculation
-        for (unsigned n = 0; n < this->nconnectivity_; ++n) {
-          grad_shapefn.row(n) =
-              shapefn(n) *
-              (C2 + C3 * (nodal_coordinates_.row(n).transpose() - pcoord))
-                  .transpose();
-        }
+      // Corrected shape function gradient calculation
+      for (unsigned n = 0; n < this->nconnectivity_; ++n) {
+        grad_shapefn.row(n) =
+            shapefn(n) *
+            (C2 + C3 * (nodal_coordinates_.row(n).transpose() - pcoord))
+                .transpose();
       }
     }
   } catch (std::exception& exception) {
@@ -387,40 +348,6 @@ inline std::vector<Eigen::MatrixXd>
     bmatrix.push_back(bi);
   }
   return bmatrix;
-}
-
-//! Compute B-Spline Basis Function using the closed-form equation
-template <unsigned Tdim, unsigned Tpolynomial>
-double mpm::HexahedronBSplineElement<Tdim, Tpolynomial>::kernel(
-    double point_coord, double nodal_coord) const {
-  // Compute normalized relative distance
-  double xi = std::abs((point_coord - nodal_coord) / spacing_length_);
-
-  // Shape function value
-  double value = 0.0;
-  if ((xi >= 0) && (xi < 0.5))
-    value = -xi * xi + 3. / 4.;
-  else if ((xi >= 0.5) && (xi <= 1.5))
-    value = 0.5 * xi * xi - 1.5 * xi + 9. / 8.;
-
-  return value;
-}
-
-//! Compute B-Spline Basis Function Gradient using the closed-form equation
-template <unsigned Tdim, unsigned Tpolynomial>
-double mpm::HexahedronBSplineElement<Tdim, Tpolynomial>::gradient(
-    double point_coord, double nodal_coord) const {
-  // Compute normalized relative distance
-  double xi = (point_coord - nodal_coord) / spacing_length_;
-  double signxi = (xi >= 0.) ? 1.0 : -1.0;
-  double absxi = std::abs(xi);
-  // Shape function gradient value
-  double value = 0.0;
-  if ((absxi >= 0) && (absxi < 0.5))
-    value = -2. * xi / spacing_length_;
-  else if ((absxi >= 0.5) && (absxi <= 1.5))
-    value = (absxi - 1.5) / spacing_length_ * signxi;
-  return value;
 }
 
 //! Compute B-Spline Basis Function using the recursive De Boor's algorithm

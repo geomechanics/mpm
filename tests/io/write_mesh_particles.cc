@@ -201,6 +201,107 @@ bool write_json_warnings(unsigned dim, bool material_sets, bool math_functions,
   return true;
 }
 
+// Write JSON Configuration file for levelset boundary
+bool write_json_levelset(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& file_name, bool BBar,
+                         bool levelset_pic) {
+  // Make json object with input files
+  // 2D
+  std::string dimension = "2d";
+  auto particle_type = "P2DLS";
+  auto node_type = "N2DLS";
+  auto cell_type = "ED2Q4";
+  auto io_type = "Ascii2D";
+  std::string material = "LinearElastic2D";
+  std::vector<double> gravity{{0., -9.81}};
+  unsigned material_id = 0;
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  if (BBar) {
+    particle_type = "P2DLSBBAR";
+  }
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    particle_type = "P3DLS";
+    node_type = "N3DLS";
+    cell_type = "ED3H8";
+    io_type = "Ascii3D";
+    material = "LinearElastic3D";
+    gravity.clear();
+    gravity = {0., -9.81, 0.};
+    if (BBar) {
+      particle_type = "P3DLSBBAR";
+    }
+  }
+
+  auto levelset_velocity_update = "global";
+  if (levelset_pic) {
+    levelset_velocity_update = "pic";
+  }
+
+  Json json_file = {{"title", "Example JSON Input for MPM"},
+                    {"mesh",
+                     {{"mesh", "mesh-" + dimension + ".txt"},
+                      {"io_type", io_type},
+                      {"check_duplicates", true},
+                      {"isoparametric", false},
+                      {"node_type", node_type},
+                      {"cell_type", cell_type},
+                      {
+                          "interface",
+                          {{"interface_type", "levelset"},
+                           {"location", "levelset-nodal-values.txt"},
+                           {"damping", 0.1},
+                           {"velocity_update", levelset_velocity_update}},
+                      }}},
+                    {"particles",
+                     {{{"generator",
+                        {{"type", "file"},
+                         {"material_id", material_id},
+                         {"pset_id", 0},
+                         {"io_type", io_type},
+                         {"particle_type", particle_type},
+                         {"check_duplicates", true},
+                         {"location", "particles-" + dimension + ".txt"}}}}}},
+                    {"materials",
+                     {
+                         {{"id", 0},
+                          {"type", material},
+                          {"density", 1000.},
+                          {"youngs_modulus", 1.0E+6},
+                          {"poisson_ratio", 0.0}},
+                     }},
+                    {"external_loading_conditions", {{"gravity", gravity}}},
+                    {"analysis",
+                     {{"type", analysis},
+                      {"mpm_scheme", "usf"},
+                      {"velocity_update", "flip"},
+                      {"locate_particles", true},
+                      {"dt", 0.001},
+                      {"uuid", file_name + "-" + dimension},
+                      {"nsteps", 5},
+                      {"resume",
+                       {{"resume", resume},
+                        {"uuid", file_name + "-" + dimension},
+                        {"step", 5}}},
+                      {"nload_balance_steps", 1000}}},
+                    {"post_processing",
+                     {{"path", "results/"},
+                      {"vtk", {"id", "levelset", "levelset_couples"}},
+                      {"output_steps", 5}}}};
+
+  // Dump JSON as an input file to be read
+  std::string fname = (file_name + "-" + dimension + ".json").c_str();
+  std::ofstream file;
+  file.open(fname, std::ios_base::out);
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
 // Write JSON Configuration file for absorbing boundary
 bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,

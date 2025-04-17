@@ -442,7 +442,8 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  void compute_stress_newmark() noexcept override;
+  //! \param[in] dt Analysis time step
+  void compute_stress_newmark(double dt) noexcept override;
 
   //! Return stress at the previous time step of the particle
   //! \ingroup Implicit
@@ -457,12 +458,14 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
+  //! \param[in] dt Analysis time step
+  void update_stress_strain(double dt) noexcept override;
 
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
-  void initialise_constitutive_law() noexcept override;
+  //! \param[in] dt Analysis time step
+  void initialise_constitutive_law(double dt) noexcept override;
   /**@}*/
 
  protected:

@@ -606,11 +606,35 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle->id() == 0);
   }
 
+  //! Check id is a positive value
   SECTION("Particle id is positive") {
-    //! Check for id is a positive value
     mpm::Index id = std::numeric_limits<mpm::Index>::max();
     auto particle = std::make_shared<mpm::Particle<Dim>>(id, coords);
     REQUIRE(particle->id() == std::numeric_limits<mpm::Index>::max());
+  }
+
+  //! Test particles scalar, vector and tensor data
+  SECTION("Check particle scalar, vector, and tensor data") {
+    mpm::Index id = 0;
+    const double Tolerance = 1.E-7;
+    bool status = true;
+    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
+        std::make_shared<mpm::Particle<Dim>>(id, coords, status);
+
+    // Assign material
+    unsigned mid = 42;
+    // Initialise material
+    Json jmaterial;
+    jmaterial["density"] = 1000.;
+    jmaterial["youngs_modulus"] = 1.0E+7;
+    jmaterial["poisson_ratio"] = 0.3;
+
+    auto material =
+        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
+            "LinearElastic2D", std::move(mid), jmaterial);
+
+    // Assign material properties
+    REQUIRE(particle->assign_material(material) == true);
   }
 
   //! Test coordinates function

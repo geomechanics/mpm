@@ -335,6 +335,9 @@ void mpm::Particle<Tdim>::initialise() {
 
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_["id"] = [&]() { return static_cast<double>(id_); };
+  this->scalar_properties_["material"] = [&]() {
+    return static_cast<double>(material_id_[mpm::ParticlePhase::Solid]);
+  };
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
@@ -889,7 +892,7 @@ void mpm::Particle<Tdim>::compute_stress(double dt) noexcept {
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+                           &state_variables_[mpm::ParticlePhase::Solid], dt);
 }
 
 //! Map body force

@@ -16,6 +16,8 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
 
   const unsigned Dim = 2;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -108,8 +110,8 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
-    stress =
-        material->compute_stress(stress, strain, particle.get(), &state_vars);
+    stress = material->compute_stress(stress, strain, particle.get(),
+                                      &state_vars, dt);
 
     // Check stressees
     REQUIRE(stress(0) == Approx(1.63461538461538e+04).epsilon(Tolerance));
@@ -131,8 +133,8 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
     stress.setZero();
 
     // Compute updated stress
-    stress =
-        material->compute_stress(stress, strain, particle.get(), &state_vars);
+    stress = material->compute_stress(stress, strain, particle.get(),
+                                      &state_vars, dt);
 
     // Check stressees
     REQUIRE(stress(0) == Approx(1.63461538461538e+04).epsilon(Tolerance));
@@ -204,7 +206,7 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
 
       // Compute updated stress
       stress = material->compute_stress(stress, dstrain, particle.get(),
-                                        &state_vars);
+                                        &state_vars, dt);
 
       // Check stresses
       REQUIRE((stress(3) / G) ==
@@ -269,7 +271,7 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
 
       // Compute updated stress
       stress = material->compute_stress(stress, dstrain, particle.get(),
-                                        &state_vars);
+                                        &state_vars, dt);
 
       // Check stresses
       if (i % 10 == 0)
@@ -328,7 +330,7 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
 
       // Compute updated stress
       stress = material->compute_stress(stress, dstrain, particle.get(),
-                                        &state_vars);
+                                        &state_vars, dt);
 
       // Check stresses
       REQUIRE((stress(3) / G) ==
@@ -386,7 +388,7 @@ TEST_CASE("LinearElastic is checked in 2D", "[material][linear_elastic][2D]") {
 
       // Compute updated stress
       stress = material->compute_stress(stress, dstrain, particle.get(),
-                                        &state_vars);
+                                        &state_vars, dt);
 
       // Check stresses
       if (i % 10 == 0)
@@ -406,6 +408,8 @@ TEST_CASE("LinearElastic is checked in 3D", "[material][linear_elastic][3D]") {
   const double Tolerance = 1.E-7;
 
   const unsigned Dim = 3;
+
+  const double dt = 1.0;
 
   // Add particle
   mpm::Index pid = 0;
@@ -506,8 +510,8 @@ TEST_CASE("LinearElastic is checked in 3D", "[material][linear_elastic][3D]") {
 
     // Compute updated stress
     mpm::dense_map state_vars = material->initialise_state_variables();
-    stress =
-        material->compute_stress(stress, strain, particle.get(), &state_vars);
+    stress = material->compute_stress(stress, strain, particle.get(),
+                                      &state_vars, dt);
 
     // Check stressees
     REQUIRE(stress(0) == Approx(1.92307692307333e+04).epsilon(Tolerance));
@@ -529,8 +533,8 @@ TEST_CASE("LinearElastic is checked in 3D", "[material][linear_elastic][3D]") {
     stress.setZero();
 
     // Compute updated stress
-    stress =
-        material->compute_stress(stress, strain, particle.get(), &state_vars);
+    stress = material->compute_stress(stress, strain, particle.get(),
+                                      &state_vars, dt);
 
     // Check stressees
     REQUIRE(stress(0) == Approx(1.92307692307333e+04).epsilon(Tolerance));
@@ -566,11 +570,11 @@ TEST_CASE("LinearElastic is checked in 3D", "[material][linear_elastic][3D]") {
     mpm::dense_map state_vars = material->initialise_state_variables();
     REQUIRE_THROWS(material->compute_stress(stress, deformation_gradient,
                                             deformation_gradient_increment,
-                                            particle.get(), &state_vars));
+                                            particle.get(), &state_vars, dt));
 
     REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
         updated_stress, stress, deformation_gradient,
-        deformation_gradient_increment, particle.get(), &state_vars));
+        deformation_gradient_increment, particle.get(), &state_vars, dt));
   }
 
   SECTION("LinearElastic check properties earthquake") {

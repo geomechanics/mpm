@@ -28,6 +28,8 @@ TEST_CASE("Implicit Cell is checked for 2D case with B-bar method",
   // Tolerance
   const double Tolerance = 1.E-7;
 
+  const double dt = 1.0;
+
   // Coordinates
   Eigen::Vector2d coords;
 
@@ -155,7 +157,7 @@ TEST_CASE("Implicit Cell is checked for 2D case with B-bar method",
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(), particle.get(),
-            &state_variables);
+            &state_variables, dt);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
     reduced_dmatrix = particle->reduce_dmatrix(dmatrix);
@@ -228,6 +230,8 @@ TEST_CASE("Implicit Cell is checked for 3D case with B-bar method",
   const unsigned Nnodes = 8;
   // Tolerance
   const double Tolerance = 1.E-7;
+
+  const double dt = 1.0;
 
   // Coordinates
   Eigen::Vector3d coords;
@@ -374,7 +378,7 @@ TEST_CASE("Implicit Cell is checked for 3D case with B-bar method",
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(),
             Eigen::Matrix<double, 6, 1>::Zero(), particle.get(),
-            &state_variables);
+            &state_variables, dt);
     // Reduce constitutive relations matrix depending on the dimension
     Eigen::MatrixXd reduced_dmatrix;
     reduced_dmatrix = particle->reduce_dmatrix(dmatrix);

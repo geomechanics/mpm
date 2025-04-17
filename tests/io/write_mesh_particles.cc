@@ -714,7 +714,7 @@ bool write_json_adhesion(unsigned dim, bool resume, const std::string& analysis,
                       {"nload_balance_steps", 1000}}},
                     {"post_processing",
                      {{"path", "results/"},
-                      {"vtk", {"stresses", "strains", "velocities"}},
+                      {"vtk", {"geometry", "id", "material"}},
                       {"output_steps", 5}}}};
 
   // Dump JSON as an input file to be read

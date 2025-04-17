@@ -19,6 +19,8 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
 
   const unsigned Dim = 2;
 
+  const double dt = 1.0;
+
   // Initialise material
   Json jmaterial;
   jmaterial["density"] = 1000.;
@@ -148,8 +150,8 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
     mpm::dense_map state_vars = material->initialise_state_variables();
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
-    auto check_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto check_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(check_stress.size() == 6);
@@ -241,8 +243,8 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
     mpm::dense_map state_vars = material->initialise_state_variables();
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
-    auto check_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto check_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(check_stress.size() == 6);
@@ -288,11 +290,11 @@ TEST_CASE("Newtonian is checked in 2D", "[material][newtonian][2D]") {
     mpm::dense_map state_vars = material->initialise_state_variables();
     REQUIRE_THROWS(material->compute_stress(stress, deformation_gradient,
                                             deformation_gradient_increment,
-                                            particle.get(), &state_vars));
+                                            particle.get(), &state_vars, dt));
 
     REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
         updated_stress, stress, deformation_gradient,
-        deformation_gradient_increment, particle.get(), &state_vars));
+        deformation_gradient_increment, particle.get(), &state_vars, dt));
   }
 }
 
@@ -301,6 +303,8 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
   const double Tolerance = 1.E-7;
 
   const unsigned Dim = 3;
+
+  const double dt = 1.0;
 
   // Initialise material
   Json jmaterial;
@@ -449,8 +453,8 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
     mpm::dense_map state_vars = material->initialise_state_variables();
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
-    auto check_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto check_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(check_stress.size() == 6);
@@ -560,8 +564,8 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
     mpm::dense_map state_vars = material->initialise_state_variables();
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
-    auto check_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto check_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(check_stress.size() == 6);
@@ -577,6 +581,6 @@ TEST_CASE("Newtonian is checked in 3D", "[material][newtonian][3D]") {
 
     // Compute consistent tangent false
     REQUIRE_THROWS(material->compute_consistent_tangent_matrix(
-        stress, stress, dstrain, particle.get(), &state_vars));
+        stress, stress, dstrain, particle.get(), &state_vars, dt));
   }
 }

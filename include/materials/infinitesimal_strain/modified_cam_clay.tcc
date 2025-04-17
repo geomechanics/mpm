@@ -202,7 +202,7 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6>
     mpm::ModifiedCamClay<Tdim>::compute_elasto_plastic_tensor(
         const Vector6d& stress, const Vector6d& dstrain,
-        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars,
+        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt,
         bool hardening) {
 
   mpm::modifiedcamclay::FailureState yield_type =
@@ -563,7 +563,7 @@ void mpm::ModifiedCamClay<Tdim>::compute_df_dsigma(
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::ModifiedCamClay<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
   // Tolerance for yield function
   const double Ftolerance = 1.E-5;
   // Tolerance for preconsolidation function

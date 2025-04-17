@@ -205,7 +205,8 @@ Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elastic_tensor(
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6> mpm::NorSand<Tdim>::compute_elasto_plastic_tensor(
     const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, bool hardening) {
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt,
+    bool hardening) {
 
   mpm::norsand::FailureState yield_type =
       yield_type_.at(int((*state_vars).at("yield_state")));
@@ -525,7 +526,7 @@ typename mpm::norsand::FailureState mpm::NorSand<Tdim>::compute_yield_state(
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::NorSand<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // Note: compression positive in all derivations
   Vector6d stress_neg = -1 * stress;
@@ -562,7 +563,7 @@ Eigen::Matrix<double, 6, 1> mpm::NorSand<Tdim>::compute_stress(
 
   // Compute D matrix used in stress update
   const Matrix6x6 dep =
-      this->compute_elasto_plastic_tensor(stress, dstrain, ptr, state_vars);
+      this->compute_elasto_plastic_tensor(stress, dstrain, ptr, state_vars, dt);
 
   // Update stress
   Vector6d updated_stress = stress_neg + dep * dstrain_neg;

@@ -1,4 +1,4 @@
-# UC Berkeley geomechanics MPM contributors
+# UC Berkeley geomechanics MPM contributors (alphabetical)
 
 * Bodhinanda Chandra, UC Berkeley, USA. [bchandra@berkeley.edu](bchandra@berkeley.edu)
 * Connor Geudeker, UC Berkeley, USA. [cgeudeker@berkeley.edu ](cgeudeker@berkeley.edu)

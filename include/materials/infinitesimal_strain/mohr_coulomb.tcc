@@ -9,25 +9,29 @@ mpm::MohrCoulomb<Tdim>::MohrCoulomb(unsigned id,
     density_ = material_properties.at("density").template get<double>();
 
     // Initial Packing Fraction
+    double initial_packing_fraction = 1.;
     if (material_properties.contains("packing_fraction"))
-      initial_packing_fraction_ =
+      initial_packing_fraction =
           material_properties.at("packing_fraction").template get<double>();
     else if (material_properties.contains("porosity"))
-      initial_packing_fraction_ =
+      initial_packing_fraction =
           1. - material_properties.at("porosity").template get<double>();
 
     // Solid grain density
     bool is_wet = false;
-    if (material_properties.contains("is_wet"))
-      is_wet = material_properties.at("is_wet").template get<bool>();
-    else if (material_properties.contains("porosity"))
+    // Check if two-phase simulation is considered
+    if (material_properties.contains("porosity") &&
+        (material_properties.contains("k_x") ||
+         material_properties.contains("k_y") ||
+         material_properties.contains("k_z")))
       is_wet = true;
     if (!is_wet)
-      grain_density_ = density_ / initial_packing_fraction_;
+      grain_density_ = density_ / initial_packing_fraction;
     else
       grain_density_ = density_;
 
     // Minimum packing fraction
+    minimum_packing_fraction_ = 0.45;
     if (material_properties.contains("packing_fraction_minimum"))
       minimum_packing_fraction_ =
           material_properties.at("packing_fraction_minimum")

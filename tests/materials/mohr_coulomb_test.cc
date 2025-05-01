@@ -46,6 +46,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
   jmaterial["packing_fraction"] = 0.6;
+  jmaterial["packing_fraction_minimum"] = 0.4;
 
   //! Check for id = 0
   SECTION("MohrCoulomb id is zero") {
@@ -688,6 +689,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
   jmaterial["packing_fraction"] = 0.6;
+  jmaterial["packing_fraction_minimum"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -1239,7 +1241,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
-  jmaterial["packing_fraction"] = 0.6;
+  jmaterial["porosity"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -1787,7 +1789,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.001;
   jmaterial["tension_cutoff"] = 0.;
-  jmaterial["packing_fraction"] = 0.6;
+  jmaterial["porosity"] = 0.4;
+  jmaterial["kx"] = 5.e-6;
+  jmaterial["ky"] = 5.e-6;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -2934,7 +2938,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
   jmaterial["peak_pdstrain"] = 1.E-16;
   jmaterial["residual_pdstrain"] = 0.001;
   jmaterial["tension_cutoff"] = 0.;
-  jmaterial["packing_fraction"] = 0.6;
+  jmaterial["porosity"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {

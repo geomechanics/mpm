@@ -130,7 +130,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! Grain density
   double grain_density_{std::numeric_limits<double>::max()};
   //! Minimum packing fraction
-  double minimum_packing_fraction_{0.45};
+  double minimum_packing_fraction_{0.0};
 
   //! Youngs modulus
   double youngs_modulus_{std::numeric_limits<double>::max()};

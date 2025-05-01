@@ -31,7 +31,7 @@ mpm::MohrCoulomb<Tdim>::MohrCoulomb(unsigned id,
       grain_density_ = density_;
 
     // Minimum packing fraction
-    minimum_packing_fraction_ = 0.45;
+    minimum_packing_fraction_ = 0.0;
     if (material_properties.contains("packing_fraction_minimum"))
       minimum_packing_fraction_ =
           material_properties.at("packing_fraction_minimum")
@@ -388,12 +388,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   Matrix6x6 de = this->compute_elastic_tensor(state_vars);
   Vector6d trial_stress =
       this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
-  // Compute stress invariants based on trial stress
-  this->compute_stress_invariants(trial_stress, state_vars);
-  // Compute yield function based on the trial stress
-  Eigen::Matrix<double, 2, 1> yield_function_trial;
-  auto yield_type_trial =
-      this->compute_yield_state(&yield_function_trial, (*state_vars));
   // Separated state: current packing density is less than critical density
   if (current_packing_density <= critical_density) {
     const double tau_tr = mpm::materials::q(trial_stress) / sqrt(3.0);
@@ -401,6 +395,12 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     (*state_vars).at("yield_state") = 3;
     return Vector6d::Zero();
   }
+  // Compute stress invariants based on trial stress
+  this->compute_stress_invariants(trial_stress, state_vars);
+  // Compute yield function based on the trial stress
+  Eigen::Matrix<double, 2, 1> yield_function_trial;
+  auto yield_type_trial =
+      this->compute_yield_state(&yield_function_trial, (*state_vars));
   // Return the updated stress in elastic state
   if (yield_type_trial == mpm::mohrcoulomb::FailureState::Elastic) {
     (*state_vars).at("yield_state") = 0;

@@ -89,16 +89,17 @@ void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
   for (unsigned i = 0; i < nodes_.size(); i++) {
     levelset_ += shapefn_[i] * nodes_[i]->levelset();
   }
-
-  // Compute error minimum value
-  if (levelset_ < std::numeric_limits<double>::epsilon())
-    levelset_ = std::numeric_limits<double>::epsilon();
 }
 
 //! Check if particle in contact with levelset
 template <unsigned Tdim>
-bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(
-    double init_radius) noexcept {
+bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(double init_radius) {
+  // Check particle levelset minimum value
+  if (levelset_ < std::numeric_limits<double>::epsilon()) {
+    console_->warn("Levelset particle {} violates interface", id_);
+    levelset_ = std::numeric_limits<double>::epsilon();
+  }
+
   if ((levelset_ < init_radius) && (levelset_ > 0.))
     return true;
   else

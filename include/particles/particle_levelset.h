@@ -64,7 +64,7 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Check if particle in contact with levelset
   //! \param[in] init_radius Particle initial radius
-  bool is_levelset_contact(double init_radius) noexcept;
+  bool is_levelset_contact(double init_radius);
 
   //! Compute levelset contact force at particle
   //! \param[in] dt Analysis time step

@@ -239,6 +239,9 @@ class ParticleBase {
   //! Strain rate
   virtual Eigen::Matrix<double, 6, 1> strain_rate() const = 0;
 
+  //! Assign dvolumetric strain
+  virtual void assign_dvolumetric_strain(double dvol_strain) noexcept = 0;
+
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
 

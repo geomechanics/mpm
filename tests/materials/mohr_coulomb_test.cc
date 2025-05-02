@@ -11,7 +11,6 @@
 #include "mohr_coulomb.h"
 #include "node.h"
 #include "particle.h"
-#include <iostream>
 
 //! Check MohrCoulomb class in 2D
 //! Cohesion only, without softening
@@ -379,9 +378,6 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
       // Initialise elastic state
       material->initialise(&state_variables);
-
-      std::cout << "PARTICLE_MASS_DENSITY: " << particle->mass_density()
-                << std::endl;
 
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =

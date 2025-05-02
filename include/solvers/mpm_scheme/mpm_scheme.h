@@ -1,6 +1,8 @@
 #ifndef MPM_MPM_SCHEME_H_
 #define MPM_MPM_SCHEME_H_
 
+#include <sstream>
+
 #ifdef USE_GRAPH_PARTITIONING
 #include "graph.h"
 #endif

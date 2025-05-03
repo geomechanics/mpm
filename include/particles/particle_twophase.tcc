@@ -55,10 +55,13 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   for (unsigned j = 0; j < Tdim; ++j) acceleration[j] = this->acceleration_[j];
 
   // Particle local size
-  Eigen::Vector3d nsize;
+  Eigen::Vector3d size, nsize;
+  size.setZero();
   nsize.setZero();
-  Eigen::VectorXd size = this->natural_size();
-  for (unsigned j = 0; j < Tdim; ++j) nsize[j] = size[j];
+  for (unsigned j = 0; j < Tdim; ++j) {
+    size[j] = size_[j];
+    nsize[j] = natural_size_[j];
+  }
 
   Eigen::Matrix<double, 6, 1> stress = this->stress_;
 
@@ -90,6 +93,10 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   particle_data->displacement_x = displacement[0];
   particle_data->displacement_y = displacement[1];
   particle_data->displacement_z = displacement[2];
+
+  particle_data->size_x = size[0];
+  particle_data->size_y = size[1];
+  particle_data->size_z = size[2];
 
   particle_data->nsize_x = nsize[0];
   particle_data->nsize_y = nsize[1];

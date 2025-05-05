@@ -236,6 +236,7 @@ bool write_json_levelset(unsigned dim, bool resume, const std::string& analysis,
     }
   }
 
+  auto location = "levelset-nodal-values-" + dimension + ".txt";
   auto levelset_velocity_update = "global";
   if (levelset_pic) {
     levelset_velocity_update = "pic";
@@ -252,7 +253,7 @@ bool write_json_levelset(unsigned dim, bool resume, const std::string& analysis,
                       {
                           "interface",
                           {{"interface_type", "levelset"},
-                           {"location", "levelset-nodal-values.txt"},
+                           {"location", location},
                            {"damping", 0.1},
                            {"velocity_update", levelset_velocity_update}},
                       }}},

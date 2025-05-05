@@ -202,9 +202,9 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
     levelset_input_file.emplace_back(
         std::make_tuple(1, 0.00, 0.1, 1000., 1.0E+06));
     levelset_input_file.emplace_back(
-        std::make_tuple(2, 0.00, 0.1, 1000., 1.0E+06));
+        std::make_tuple(2, 1.00, 0.1, 1000., 1.0E+06));
     levelset_input_file.emplace_back(
-        std::make_tuple(3, 0.00, 0.1, 1000., 1.0E+06));
+        std::make_tuple(3, 1.00, 0.1, 1000., 1.0E+06));
 
     // Dump levelset inputs as a file to be read
     std::ofstream file;

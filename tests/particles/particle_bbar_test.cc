@@ -331,12 +331,12 @@ TEST_CASE("ParticleLevelsetBbar is checked for 2D case",
   Eigen::Vector2d coords;
   coords.setZero();
 
-  //! Test particle, cell and node functions
-  SECTION("Test particle, cell and node functions") {
+  //! Test levelset particle, cell and node functions
+  SECTION("Test levelset particle, cell and node functions") {
     // Add particle
     mpm::Index id = 0;
     coords << 0.75, 0.75;
-    auto particle =
+    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::ParticleLevelsetBbar<Dim>>(id, coords);
 
     // Particle type
@@ -978,16 +978,16 @@ TEST_CASE("ParticleLevelsetBbar is checked for 3D case",
   Eigen::Vector3d coords;
   coords.setZero();
 
-  //! Test particle, cell and node functions
-  SECTION("Test particle, cell and node functions") {
+  //! Test levelset particle, cell and node functions
+  SECTION("Test levelset particle, cell and node functions") {
     // Add particle
     mpm::Index id = 0;
     coords << 1.5, 1.5, 1.5;
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
-        std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
+        std::make_shared<mpm::ParticleLevelsetBbar<Dim>>(id, coords);
 
     // Particle type
-    REQUIRE(particle->type() == "P3DBBAR");
+    REQUIRE(particle->type() == "P3DLSBBAR");
 
     // Phase
     const unsigned phase = 0;

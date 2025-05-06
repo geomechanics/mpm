@@ -336,7 +336,7 @@ TEST_CASE("ParticleLevelsetBbar is checked for 2D case",
     // Add particle
     mpm::Index id = 0;
     coords << 0.75, 0.75;
-    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
+    auto particle =
         std::make_shared<mpm::ParticleLevelsetBbar<Dim>>(id, coords);
 
     // Particle type
@@ -983,7 +983,7 @@ TEST_CASE("ParticleLevelsetBbar is checked for 3D case",
     // Add particle
     mpm::Index id = 0;
     coords << 1.5, 1.5, 1.5;
-    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
+    auto particle =
         std::make_shared<mpm::ParticleLevelsetBbar<Dim>>(id, coords);
 
     // Particle type

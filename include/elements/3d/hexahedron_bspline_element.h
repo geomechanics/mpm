@@ -151,7 +151,6 @@ class HexahedronBSplineElement : public HexahedronElement<3, 8> {
   //! for single direction
   //! \param[in] point_coord point coordinate in one direction
   //! \param[in] nodal_coord nodal coordinate in one direction
-  //! dimension
   //! \param[in] node_type Node type associated with direction
   //! \param[in] poly_order Polynomial degree
   //! \param[in] index Index associated to local BSplineKnotVector

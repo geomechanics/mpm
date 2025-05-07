@@ -38,7 +38,8 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     // Add particle
     mpm::Index id = 0;
     coords << 0.75, 0.75;
-    auto particle = std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
+    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
+        std::make_shared<mpm::ParticleBbar<Dim>>(id, coords);
 
     // Particle type
     REQUIRE(particle->type() == "P2DBBAR");
@@ -389,19 +390,8 @@ TEST_CASE("ParticleLevelsetBbar is checked for 2D case",
 
     // Add cell to particle
     REQUIRE(cell->status() == false);
-    // Check compute shape functions of a particle
-    // TODO Assert: REQUIRE_NOTHROW(particle->compute_shapefn());
     // Compute reference location should throw
     REQUIRE(particle->compute_reference_location() == false);
-    // Compute updated particle location should fail
-    // TODO Assert:
-    // REQUIRE_NOTHROW(particle->compute_updated_position(dt) == false);
-    // Compute updated particle location from nodal velocity should fail
-    // TODO Assert: REQUIRE_NOTHROW(particle->compute_updated_position(dt,
-    // true)); Compute volume
-    // TODO Assert: REQUIRE(particle->compute_volume() == false);
-    // Update volume should fail
-    // TODO Assert: REQUIRE(particle->update_volume() == false);
 
     REQUIRE(particle->assign_cell(cell) == true);
     REQUIRE(cell->status() == true);
@@ -443,12 +433,6 @@ TEST_CASE("ParticleLevelsetBbar is checked for 2D case",
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
             "LinearElastic2D", std::move(mid), jmaterial);
 
-    // Check compute mass before material and volume
-    // TODO Assert: REQUIRE(particle->compute_mass() == false);
-
-    // Test compute stress before material assignment
-    // TODO Assert: REQUIRE(particle->compute_stress() == false);
-
     // Assign material properties
     REQUIRE(particle->assign_material(material) == true);
 
@@ -465,10 +449,6 @@ TEST_CASE("ParticleLevelsetBbar is checked for 2D case",
 
     // Map particle mass to nodes
     particle->assign_mass(std::numeric_limits<double>::max());
-    // TODO Assert: REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
-
-    // Map particle pressure to nodes
-    // TODO Assert: REQUIRE(particle->map_pressure_to_nodes() == false);
 
     // Assign mass to nodes
     REQUIRE(particle->compute_reference_location() == true);
@@ -485,7 +465,6 @@ TEST_CASE("ParticleLevelsetBbar is checked for 2D case",
     REQUIRE_NOTHROW(particle->compute_mass());
     REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
 
-    // TODO Assert: REQUIRE(particle->map_pressure_to_nodes() == false);
     REQUIRE(particle->compute_pressure_smoothing() == false);
 
     // Values of nodal mass
@@ -983,7 +962,7 @@ TEST_CASE("ParticleLevelsetBbar is checked for 3D case",
     // Add particle
     mpm::Index id = 0;
     coords << 1.5, 1.5, 1.5;
-    auto particle =
+    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::ParticleLevelsetBbar<Dim>>(id, coords);
 
     // Particle type
@@ -1066,20 +1045,8 @@ TEST_CASE("ParticleLevelsetBbar is checked for 3D case",
 
     // Add cell to particle
     REQUIRE(cell->status() == false);
-    // Check compute shape functions of a particle
-    // TODO Assert: REQUIRE(particle->compute_shapefn() == false);
     // Compute reference location should throw
     REQUIRE(particle->compute_reference_location() == false);
-    // Compute updated particle location should fail
-    // TODO Assert: REQUIRE(particle->compute_updated_position(dt) == false);
-    // Compute updated particle location from nodal velocity should fail
-    // TODO Assert: REQUIRE_NOTHROW(particle->compute_updated_position(dt,
-    // true));
-
-    // Compute volume
-    // TODO Assert: REQUIRE(particle->compute_volume() == false);
-    // Update volume should fail
-    // TODO Assert: REQUIRE(particle->update_volume() == false);
 
     REQUIRE(particle->assign_cell(cell) == true);
     REQUIRE(cell->status() == true);
@@ -1121,12 +1088,6 @@ TEST_CASE("ParticleLevelsetBbar is checked for 3D case",
         Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
             "LinearElastic3D", std::move(mid), jmaterial);
 
-    // Check compute mass before material and volume
-    // TODO Assert: REQUIRE(particle->compute_mass() == false);
-
-    // Test compute stress before material assignment
-    // TODO Assert: REQUIRE(particle->compute_stress() == false);
-
     // Assign material properties
     REQUIRE(particle->assign_material(material) == true);
 
@@ -1143,10 +1104,6 @@ TEST_CASE("ParticleLevelsetBbar is checked for 3D case",
 
     // Map particle mass to nodes
     particle->assign_mass(std::numeric_limits<double>::max());
-    // TODO Assert: REQUIRE(particle->map_mass_momentum_to_nodes() == false);
-
-    // Map particle pressure to nodes
-    // TODO Assert: REQUIRE(particle->map_pressure_to_nodes() == false);
 
     // Assign mass to nodes
     REQUIRE(particle->compute_reference_location() == true);
@@ -1163,7 +1120,6 @@ TEST_CASE("ParticleLevelsetBbar is checked for 3D case",
     REQUIRE_NOTHROW(particle->compute_mass());
     REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
 
-    // TODO Assert: REQUIRE(particle->map_pressure_to_nodes() == false);
     REQUIRE(particle->compute_pressure_smoothing() == false);
 
     // Values of nodal mass

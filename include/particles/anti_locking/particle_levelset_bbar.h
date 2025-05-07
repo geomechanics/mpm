@@ -49,15 +49,6 @@ class ParticleLevelsetBbar : public mpm::ParticleLevelset<Tdim> {
     return (Tdim == 2) ? "P2DLSBBAR" : "P3DLSBBAR";
   }
 
-  /**
-   * \defgroup Implicit Functions dealing with implicit MPM
-   */
-  /**@{*/
-  //! Compute B matrix of a particle, based on local coordinates
-  //! \ingroup Implicit
-  inline Eigen::MatrixXd compute_bmatrix() noexcept override;
-  /**@}*/
-
  protected:
   //! Compute strain rate
   //! \ingroup Implicit
@@ -66,19 +57,6 @@ class ParticleLevelsetBbar : public mpm::ParticleLevelset<Tdim> {
   //! \retval strain rate at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_rate(
       const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
-
-  /**
-   * \defgroup Implicit Functions dealing with implicit MPM
-   */
-  /**@{*/
-  //! Compute strain increment
-  //! \ingroup Implicit
-  //! \param[in] dn_dx The spatial gradient of shape function
-  //! \param[in] phase Index to indicate phase
-  //! \retval strain increment at particle inside a cell
-  inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
-  /**@}*/
 
  protected:
   //! Nodes

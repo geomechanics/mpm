@@ -44,6 +44,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["packing_fraction"] = 0.6;
+  jmaterial["packing_fraction_minimum"] = 0.4;
 
   //! Check for id = 0
   SECTION("MohrCoulomb id is zero") {
@@ -104,6 +106,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
     REQUIRE(material->template property<double>("tension_cutoff") ==
             Approx(jmaterial["tension_cutoff"]).epsilon(Tolerance));
+    REQUIRE(material->template property<double>("packing_fraction") ==
+            Approx(jmaterial["packing_fraction"]).epsilon(Tolerance));
 
     // Check if state variable is initialised
     SECTION("State variable is initialised") {
@@ -131,6 +135,78 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
     }
   }
 
+  //! Check separation state
+  SECTION("MohrCoulomb check separation state") {
+    unsigned id = 0;
+    auto material =
+        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
+            "MohrCoulomb2D", std::move(0), jmaterial);
+
+    auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
+
+    REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
+    particle->assign_dvolumetric_strain(1.0);
+    particle->update_volume();
+
+    // Initialise stress
+    mpm::Material<Dim>::Vector6d stress;
+    stress.setZero();
+    stress(0) = -5000.;
+    stress(1) = -6000.;
+    stress(2) = -7000.;
+    stress(3) = -1000.;
+
+    // Initialise incremental of strain
+    mpm::Material<Dim>::Vector6d dstrain;
+    dstrain.setZero();
+    dstrain(0) = -0.001;
+    dstrain(1) = 0.;
+    dstrain(2) = 0.;
+    dstrain(3) = 0.;
+
+    // Initialise state variables
+    mpm::dense_map state_variables = material->initialise_state_variables();
+
+    // Initialise elastic state
+    material->initialise(&state_variables);
+
+    // Check compute stress
+    mpm::Material<Dim>::Vector6d updated_stress = mohr_coulomb->compute_stress(
+        stress, dstrain, particle.get(), &state_variables, dt);
+
+    // Check update stress
+    REQUIRE(updated_stress(0) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_variables, dt);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+            dep_check << 0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
+  }
+
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
     unsigned id = 0;
@@ -141,6 +217,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -449,6 +530,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
     REQUIRE(material->id() == 0);
 
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
+
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
@@ -670,6 +756,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["packing_fraction"] = 0.6;
+  jmaterial["packing_fraction_minimum"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -681,6 +769,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -988,6 +1081,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
 
     REQUIRE(material->id() == 0);
 
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
+
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
@@ -1211,6 +1309,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["porosity"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -1222,6 +1321,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -1291,7 +1395,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
                                 &df_dsigma, &dp_dsigma, &dp_dq, &softening);
-    ;
+
     // Check plastic correction component based on stress
     // Check dF/dSigma
     REQUIRE(df_dsigma(0) == Approx(0.62666187).epsilon(Tolerance));
@@ -1526,6 +1630,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
 
     REQUIRE(material->id() == 0);
 
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
+
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
     stress.setZero();
@@ -1748,6 +1857,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.001;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["porosity"] = 0.4;
+  jmaterial["kx"] = 5.e-6;
+  jmaterial["ky"] = 5.e-6;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -1759,6 +1871,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =
@@ -2309,6 +2426,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =
@@ -2884,6 +3006,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
   jmaterial["peak_pdstrain"] = 1.E-16;
   jmaterial["residual_pdstrain"] = 0.001;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["porosity"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -2895,6 +3018,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =
@@ -3473,6 +3601,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =

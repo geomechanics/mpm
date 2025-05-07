@@ -1858,11 +1858,26 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
 
           REQUIRE(mesh != nullptr);
           REQUIRE(mesh->assign_nodal_levelset_values(levelset_inputs) == true);
-          // When inputs fail (negative mu and alpha)
+
+          // Check assigned values
+          for (const auto& levelset_input : levelset_inputs) {
+            auto node_id = std::get<0>(levelset_input);
+            auto node = mesh->node(node_id);
+            REQUIRE(node->levelset() ==
+                    Approx(std::get<1>(levelset_input)).epsilon(Tolerance));
+            REQUIRE(node->levelset_mu() ==
+                    Approx(std::get<2>(levelset_input)).epsilon(Tolerance));
+            REQUIRE(node->levelset_alpha() ==
+                    Approx(std::get<3>(levelset_input)).epsilon(Tolerance));
+            REQUIRE(node->barrier_stiffness() ==
+                    Approx(std::get<4>(levelset_input)).epsilon(Tolerance));
+          }
+
+          // Failing inputs (negative mu and alpha)
           levelset_inputs.emplace_back(
               std::make_tuple(3, 0.05, -0.1, -1000., 1.0E+06));
           REQUIRE(mesh->assign_nodal_levelset_values(levelset_inputs) == false);
-          // When inputs fail (negative barrier stiffness)
+          // Failing inputs (negative barrier stiffness)
           levelset_inputs.emplace_back(
               std::make_tuple(3, 0.05, 0.1, 1000., -1.0E+06));
           REQUIRE(mesh->assign_nodal_levelset_values(levelset_inputs) == false);

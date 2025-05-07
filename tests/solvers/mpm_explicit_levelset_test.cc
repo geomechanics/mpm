@@ -40,6 +40,26 @@ TEST_CASE("MPM 2D Explicit Levelset Interface is checked",
     REQUIRE(mpm_test::write_json_levelset(Dim, false, analysis, fname, true,
                                           true) == true);
 
+    // Check JSON information
+    std::ifstream json_file("mpm-levelset-test-2d.json");
+    REQUIRE(json_file.is_open());
+
+    Json json_data;
+    json_file >> json_data;
+    json_file.close();
+
+    REQUIRE(json_data.contains("mesh"));
+    REQUIRE(json_data["mesh"].contains("interface"));
+    const auto& interface = json_data["mesh"]["interface"];
+    REQUIRE(interface.contains("interface_type"));
+    REQUIRE(interface["interface_type"] == "levelset");
+    REQUIRE(interface.contains("location"));
+    REQUIRE(interface["location"] == "levelset-nodal-values-2d.txt");
+    REQUIRE(interface.contains("damping"));
+    REQUIRE(interface["damping"] == Approx(0.05).epsilon(1e-7));
+    REQUIRE(interface.contains("velocity_update"));
+    REQUIRE(interface["velocity_update"] == "pic");
+
     // Create an IO object and run explicit MPM
     auto io = std::make_unique<mpm::IO>(argc, argv);
     auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));

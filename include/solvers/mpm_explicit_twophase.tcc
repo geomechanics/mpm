@@ -370,8 +370,14 @@ bool mpm::MPMExplicitTwoPhase<Tdim>::solve() {
     // Locate particles
     auto unlocatable_particles = mesh_->locate_particles_mesh();
 
-    if (!unlocatable_particles.empty() && this->locate_particles_)
-      throw std::runtime_error("Particle outside the mesh domain");
+    // Throw error with listed unlocatable particles
+    if (!unlocatable_particles.empty() && this->locate_particles_) {
+      std::ostringstream unloc_mp;
+      for (const auto& particle : unlocatable_particles)
+        unloc_mp << particle->id() << " ";
+      throw std::runtime_error("Particle(s) outside the mesh domain: " +
+                               unloc_mp.str());
+    }
     // If unable to locate particles remove particles
     if (!unlocatable_particles.empty() && !this->locate_particles_)
       for (const auto& remove_particle : unlocatable_particles)

@@ -1,5 +1,3 @@
-#include <iomanip>  // LEDT
-
 //! Construct a particle with id and coordinates
 template <unsigned Tdim>
 mpm::ParticleLevelset<Tdim>::ParticleLevelset(Index id, const VectorDim& coord)
@@ -55,7 +53,6 @@ void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
 
   // Calculate radius from volume
   double init_vol = this->size_.prod();
-  // double init_vol = std::pow(this->size_, Tdim); // LEDT for scalar size
   double init_radius = 0.0;  // constant radial influence
   if (Tdim == 2) init_radius = std::sqrt(init_vol / M_PI);  // unit cylinder
   if (Tdim == 3) init_radius = std::cbrt(init_vol * 0.75 / M_PI);  // sphere
@@ -90,7 +87,7 @@ void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
   couple_force_ = VectorDim::Zero();
 
   // Map levelset to particle
-  for (unsigned i = 0; i < nodes_.size(); i++) {  // LEDT check for BSpline?
+  for (unsigned i = 0; i < nodes_.size(); i++) {
     levelset_ += shapefn_[i] * nodes_[i]->levelset();
   }
 }
@@ -178,36 +175,6 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
   // Damp couple if mp moving away from boundary
   if ((contact_vel_.dot(levelset_normal_)) >= 0.)
     couple_force_ = (1. - levelset_damping) * couple_force_;
-
-  // clang-format off
-  std::cout << "id_ " << this->id_ << ";\n"
-            << std::fixed << std::setprecision(10)
-            << "coordinates_ " << this->coordinates_[0] << "," << this->coordinates_[1] << "," << this->coordinates_[2] << ";\n"
-            // << "volume " << this->volume_ << ";\n"
-            // << "mass " << this->mass_ << ";\n"
-            // << "size " << this->size_[0] << "," << this->size_[1] << "," << this->size_[2] << ";\n"
-            << "levelset_ " << levelset_ << ";\n"
-            // << "init_radius " << init_radius << ";\n"
-            // << "contact_area " << contact_area << ";\n"
-            // << "levelset_normal_ " << levelset_normal_[0] << "," << levelset_normal_[1] << "," << levelset_normal_[2] << ";\n"
-            // << "levelset_mu_ " << levelset_mu_ << ";\n"
-            // << "levelset_alpha_ " << levelset_alpha_ << ";\n"
-            // << "barrier_stiffness_ " << barrier_stiffness_ << ";\n"
-            // << "levelset_damping " << levelset_damping << ";\n"
-            // << "dt " << dt << ";\n"
-            << "contact_vel_ "<< contact_vel_[0] << "," << contact_vel_[1] << "," << contact_vel_[2] << ";\n"
-            << "couple_normal_mag " << couple_normal_mag << ";\n"
-            // << "tangent_friction " << tangent_friction << ";\n"
-            // << "tangent_adhesion " << tangent_adhesion << ";\n"
-            // << "contact_tangent_mag " << contact_tangent_mag << ";\n"
-            // << "initial couple_tangent_mag " << (tangent_friction + tangent_adhesion) << ";\n"
-            // << "final couple_tangent_mag " << couple_tangent_mag << ";\n"
-            // << "couple_force_normal " << couple_force_normal[0] << "," << couple_force_normal[1] << "," << couple_force_normal[2] << ";\n"
-            // << "couple_force_tangent " << couple_force_tangent[0] << "," << couple_force_tangent[1] << "," << couple_force_tangent[2] << ";\n"
-            // << "initial couple_force_ " << couple_force_normal[0] + couple_force_tangent[0] << "," << couple_force_normal[1] + couple_force_tangent[1] << "," << couple_force_normal[2] + couple_force_tangent[2] << ";\n"
-            // << "final couple_force_ " << couple_force_[0] << "," << couple_force_[1] << "," << couple_force_[2] << "\n"
-            << std::endl;
-  // clang-format on
 }
 
 //! Map levelset contact force to nodes

@@ -14,6 +14,8 @@ TEST_CASE("MPM 2D Explicit Levelset Interface is checked",
           "[MPM][2D][Explicit][Levelset]") {
   // Dimension
   const unsigned Dim = 2;
+  // Tolerance
+  const double Tolerance = 1.E-7;
 
   // Write JSON file
   const std::string fname = "mpm-levelset-test";
@@ -56,9 +58,12 @@ TEST_CASE("MPM 2D Explicit Levelset Interface is checked",
     REQUIRE(interface.contains("location"));
     REQUIRE(interface["location"] == "levelset-nodal-values-2d.txt");
     REQUIRE(interface.contains("damping"));
-    REQUIRE(interface["damping"] == Approx(0.05).epsilon(1e-7));
+    REQUIRE(interface["damping"] == Approx(0.05).epsilon(Tolerance));
     REQUIRE(interface.contains("velocity_update"));
     REQUIRE(interface["velocity_update"] == "pic");
+    REQUIRE(interface.contains("violation_corrector"));
+    REQUIRE(interface["violation_corrector"] ==
+            Approx(0.001).epsilon(Tolerance));
 
     // Create an IO object and run explicit MPM
     auto io = std::make_unique<mpm::IO>(argc, argv);

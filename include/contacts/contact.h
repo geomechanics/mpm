@@ -20,8 +20,10 @@ class Contact {
   //! Initialise levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  virtual inline void initialise_levelset_properties(double levelset_damping,
-                                                     bool levelset_pic){};
+  //! \param[in] levelset_violation_corrector Violation correction factor
+  virtual inline void initialise_levelset_properties(
+      double levelset_damping, bool levelset_pic,
+      double levelset_violation_corrector){};
 
   //! Compute contact forces
   virtual inline void compute_contact_forces(){};

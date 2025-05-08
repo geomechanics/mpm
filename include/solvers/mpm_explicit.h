@@ -90,6 +90,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::levelset_damping_;
   //! Levelset PIC contact velocity
   using mpm::MPMBase<Tdim>::levelset_pic_;
+  //! Levelset violation correction factor
+  using mpm::MPMBase<Tdim>::levelset_violation_corrector_;
   /**@}*/
 
  private:

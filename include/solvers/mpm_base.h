@@ -322,9 +322,11 @@ class MPMBase : public MPM {
   //! Interface type
   std::string interface_type_{"none"};
   //! Levelset damping factor
-  double levelset_damping_{0.};
+  double levelset_damping_{0.05};
   //! Levelset PIC contact velocity
   bool levelset_pic_{false};
+  //! Levelset violation correction factor
+  double levelset_violation_corrector_{0.001};
   /**@}*/
 
   /**

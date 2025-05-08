@@ -19,8 +19,10 @@ class ContactLevelset : public Contact<Tdim> {
   //! Initialise levelset properties
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Particle in cell method bool for contact velocity
-  void initialise_levelset_properties(double levelset_damping,
-                                      bool levelset_pic) override;
+  //! \param[in] levelset_violation_corrector Violation correction factor
+  void initialise_levelset_properties(
+      double levelset_damping, bool levelset_pic,
+      double levelset_violation_corrector) override;
 
   //! Compute contact forces
   //! \param[in] dt Analysis time step
@@ -34,6 +36,8 @@ class ContactLevelset : public Contact<Tdim> {
   double levelset_damping_;
   //! levelset_pic_
   bool levelset_pic_;
+  //! levelset_violation_corrector_
+  double levelset_violation_corrector_;
   //! Mesh object
   using mpm::Contact<Tdim>::mesh_;
 };  // ContactLevelset class

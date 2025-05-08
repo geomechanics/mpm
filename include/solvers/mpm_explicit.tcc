@@ -104,8 +104,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
   // Initialise levelset properties
   if (this->interface_type_ == "levelset")
-    contact_->initialise_levelset_properties(this->levelset_damping_,
-                                             this->levelset_pic_);
+    contact_->initialise_levelset_properties(
+        this->levelset_damping_, this->levelset_pic_,
+        this->levelset_violation_corrector_);
 
   // Initialise loading conditions
   this->initialise_loads();

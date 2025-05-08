@@ -49,8 +49,10 @@ class ParticleLevelset : public Particle<Tdim> {
   //! \param[in] dt Analysis time step
   //! \param[in] levelset_damping Levelset damping factor
   //! \param[in] levelset_pic Method bool to compute contact velocity
+  //! \param[in] levelset_violation_corrector Violation correction factor
   void levelset_contact_force(double dt, double levelset_damping,
-                              bool levelset_pic) override;
+                              bool levelset_pic,
+                              double levelset_violation_corrector) override;
 
   //! Return levelset value
   double levelset() const { return levelset_; }
@@ -64,7 +66,8 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Check if particle in contact with levelset
   //! \param[in] init_radius Particle initial radius
-  bool is_levelset_contact(double init_radius);
+  bool is_levelset_contact(double init_radius,
+                           double levelset_violation_corrector);
 
   //! Compute levelset contact force at particle
   //! \param[in] dt Analysis time step

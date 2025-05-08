@@ -1321,14 +1321,14 @@ void mpm::MPMBase<Tdim>::interface_inputs(
           levelset_damping_ =
               mesh_props["interface"]["damping"].template get<double>();
           if ((levelset_damping_ < 0.) || (levelset_damping_ > 1.)) {
-            levelset_damping_ = 0.;
+            levelset_damping_ = 0.05;
             throw std::runtime_error(
                 "Levelset damping factor is not properly specified, using "
-                "0. as default");
+                "0.05 as default");
           }
         } else {
           throw std::runtime_error(
-              "Levelset damping is not specified, using 0. as default");
+              "Levelset damping is not specified, using 0.05 as default");
         }
         // Check if levelset contact velocity update scheme is specified
         if (mesh_props["interface"].find("velocity_update") !=
@@ -1348,6 +1348,25 @@ void mpm::MPMBase<Tdim>::interface_inputs(
           throw std::runtime_error(
               "Levelset contact velocity update is not specified, "
               " using \"global\" as default");
+        }
+        // Check if levelset violation corrector is specified
+        if (mesh_props["interface"].find("violation_corrector") !=
+            mesh_props["interface"].end()) {
+          // Retrieve levelset violation corrector
+          levelset_violation_corrector_ =
+              mesh_props["interface"]["violation_corrector"]
+                  .template get<double>();
+          if ((levelset_violation_corrector_ < 0.) ||
+              (levelset_violation_corrector_ > 1.)) {
+            levelset_violation_corrector_ = 0.001;
+            throw std::runtime_error(
+                "Levelset violation corrector is not properly specified, using "
+                "0.001 as default");
+          }
+        } else {
+          throw std::runtime_error(
+              "Levelset violation corrector is not specified, using 0.001 as "
+              "default");
         }
       } else if (interface_type_ == "multimaterial") {
         throw std::runtime_error(

@@ -1337,17 +1337,17 @@ void mpm::MPMBase<Tdim>::interface_inputs(
           std::string levelset_velocity_update_ =
               mesh_props["interface"]["velocity_update"]
                   .template get<std::string>();
-          if (levelset_velocity_update_ == "pic")
-            levelset_pic_ = true;
-          else if (levelset_velocity_update_ != "global") {
+          if (levelset_velocity_update_ == "global")
+            levelset_pic_ = false;
+          else if (levelset_velocity_update_ != "pic") {
             throw std::runtime_error(
                 "Levelset contact velocity update is not properly specified, "
-                " using \"global\" as default");
+                " using \"pic\" as default");
           }
         } else {
           throw std::runtime_error(
               "Levelset contact velocity update is not specified, "
-              " using \"global\" as default");
+              " using \"pic\" as default");
         }
         // Check if levelset violation corrector is specified
         if (mesh_props["interface"].find("violation_corrector") !=
@@ -1358,14 +1358,14 @@ void mpm::MPMBase<Tdim>::interface_inputs(
                   .template get<double>();
           if ((levelset_violation_corrector_ < 0.) ||
               (levelset_violation_corrector_ > 1.)) {
-            levelset_violation_corrector_ = 0.001;
+            levelset_violation_corrector_ = 0.01;
             throw std::runtime_error(
                 "Levelset violation corrector is not properly specified, using "
-                "0.001 as default");
+                "0.01 as default");
           }
         } else {
           throw std::runtime_error(
-              "Levelset violation corrector is not specified, using 0.001 as "
+              "Levelset violation corrector is not specified, using 0.01 as "
               "default");
         }
       } else if (interface_type_ == "multimaterial") {

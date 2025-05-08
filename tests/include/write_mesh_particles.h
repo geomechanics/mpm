@@ -13,6 +13,11 @@ bool write_json_warnings(unsigned dim, bool material_sets, bool math_functions,
                          std::string math_functions_type, int grav_dim,
                          std::string file_name);
 
+// Write JSON Configuration file for levelset boundary
+bool write_json_levelset(unsigned dim, bool resume, const std::string& analysis,
+                         const std::string& file_name, bool BBar,
+                         bool levelset_pic);
+
 // Write JSON Configuration file for absorbing boundary
 bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,

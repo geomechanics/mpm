@@ -78,12 +78,25 @@ class MPMExplicit : public MPMBase<Tdim> {
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
 
+  /**
+   * \defgroup Interface Variables (includes multimaterial and levelset)
+   * @{
+   */
+  //! Interface boolean
+  using mpm::MPMBase<Tdim>::interface_;
+  //! Interface type
+  using mpm::MPMBase<Tdim>::interface_type_;
+  //! Levelset damping factor
+  using mpm::MPMBase<Tdim>::levelset_damping_;
+  //! Levelset PIC contact velocity
+  using mpm::MPMBase<Tdim>::levelset_pic_;
+  //! Levelset violation correction factor
+  using mpm::MPMBase<Tdim>::levelset_violation_corrector_;
+  /**@}*/
+
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};
-  //! Interface
-  bool interface_{false};
-
 };  // MPMExplicit class
 }  // namespace mpm
 

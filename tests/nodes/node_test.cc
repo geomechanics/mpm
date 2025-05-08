@@ -9,7 +9,7 @@
 #include "geometry.h"
 #include "node.h"
 
-// Check node class for 1D case
+//! \brief Check node class for 1D case
 TEST_CASE("Node is checked for 1D case", "[node][1D]") {
   const unsigned Dim = 1;
   const unsigned Dof = 1;
@@ -493,7 +493,7 @@ TEST_CASE("Node is checked for 1D case", "[node][1D]") {
   }
 }
 
-// \brief Check node class for 2D case
+//! \brief Check node class for 2D case
 TEST_CASE("Node is checked for 2D case", "[node][2D]") {
   const unsigned Dim = 2;
   const unsigned Dof = 2;
@@ -1309,7 +1309,7 @@ TEST_CASE("Node is checked for 2D case", "[node][2D]") {
   }
 }
 
-// \brief Check node class for 3D case
+//! \brief Check node class for 3D case
 TEST_CASE("Node is checked for 3D case", "[node][3D]") {
   const unsigned Dim = 3;
   const unsigned Dof = 3;

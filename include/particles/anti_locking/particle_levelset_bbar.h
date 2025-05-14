@@ -51,7 +51,6 @@ class ParticleLevelsetBbar : public mpm::ParticleLevelset<Tdim> {
 
  protected:
   //! Compute strain rate
-  //! \ingroup Implicit
   //! \param[in] dn_dx The spatial gradient of shape function
   //! \param[in] phase Index to indicate phase
   //! \retval strain rate at particle inside a cell

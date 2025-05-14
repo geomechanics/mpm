@@ -625,7 +625,7 @@ class Particle : public ParticleBase<Tdim> {
   //! Volume
   double volume_{0.};
   //! Size of particle
-  Eigen::Matrix<double, Tdim, 1> size_;
+  double size_;
   //! Size of particle in natural coordinates
   Eigen::Matrix<double, Tdim, 1> natural_size_;
   //! Stresses

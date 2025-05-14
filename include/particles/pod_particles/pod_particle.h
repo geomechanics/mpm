@@ -22,8 +22,8 @@ typedef struct PODParticle {
   double coord_x, coord_y, coord_z;
   // Displacement
   double displacement_x, displacement_y, displacement_z;
-  // Natural particle size
-  double size_x, size_y, size_z;
+  // Initial particle size and Natural particle size
+  double size;
   double nsize_x, nsize_y, nsize_z;
   // Velocity
   double velocity_x, velocity_y, velocity_z;
@@ -60,7 +60,7 @@ typedef struct PODParticle {
 
 namespace pod {
 namespace particle {
-const hsize_t NFIELDS = 77;
+const hsize_t NFIELDS = 75;
 
 const size_t dst_size = sizeof(PODParticle);
 

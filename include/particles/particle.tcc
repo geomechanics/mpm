@@ -44,12 +44,11 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   // Mass Density
   this->mass_density_ = particle.mass / particle.volume;
   // Set local size of particle
-  Eigen::Vector3d psize, pnsize;
-  psize << particle.size_x, particle.size_y, particle.size_z;
+  this->size_ = particle.size;
+  Eigen::Vector3d pnsize;
   pnsize << particle.nsize_x, particle.nsize_y, particle.nsize_z;
   // Initialise particle size
   for (unsigned i = 0; i < Tdim; ++i) {
-    this->size_(i) = psize(i);
     this->natural_size_(i) = pnsize(i);
   }
 
@@ -198,11 +197,9 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   for (unsigned j = 0; j < Tdim; ++j) acceleration[j] = this->acceleration_[j];
 
   // Particle local size
-  Eigen::Vector3d size, nsize;
-  size.setZero();
+  Eigen::Vector3d nsize;
   nsize.setZero();
   for (unsigned j = 0; j < Tdim; ++j) {
-    size[j] = size_[j];
     nsize[j] = natural_size_[j];
   }
 
@@ -237,9 +234,7 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   particle_data->displacement_y = displacement[1];
   particle_data->displacement_z = displacement[2];
 
-  particle_data->size_x = size[0];
-  particle_data->size_y = size[1];
-  particle_data->size_z = size[2];
+  particle_data->size = this->size_;
 
   particle_data->nsize_x = nsize[0];
   particle_data->nsize_y = nsize[1];
@@ -320,7 +315,7 @@ void mpm::Particle<Tdim>::initialise() {
   mass_ = 0.;
   natural_size_.setZero();
   set_traction_ = false;
-  size_.setZero();
+  size_ = 0.0;
   strain_rate_.setZero();
   strain_.setZero();
   previous_stress_.setZero();
@@ -568,11 +563,8 @@ bool mpm::Particle<Tdim>::assign_volume(double volume) {
       throw std::runtime_error("Particle volume cannot be negative");
 
     this->volume_ = volume;
-    // Compute size of particle in each direction
-    const double length =
-        std::pow(this->volume_, static_cast<double>(1. / Tdim));
-    // Set particle size as length on each side
-    this->size_.fill(length);
+    // Calculate initial particle size from volume
+    this->size_ = std::pow(this->volume_, static_cast<double>(1. / Tdim));
 
     if (cell_ != nullptr) {
       // Get element ptr of a cell
@@ -974,8 +966,11 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
       throw std::runtime_error(
           "Particle traction property: volume / direction is invalid");
     }
+    // Updated size
+    const double updated_size =
+        std::pow(this->volume_, static_cast<double>(1. / Tdim));
     // Assign traction
-    traction_(direction) = traction * this->volume_ / this->size_(direction);
+    traction_(direction) = traction * this->volume_ / updated_size;
     status = true;
     this->set_traction_ = true;
   } catch (std::exception& exception) {
@@ -1384,7 +1379,7 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
   MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
   // Size
-  MPI_Pack(size_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
+  MPI_Pack(&size_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
   // Natural size
   MPI_Pack(natural_size_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
@@ -1491,7 +1486,7 @@ void mpm::Particle<Tdim>::deserialize(
   MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
   // Size
-  MPI_Unpack(data_ptr, data.size(), &position, size_.data(), Tdim, MPI_DOUBLE,
+  MPI_Unpack(data_ptr, data.size(), &position, &size_, 1, MPI_DOUBLE,
              MPI_COMM_WORLD);
   // Natural size
   MPI_Unpack(data_ptr, data.size(), &position, natural_size_.data(), Tdim,

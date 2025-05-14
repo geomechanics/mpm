@@ -52,7 +52,7 @@ void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
     double levelset_violation_corrector) {
 
   // Calculate radius from volume
-  double init_vol = this->size_.prod();
+  double init_vol = std::pow(this->size_, Tdim);
   double init_radius = 0.0;  // constant radial influence
   if (Tdim == 2) init_radius = std::sqrt(init_vol / M_PI);  // unit cylinder
   if (Tdim == 3) init_radius = std::cbrt(init_vol * 0.75 / M_PI);  // sphere

@@ -16,6 +16,21 @@ template <unsigned Tdim>
 class ParticleLevelset : public Particle<Tdim> {
 
  public:
+  //! Static levelset variables
+  static double levelset_damping_;
+  static bool levelset_pic_;
+  static double levelset_violation_corrector_;
+
+ public:
+  //! Broadcast levelset variables to all MPI ranks (root 0)
+  static void SyncMPI_Levelset() {
+#ifdef USE_MPI
+    MPI_Bcast(&levelset_damping_, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&levelset_pic_, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&levelset_violation_corrector_, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+#endif
+  }
+
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
 
@@ -47,12 +62,7 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Update contact force due to levelset
   //! \param[in] dt Analysis time step
-  //! \param[in] levelset_damping Levelset damping factor
-  //! \param[in] levelset_pic Method bool to compute contact velocity
-  //! \param[in] levelset_violation_corrector Violation correction factor
-  void levelset_contact_force(double dt, double levelset_damping,
-                              bool levelset_pic,
-                              double levelset_violation_corrector) override;
+  void levelset_contact_force(double dt) override;
 
   //! Return levelset value
   double levelset() const { return levelset_; }
@@ -66,17 +76,12 @@ class ParticleLevelset : public Particle<Tdim> {
 
   //! Check if particle in contact with levelset
   //! \param[in] init_radius Particle initial radius
-  bool is_levelset_contact(double init_radius,
-                           double levelset_violation_corrector);
+  bool is_levelset_contact(double init_radius);
 
   //! Compute levelset contact force at particle
   //! \param[in] dt Analysis time step
   //! \param[in] init_radius Particle initial radius
-  //! \param[in] levelset_damping Levelset damping factor
-  //! \param[in] levelset_pic Method bool to compute contact velocity
-  void compute_particle_contact_force(double dt, double init_radius,
-                                      double levelset_damping,
-                                      bool levelset_pic) noexcept;
+  void compute_particle_contact_force(double dt, double init_radius) noexcept;
 
   //! Map levelset contact force to nodes
   void map_contact_force_to_nodes() noexcept;

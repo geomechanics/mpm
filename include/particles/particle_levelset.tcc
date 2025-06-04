@@ -1,3 +1,11 @@
+//! Static levelset variables
+template <unsigned Tdim>
+double mpm::ParticleLevelset<Tdim>::levelset_damping_;
+template <unsigned Tdim>
+bool mpm::ParticleLevelset<Tdim>::levelset_pic_;
+template <unsigned Tdim>
+double mpm::ParticleLevelset<Tdim>::levelset_violation_corrector_;
+
 //! Construct a particle with id and coordinates
 template <unsigned Tdim>
 mpm::ParticleLevelset<Tdim>::ParticleLevelset(Index id, const VectorDim& coord)
@@ -47,9 +55,7 @@ void mpm::ParticleLevelset<Tdim>::initialise() {
 
 //! Update contact force due to levelset
 template <unsigned Tdim>
-void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
-    double dt, double levelset_damping, bool levelset_pic,
-    double levelset_violation_corrector) {
+void mpm::ParticleLevelset<Tdim>::levelset_contact_force(double dt) {
 
   // Calculate initial radius from initial size
   double init_vol = std::pow(this->size_, Tdim);
@@ -61,11 +67,10 @@ void mpm::ParticleLevelset<Tdim>::levelset_contact_force(
   map_levelset_to_particle();
 
   // Check if particle in contact with levelset
-  if (is_levelset_contact(init_radius, levelset_violation_corrector)) {
+  if (is_levelset_contact(init_radius)) {
 
     // Compute levelset contact force at particle
-    compute_particle_contact_force(dt, init_radius, levelset_damping,
-                                   levelset_pic);
+    compute_particle_contact_force(dt, init_radius);
 
     // Map levelset contact force to nodes
     map_contact_force_to_nodes();
@@ -94,12 +99,11 @@ void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
 
 //! Check if particle in contact with levelset
 template <unsigned Tdim>
-bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(
-    double init_radius, double levelset_violation_corrector) {
+bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(double init_radius) {
   // Check particle levelset minimum value
   if (levelset_ < std::numeric_limits<double>::epsilon()) {
     console_->warn("Levelset particle {} violates interface", id_);
-    levelset_ = levelset_violation_corrector * init_radius;
+    levelset_ = levelset_violation_corrector_ * init_radius;
   }
 
   if ((levelset_ < init_radius) && (levelset_ > 0.))
@@ -111,11 +115,10 @@ bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(
 //! Compute levelset contact force at particle
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
-    double dt, double init_radius, double levelset_damping,
-    bool levelset_pic) noexcept {
+    double dt, double init_radius) noexcept {
 
   // Global contact velocity update scheme
-  if (!levelset_pic) contact_vel_ = velocity_;
+  if (!levelset_pic_) contact_vel_ = velocity_;
 
   // Map other levelset values to particle
   for (unsigned i = 0; i < nodes_.size(); i++) {
@@ -125,7 +128,7 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
     barrier_stiffness_ += shapefn_[i] * nodes_[i]->barrier_stiffness();
 
     // PIC contact velocity update scheme (map contact velocity from nodes)
-    if (levelset_pic)
+    if (levelset_pic_)
       contact_vel_ +=
           shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
   }
@@ -174,7 +177,7 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
 
   // Damp couple if mp moving away from boundary
   if ((contact_vel_.dot(levelset_normal_)) >= 0.)
-    couple_force_ = (1. - levelset_damping) * couple_force_;
+    couple_force_ = (1. - levelset_damping_) * couple_force_;
 }
 
 //! Map levelset contact force to nodes

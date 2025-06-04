@@ -902,6 +902,11 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     const double Tolerance = 1.E-7;
     bool status = true;
 
+    //! Levelset static variables
+    mpm::ParticleLevelset<Dim>::levelset_damping_ = 0.05;
+    mpm::ParticleLevelset<Dim>::levelset_pic_ = false;
+    mpm::ParticleLevelset<Dim>::levelset_violation_corrector_ = 0.01;
+
     // Particle ID and Coordinates
     mpm::Index id1 = 0;
     mpm::Index id2 = 1;
@@ -984,8 +989,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     // Compute shape functions and map levelset to particle
     particle1->compute_shapefn();
     particle2->compute_shapefn();
-    REQUIRE_NOTHROW(particle1->levelset_contact_force(0.1, 0.05, false, 0.001));
-    REQUIRE_NOTHROW(particle2->levelset_contact_force(0.1, 0.05, false, 0.001));
+    REQUIRE_NOTHROW(particle1->levelset_contact_force(0.1));
+    REQUIRE_NOTHROW(particle2->levelset_contact_force(0.1));
 
     // Check mapped levelset value
     REQUIRE(particle1->levelset() == Approx(0.20).epsilon(Tolerance));
@@ -2474,6 +2479,11 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     const double Tolerance = 1.E-7;
     bool status = true;
 
+    //! Levelset static variables
+    mpm::ParticleLevelset<Dim>::levelset_damping_ = 0.05;
+    mpm::ParticleLevelset<Dim>::levelset_pic_ = false;
+    mpm::ParticleLevelset<Dim>::levelset_violation_corrector_ = 0.01;
+
     // Particle ID and Coordinates
     mpm::Index id1 = 0;
     mpm::Index id2 = 1;
@@ -2572,8 +2582,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     // Compute shape functions and map levelset to particle
     particle1->compute_shapefn();
     particle2->compute_shapefn();
-    REQUIRE_NOTHROW(particle1->levelset_contact_force(0.1, 0.05, false, 0.001));
-    REQUIRE_NOTHROW(particle2->levelset_contact_force(0.1, 0.05, false, 0.001));
+    REQUIRE_NOTHROW(particle1->levelset_contact_force(0.1));
+    REQUIRE_NOTHROW(particle2->levelset_contact_force(0.1));
 
     // Check mapped levelset value
     REQUIRE(particle1->levelset() == Approx(0.20).epsilon(Tolerance));

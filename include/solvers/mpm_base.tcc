@@ -300,9 +300,6 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign interface (includes multimaterial and levelset)
   this->interface_inputs(mesh_props, mesh_io);
-  if (is_levelset()) {
-    ParticleLevelset<Tdim>::SyncMPI_Levelset();
-  }
 
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();

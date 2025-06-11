@@ -16,23 +16,20 @@ template <unsigned Tdim>
 class ParticleLevelset : public Particle<Tdim> {
 
  public:
-  //! Static levelset variables
-  static double levelset_damping_;
-  static bool levelset_pic_;
-  static double levelset_violation_corrector_;
-
- public:
-  //! Broadcast levelset variables to all MPI ranks (root 0)
-  static void SyncMPI_Levelset() {
-#ifdef USE_MPI
-    MPI_Bcast(&levelset_damping_, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&levelset_pic_, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&levelset_violation_corrector_, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-#endif
-  }
-
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
+
+  //! Setter to initialize levelset static properties
+  //! \param[in] levelset_damping Levelset damping factor
+  //! \param[in] levelset_pic Particle in cell method bool for contact velocity
+  //! \param[in] levelset_violation_corrector Violation correction factor
+  static void set_levelset_properties(double levelset_damping,
+                                      bool levelset_pic,
+                                      double levelset_violation_corrector) {
+    levelset_damping_ = levelset_damping;
+    levelset_pic_ = levelset_pic;
+    levelset_violation_corrector_ = levelset_violation_corrector;
+  }
 
   //! Construct a levelset particle with id and coordinates
   //! \param[in] id Particle id
@@ -87,9 +84,13 @@ class ParticleLevelset : public Particle<Tdim> {
   void map_contact_force_to_nodes() noexcept;
 
  protected:
+  //! Static levelset variables
+  static double levelset_damping_;
+  static bool levelset_pic_;
+  static double levelset_violation_corrector_;
+
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
-
   //! levelset value
   double levelset_{0.};
   //! levelset friction

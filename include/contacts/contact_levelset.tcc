@@ -12,11 +12,8 @@ template <unsigned Tdim>
 void mpm::ContactLevelset<Tdim>::initialise_levelset_properties(
     double levelset_damping, bool levelset_pic,
     double levelset_violation_corrector) {
-  // Initialise levelset properties
-  mpm::ParticleLevelset<Tdim>::levelset_damping_ = levelset_damping;
-  mpm::ParticleLevelset<Tdim>::levelset_pic_ = levelset_pic;
-  mpm::ParticleLevelset<Tdim>::levelset_violation_corrector_ =
-      levelset_violation_corrector;
+  mpm::ParticleLevelset<Tdim>::set_levelset_properties(
+      levelset_damping, levelset_pic, levelset_violation_corrector);
 }
 
 //! Compute contact forces

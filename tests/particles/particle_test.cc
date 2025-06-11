@@ -903,9 +903,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     bool status = true;
 
     //! Levelset static variables
-    mpm::ParticleLevelset<Dim>::levelset_damping_ = 0.05;
-    mpm::ParticleLevelset<Dim>::levelset_pic_ = false;
-    mpm::ParticleLevelset<Dim>::levelset_violation_corrector_ = 0.01;
+    mpm::ParticleLevelset<Dim>::set_levelset_properties(0.05, false, 0.01);
 
     // Particle ID and Coordinates
     mpm::Index id1 = 0;
@@ -2480,9 +2478,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     bool status = true;
 
     //! Levelset static variables
-    mpm::ParticleLevelset<Dim>::levelset_damping_ = 0.05;
-    mpm::ParticleLevelset<Dim>::levelset_pic_ = false;
-    mpm::ParticleLevelset<Dim>::levelset_violation_corrector_ = 0.01;
+    mpm::ParticleLevelset<Dim>::set_levelset_properties(0.05, false, 0.01);
 
     // Particle ID and Coordinates
     mpm::Index id1 = 0;

@@ -27,7 +27,7 @@ typedef struct PODParticleTwoPhase : PODParticle {
 
 namespace pod {
 namespace particletwophase {
-const hsize_t NFIELDS = 87;
+const hsize_t NFIELDS = 113;
 
 const size_t dst_size = sizeof(PODParticleTwoPhase);
 

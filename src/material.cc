@@ -7,7 +7,7 @@
 #include "mohr_coulomb.h"
 #include "newtonian.h"
 #include "norsand.h"
-
+#include "pm4sand.h"
 // Bingham 2D (fluid model)
 static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
     bingham_2d("Bingham2D");
@@ -67,7 +67,9 @@ static Register<mpm::Material<2>, mpm::NorSand<2>, unsigned, const Json&>
 // Norsand 3D
 static Register<mpm::Material<3>, mpm::NorSand<3>, unsigned, const Json&>
     nor_sand_3d("NorSand3D");
-
+// PM4Sand 2D
+static Register<mpm::Material<2>, mpm::PM4Sand<2>, unsigned, const Json&>
+    PM4Sand_2d("PM4Sand2D");
 // Hencky Hyper Elastic 2D
 static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,
                 const Json&>

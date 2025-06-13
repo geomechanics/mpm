@@ -52,14 +52,14 @@ typedef struct PODParticle {
   // Number of state variables
   unsigned nstate_vars;
   // State variables (init to zero)
-  double svars[20] = {0};
+  double svars[46] = {0};
   // Destructor
   virtual ~PODParticle() = default;
 } PODParticle;
 
 namespace pod {
 namespace particle {
-const hsize_t NFIELDS = 74;
+const hsize_t NFIELDS = 100;
 
 const size_t dst_size = sizeof(PODParticle);
 

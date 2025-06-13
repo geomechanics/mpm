@@ -148,8 +148,8 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   if (this->material() != nullptr) {
     particle_data->nstate_vars =
         state_variables_[mpm::ParticlePhase::Solid].size();
-    if (state_variables_[mpm::ParticlePhase::Solid].size() > 20)
-      throw std::runtime_error("# of state variables cannot be more than 20");
+    if (state_variables_[mpm::ParticlePhase::Solid].size() > 45)
+      throw std::runtime_error("# of state variables cannot be more than 45");
     unsigned i = 0;
     auto state_variables = (this->material())->state_variables();
     for (const auto& state_var : state_variables) {
@@ -471,7 +471,12 @@ void mpm::TwoPhaseParticle<Tdim>::map_traction_force() noexcept {
   if (this->set_traction_) this->map_mixture_traction_force();
   if (this->set_liquid_traction_) this->map_liquid_traction_force();
 }
-
+//! Map body force not gravity
+template <unsigned Tdim>
+void mpm::TwoPhaseParticle<Tdim>::map_body_force_not_gravity() noexcept {
+  if (this->set_bodyforce_) this->map_mixture_body_force(mpm::ParticlePhase::Mixture,body_force_);
+  if (this->set_bodyforce_) this->map_liquid_body_force(body_force_);
+}
 //! Map mixture traction force
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::map_mixture_traction_force() noexcept {

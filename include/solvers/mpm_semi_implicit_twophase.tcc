@@ -255,7 +255,8 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
 
         // Apply particle traction and map to nodes
         mesh_->apply_traction_on_particles(this->step_ * this->dt_);
-
+       // Apply body force on particles
+        mesh_->apply_body_force_on_particles(this->step_ * this->dt_);
         // Iterate over each node to add concentrated node force to external
         // force
         if (set_node_concentrated_force_)

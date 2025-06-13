@@ -44,6 +44,7 @@ using Json = nlohmann::json;
 #include "pod_particle.h"
 #include "radial_basis_function.h"
 #include "traction.h"
+#include "bodyforce.h"
 #include "vector.h"
 #include "velocity_constraint.h"
 
@@ -329,11 +330,20 @@ class Mesh {
   bool create_particles_tractions(
       const std::shared_ptr<FunctionBase>& mfunction, int set_id, unsigned dir,
       double traction);
-
+  //! Create particles body force
+  //! \param[in] amplitude Amplitude of the body force
+  //! \param[in] mfunction Math function if defined
+  //! \param[in] setid Particle set id
+  //! \param[in] dir Direction of traction load
+  bool create_particles_body_force(
+      const std::shared_ptr<FunctionBase>& mfunction, int set_id, unsigned dir,
+      double amplitude);
   //! Apply traction to particles
   //! \param[in] current_time Current time
   void apply_traction_on_particles(double current_time);
-
+    //! Apply body force to particles
+    //! \param[in] current_time Current time
+  void apply_body_force_on_particles(double current_time);
   //! Create nodal acceleration constraints
   //! \param[in] setid Node set id
   //! \param[in] constraint Acceleration constraint
@@ -721,6 +731,8 @@ class Mesh {
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Loading (Particle tractions)
   std::vector<std::shared_ptr<mpm::Traction>> particle_tractions_;
+    //! Loading (Particle body forces)
+  std::vector<std::shared_ptr<mpm::BodyForce>> particle_body_forces_;
   //! Nodal acceleration constraints
   std::vector<std::shared_ptr<mpm::AccelerationConstraint>>
       nodal_acceleration_constraints_;

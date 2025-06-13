@@ -78,7 +78,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;
-
+  //! Map body force not gravity
+  void map_body_force_not_gravity() noexcept override;
   //! Map traction force
   void map_traction_force() noexcept override;
 
@@ -315,6 +316,10 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::set_traction_;
   //! Surface Traction (given as a stress; force/area)
   using Particle<Tdim>::traction_;
+  //! set bodyforce
+  using Particle<Tdim>::set_bodyforce_;
+  //! body force
+  using Particle<Tdim>::body_force_;
   //! Size of particle
   using Particle<Tdim>::size_;
   //! Particle velocity constraints

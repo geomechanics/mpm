@@ -1364,7 +1364,43 @@ bool mpm::Mesh<Tdim>::create_particles_tractions(
   }
   return status;
 }
+//! Create particle body force
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_particles_body_force(
+  const std::shared_ptr<FunctionBase>& mfunction, int set_id, unsigned dir,
+  double amplitude) {
+  bool status = true;
+  try {
+  if (set_id == -1 || particle_sets_.find(set_id) != particle_sets_.end())
+    // Create a particle body force
+    particle_body_forces_.emplace_back(
+      std::make_shared<mpm::BodyForce>(set_id, mfunction, dir, amplitude));
+  else
+    throw std::runtime_error("No particle set found to assign body force");
 
+  } catch (std::exception& exception) {
+  console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  status = false;
+  }
+  return status;
+}
+//! Apply particle body forces
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_body_force_on_particles(double current_time) {
+  // Iterate over all particle body forces
+  for (const auto& pforce : particle_body_forces_) {
+    int set_id = pforce->setid();
+    unsigned dir = pforce->dir();
+    double force = pforce->amplitude(current_time);
+    this->iterate_over_particle_set(
+        set_id, std::bind(&mpm::ParticleBase<Tdim>::assign_body_force,
+                          std::placeholders::_1, dir, force));
+  }
+  if (!particle_body_forces_.empty()) {
+    this->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::map_body_force_not_gravity, std::placeholders::_1));
+  }
+}
 //! Apply particle tractions
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::apply_traction_on_particles(double current_time) {

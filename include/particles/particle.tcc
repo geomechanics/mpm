@@ -291,8 +291,8 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
   if (this->material() != nullptr) {
     particle_data->nstate_vars =
         state_variables_[mpm::ParticlePhase::Solid].size();
-    if (state_variables_[mpm::ParticlePhase::Solid].size() > 20)
-      throw std::runtime_error("# of state variables cannot be more than 20");
+    if (state_variables_[mpm::ParticlePhase::Solid].size() > 45)
+      throw std::runtime_error("# of state variables cannot be more than 45");
     unsigned i = 0;
     auto state_variables = (this->material())->state_variables();
     for (const auto& state_var : state_variables) {
@@ -319,6 +319,7 @@ void mpm::Particle<Tdim>::initialise() {
   previous_stress_.setZero();
   stress_.setZero();
   traction_.setZero();
+  body_force_.setZero();
   velocity_.setZero();
   acceleration_.setZero();
   normal_.setZero();
@@ -327,10 +328,6 @@ void mpm::Particle<Tdim>::initialise() {
   deformation_gradient_increment_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
-  this->scalar_properties_["id"] = [&]() { return static_cast<double>(id_); };
-  this->scalar_properties_["material"] = [&]() {
-    return static_cast<double>(material_id_[mpm::ParticlePhase::Solid]);
-  };
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
@@ -978,6 +975,33 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
   return status;
 }
 
+// Assign body force to the particle
+template <unsigned Tdim>
+bool mpm::Particle<Tdim>::assign_body_force(unsigned direction, double bodyforce) {
+  bool status = false;
+  try {
+    if (direction >= Tdim ||
+        this->mass_ == std::numeric_limits<double>::max()) {
+      throw std::runtime_error(
+          "Particle body force property: mass / direction is invalid");
+    }
+    // Assign body force
+    body_force_.setZero();
+    body_force_(direction) = bodyforce;
+    status = true;
+    this->set_bodyforce_ = true;
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Map traction force
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_body_force_not_gravity() noexcept {
+  if (this->set_bodyforce_) this->map_body_force(body_force_);
+}
 //! Map traction force
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_traction_force() noexcept {

@@ -281,7 +281,8 @@ class ParticleBase {
 
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
-
+  //! Map body force not gravity
+  virtual void map_body_force_not_gravity() noexcept = 0;
   //! Map internal force
   virtual void map_internal_force() noexcept = 0;
 
@@ -304,6 +305,8 @@ class ParticleBase {
 
   //! Assign traction
   virtual bool assign_traction(unsigned direction, double traction) = 0;
+  //! Assign body force
+  virtual bool assign_body_force(unsigned direction, double traction) = 0;
 
   //! Return traction
   virtual VectorDim traction() const = 0;

@@ -328,6 +328,10 @@ void mpm::Particle<Tdim>::initialise() {
   deformation_gradient_increment_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
+  this->scalar_properties_["id"] = [&]() { return static_cast<double>(id_); };
+  this->scalar_properties_["material"] = [&]() {
+    return static_cast<double>(material_id_[mpm::ParticlePhase::Solid]);
+  };
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
@@ -977,7 +981,8 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
 
 // Assign body force to the particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_body_force(unsigned direction, double bodyforce) {
+bool mpm::Particle<Tdim>::assign_body_force(unsigned direction,
+                                            double bodyforce) {
   bool status = false;
   try {
     if (direction >= Tdim ||
@@ -1062,7 +1067,7 @@ void mpm::Particle<Tdim>::compute_updated_position_flip(
   // If intermediate scheme is considered
   this->velocity_ = blending_ratio * this->velocity_ +
                     (1.0 - blending_ratio) * nodal_velocity;
-
+  this->acceleration_ = nodal_acceleration;
   // New position  current position + velocity * dt
   this->coordinates_.noalias() += nodal_velocity * dt;
   // Update displacement (displacement is initialized from zero)

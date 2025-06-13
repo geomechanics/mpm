@@ -121,7 +121,7 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODParticleTwoPhase, liquid_svars[4]),
 };
 
-// Solid および Fluid 各フェーズのフィールドサイズを取得
+// Get size of particletwophase
 PODParticleTwoPhase particle;
 const size_t dst_sizes[NFIELDS] = {
     // Solid phase

@@ -237,8 +237,14 @@ inline void mpm::MPMScheme<Tdim>::locate_particles(bool locate_particles) {
 
   auto unlocatable_particles = mesh_->locate_particles_mesh();
 
-  if (!unlocatable_particles.empty() && locate_particles)
-    throw std::runtime_error("Particle outside the mesh domain");
+  // Throw error with listed unlocatable particles
+  if (!unlocatable_particles.empty() && locate_particles) {
+    std::ostringstream unloc_mp;
+    for (const auto& particle : unlocatable_particles)
+      unloc_mp << particle->id() << " ";
+    throw std::runtime_error("Particle(s) outside the mesh domain: " +
+                             unloc_mp.str());
+  }
   // If unable to locate particles remove particles
   if (!unlocatable_particles.empty() && !locate_particles)
     for (const auto& remove_particle : unlocatable_particles)

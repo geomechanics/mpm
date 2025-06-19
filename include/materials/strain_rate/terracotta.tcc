@@ -89,7 +89,16 @@ mpm::dense_map mpm::Terracotta<Tdim>::initialise_state_variables() {
 //! State variables
 template <unsigned Tdim>
 std::vector<std::string> mpm::Terracotta<Tdim>::state_variables() const {
-  const std::vector<std::string> state_vars = {"pressure", "q", "tm"};
+  const std::vector<std::string> state_vars = {"pressure",
+                                               "q",
+                                               "tm",
+                                               "elastic_strain0",
+                                               "elastic_strain1",
+                                               "elastic_strain2",
+                                               "elastic_strain3",
+                                               "elastic_strain4",
+                                               "elastic_strain5",
+                                               "packing_fraction"};
   return state_vars;
 }
 

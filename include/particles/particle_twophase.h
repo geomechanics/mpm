@@ -197,6 +197,9 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! Map laplacian element matrix to cell (used in poisson equation LHS)
   bool map_laplacian_to_cell() override;
 
+  //! Map laplacian element matrix to cell (used in poisson equation LHS)
+  bool map_ppp_stabilization_matrix(double dt) override;
+
   //! Map poisson rhs element matrix to cell (used in poisson equation RHS)
   bool map_poisson_right_to_cell() override;
 

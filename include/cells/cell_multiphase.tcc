@@ -125,6 +125,18 @@ void mpm::Cell<Tdim>::compute_local_laplacian(
       grad_shapefn * grad_shapefn.transpose() * multiplier * pvolume;
 }
 
+//! Compute local matrix of laplacian
+template <unsigned Tdim>
+void mpm::Cell<Tdim>::compute_local_laplacian_block(
+    unsigned row_start, unsigned col_start, const Eigen::MatrixXd& laplacian,
+    double pvolume, double multiplier) noexcept {
+
+  std::lock_guard<std::mutex> guard(cell_mutex_);
+  laplacian_matrix_
+      .block(row_start, col_start, laplacian.rows(), laplacian.cols())
+      .noalias() += laplacian * multiplier * pvolume;
+}
+
 //! Compute local poisson RHS matrix
 //! Used in poisson equation RHS for Navier Stokes solver
 template <unsigned Tdim>

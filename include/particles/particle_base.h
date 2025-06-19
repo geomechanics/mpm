@@ -621,6 +621,15 @@ class ParticleBase {
         "ParticleBase:: illegal operation!");
     return 0;
   };
+
+  //! Map ppp stabilization matrix (used in poisson equation LHS)
+  virtual bool map_ppp_stabilization_matrix(double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (map_ppp_stabilization_matrix) in "
+        "ParticleBase:: "
+        "illegal operation!");
+    return 0;
+  };
   //----------------------------------------------------------------------------
 
  protected:

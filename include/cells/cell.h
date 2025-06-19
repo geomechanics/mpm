@@ -342,6 +342,19 @@ class Cell {
                                double pvolume,
                                double multiplier = 1.0) noexcept;
 
+  //! Compute local laplacian matrix (Used in poisson equation)
+  //! \ingroup MultiPhase
+  //! \brief Assign for a specific block
+  //! \param[in] row_start Starting block row index
+  //! \param[in] col_start Starting block column index
+  //! \param[in] laplacian Laplacian matrix of interest
+  //! \param[in] pvolume particle volume
+  //! \param[in] multiplier multiplier
+  void compute_local_laplacian_block(unsigned row_start, unsigned col_start,
+                                     const Eigen::MatrixXd& laplacian,
+                                     double pvolume,
+                                     double multiplier = 1.0) noexcept;
+
   //! Return local laplacian RHS matrix
   //! \ingroup MultiPhase
   const Eigen::MatrixXd& poisson_right_matrix() {

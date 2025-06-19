@@ -74,6 +74,29 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     // Parameter to determine full and incremental projection
     if (analysis_["scheme_settings"].contains("beta"))
       beta_ = analysis_["scheme_settings"]["beta"].template get<double>();
+
+    // Boolean to perform pressure_stabilization
+    if (analysis_["scheme_settings"].contains("pressure_stabilization"))
+      pressure_stabilization_ =
+          analysis_["scheme_settings"]["pressure_stabilization"]
+              .template get<bool>();
+    // Pressure stabilization type
+    if (pressure_stabilization_ &&
+        analysis_["scheme_settings"].contains("pressure_stabilization_type")) {
+      std::string ps_type =
+          analysis_["scheme_settings"]["pressure_stabilization_type"]
+              .template get<std::string>();
+      if ((ps_type == "polynomial_pressure_projection") || (ps_type == "ppp"))
+        pressure_stabilization_type_ =
+            mpm::PressureStabilizationType::PolynomialPressureProjection;
+      else {
+        console_->warn(
+            "The pressure_stabilization_type scheme chosen is not available "
+            "and automatically set to default: \'ppp\'. Only "
+            "\'ppp\' scheme is currently supported "
+            "for semi-implicit Two-phase solver.");
+      }
+    }
   }
 
   // Initialise material
@@ -707,6 +730,16 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::compute_poisson_equation() {
 
     // Assemble global laplacian matrix
     assembler_->assemble_laplacian_matrix(dt_);
+
+    // Compute pressure stabilization
+    if (pressure_stabilization_) {
+      if (pressure_stabilization_type_ ==
+          mpm::PressureStabilizationType::PolynomialPressureProjection) {
+        mesh_->iterate_over_particles(
+            std::bind(&mpm::ParticleBase<Tdim>::map_ppp_stabilization_matrix,
+                      std::placeholders::_1, dt_));
+      }
+    }
 
     // Map Poisson RHS matrix
     mesh_->iterate_over_particles(

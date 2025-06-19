@@ -12,6 +12,9 @@
 
 namespace mpm {
 
+//! Pressure stabilization type
+enum PressureStabilizationType { PolynomialPressureProjection };
+
 //! MPMSemiImplicit Two Phase class
 //! \brief A class that implements the fractional step two-phase mpm
 //! \tparam Tdim Dimension
@@ -97,6 +100,11 @@ class MPMSemiImplicitTwoPhase : public MPMBase<Tdim> {
   bool pressure_smoothing_{false};
   //! Pore pressure smoothing
   bool pore_pressure_smoothing_{false};
+  //! Pressure stabilization
+  bool pressure_stabilization_{true};
+  //! Pressure stabilization type
+  mpm::PressureStabilizationType pressure_stabilization_type_{
+      mpm::PressureStabilizationType::PolynomialPressureProjection};
   // Projection method parameter (beta)
   double beta_{1};
   //! Assembler object

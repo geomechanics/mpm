@@ -1472,6 +1472,42 @@ bool mpm::TwoPhaseParticle<Tdim>::map_laplacian_to_cell() {
   return status;
 }
 
+//! Map polynomial-pressure-projection stabilization matrix to cell (used in
+//! poisson equation LHS)
+template <unsigned Tdim>
+bool mpm::TwoPhaseParticle<Tdim>::map_ppp_stabilization_matrix(double dt) {
+  bool status = true;
+  try {
+    // Compute solid phase shear modulus
+    const double E =
+        this->material(mpm::ParticlePhase::Solid)
+            ->template property<double>(std::string("youngs_modulus"));
+    const double nu =
+        this->material(mpm::ParticlePhase::Solid)
+            ->template property<double>(std::string("poisson_ratio"));
+    const double G = E / (2.0 * (1.0 + nu));
+    const double tau = 1.0;
+
+    // Compute multiplier
+    const double multiplier = tau / 2.0 / G / dt;
+
+    // Compute local matrix of polynomial-pressure-projection stabilization
+    // matrix
+    Eigen::VectorXd shapefn_avg =
+        Eigen::VectorXd::Constant(shapefn_.rows(), 1.0 / shapefn_.rows());
+    const Eigen::MatrixXd local_laplacian =
+        (shapefn_ - shapefn_avg) * (shapefn_ - shapefn_avg).transpose();
+
+    // Compute local matrix of Laplacian
+    cell_->compute_local_laplacian_block(0, 0, local_laplacian, volume_,
+                                         multiplier);
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Map poisson rhs element matrix to cell (used in poisson equation RHS)
 template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::map_poisson_right_to_cell() {

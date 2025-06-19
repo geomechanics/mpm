@@ -61,38 +61,44 @@ class Terracotta : public Material<Tdim> {
   using Material<Tdim>::console_;
 
  private:
-  //! Density
-  double density_{std::numeric_limits<double>::max()};
-  //! Youngs modulus
-  double youngs_modulus_{std::numeric_limits<double>::max()};
+  //! Grain density
+  double grain_density_{std::numeric_limits<double>::max()};
   //! Bulk modulus
   double bulk_modulus_{std::numeric_limits<double>::max()};
-  //! Poisson ratio
-  double poisson_ratio_{std::numeric_limits<double>::max()};
   //! Shear modulus
   double shear_modulus_{std::numeric_limits<double>::max()};
-  //! Volumetric wave speed
-  double c_{std::numeric_limits<double>::max()};
-  //! Gamma
-  double gamma_{std::numeric_limits<double>::max()};
-  //! Dynamic viscosity
-  double dynamic_viscosity_{std::numeric_limits<double>::max()};
-  //! Tau0
-  double tau0_{std::numeric_limits<double>::max()};
-  //! Initial flocculation state
-  double lambda0_{std::numeric_limits<double>::max()};
-  //! Flocullation parameter
-  double athix_{std::numeric_limits<double>::max()};
-  //! Thixotropy deflocculation rate
+  //! Initial packing fraction
+  double initial_packing_fraction_{std::numeric_limits<double>::max()};
+  // Parameter lambda
+  double lambda_{std::numeric_limits<double>::max()};
+  // Reference pressure
+  double p1_{std::numeric_limits<double>::max()};
+  // Parameter alpha
   double alpha_{std::numeric_limits<double>::max()};
-  //! Rest time
-  double rt_{std::numeric_limits<double>::max()};
-  //! Regularization shape factor m
+  // Parameter beta
+  double beta_{std::numeric_limits<double>::max()};
+  // Parameter gamma
+  double gamma_{std::numeric_limits<double>::max()};
+  // Parameter eta
+  double eta_{std::numeric_limits<double>::max()};
+  // Parameter omega
+  double omega_{std::numeric_limits<double>::max()};
+  // Critical state ratio
   double m_{std::numeric_limits<double>::max()};
-  //! Critical yielding shear rate
-  double critical_shear_rate_{std::numeric_limits<double>::max()};
-  //! Compressibility multiplier
-  double compressibility_multiplier_{1.0};
+  // Initial meso-scale temperature
+  double initial_tm_{std::numeric_limits<double>::max()};
+
+  // Parameters for return mapping algorithm
+  //! Absolute tolerance
+  double abs_tol_{1.e-10};
+  //! Relative tolerance
+  double rel_tol_{1.e-8};
+  //! Maximum number of iterations
+  unsigned max_iter_{15};
+
+  //! Discrete tolerance
+  double tolerance_{1.0e-10};
+
 };  // Terracotta class
 }  // namespace mpm
 

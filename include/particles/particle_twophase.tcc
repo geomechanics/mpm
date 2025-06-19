@@ -474,7 +474,8 @@ void mpm::TwoPhaseParticle<Tdim>::map_traction_force() noexcept {
 //! Map body force not gravity
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::map_body_force_not_gravity() noexcept {
-  if (this->set_bodyforce_) this->map_mixture_body_force(mpm::ParticlePhase::Mixture,body_force_);
+  if (this->set_bodyforce_)
+    this->map_mixture_body_force(mpm::ParticlePhase::Mixture, body_force_);
   if (this->set_bodyforce_) this->map_liquid_body_force(body_force_);
 }
 //! Map mixture traction force

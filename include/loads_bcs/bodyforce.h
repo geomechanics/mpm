@@ -11,8 +11,8 @@ namespace mpm {
 
 //! BodyForce class to store the body force on a set
 //! \brief BodyForce class to store the body force on a set
-//! \details BodyForce stores the body force on a set using mathematical functions, so
-//! the force can vary dynamically with time
+//! \details BodyForce stores the body force on a set using mathematical
+//! functions, so the force can vary dynamically with time
 class BodyForce {
  public:
   // Constructor
@@ -22,10 +22,7 @@ class BodyForce {
   //! \param[force] force  body force magnitude
   BodyForce(int setid, const std::shared_ptr<mpm::FunctionBase>& force_fn,
             unsigned dir, double force)
-      : setid_{setid},
-        force_fn_{force_fn},
-        dir_{dir},
-        force_{force} {};
+      : setid_{setid}, force_fn_{force_fn}, dir_{dir}, force_{force} {};
 
   // Set id
   int setid() const { return setid_; }

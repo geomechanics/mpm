@@ -1,7 +1,6 @@
 //! Constructor with material properties
 template <unsigned Tdim>
-mpm::Bingham<Tdim>::Bingham(unsigned id, 
-    const Json& material_properties)
+mpm::Bingham<Tdim>::Bingham(unsigned id, const Json& material_properties)
     : Material<Tdim>(id, material_properties) {
   try {
     // Fluid density
@@ -19,8 +18,7 @@ mpm::Bingham<Tdim>::Bingham(unsigned id,
 
     // Volumetric terms
     c_ = std::sqrt(bulk_modulus_ / density_);
-    gamma_ = 
-        material_properties.at("volumetric_gamma").template get<double>();
+    gamma_ = material_properties.at("volumetric_gamma").template get<double>();
 
     // Shear terms
     // Dynamic viscosity: [Pa*s]
@@ -30,8 +28,8 @@ mpm::Bingham<Tdim>::Bingham(unsigned id,
     tau0_ = material_properties.at("tau0").template get<double>();
 
     // Regularization shape factor m
-    m_ = 
-      material_properties.at("regularization_parameter").template get<double>();
+    m_ = material_properties.at("regularization_parameter")
+             .template get<double>();
 
     // Thixotropy terms
     // Flocculation state flocculation_state
@@ -49,42 +47,38 @@ mpm::Bingham<Tdim>::Bingham(unsigned id,
     properties_ = material_properties;
 
   } catch (Json::exception& except) {
-      console_->error("Material parameter not set: {} {}\n", except.what(),
-                      except.id);
+    console_->error("Material parameter not set: {} {}\n", except.what(),
+                    except.id);
   }
 }
 
 //! Initialise history variables
 template <unsigned Tdim>
-mpm::dense_map mpm::Bingham<Tdim>::
-                            initialise_state_variables() {
-    mpm::dense_map state_vars = {
-      // Papanastasiou–Roussel Bingham parameters
-      // Pressure
-      {"pressure", 0.0},
-      // Volumetric strain
-      {"volumetric_strain", 0.0},
-      // Thixotropic parameters
-      {"lambda", lambda0_},
-      // Shear rate
-      {"gamma_dot", 0}
-      };
-    return state_vars;
+mpm::dense_map mpm::Bingham<Tdim>::initialise_state_variables() {
+  mpm::dense_map state_vars = {// Papanastasiou–Roussel Bingham parameters
+                               // Pressure
+                               {"pressure", 0.0},
+                               // Volumetric strain
+                               {"volumetric_strain", 0.0},
+                               // Thixotropic parameters
+                               {"lambda", lambda0_},
+                               // Shear rate
+                               {"gamma_dot", 0}};
+  return state_vars;
 }
 
 //! State variables
 template <unsigned Tdim>
-std::vector<std::string> mpm::Bingham<Tdim>::
-      state_variables() const {
-    const std::vector<std::string> state_vars = {
-        "pressure",  "volumetric_strain", "lambda", "gamma_dot"};
-    return state_vars;
+std::vector<std::string> mpm::Bingham<Tdim>::state_variables() const {
+  const std::vector<std::string> state_vars = {"pressure", "volumetric_strain",
+                                               "lambda", "gamma_dot"};
+  return state_vars;
 }
 
 //! Compute stress
 template <unsigned Tdim>
-Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
-    compute_stress(const Vector6d& stress, const Vector6d& dstrain,
+Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::compute_stress(
+    const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // Get volumetric strain
@@ -104,36 +98,39 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
   Eigen::Matrix<double, 6, 1> strain_rate_dev;
   strain_rate_dev = strain_rate;
   const double volumetric_strain_rate = strain_rate.head(3).sum() / 3.0;
-  strain_rate_dev.head(3).noalias() += 
-                      -Eigen::Vector3d::Constant(volumetric_strain_rate);
+  strain_rate_dev.head(3).noalias() +=
+      -Eigen::Vector3d::Constant(volumetric_strain_rate);
 
   // Compute shear rate
-  const double shear_rate = std::sqrt(2. * 
-                  (strain_rate_dev.dot(strain_rate_dev) +
-                  strain_rate_dev.tail(3).dot(strain_rate_dev.tail(3))));
+  const double shear_rate =
+      std::sqrt(2. * (strain_rate_dev.dot(strain_rate_dev) +
+                      strain_rate_dev.tail(3).dot(strain_rate_dev.tail(3))));
 
   // Get thixotropic parameters
   double lambda = (*state_vars).at("lambda");
-  double lambda_new = lambda; 
+  double lambda_new = lambda;
 
   // Compute lambda
-  if (lambda > 0) 
+  if (lambda > 0)
     lambda_new += dt * (athix_ / tau0_ - alpha_ * lambda * shear_rate);
-    // Lambda cannot be negative
-  else lambda_new = 0;
+  // Lambda cannot be negative
+  else
+    lambda_new = 0;
 
   // Compute apparent viscosity
   double apparent_viscosity = 0.;
   if (shear_rate > 0)
-    apparent_viscosity = dynamic_viscosity_ + (tau0_ / shear_rate) *
-                        (1 + lambda_new) * (1. - std::exp(-m_ * shear_rate));
+    apparent_viscosity =
+        dynamic_viscosity_ + (tau0_ / shear_rate) * (1 + lambda_new) *
+                                 (1. - std::exp(-m_ * shear_rate));
 
   // Compute shear stress
-  const Eigen::Matrix<double, 6, 1> tau = 2 * apparent_viscosity * strain_rate_dev;
+  const Eigen::Matrix<double, 6, 1> tau =
+      2 * apparent_viscosity * strain_rate_dev;
 
   // Update stress
   const Eigen::Matrix<double, 6, 1> updated_stress =
-                -(*state_vars).at("pressure") * this->dirac_delta() + tau;
+      -(*state_vars).at("pressure") * this->dirac_delta() + tau;
 
   (*state_vars).at("volumetric_strain") = vol_strain;
   (*state_vars).at("lambda") = lambda_new;
@@ -144,16 +141,14 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::
 
 //! Dirac delta 2D
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Bingham<2>::
-                                                      dirac_delta() const {
-return (Eigen::Matrix<double, 6, 1>() << 1.f, 1.f, 0.f, 0.f, 0.f, 0.f)
-    .finished();
+inline Eigen::Matrix<double, 6, 1> mpm::Bingham<2>::dirac_delta() const {
+  return (Eigen::Matrix<double, 6, 1>() << 1.f, 1.f, 0.f, 0.f, 0.f, 0.f)
+      .finished();
 }
 
 //! Dirac delta 3D
 template <>
-inline Eigen::Matrix<double, 6, 1> mpm::Bingham<3>::
-                                                      dirac_delta() const {
-return (Eigen::Matrix<double, 6, 1>() << 1.f, 1.f, 1.f, 0.f, 0.f, 0.f)
-    .finished();
+inline Eigen::Matrix<double, 6, 1> mpm::Bingham<3>::dirac_delta() const {
+  return (Eigen::Matrix<double, 6, 1>() << 1.f, 1.f, 1.f, 0.f, 0.f, 0.f)
+      .finished();
 }

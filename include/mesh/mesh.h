@@ -27,6 +27,7 @@ using Json = nlohmann::json;
 
 #include "absorbing_constraint.h"
 #include "acceleration_constraint.h"
+#include "bodyforce.h"
 #include "cell.h"
 #include "factory.h"
 #include "friction_constraint.h"
@@ -44,7 +45,6 @@ using Json = nlohmann::json;
 #include "pod_particle.h"
 #include "radial_basis_function.h"
 #include "traction.h"
-#include "bodyforce.h"
 #include "vector.h"
 #include "velocity_constraint.h"
 
@@ -341,8 +341,8 @@ class Mesh {
   //! Apply traction to particles
   //! \param[in] current_time Current time
   void apply_traction_on_particles(double current_time);
-    //! Apply body force to particles
-    //! \param[in] current_time Current time
+  //! Apply body force to particles
+  //! \param[in] current_time Current time
   void apply_body_force_on_particles(double current_time);
   //! Create nodal acceleration constraints
   //! \param[in] setid Node set id
@@ -731,7 +731,7 @@ class Mesh {
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Loading (Particle tractions)
   std::vector<std::shared_ptr<mpm::Traction>> particle_tractions_;
-    //! Loading (Particle body forces)
+  //! Loading (Particle body forces)
   std::vector<std::shared_ptr<mpm::BodyForce>> particle_body_forces_;
   //! Nodal acceleration constraints
   std::vector<std::shared_ptr<mpm::AccelerationConstraint>>

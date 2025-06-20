@@ -390,8 +390,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
   // Separated state: current packing density is less than critical density
   if (current_packing_density <= critical_density) {
-    const double tau_tr = mpm::materials::q(trial_stress) / sqrt(3.0);
-    (*state_vars).at("pdstrain") += tau_tr / shear_modulus_;
+    (*state_vars).at("pdstrain") +=
+        mpm::materials::q(trial_stress) / 3.0 / shear_modulus_;
     (*state_vars).at("yield_state") = 3;
     return Vector6d::Zero();
   }

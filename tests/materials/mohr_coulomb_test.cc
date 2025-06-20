@@ -146,6 +146,46 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
     REQUIRE(material->id() == 0);
 
+    // Coordinates of nodes for the cell
+    mpm::Index cell_id = 0;
+    const unsigned Dof = 2;
+    const unsigned Nphases = 1;
+    const unsigned Nnodes = 4;
+
+    coords << -2, -2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node0 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(0, coords);
+    coords << 2, -2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node1 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(1, coords);
+    coords << 2, 2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node2 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(2, coords);
+    coords << -2, 2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node3 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(3, coords);
+
+    std::shared_ptr<mpm::Element<Dim>> shapefn =
+        Factory<mpm::Element<Dim>>::instance()->create("ED2Q4");
+
+    node0->assign_velocity_constraint(0, 0.02);
+    node0->assign_velocity_constraint(1, 0.03);
+    node0->apply_velocity_constraints();
+
+    auto cell = std::make_shared<mpm::Cell<Dim>>(cell_id, Nnodes, shapefn);
+
+    cell->add_node(0, node0);
+    cell->add_node(1, node1);
+    cell->add_node(2, node2);
+    cell->add_node(3, node3);
+
+    // Initialise cell
+    REQUIRE(cell->initialise() == true);
+    // Check if cell is initialised, after addition of nodes
+    REQUIRE(cell->is_initialised() == true);
+
+    particle->assign_cell(cell);
+
     // Assign particle mass and volume
     particle->assign_volume(1.0);
     particle->assign_material(mohr_coulomb, 0);

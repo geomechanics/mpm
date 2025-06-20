@@ -1450,6 +1450,7 @@ void mpm::MPMBase<Tdim>::particles_volumes(
     if (mesh_props.find("particles_volumes") != mesh_props.end()) {
       std::string fparticles_volumes =
           mesh_props["particles_volumes"].template get<std::string>();
+
       if (!io_->file_name(fparticles_volumes).empty()) {
         bool particles_volumes =
             mesh_->assign_particles_volumes(particle_io->read_particles_volumes(
@@ -1460,6 +1461,7 @@ void mpm::MPMBase<Tdim>::particles_volumes(
       }
     } else
       throw std::runtime_error("Particle volumes JSON data not found");
+
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle volumes are undefined; {}", __LINE__,
                    exception.what());
@@ -1495,7 +1497,7 @@ void mpm::MPMBase<Tdim>::particles_velocities(
         }
       }
     } else
-      throw std::runtime_error("particles_velocities JSON not found");
+      throw std::runtime_error("Particle velocities JSON data not found");
 
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle velocities are undefined {} ", __LINE__,
@@ -1532,7 +1534,7 @@ void mpm::MPMBase<Tdim>::particles_accelerations(
         }
       }
     } else
-      throw std::runtime_error("particles_accelerations JSON not found");
+      throw std::runtime_error("Particle accelerations JSON data not found");
 
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle accelerations are undefined {} ", __LINE__,

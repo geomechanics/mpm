@@ -1479,6 +1479,7 @@ bool mpm::TwoPhaseParticle<Tdim>::map_ppp_stabilization_matrix(double dt) {
   bool status = true;
   try {
     // Compute solid phase shear modulus
+    // TODO: Check G value for specific materials, e.g. PM4Sand
     const double E =
         this->material(mpm::ParticlePhase::Solid)
             ->template property<double>(std::string("youngs_modulus"));
@@ -1493,8 +1494,25 @@ bool mpm::TwoPhaseParticle<Tdim>::map_ppp_stabilization_matrix(double dt) {
 
     // Compute local matrix of polynomial-pressure-projection stabilization
     // matrix
+    // TODO: Check which shapefn_avg is better to use
+    // 1. Average of shapefn
     Eigen::VectorXd shapefn_avg =
         Eigen::VectorXd::Constant(shapefn_.rows(), 1.0 / shapefn_.rows());
+
+    // 2. Cell average of shapefn
+    // Get the local number of nodes
+    // unsigned nfunctions_local = cell_->nfunctions_local();
+    // Eigen::VectorXd shapefn_avg = Eigen::VectorXd::Zero(shapefn_.rows());
+    // shapefn_avg.head(nfunctions_local).setConstant(1.0 / nfunctions_local);
+
+    // 3. Evaluate the shapefn at the middle of the cell but same order
+    // Eigen::Matrix<double, Tdim, 1> xi_centroid =
+    //     Eigen::Matrix<double, Tdim, 1>::Zero();
+    // Eigen::VectorXd shapefn_avg = cell_->element_ptr()->shapefn(
+    //     xi_centroid, this->natural_size_,
+    //     Eigen::Matrix<double, Tdim, Tdim>::Zero());
+
+    // Compute local Laplacian
     const Eigen::MatrixXd local_laplacian =
         (shapefn_ - shapefn_avg) * (shapefn_ - shapefn_avg).transpose();
 

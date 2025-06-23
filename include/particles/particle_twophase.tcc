@@ -1480,9 +1480,12 @@ bool mpm::TwoPhaseParticle<Tdim>::map_ppp_stabilization_matrix(double dt) {
   try {
     // Compute solid phase shear modulus
     // TODO: Check G value for specific materials, e.g. PM4Sand
-    const double E =
-        this->material(mpm::ParticlePhase::Solid)
-            ->template property<double>(std::string("youngs_modulus"));
+    const double  E = (state_variables_[mpm::ParticlePhase::Solid].find("youngs_modulus") != state_variables_[mpm::ParticlePhase::Solid].end())
+            ? state_variables_[mpm::ParticlePhase::Solid].at("youngs_modulus")
+            :         this->material(mpm::ParticlePhase::Solid)->template property<double>(std::string("youngs_modulus"));;
+    // const double E =
+    //     this->material(mpm::ParticlePhase::Solid)
+    //         ->template property<double>(std::string("youngs_modulus"));
     const double nu =
         this->material(mpm::ParticlePhase::Solid)
             ->template property<double>(std::string("poisson_ratio"));
@@ -1496,8 +1499,8 @@ bool mpm::TwoPhaseParticle<Tdim>::map_ppp_stabilization_matrix(double dt) {
     // matrix
     // TODO: Check which shapefn_avg is better to use
     // 1. Average of shapefn
-    Eigen::VectorXd shapefn_avg =
-        Eigen::VectorXd::Constant(shapefn_.rows(), 1.0 / shapefn_.rows());
+    // Eigen::VectorXd shapefn_avg =
+    //     Eigen::VectorXd::Constant(shapefn_.rows(), 1.0 / shapefn_.rows());
 
     // 2. Cell average of shapefn
     // Get the local number of nodes
@@ -1506,11 +1509,11 @@ bool mpm::TwoPhaseParticle<Tdim>::map_ppp_stabilization_matrix(double dt) {
     // shapefn_avg.head(nfunctions_local).setConstant(1.0 / nfunctions_local);
 
     // 3. Evaluate the shapefn at the middle of the cell but same order
-    // Eigen::Matrix<double, Tdim, 1> xi_centroid =
-    //     Eigen::Matrix<double, Tdim, 1>::Zero();
-    // Eigen::VectorXd shapefn_avg = cell_->element_ptr()->shapefn(
-    //     xi_centroid, this->natural_size_,
-    //     Eigen::Matrix<double, Tdim, Tdim>::Zero());
+    Eigen::Matrix<double, Tdim, 1> xi_centroid =
+        Eigen::Matrix<double, Tdim, 1>::Zero();
+    Eigen::VectorXd shapefn_avg = cell_->element_ptr()->shapefn(
+        xi_centroid, this->natural_size_,
+        Eigen::Matrix<double, Tdim, Tdim>::Zero());
 
     // Compute local Laplacian
     const Eigen::MatrixXd local_laplacian =

@@ -515,7 +515,7 @@ mpm::dense_map PM4Sand<Tdim>::initialise_state_variables() {
   set_scalar(&state_vars, "zxp", 0.0);
   set_scalar(&state_vars, "pzpFlag", 1.0);  // True initially
   set_scalar(&state_vars, "dGamma", 0.0);
-  set_scalar(&state_vars, "yield_state", 0.0);  // Elastic initially
+  set_scalar(&state_vars, "youngs_modulus", 0.0);  // Elastic initially
 
   // Flag to indicate if model parameters (pmin, Mb, Md etc.) have been
   // initialized based on stress
@@ -541,7 +541,7 @@ std::vector<std::string> PM4Sand<Tdim>::state_variables() const {
   }
   // scalar tails
   v.insert(v.end(), {"zcum", "zpeak", "pzp", "zxp", "pzpFlag", "dGamma",
-                     "yield_state", "model_initialized"});
+                     "youngs_modulus", "model_initialized"});
   return v;
 }
 
@@ -552,7 +552,7 @@ void PM4Sand<Tdim>::initialise(mpm::dense_map* state_vars) {
   // We can reset step-specific flags or perform checks here if needed.
   // The main initialization happens in the constructor and the first
   // compute_stress call.
-  (*state_vars)["yield_state"] = 0.0;  // Reset yield state for the step (will
+  (*state_vars)["youngs_modulus"] = 0.0;  // Reset youngs_modulus for the step (will
                                        // be updated in compute_stress)
   (*state_vars)["dGamma"] =
       0.0;  // Reset plastic multiplier increment for the step
@@ -1121,8 +1121,7 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
   set_scalar(state_vars, "zxp", current_zxp);
   set_scalar(state_vars, "pzpFlag", current_pzpFlag ? 1.0 : 0.0);
   set_scalar(state_vars, "dGamma", current_dGamma);
-  bool current_yield_state = (current_dGamma > c_tolerance);
-  set_scalar(state_vars, "yield_state", current_yield_state ? 1.0 : 0.0);
+
 
   // -------------------------------------------------
   // 7. Return updated stress in Voigt notation (compressive negative)
@@ -1267,6 +1266,7 @@ void PM4Sand<Tdim>::getElasticModuli(const Matrix3d& sigma, double& K,
   // Ensure K and G are positive and reasonable
   G = std::max(G, m_G0 * m_P_atm * 1e-6);  // Minimum shear modulus
   K = std::max(K, G * 1e-3);               // Minimum bulk modulus
+  set_scalar(state_vars, "youngs_modulus", 2*G*(1.0+nu)*1000);
 }
 
 template <unsigned Tdim>

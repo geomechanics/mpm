@@ -145,9 +145,9 @@ void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(double newm
     Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
     point_stiffness.setZero();
     // TODO: Fix input parameters pathway/pull from nodes
-    double E = 60e6;
+    double E = 2000000000.0;
     double v = 0.25;
-    double rho = 1600;
+    double rho = 2000;
     double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
     double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
@@ -191,9 +191,9 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
     point_stiffness.setZero();
 
     // TODO: Fix input parameters pathway/pull from nodes
-    double E = 60e6;
+    double E = 2000000000.0;
     double v = 0.25;
-    double rho = 1600;
+    double rho = 2000;
     double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
     double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
@@ -233,9 +233,9 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
   // TODO: Fix input parameters pathway/pull from nodes
-  double E = 60e6;
+  double E = 2000000000.0;
   double v = 0.25;
-  double rho = 1600;
+  double rho = 2000;
   double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
   double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 

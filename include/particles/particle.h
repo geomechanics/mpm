@@ -175,8 +175,13 @@ class Particle : public ParticleBase<Tdim> {
     return strain_rate_;
   };
 
-  //! Return dvolumetric strain of centroid
-  //! \retval dvolumetric strain at centroid
+  //! Assign dvolumetric strain
+  void assign_dvolumetric_strain(double dvol_strain) noexcept override {
+    dvolumetric_strain_ = dvol_strain;
+  }
+
+  //! Return dvolumetric strain
+  //! \retval dvolumetric strain
   double dvolumetric_strain() const override { return dvolumetric_strain_; }
 
   //! Assign deformation gradient increment

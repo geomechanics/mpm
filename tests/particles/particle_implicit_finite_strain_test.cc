@@ -309,7 +309,7 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 2D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain(0.0);
+    particle->update_stress_strain(dt);
 
     // Deformation gradient
     Eigen::Matrix<double, 3, 3> deformation_gradient;
@@ -682,7 +682,7 @@ TEST_CASE("Implicit ParticleFiniteStrain is checked for 3D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain(0.0);
+    particle->update_stress_strain(dt);
 
     // Deformation gradient
     Eigen::Matrix<double, 3, 3> deformation_gradient;

@@ -481,7 +481,7 @@ class Particle : public ParticleBase<Tdim> {
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  virtual void update_stress_strain(double dt) noexcept override;
+  void update_stress_strain(double dt) noexcept override;
 
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step

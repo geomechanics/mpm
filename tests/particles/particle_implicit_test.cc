@@ -314,7 +314,7 @@ TEST_CASE("Implicit Particle is checked for 2D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain(0.0);
+    particle->update_stress_strain(dt);
 
     // Strain
     Eigen::Matrix<double, 6, 1> strain;
@@ -767,7 +767,7 @@ TEST_CASE("Implicit Particle is checked for 3D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain(0.0);
+    particle->update_stress_strain(dt);
 
     // Strain
     Eigen::Matrix<double, 6, 1> strain;

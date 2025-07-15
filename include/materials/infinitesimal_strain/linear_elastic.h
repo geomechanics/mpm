@@ -71,8 +71,6 @@ class LinearElastic : public Material<Tdim> {
                                               mpm::dense_map* state_vars,
                                               double dt) override;
 
-  bool compute_elastic_tensor();
-
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -80,6 +78,10 @@ class LinearElastic : public Material<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
+
+ private:
+  //! Compute elastic tensor
+  bool compute_elastic_tensor();
 
  private:
   //! Elastic stiffness matrix

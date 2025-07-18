@@ -599,9 +599,9 @@ void mpm::Particle<Tdim>::update_volume() noexcept {
   // Check if particle has a valid cell ptr and a valid volume
   assert(cell_ != nullptr && volume_ != std::numeric_limits<double>::max());
   // Compute at centroid
-  // Strain rate for reduced integration
-  this->volume_ *= (1. + dvolumetric_strain_);
-  this->mass_density_ = this->mass_density_ / (1. + dvolumetric_strain_);
+  // Strain rate
+  this->volume_ *= std::exp(dvolumetric_strain_);
+  this->mass_density_ = this->mass_density_ / std::exp(dvolumetric_strain_);
 }
 
 //! Return the approximate particle diameter
@@ -866,13 +866,8 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   // Update strain
   strain_.noalias() += dstrain_;
 
-  // Compute at centroid
-  // Strain rate for reduced integration
-  const Eigen::Matrix<double, 6, 1> strain_rate_centroid =
-      this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
-
   // Assign volumetric strain at centroid
-  dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+  dvolumetric_strain_ = dt * strain_rate_.head(Tdim).sum();
 }
 
 // Compute stress

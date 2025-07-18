@@ -110,8 +110,12 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
 
   // Density and packing parameters
   const double current_packing_density = ptr->mass_density();
-  const double current_packing_fraction =
-      current_packing_density / grain_density_;
+  double current_packing_fraction = current_packing_density / grain_density_;
+
+  // TODO: Packing fraction calculation may not be accurate for large
+  // deformation, so we set a maximum value to avoid overpacking. It is crucial
+  // for this model since phi will be used in computing the stiffness
+  current_packing_fraction = std::min(current_packing_fraction, 1.0);
 
   // Get strain rate
   auto strain_rate = ptr->strain_rate();

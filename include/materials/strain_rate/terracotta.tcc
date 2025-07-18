@@ -117,6 +117,8 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   auto strain_rate = ptr->strain_rate();
   // Convert strain rate to rate of deformation tensor
   strain_rate.tail(3) *= 0.5;
+  // Convert strain rate to Mandel's notation
+  strain_rate.tail(3) *= std::sqrt(2.0);
 
   // Strain decomposition (vol strain rate is positive in compression)
   Vector6d strain_rate_dev = strain_rate;
@@ -124,9 +126,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   strain_rate_dev.head(3).noalias() +=
       (1.0 / 3.0) * Eigen::Vector3d::Constant(vol_strain_rate);
   const double dev_strain_rate =
-      std::sqrt(2.0 / 3.0 *
-                (strain_rate_dev.dot(strain_rate_dev) +
-                 strain_rate_dev.tail(3).dot(strain_rate_dev.tail(3))));
+      std::sqrt(2.0 / 3.0 * strain_rate_dev.dot(strain_rate_dev));
   Vector6d n_d = Vector6d::Zero();
   if (dev_strain_rate > std::numeric_limits<double>::epsilon())
     n_d = strain_rate_dev / (std::sqrt(3.0 / 2.0) * dev_strain_rate);
@@ -165,22 +165,21 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     iter++;
   }
 
-  // Current elastic strain tensor
+  // Current elastic strain tensor in tensorial Voigt notation
   Vector6d current_elastic_strain;
   current_elastic_strain << (*state_vars).at("elastic_strain0"),
       (*state_vars).at("elastic_strain1"), (*state_vars).at("elastic_strain2"),
       (*state_vars).at("elastic_strain3"), (*state_vars).at("elastic_strain4"),
       (*state_vars).at("elastic_strain5");
+  // Convert to Mandel's notation
+  current_elastic_strain.tail(3) *= std::sqrt(2.0);
   const double current_vol_elastic_strain =
       -current_elastic_strain.head(3).sum();
   Vector6d current_elastic_strain_dev = current_elastic_strain;
   current_elastic_strain_dev.head(3).noalias() +=
       (1.0 / 3.0) * Eigen::Vector3d::Constant(current_vol_elastic_strain);
-  const double current_dev_elastic_strain =
-      std::sqrt(2.0 / 3.0 *
-                (current_elastic_strain_dev.dot(current_elastic_strain_dev) +
-                 current_elastic_strain_dev.tail(3).dot(
-                     current_elastic_strain_dev.tail(3))));
+  const double current_dev_elastic_strain = std::sqrt(
+      2.0 / 3.0 * current_elastic_strain_dev.dot(current_elastic_strain_dev));
 
   // Initialize new elastic strain tensor and its rate
   double new_vol_elastic_strain = current_vol_elastic_strain;
@@ -188,12 +187,12 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   Vector6d new_elastic_strain_dev = current_elastic_strain_dev;
 
   // Second order identity tensor in Voigt notation
-  Vector6d m_voigt;
-  m_voigt << 1.0, 1.0, 1.0, 0.0, 0.0, 0.0;
+  Vector6d m_mandel;
+  m_mandel << 1.0, 1.0, 1.0, 0.0, 0.0, 0.0;
 
   // Forth order identity tensor in tensorial Voigt notation
-  Matrix6x6 fourth_order_identity_voigt = Matrix6x6::Zero();
-  for (unsigned i = 0; i < 6; ++i) fourth_order_identity_voigt(i, i) = 1.0;
+  Matrix6x6 fourth_order_identity_mandel = Matrix6x6::Zero();
+  for (unsigned i = 0; i < 6; ++i) fourth_order_identity_mandel(i, i) = 1.0;
 
   // Initialize pe and se
   const double phi_6 = std::pow(current_packing_fraction, 6);
@@ -218,7 +217,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
                 (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ /
                      std::pow(current_packing_fraction, lambda_) +
                  a / m_ / m_) *
-                fourth_order_identity_voigt;
+                fourth_order_identity_mandel;
 
   // Start Newton-Raphson iteration for elastic strain
   iter = 0;
@@ -228,8 +227,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   while (iter < max_iter_) {
     // Compute residuals
     res_m(0) = new_vol_elastic_strain - current_vol_elastic_strain -
-               vol_strain_rate * dt +
-               new_tm * dt * (a * pe_m + this->double_contraction(b_m, se_m));
+               vol_strain_rate * dt + new_tm * dt * (a * pe_m + b_m.dot(se_m));
     res_m.tail(6) = new_elastic_strain_dev - current_elastic_strain_dev -
                     dt * (strain_rate_dev - new_tm * (b_m * pe_m + c * se_m));
 
@@ -250,12 +248,12 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     const Vector6d ds_depsv = dp_dgamma;
     const Matrix6x6 ds_dgamma = 2.0 * phi_6 * shear_modulus_ *
                                 this->macaulay(new_vol_elastic_strain) *
-                                fourth_order_identity_voigt;
+                                fourth_order_identity_mandel;
 
     // Compute derivatives of transport variables b with respect to stress
     const Vector6d db_dp = 3. / 2. * a / m_ / m_ / pe_m / pe_m * se_m;
     const Matrix6x6 db_ds =
-        -3. / 2. * a / m_ / m_ / pe_m * fourth_order_identity_voigt;
+        -3. / 2. * a / m_ / m_ / pe_m * fourth_order_identity_mandel;
 
     // Compute derivatives of transport variables b with respect to elastic
     // strain
@@ -265,16 +263,15 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
 
     // Compute residual derivatives
     const double drv_epsv =
-        1.0 + dt * new_tm *
-                  (a * dp_depsv + this->double_contraction(db_depsv, se_m) +
-                   this->double_contraction(b_m, ds_depsv));
+        1.0 +
+        dt * new_tm * (a * dp_depsv + db_depsv.dot(se_m) + b_m.dot(ds_depsv));
     const Vector6d drv_dgamma = dt * new_tm *
                                 (a * dp_dgamma + db_dgamma * se_m +
                                  (b_m.transpose() * ds_dgamma).transpose());
     const Vector6d drs_depsv =
         dt * new_tm * (pe_m * db_depsv + dp_depsv * b_m + c * ds_depsv);
     const Matrix6x6 drs_dgamma =
-        fourth_order_identity_voigt +
+        fourth_order_identity_mandel +
         dt * new_tm *
             (pe_m * db_dgamma + b_m * dp_dgamma.transpose() + c * ds_dgamma);
 
@@ -291,9 +288,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     new_vol_elastic_strain += delta_elastic_strain(0);
     new_elastic_strain_dev.noalias() += delta_elastic_strain.tail(6);
     new_dev_elastic_strain = std::sqrt(
-        2.0 / 3.0 *
-        (new_elastic_strain_dev.dot(new_elastic_strain_dev) +
-         new_elastic_strain_dev.tail(3).dot(new_elastic_strain_dev.tail(3))));
+        2.0 / 3.0 * new_elastic_strain_dev.dot(new_elastic_strain_dev));
 
     // Update pe and qe
     pe_m =
@@ -307,6 +302,9 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     // To avoid division by zero in the next step
     if (pe_m < tolerance_) pe_m = tolerance_;
 
+    // Update transport parameters
+    b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
+
     // Check convergence based on solution
     if (delta_elastic_strain.norm() < abs_tol_) break;
 
@@ -316,7 +314,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
 
   // Compute new elastic strain
   Vector6d new_elastic_strain =
-      -new_vol_elastic_strain / 3.0 * m_voigt + new_elastic_strain_dev;
+      -new_vol_elastic_strain / 3.0 * m_mandel + new_elastic_strain_dev;
 
   // Compute new stress invariants
   const double pe = pe_m;
@@ -327,11 +325,14 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   const Vector6d se = se_m;
   const Vector6d sd = 4. / 3. * beta_ / gamma_ * new_tm * strain_rate_dev;
   const Vector6d new_s = se + sd;
-  const double new_q = std::sqrt(
-      3.0 / 2.0 * (new_s.dot(new_s) + new_s.tail(3).dot(new_s.tail(3))));
+  const double new_q = std::sqrt(3.0 / 2.0 * new_s.dot(new_s));
 
   // Update stress
-  const Vector6d updated_stress = -new_p * m_voigt + new_s;
+  Vector6d updated_stress = -new_p * m_mandel + new_s;
+
+  // Convert Mandel's notation to tensorial Voigt notation
+  updated_stress.tail(3) /= std::sqrt(2.0);
+  new_elastic_strain.tail(3) /= std::sqrt(2.0);
 
   // Update state variables
   (*state_vars).at("pressure") = new_p;

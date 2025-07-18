@@ -63,15 +63,6 @@ class Terracotta : public Material<Tdim> {
   //! \retval heaviside Heaviside of x
   inline double heaviside(double x) const { return (x > 0.0) ? 1.0 : 0.0; }
 
-  //! Function that perform a double contraction of two second order tensors
-  //! \param[in] a First second order tensor
-  //! \param[in] b Second second order tensor
-  //! \retval result Result of double contraction
-  inline double double_contraction(const Vector6d& a, const Vector6d& b) const {
-    return a(0) * b(0) + a(1) * b(1) + a(2) * b(2) +
-           2.0 * (a(3) * b(3) + a(4) * b(4) + a(5) * b(5));
-  }
-
   //! material id
   using Material<Tdim>::id_;
   //! Material properties

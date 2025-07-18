@@ -107,7 +107,7 @@ class Terracotta : public Material<Tdim> {
   unsigned max_iter_{15};
 
   //! Discrete tolerance
-  double tolerance_{1.0e-10};
+  double tolerance_{1.0e-4};
 
 };  // Terracotta class
 }  // namespace mpm

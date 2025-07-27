@@ -203,7 +203,7 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   void initialise_bspline_connectivity_properties(
       const Eigen::MatrixXd& nodal_coordinates,
       const std::vector<std::vector<unsigned>>& nodal_properties,
-      bool kernel_correction = false, unsigned kc_niteration = 1,
+      bool kernel_correction = true, unsigned kc_niteration = 1,
       double kc_tol = 0.0) override;
 
   //! Return the degree of shape function
@@ -270,7 +270,7 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   //! BSpline knot vector for different node type
   std::vector<std::vector<double>> BSplineKnotVector;
   //! Boolean to identify kernel correction
-  bool kernel_correction_{false};
+  bool kernel_correction_{true};
   //! Number of kernel correction iteration
   unsigned kc_niteration_{1};
   //! Kernel correction tolerance

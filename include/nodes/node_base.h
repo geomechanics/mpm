@@ -556,7 +556,7 @@ class NodeBase {
 
   // Assign levelset values to nodes
   //! \param[in] levelset Levelset value at the particle
-  //! \param[in] levelset_mu Levelset friction
+  //! \param[in] levelset_mu Levelset friction coefficient
   //! \param[in] levelset_alpha Levelset adhesion coefficient
   //! \param[in] barrier_stiffness Barrier stiffness
   virtual bool assign_levelset(double levelset, double levelset_mu,
@@ -576,7 +576,7 @@ class NodeBase {
     return 0.;
   }
 
-  //! Return levelset friction
+  //! Return levelset friction coefficient
   virtual double levelset_mu() const {
     throw std::runtime_error(
         "Calling the base class function (levelset_mu) in NodeBase:: illegal "

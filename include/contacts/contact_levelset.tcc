@@ -16,7 +16,7 @@ void mpm::ContactLevelset<Tdim>::initialise_levelset_properties(
       levelset_damping, levelset_pic, levelset_violation_corrector);
 }
 
-//! Compute contact forces
+//! Compute contact reaction forces
 template <unsigned Tdim>
 void mpm::ContactLevelset<Tdim>::compute_contact_forces(double dt) {
   mesh_->iterate_over_particles(

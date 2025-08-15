@@ -209,13 +209,13 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
     REQUIRE(particle->scalar_data("levelset") ==
             Approx(0.0).epsilon(Tolerance));
 
-    // Check vector data: levelset_couples
-    Eigen::VectorXd levelset_couple;
-    levelset_couple.resize(Dim);
+    // Check vector data: levelset_reaction_forces
+    Eigen::VectorXd levelset_reaction;
+    levelset_reaction.resize(Dim);
 
-    REQUIRE(particle->vector_data("levelset_couples").size() == Dim);
-    for (unsigned i = 0; i < levelset_couple.size(); ++i)
-      REQUIRE(particle->vector_data("levelset_couples")(i) ==
+    REQUIRE(particle->vector_data("levelset_reaction_forces").size() == Dim);
+    for (unsigned i = 0; i < levelset_reaction.size(); ++i)
+      REQUIRE(particle->vector_data("levelset_reaction_forces")(i) ==
               Approx(0.).epsilon(Tolerance));
   }
 
@@ -938,14 +938,14 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle1->levelset() == Approx(0.0).epsilon(Tolerance));
     REQUIRE(particle2->levelset() == Approx(0.0).epsilon(Tolerance));
 
-    // Check initial coupling force
-    auto couple_force1 = particle1->couple_force();
-    auto couple_force2 = particle2->couple_force();
-    REQUIRE(couple_force1.size() == Dim);
-    REQUIRE(couple_force2.size() == Dim);
+    // Check initial reaction force
+    auto reaction_force1 = particle1->reaction_force();
+    auto reaction_force2 = particle2->reaction_force();
+    REQUIRE(reaction_force1.size() == Dim);
+    REQUIRE(reaction_force2.size() == Dim);
     for (unsigned i = 0; i < Dim; ++i) {
-      REQUIRE(couple_force1(i) == Approx(0.0).epsilon(Tolerance));
-      REQUIRE(couple_force2(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force1(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
     }
 
     // Create cell
@@ -994,18 +994,18 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle1->levelset() == Approx(0.20).epsilon(Tolerance));
     REQUIRE(particle2->levelset() == Approx(0.40).epsilon(Tolerance));
 
-    // Check coupling force for particle not in contact
-    couple_force2 = particle2->couple_force();
+    // Check reaction force for particle not in contact
+    reaction_force2 = particle2->reaction_force();
     for (unsigned i = 0; i < Dim; ++i) {
-      REQUIRE(couple_force2(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
     }
 
-    // Check coupling force after contact force computation
-    couple_force1 = particle1->couple_force();
-    REQUIRE(couple_force1(0) == Approx(-9040.8465928880).epsilon(Tolerance));
-    REQUIRE(couple_force1(1) == Approx(85658.4659288802).epsilon(Tolerance));
+    // Check reaction force after contact reaction force computation
+    reaction_force1 = particle1->reaction_force();
+    REQUIRE(reaction_force1(0) == Approx(-9040.8465928880).epsilon(Tolerance));
+    REQUIRE(reaction_force1(1) == Approx(85658.4659288802).epsilon(Tolerance));
 
-    // Check mapped nodal contact force
+    // Check mapped nodal contact reaction force
     for (const auto& node : nodes) {
       auto external_force = node->external_force(0);
       REQUIRE(external_force(0) != Approx(0.0).epsilon(Tolerance));
@@ -2513,14 +2513,14 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle1->levelset() == Approx(0.0).epsilon(Tolerance));
     REQUIRE(particle2->levelset() == Approx(0.0).epsilon(Tolerance));
 
-    // Check initial coupling force
-    auto couple_force1 = particle1->couple_force();
-    auto couple_force2 = particle2->couple_force();
-    REQUIRE(couple_force1.size() == Dim);
-    REQUIRE(couple_force2.size() == Dim);
+    // Check initial reaction force
+    auto reaction_force1 = particle1->reaction_force();
+    auto reaction_force2 = particle2->reaction_force();
+    REQUIRE(reaction_force1.size() == Dim);
+    REQUIRE(reaction_force2.size() == Dim);
     for (unsigned i = 0; i < Dim; ++i) {
-      REQUIRE(couple_force1(i) == Approx(0.0).epsilon(Tolerance));
-      REQUIRE(couple_force2(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force1(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
     }
 
     // Create cell
@@ -2585,19 +2585,19 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle1->levelset() == Approx(0.20).epsilon(Tolerance));
     REQUIRE(particle2->levelset() == Approx(0.40).epsilon(Tolerance));
 
-    // Check coupling force for particle not in contact
-    couple_force2 = particle2->couple_force();
+    // Check reaction force for particle not in contact
+    reaction_force2 = particle2->reaction_force();
     for (unsigned i = 0; i < Dim; ++i) {
-      REQUIRE(couple_force2(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
     }
 
-    // Check coupling force after contact force computation
-    couple_force1 = particle1->couple_force();
-    REQUIRE(couple_force1(0) == Approx(-5569.4624469601).epsilon(Tolerance));
-    REQUIRE(couple_force1(1) == Approx(71764.4334287699).epsilon(Tolerance));
-    REQUIRE(couple_force1(2) == Approx(-5569.4624469601).epsilon(Tolerance));
+    // Check reaction force after contact reaction force computation
+    reaction_force1 = particle1->reaction_force();
+    REQUIRE(reaction_force1(0) == Approx(-5569.4624469601).epsilon(Tolerance));
+    REQUIRE(reaction_force1(1) == Approx(71764.4334287699).epsilon(Tolerance));
+    REQUIRE(reaction_force1(2) == Approx(-5569.4624469601).epsilon(Tolerance));
 
-    // Check mapped nodal contact force
+    // Check mapped nodal contact reaction force
     for (const auto& node : nodes) {
       auto external_force = node->external_force(0);
       REQUIRE(external_force(0) != Approx(0.0).epsilon(Tolerance));

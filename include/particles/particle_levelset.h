@@ -57,30 +57,30 @@ class ParticleLevelset : public Particle<Tdim> {
   //! Initialise particle levelset
   void initialise() override;
 
-  //! Update contact force due to levelset
+  //! Update contact reaction force due to levelset interface
   //! \param[in] dt Analysis time step
   void levelset_contact_force(double dt) override;
 
   //! Return levelset value
   double levelset() const { return levelset_; }
 
-  //! Return levelset contact force
-  VectorDim couple_force() const { return couple_force_; }
+  //! Return levelset contact reaction force
+  VectorDim reaction_force() const { return reaction_force_; }
 
  protected:
   //! Map levelset to particle
   void map_levelset_to_particle() noexcept;
 
-  //! Check if particle in contact with levelset
+  //! Check if particle in contact with levelset interface
   //! \param[in] init_radius Particle initial radius
   bool is_levelset_contact(double init_radius);
 
-  //! Compute levelset contact force at particle
+  //! Compute levelset contact reaction force at particle
   //! \param[in] dt Analysis time step
   //! \param[in] init_radius Particle initial radius
   void compute_particle_contact_force(double dt, double init_radius) noexcept;
 
-  //! Map levelset contact force to nodes
+  //! Map levelset contact reaction force to nodes
   void map_contact_force_to_nodes() noexcept;
 
  protected:
@@ -93,7 +93,7 @@ class ParticleLevelset : public Particle<Tdim> {
   std::unique_ptr<spdlog::logger> console_;
   //! levelset value
   double levelset_{0.};
-  //! levelset friction
+  //! levelset friction coefficient
   double levelset_mu_{0.};
   //! levelset adhesion coefficient
   double levelset_alpha_{0.};
@@ -107,8 +107,8 @@ class ParticleLevelset : public Particle<Tdim> {
   VectorDim levelset_normal_{VectorDim::Zero()};
   //! levelset tangent
   VectorDim levelset_tangent_{VectorDim::Zero()};
-  //! coupling force
-  VectorDim couple_force_{VectorDim::Zero()};
+  //! reaction force
+  VectorDim reaction_force_{VectorDim::Zero()};
   //! Nodes
   using Particle<Tdim>::nodes_;
   //! Cell

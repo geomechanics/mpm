@@ -24,7 +24,7 @@ class ContactLevelset : public Contact<Tdim> {
       double levelset_damping, bool levelset_pic,
       double levelset_violation_corrector) override;
 
-  //! Compute contact forces
+  //! Compute contact reaction forces
   //! \param[in] dt Analysis time step
   void compute_contact_forces(double dt) override;
 

@@ -25,10 +25,10 @@ class Contact {
       double levelset_damping, bool levelset_pic,
       double levelset_violation_corrector){};
 
-  //! Compute contact forces
+  //! Compute contact reaction forces
   virtual inline void compute_contact_forces(){};
 
-  //! Compute contact forces
+  //! Compute contact reaction forces
   //! \param[in] dt Analysis time step
   virtual inline void compute_contact_forces(double dt){};
 

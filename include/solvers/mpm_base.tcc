@@ -39,7 +39,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
       {"normals", VariableType::Vector},
-      {"levelset_couples", VariableType::Vector},
+      {"levelset_reaction_forces", VariableType::Vector},
       // Tensor variables
       {"strains", VariableType::Tensor},
       {"stresses", VariableType::Tensor}};

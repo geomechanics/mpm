@@ -140,7 +140,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase);
 
-    // Contact forces at nodes
+    // Contact reaction forces at nodes
     contact_->compute_contact_forces(dt_);  // levelset interface
     contact_->compute_contact_forces();     // multimaterial interface
 

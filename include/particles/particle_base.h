@@ -457,7 +457,7 @@ class ParticleBase {
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
 
   //! Levelset functions--------------------------------------------------------
-  //! Update contact force due to levelset
+  //! Update contact reaction force due to levelset interface
   //! \param[in] dt Analysis time step
   virtual void levelset_contact_force(double dt) {
     throw std::runtime_error(
@@ -473,10 +473,10 @@ class ParticleBase {
     return 0;
   }
 
-  //! Return levelset contact force
-  virtual VectorDim couple_force() const {
+  //! Return levelset contact reaction force
+  virtual VectorDim reaction_force() const {
     throw std::runtime_error(
-        "Calling the base class function (couple_force) in "
+        "Calling the base class function (reaction_force) in "
         "ParticleBase:: illegal operation!");
     return VectorDim::Zero();
   }

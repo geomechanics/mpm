@@ -16,7 +16,7 @@ void mpm::ContactFriction<Tdim>::initialise() {
                 std::placeholders::_1));
 }
 
-//! Compute contact forces
+//! Compute contact reaction forces
 template <unsigned Tdim>
 void mpm::ContactFriction<Tdim>::compute_contact_forces() {
 

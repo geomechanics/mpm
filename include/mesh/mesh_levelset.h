@@ -41,7 +41,7 @@ class MeshLevelset : public Mesh<Tdim> {
 
   //! Assign mesh levelset values to nodes
   //! \param[in] levelset Levelset value at the particle
-  //! \param[in] levelset_mu Levelset friction
+  //! \param[in] levelset_mu Levelset friction coefficient
   //! \param[in] levelset_alpha Levelset adhesion coefficient
   //! \param[in] barrier_stiffness Barrier stiffness
   bool assign_nodal_levelset_values(

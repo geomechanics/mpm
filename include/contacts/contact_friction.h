@@ -17,7 +17,7 @@ class ContactFriction : public Contact<Tdim> {
   //! Intialize
   void initialise() override;
 
-  //! Compute contact forces
+  //! Compute contact reaction forces
   void compute_contact_forces() override;
 
  protected:

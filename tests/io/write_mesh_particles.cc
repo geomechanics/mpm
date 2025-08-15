@@ -291,7 +291,7 @@ bool write_json_levelset(unsigned dim, bool resume, const std::string& analysis,
                       {"nload_balance_steps", 1000}}},
                     {"post_processing",
                      {{"path", "results/"},
-                      {"vtk", {"id", "levelset", "levelset_couples"}},
+                      {"vtk", {"id", "levelset", "levelset_reaction_forces"}},
                       {"output_steps", 5}}}};
 
   // Dump JSON as an input file to be read

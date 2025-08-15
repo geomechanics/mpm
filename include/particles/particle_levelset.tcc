@@ -48,12 +48,12 @@ void mpm::ParticleLevelset<Tdim>::initialise() {
 
   // Initialize scalar and vector data properties
   this->scalar_properties_["levelset"] = [this]() { return levelset(); };
-  this->vector_properties_["levelset_couples"] = [this]() {
-    return couple_force();
+  this->vector_properties_["levelset_reaction_forces"] = [this]() {
+    return reaction_force();
   };
 }
 
-//! Update contact force due to levelset
+//! Update contact reaction force due to levelset interface
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::levelset_contact_force(double dt) {
 
@@ -66,13 +66,13 @@ void mpm::ParticleLevelset<Tdim>::levelset_contact_force(double dt) {
   // Map levelset to particle
   map_levelset_to_particle();
 
-  // Check if particle in contact with levelset
+  // Check if particle in contact with levelset interface
   if (is_levelset_contact(init_radius)) {
 
-    // Compute levelset contact force at particle
+    // Compute levelset contact reaction force at particle
     compute_particle_contact_force(dt, init_radius);
 
-    // Map levelset contact force to nodes
+    // Map levelset contact reaction force to nodes
     map_contact_force_to_nodes();
   }
 }
@@ -89,7 +89,7 @@ void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
   contact_vel_ = VectorDim::Zero();
 
   // Reset levelset vtk data properties
-  couple_force_ = VectorDim::Zero();
+  reaction_force_ = VectorDim::Zero();
 
   // Map levelset to particle
   for (unsigned i = 0; i < nodes_.size(); i++) {
@@ -97,7 +97,7 @@ void mpm::ParticleLevelset<Tdim>::map_levelset_to_particle() noexcept {
   }
 }
 
-//! Check if particle in contact with levelset
+//! Check if particle in contact with levelset interface
 template <unsigned Tdim>
 bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(double init_radius) {
   // Check particle levelset minimum value
@@ -112,7 +112,7 @@ bool mpm::ParticleLevelset<Tdim>::is_levelset_contact(double init_radius) {
     return false;
 }
 
-//! Compute levelset contact force at particle
+//! Compute levelset contact reaction force at particle
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
     double dt, double init_radius) noexcept {
@@ -136,13 +136,13 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
   // Compute normals
   levelset_normal_ = levelset_gradient_.normalized();
 
-  // Calculate normal coupling force magnitude
-  double couple_normal_mag =
+  // Calculate normal reaction force magnitude
+  double reaction_normal_mag =
       barrier_stiffness_ * (levelset_ - init_radius) *
       (2. * log(levelset_ / init_radius) - (init_radius / levelset_) + 1.);
 
-  // Calculate normal coupling force
-  VectorDim couple_force_normal = couple_normal_mag * levelset_normal_;
+  // Calculate normal reaction force vector
+  VectorDim reaction_force_normal = reaction_normal_mag * levelset_normal_;
 
   // Calculate levelset tangential unit vector
   double vel_n = contact_vel_.dot(levelset_normal_);
@@ -150,41 +150,41 @@ void mpm::ParticleLevelset<Tdim>::compute_particle_contact_force(
   if (tangent_calc.norm() > std::numeric_limits<double>::epsilon())
     levelset_tangent_ = tangent_calc.normalized();
 
-  // Calculate friction tangential coupling force magnitude
-  double tangent_friction = levelset_mu_ * couple_normal_mag;
+  // Calculate friction tangential reaction force magnitude
+  double tangent_friction = levelset_mu_ * reaction_normal_mag;
 
-  // Calculate adhesion tangential coupling force magnitude
+  // Calculate adhesion tangential reaction force magnitude
   double contact_area = 0.0;  // changing rectangular influence
   if (Tdim == 2) contact_area = std::sqrt(volume_);  // unit hexahedron
   if (Tdim == 3) contact_area = std::cbrt(volume_);  // cube
   double tangent_adhesion = levelset_alpha_ * contact_area;
 
-  // Calculate tangential coupling force magntiude
-  double couple_tangent_mag = tangent_friction + tangent_adhesion;
+  // Calculate tangential reaction force magntiude
+  double reaction_tangent_mag = tangent_friction + tangent_adhesion;
 
   // Calculate tangential contact force magnitude
   double contact_tangent_mag =
       (mass_ * contact_vel_ / dt).dot(levelset_tangent_);
 
-  // Couple must not exceed cancellation of contact tangential force
-  couple_tangent_mag = std::min(couple_tangent_mag, contact_tangent_mag);
+  // Reaction force must not exceed cancellation of contact tangential force
+  reaction_tangent_mag = std::min(reaction_tangent_mag, contact_tangent_mag);
 
-  // Calculate tangential coupling force vector
-  VectorDim couple_force_tangent = -levelset_tangent_ * couple_tangent_mag;
+  // Calculate tangential reaction force vector
+  VectorDim reaction_force_tangent = -levelset_tangent_ * reaction_tangent_mag;
 
-  // Calculate total coupling force vector
-  couple_force_ = couple_force_normal + couple_force_tangent;
+  // Calculate total reaction force vector
+  reaction_force_ = reaction_force_normal + reaction_force_tangent;
 
-  // Damp couple if mp moving away from boundary
+  // Damp reaction force if particle moving away from interface
   if ((contact_vel_.dot(levelset_normal_)) >= 0.)
-    couple_force_ = (1. - levelset_damping_) * couple_force_;
+    reaction_force_ = (1. - levelset_damping_) * reaction_force_;
 }
 
-//! Map levelset contact force to nodes
+//! Map levelset contact reaction force to nodes
 template <unsigned Tdim>
 void mpm::ParticleLevelset<Tdim>::map_contact_force_to_nodes() noexcept {
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                     (shapefn_[i] * couple_force_));
+                                     (shapefn_[i] * reaction_force_));
   }
 }

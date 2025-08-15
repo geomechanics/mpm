@@ -531,7 +531,7 @@ class Mesh {
   //! Assign nodal levelset values
   //! \ingroup Levelset
   //! \param[in] levelset Levelset value at the particle
-  //! \param[in] levelset_mu Levelset friction
+  //! \param[in] levelset_mu Levelset friction coefficient
   //! \param[in] levelset_alpha Levelset adhesion coefficient
   //! \param[in] barrier_stiffness Barrier stiffness
   virtual bool assign_nodal_levelset_values(

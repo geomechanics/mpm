@@ -14,7 +14,7 @@ bool mpm::MeshLevelset<Tdim>::assign_nodal_levelset_values(
       mpm::Index nid = std::get<0>(levelset_inputs);
       // Levelset
       double levelset = std::get<1>(levelset_inputs);
-      // Levelset friction
+      // Levelset friction coefficient
       double levelset_mu = std::get<2>(levelset_inputs);
       // Levelset adhesion coefficient
       double levelset_alpha = std::get<3>(levelset_inputs);

@@ -13,12 +13,17 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   // Set mesh as isoparametric
   bool isoparametric = is_isoparametric();
 
-  mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
+  // Construct mesh, use levelset mesh if levelset active
+  if (is_levelset()) {
+    mesh_ = std::make_shared<mpm::MeshLevelset<Tdim>>(id, isoparametric);
+  } else {
+    mesh_ = std::make_shared<mpm::Mesh<Tdim>>(id, isoparametric);
+  }
 
   // Create constraints
   constraints_ = std::make_shared<mpm::Constraints<Tdim>>(mesh_);
 
-  // Empty all materials
+  // Empty all materSials
   materials_.clear();
 
   // Variable list
@@ -29,10 +34,12 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"mass", VariableType::Scalar},
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
+      {"levelset", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
       {"normals", VariableType::Vector},
+      {"levelset_reaction_forces", VariableType::Vector},
       // Tensor variables
       {"strains", VariableType::Tensor},
       {"stresses", VariableType::Tensor}};
@@ -290,6 +297,9 @@ void mpm::MPMBase<Tdim>::initialise_mesh() {
 
   // Read and assign absorbing constraintes
   this->nodal_absorbing_constraints(mesh_props, mesh_io);
+
+  // Read and assign interface (includes multimaterial and levelset)
+  this->interface_inputs(mesh_props, mesh_io);
 
   // Initialise cell
   auto cells_begin = std::chrono::steady_clock::now();
@@ -766,6 +776,23 @@ bool mpm::MPMBase<Tdim>::is_isoparametric() {
     isoparametric = true;
   }
   return isoparametric;
+}
+
+//! Return if interface and levelset are active
+template <unsigned Tdim>
+bool mpm::MPMBase<Tdim>::is_levelset() {
+  bool levelset_active = true;
+
+  const auto mesh_props = io_->json_object("mesh");
+  if (mesh_props.find("interface") != mesh_props.end()) {
+    this->interface_ = true;
+    this->interface_type_ =
+        mesh_props["interface"]["interface_type"].template get<std::string>();
+    if (interface_type_ != "levelset") levelset_active = false;
+  } else
+    levelset_active = false;
+
+  return levelset_active;
 }
 
 //! Initialise loads
@@ -1255,6 +1282,109 @@ void mpm::MPMBase<Tdim>::nodal_adhesional_constraints(
   }
 }
 
+// Interface inputs (includes multimaterial and levelset)
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::interface_inputs(
+    const Json& mesh_props, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io) {
+  try {
+    // Read and assign interface inputs
+    if (mesh_props.find("interface") != mesh_props.end()) {
+      this->interface_ = true;
+      // Get interface type
+      this->interface_type_ =
+          mesh_props["interface"]["interface_type"].template get<std::string>();
+      if (interface_type_ == "levelset") {
+        // Check if levelset inputs are specified in a file
+        if (mesh_props["interface"].find("location") !=
+            mesh_props["interface"].end()) {
+          // Retrieve the file name
+          std::string levelset_input_file =
+              mesh_props["interface"]["location"].template get<std::string>();
+          // Retrieve levelset info from file
+          bool levelset_inputs =
+              mesh_->assign_nodal_levelset_values(mesh_io->read_levelset_input(
+                  io_->file_name(levelset_input_file)));
+          if (!levelset_inputs) {
+            throw std::runtime_error(
+                "Levelset interface is undefined; Levelset inputs are not "
+                "properly assigned");
+          }
+        } else {
+          throw std::runtime_error(
+              "Levelset interface is undefined; Levelset location is not "
+              "specified");
+        }
+        // Check if levelset damping factor is specified
+        if (mesh_props["interface"].find("damping") !=
+            mesh_props["interface"].end()) {
+          // Retrieve levelset damping factor
+          levelset_damping_ =
+              mesh_props["interface"]["damping"].template get<double>();
+          if ((levelset_damping_ < 0.) || (levelset_damping_ > 1.)) {
+            levelset_damping_ = 0.05;
+            throw std::runtime_error(
+                "Levelset damping factor is not properly specified, using "
+                "0.05 as default");
+          }
+        } else {
+          throw std::runtime_error(
+              "Levelset damping is not specified, using 0.05 as default");
+        }
+        // Check if levelset contact velocity update scheme is specified
+        if (mesh_props["interface"].find("velocity_update") !=
+            mesh_props["interface"].end()) {
+          // Retrieve levelset damping factor
+          std::string levelset_velocity_update_ =
+              mesh_props["interface"]["velocity_update"]
+                  .template get<std::string>();
+          if (levelset_velocity_update_ == "global")
+            levelset_pic_ = false;
+          else if (levelset_velocity_update_ != "pic") {
+            throw std::runtime_error(
+                "Levelset contact velocity update is not properly specified, "
+                " using \"pic\" as default");
+          }
+        } else {
+          throw std::runtime_error(
+              "Levelset contact velocity update is not specified, "
+              " using \"pic\" as default");
+        }
+        // Check if levelset violation corrector is specified
+        if (mesh_props["interface"].find("violation_corrector") !=
+            mesh_props["interface"].end()) {
+          // Retrieve levelset violation corrector
+          levelset_violation_corrector_ =
+              mesh_props["interface"]["violation_corrector"]
+                  .template get<double>();
+          if ((levelset_violation_corrector_ < 0.) ||
+              (levelset_violation_corrector_ > 1.)) {
+            levelset_violation_corrector_ = 0.01;
+            throw std::runtime_error(
+                "Levelset violation corrector is not properly specified, using "
+                "0.01 as default");
+          }
+        } else {
+          throw std::runtime_error(
+              "Levelset violation corrector is not specified, using 0.01 as "
+              "default");
+        }
+      } else if (interface_type_ == "multimaterial") {
+        throw std::runtime_error(
+            "Interfaces are undefined; Interface type \"multimaterial\" not "
+            "supported");
+      } else {
+        throw std::runtime_error(
+            "Interfaces are undefined; Interface type not properly specified");
+      }
+    } else {
+      throw std::runtime_error(
+          "Interfaces are undefined; Interfaces JSON data not found");
+    }
+  } catch (std::exception& exception) {
+    console_->warn("#{}: {}", __LINE__, exception.what());
+  }
+}
+
 // Nodal pressure constraints
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::nodal_pressure_constraints(
@@ -1570,7 +1700,7 @@ void mpm::MPMBase<Tdim>::particles_pore_pressures(
         if (!io_->file_name(fparticles_pore_pressures).empty()) {
           // Read and assign particles pore pressures
           if (!mesh_->assign_particles_pore_pressures(
-                  particle_io->read_particles_scalar_properties(
+                  particle_io->read_scalar_properties(
                       io_->file_name(fparticles_pore_pressures))))
             throw std::runtime_error(
                 "Particles pore pressures are not properly assigned");

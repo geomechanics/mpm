@@ -164,7 +164,7 @@ class Mesh {
   //! \param[in] cells Node ids of cells
   //! \param[in] check_duplicates Parameter to check duplicates
   //! \retval status Create cells status
-  bool create_cells(mpm::Index gnid,
+  bool create_cells(mpm::Index gcid,
                     const std::shared_ptr<mpm::Element<Tdim>>& element,
                     const std::vector<std::vector<mpm::Index>>& cells,
                     bool check_duplicates = true);
@@ -263,7 +263,7 @@ class Mesh {
   //! Locate particles in a cell
   //! Iterate over all cells in a mesh to find the cell in which particles
   //! are located.
-  //! \retval particles Particles which cannot be located in the mesh
+  //! \retval particles which cannot be located in the mesh
   std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> locate_particles_mesh();
 
   //! Iterate over particles
@@ -475,7 +475,7 @@ class Mesh {
   //! Create map of vector of particles in sets
   //! \param[in] map of particles ids in sets
   //! \param[in] check_duplicates Parameter to check duplicates
-  //! \retval status Status of  create particle sets
+  //! \retval status Status of create particle sets
   bool create_particle_sets(
       const tsl::robin_map<mpm::Index, std::vector<mpm::Index>>& particle_sets,
       bool check_duplicates);
@@ -518,10 +518,32 @@ class Mesh {
   void inject_particles(double current_time);
 
   // Create the nodal properties' map
-  void create_nodal_properties();
+  virtual void create_nodal_properties();
 
   // Initialise the nodal properties' map
   void initialise_nodal_properties();
+
+  /**
+   * \defgroup Levelset Functions
+   */
+  /**@{*/
+
+  //! Assign nodal levelset values
+  //! \ingroup Levelset
+  //! \param[in] levelset Levelset value at the particle
+  //! \param[in] levelset_mu Levelset friction coefficient
+  //! \param[in] levelset_alpha Levelset adhesion coefficient
+  //! \param[in] barrier_stiffness Barrier stiffness
+  virtual bool assign_nodal_levelset_values(
+      const std::vector<std::tuple<mpm::Index, double, double, double, double>>&
+          levelset_input_file) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_nodal_levelset_values) in "
+        "Mesh:: illegal operation!");
+    return false;
+  };
+
+  /**@}*/
 
   /**
    * \defgroup MultiPhase Functions dealing with multi-phase MPM
@@ -673,10 +695,11 @@ class Mesh {
                            const Json& generator, unsigned pset_id);
 
   // Locate a particle in mesh cells
+  //! \param[in] particle of interest
   bool locate_particle_cells(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
 
- private:
+ protected:
   //! mesh id
   unsigned id_{std::numeric_limits<unsigned>::max()};
   //! Isoparametric mesh

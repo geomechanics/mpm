@@ -425,6 +425,12 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   // Read and assign particles stresses
   this->particles_stresses(mesh_props, particle_io);
 
+  // Read and assign particles initial velocity
+  this->particles_velocities(mesh_props, particle_io);
+
+  // Read and assign particles initial acceleration
+  this->particles_accelerations(mesh_props, particle_io);
+
   // Read and assign particles initial pore pressure
   this->particles_pore_pressures(mesh_props, particle_io);
 
@@ -1444,6 +1450,7 @@ void mpm::MPMBase<Tdim>::particles_volumes(
     if (mesh_props.find("particles_volumes") != mesh_props.end()) {
       std::string fparticles_volumes =
           mesh_props["particles_volumes"].template get<std::string>();
+
       if (!io_->file_name(fparticles_volumes).empty()) {
         bool particles_volumes =
             mesh_->assign_particles_volumes(particle_io->read_particles_volumes(
@@ -1454,8 +1461,83 @@ void mpm::MPMBase<Tdim>::particles_volumes(
       }
     } else
       throw std::runtime_error("Particle volumes JSON data not found");
+
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle volumes are undefined; {}", __LINE__,
+                   exception.what());
+  }
+}
+
+// Read and assign particle velocities
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_velocities(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    // Read particle initial velocities
+    if (mesh_props.find("particles_velocities") != mesh_props.end()) {
+      // Get generator type
+      const std::string type = mesh_props["particles_velocities"]["type"]
+                                   .template get<std::string>();
+      if (type == "file") {
+        std::string fparticle_vel =
+            mesh_props["particles_velocities"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fparticle_vel).empty()) {
+
+          // Get particle initial velocities
+          const auto particles_vel =
+              particle_io->read_particles_vector_properties(
+                  io_->file_name(fparticle_vel));
+
+          // Assign particle velocities
+          if (!mesh_->assign_particles_velocities(particles_vel))
+            throw std::runtime_error(
+                "Particles velocities are not properly assigned");
+        }
+      }
+    } else
+      throw std::runtime_error("Particle velocities JSON data not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle velocities are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Read and assign particle accelerations
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_accelerations(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    // Read particle initial accelerations
+    if (mesh_props.find("particles_accelerations") != mesh_props.end()) {
+      // Get generator type
+      const std::string type = mesh_props["particles_accelerations"]["type"]
+                                   .template get<std::string>();
+      if (type == "file") {
+        std::string fparticle_acc =
+            mesh_props["particles_accelerations"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fparticle_acc).empty()) {
+
+          // Get particle initial accelerations
+          const auto particles_acc =
+              particle_io->read_particles_vector_properties(
+                  io_->file_name(fparticle_acc));
+
+          // Assign particle accelerations
+          if (!mesh_->assign_particles_accelerations(particles_acc))
+            throw std::runtime_error(
+                "Particles accelerations are not properly assigned");
+        }
+      }
+    } else
+      throw std::runtime_error("Particle accelerations JSON data not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle accelerations are undefined {} ", __LINE__,
                    exception.what());
   }
 }

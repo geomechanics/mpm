@@ -7,6 +7,36 @@ mpm::MohrCoulomb<Tdim>::MohrCoulomb(unsigned id,
     // General parameters
     // Density
     density_ = material_properties.at("density").template get<double>();
+
+    // Initial Packing Fraction
+    double initial_packing_fraction = 1.;
+    if (material_properties.contains("packing_fraction"))
+      initial_packing_fraction =
+          material_properties.at("packing_fraction").template get<double>();
+    else if (material_properties.contains("porosity"))
+      initial_packing_fraction =
+          1. - material_properties.at("porosity").template get<double>();
+
+    // Solid grain density
+    bool is_wet = false;
+    // Check if two-phase simulation is considered
+    if (material_properties.contains("porosity") &&
+        (material_properties.contains("k_x") ||
+         material_properties.contains("k_y") ||
+         material_properties.contains("k_z")))
+      is_wet = true;
+    if (!is_wet)
+      grain_density_ = density_ / initial_packing_fraction;
+    else
+      grain_density_ = density_;
+
+    // Minimum packing fraction
+    minimum_packing_fraction_ = 0.0;
+    if (material_properties.contains("packing_fraction_minimum"))
+      minimum_packing_fraction_ =
+          material_properties.at("packing_fraction_minimum")
+              .template get<double>();
+
     // Young's modulus
     youngs_modulus_ =
         material_properties.at("youngs_modulus").template get<double>();
@@ -129,7 +159,7 @@ typename mpm::mohrcoulomb::FailureState
           ((sin(theta + M_PI / 3.) / (std::sqrt(3.) * cos(phi))) +
            (cos(theta + M_PI / 3.) * tan(phi) / 3.)) +
       (epsilon / std::sqrt(3.)) * tan(phi) - cohesion;
-  // Initialise yield status (0: elastic, 1: tension failure, 2: shear failure)
+  // Initialise yield status (0: elastic, 1: shear failure, 2: tensile failure)
   auto yield_type = mpm::mohrcoulomb::FailureState::Elastic;
   // Check for tension and shear
   if ((*yield_function)(0) > Tolerance && (*yield_function)(1) > Tolerance) {
@@ -318,6 +348,11 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
+
+  // Density and packing parameters
+  const double current_packing_density = ptr->mass_density();
+  const double critical_density = minimum_packing_fraction_ * grain_density_;
+
   // Get previous time step state variable
   const auto prev_state_vars = (*state_vars);
   const double pdstrain = (*state_vars).at("pdstrain");
@@ -353,6 +388,13 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   Matrix6x6 de = this->compute_elastic_tensor(state_vars);
   Vector6d trial_stress =
       this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
+  // Separated state: current packing density is less than critical density
+  if (current_packing_density <= critical_density) {
+    (*state_vars).at("pdstrain") +=
+        mpm::materials::q(trial_stress) / 3.0 / shear_modulus_;
+    (*state_vars).at("yield_state") = 3;
+    return Vector6d::Zero();
+  }
   // Compute stress invariants based on trial stress
   this->compute_stress_invariants(trial_stress, state_vars);
   // Compute yield function based on the trial stress
@@ -504,6 +546,11 @@ Eigen::Matrix<double, 6, 6>
   const Matrix6x6 de = this->compute_elastic_tensor(state_vars);
   if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {
     return de;
+  }
+
+  // Return zero tensor matrix in separated state
+  if (yield_type == mpm::mohrcoulomb::FailureState::Separated) {
+    return Matrix6x6::Zero();
   }
 
   //! Elasto-plastic stiffness matrix

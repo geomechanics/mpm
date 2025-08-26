@@ -198,10 +198,13 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   //! \param[in] nodal_properties Vector determining node type for each
   //! dimension
   //! \param[in] kernel_correction Apply Kernel correction at the boundary
+  //! \param[in] kc_niteration Kernel correction iteration
+  //! \param[in] kc_tol Kernel correction tolerance
   void initialise_bspline_connectivity_properties(
       const Eigen::MatrixXd& nodal_coordinates,
       const std::vector<std::vector<unsigned>>& nodal_properties,
-      bool kernel_correction = false) override;
+      bool kernel_correction = true, unsigned kc_niteration = 1,
+      double kc_tol = 0.0) override;
 
   //! Return the degree of shape function
   mpm::ElementDegree degree() const override {
@@ -220,6 +223,12 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   double kernel(double point_coord, double nodal_coord, unsigned node_type,
                 unsigned poly_order, unsigned index = 0) const;
 
+  //! Compute B-Spline Basis Function using the close-form equation
+  //! \param[in] point_coord point coordinate in one direction
+  //! \param[in] nodal_coord nodal coordinate in one direction
+  //! dimension
+  double kernel(double point_coord, double nodal_coord) const;
+
   //! Compute B-Spline Basis Function Gradient using the recursive De Boor's
   //! algorithm for single direction
   //! \param[in] point_coord point coordinate in one direction
@@ -229,6 +238,11 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   //! \param[in] index Index associated to local BSplineKnotVector
   double gradient(double point_coord, double nodal_coord, unsigned node_type,
                   unsigned poly_order, unsigned index = 0) const;
+
+  //! Compute B-Spline Basis Function Gradient using the close-form equation
+  //! \param[in] point_coord point coordinate in one direction
+  //! \param[in] nodal_coord nodal coordinate in one direction dimension
+  double gradient(double point_coord, double nodal_coord) const;
 
   //! Function that returns BSpline knot vector
   //! The order of the vectors are:
@@ -243,11 +257,6 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
     return BSplineKnotVector[node_type];
   }
 
-  //! Function to check if particle is lying on the region where kernel
-  //! correction is necessary
-  //! \param[in] xi given local coordinates
-  bool kernel_correction_region(const VectorDim& xi) const;
-
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Number of connectivity
@@ -261,7 +270,11 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   //! BSpline knot vector for different node type
   std::vector<std::vector<double>> BSplineKnotVector;
   //! Boolean to identify kernel correction
-  bool kernel_correction_{false};
+  bool kernel_correction_{true};
+  //! Number of kernel correction iteration
+  unsigned kc_niteration_{1};
+  //! Kernel correction tolerance
+  double kc_tol_{0.0};
 };
 
 }  // namespace mpm

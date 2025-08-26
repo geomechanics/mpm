@@ -647,10 +647,9 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
       // Map mass and momentum to nodes
       for (unsigned i = 0; i < nodes_.size(); ++i) {
         // Map mass and momentum
-        nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i]);
-        nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                                   mass_ * shapefn_[i] * velocity_);
+        nodes_[i]->update_mass_momentum(true, true, mpm::ParticlePhase::Solid,
+                                        mass_ * shapefn_[i],
+                                        mass_ * shapefn_[i] * velocity_);
       }
       break;
   }
@@ -686,10 +685,9 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes_affine() noexcept {
                               (nodes_[i]->coordinates() - this->coordinates_);
 
     // Map mass and momentum
-    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                           mass_ * shapefn_[i]);
-    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i] * map_velocity);
+    nodes_[i]->update_mass_momentum(true, true, mpm::ParticlePhase::Solid,
+                                    mass_ * shapefn_[i],
+                                    mass_ * shapefn_[i] * map_velocity);
   }
 }
 
@@ -713,10 +711,9 @@ void mpm::Particle<Tdim>::map_mass_momentum_to_nodes_taylor() noexcept {
         mapping_matrix_ * (nodes_[i]->coordinates() - this->coordinates_);
 
     // Map mass and momentum
-    nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                           mass_ * shapefn_[i]);
-    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i] * map_velocity);
+    nodes_[i]->update_mass_momentum(true, true, mpm::ParticlePhase::Solid,
+                                    mass_ * shapefn_[i],
+                                    mass_ * shapefn_[i] * map_velocity);
   }
 }
 

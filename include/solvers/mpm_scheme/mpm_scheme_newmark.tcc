@@ -78,19 +78,20 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
 //! Update nodal kinematics by Newmark scheme
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
-    unsigned phase, bool pml_boundary) {
+    unsigned phase, double newmark_beta, double newmark_gamma,
+    bool pml_boundary) {
 
   // Update nodal velocity and acceleration
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark,
-                std::placeholders::_1, phase, beta_, gamma_, dt_),
+                std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
   if (pml_boundary)
     mesh_->iterate_over_nodes_predicate(
         std::bind(
             &mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark_pml,
-            std::placeholders::_1, phase, beta_, gamma_, dt_),
+            std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
         std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
 }
 
@@ -103,7 +104,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
   // displacement
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_strain_volume_newmark,
-                std::placeholders::_1));
+                std::placeholders::_1, dt_));
 
   // Pressure smoothing
   if (pressure_smoothing) this->pressure_smoothing(phase);
@@ -186,7 +187,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
   if (update_defgrad)
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
-                  std::placeholders::_1, "displacement", dt_));
+                  std::placeholders::_1));
 }
 
 // Update particle stress, strain and volume

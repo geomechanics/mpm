@@ -93,7 +93,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
 
   //! Compute deformation gradient and volume using nodal displacement
   //! \ingroup Implicit
-  void compute_strain_volume_newmark() noexcept override;
+  void compute_strain_volume_newmark(double dt) noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit

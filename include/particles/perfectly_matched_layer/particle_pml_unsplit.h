@@ -118,7 +118,7 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   //! \param[in] phase Index to indicate phase
   //! \retval strain increment at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept override;
+      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept override;
 
   /**@}*/
 
@@ -155,14 +155,18 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   Eigen::VectorXd evanescent_damping_functions() const noexcept;
 
   //! Map internal force to nodes from displacement component
+  //! \param[in] Fe Evanescent damping functions
+  //! \param[in] Fp Propagating damping functions
   //! \param[in] dt parameter beta of Newmark scheme
-  void map_internal_force_strain(double dt) noexcept;
+  void map_internal_force_strain(const Eigen::VectorXd& Fe, const Eigen::VectorXd& Fp, double dt) noexcept;
 
   //! Map internal force to nodes from strain component
-  void map_internal_force_stress() noexcept;
+  //! \param[in] Fp Propagating damping functions
+  void map_internal_force_stress(const Eigen::VectorXd& Fp) noexcept;
 
   //! Map internal force to nodes from stress component
-  void map_internal_force_disp(double dt) noexcept;
+  //! \param[in] Fp Propagating damping functions
+  void map_internal_force_disp(const Eigen::VectorXd& Fp, double dt) noexcept;
 
   //! Map internal force to nodes from stiffness component
   //! \param[in] dt parameter beta of Newmark scheme

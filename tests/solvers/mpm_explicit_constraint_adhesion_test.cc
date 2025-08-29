@@ -1,4 +1,4 @@
-<<<<<<< HEAD:tests/solvers/mpm_explicit_constraint_cohesion_test.cc
+
 #include "catch.hpp"
 
 //! Alias for JSON
@@ -207,5 +207,4 @@ TEST_CASE("MPM 3D Explicit Adhesion Constraint is checked",
     // Test check point restart
     REQUIRE(mpm->checkpoint_resume() == false);
   }
->>>>>>> a9e97464 (BC nomenclature cohesion to adhesion :truck:):tests/solvers/mpm_explicit_constraint_adhesion_test.cc
 }

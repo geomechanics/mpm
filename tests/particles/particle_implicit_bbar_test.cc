@@ -277,7 +277,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_volume_newmark();
+    particle->compute_strain_volume_newmark(dt);
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
@@ -648,7 +648,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_volume_newmark();
+    particle->compute_strain_volume_newmark(dt);
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));

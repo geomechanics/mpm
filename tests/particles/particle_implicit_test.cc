@@ -28,7 +28,9 @@ TEST_CASE("Implicit Particle is checked for 2D case",
   const unsigned phase = 0;
   // Tolerance
   const double Tolerance = 1.E-7;
-
+  // Step
+  const unsigned step = 0;
+  // Time step
   const double dt = 1.0;
 
   // Coordinates
@@ -296,7 +298,7 @@ TEST_CASE("Implicit Particle is checked for 2D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_volume_newmark();
+    particle->compute_strain_volume_newmark(dt);
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
@@ -384,7 +386,7 @@ TEST_CASE("Implicit Particle is checked for 2D case",
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location
-    REQUIRE_NOTHROW(particle->compute_updated_position_newmark(dt));
+    REQUIRE_NOTHROW(particle->compute_updated_position_newmark(dt, newmark_gamma, step));
     // Check particle displacement
     Eigen::Vector2d displacement;
     displacement << 0., 0.1875;
@@ -443,6 +445,8 @@ TEST_CASE("Implicit Particle is checked for 3D case",
 
     // Phase
     const unsigned phase = 0;
+    // Step
+    const unsigned step = 0;
     // Time-step
     const double dt = 0.1;
     // Parameters of Newmark scheme
@@ -749,7 +753,7 @@ TEST_CASE("Implicit Particle is checked for 3D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_volume_newmark();
+    particle->compute_strain_volume_newmark(dt);
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
@@ -833,7 +837,7 @@ TEST_CASE("Implicit Particle is checked for 3D case",
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location
-    REQUIRE_NOTHROW(particle->compute_updated_position_newmark(dt));
+    REQUIRE_NOTHROW(particle->compute_updated_position_newmark(dt, newmark_gamma, step));
     // Check particle displacement
     Eigen::Vector3d displacement;
     displacement << 0.0, 0.5875, 1.175;

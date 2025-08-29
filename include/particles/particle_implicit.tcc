@@ -280,7 +280,7 @@ inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define strain rincrement
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -297,7 +297,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_increment(
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -319,7 +319,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_increment(
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -344,7 +344,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
 
 // Compute strain and volume of the particle using nodal displacement
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
+void mpm::Particle<Tdim>::compute_strain_volume_newmark(double dt) noexcept {
   // Compute the volume at the previous time step
   this->volume_ /= (1. + dvolumetric_strain_);
   this->mass_density_ *= (1. + dvolumetric_strain_);
@@ -356,7 +356,7 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
 
   // Compute strain increment from previous time step
   this->dstrain_ =
-      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid, dt);
 
   // Updated volumetric strain increment
   this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();

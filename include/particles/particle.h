@@ -462,7 +462,7 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
-  void compute_strain_volume_newmark() noexcept override;
+  void compute_strain_volume_newmark(double dt) noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
@@ -558,7 +558,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] phase Index to indicate phase
   //! \retval strain increment at particle inside a cell
   virtual inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept;
 
   //! Compute deformation gradient increment using nodal displacement
   //! \ingroup Implicit

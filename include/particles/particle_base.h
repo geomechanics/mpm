@@ -437,7 +437,7 @@ class ParticleBase {
 
   //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
-  virtual void compute_strain_volume_newmark() = 0;
+  virtual void compute_strain_volume_newmark(double dt) = 0;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit

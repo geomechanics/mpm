@@ -165,8 +165,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase_, step_);
 
     // Update Stress Last
-    mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_,
-                                           stress_rate_);
+    mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
 
     // Apply PML specific routines
     if (pml_boundary_) mpm_scheme_->finalise_pml_boundary_properties();

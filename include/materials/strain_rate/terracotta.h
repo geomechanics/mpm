@@ -79,6 +79,8 @@ class Terracotta : public Material<Tdim> {
   double shear_modulus_{std::numeric_limits<double>::max()};
   //! Initial packing fraction
   double initial_packing_fraction_{std::numeric_limits<double>::max()};
+  //! Minimum packing fraction
+  double minimum_packing_fraction_{std::numeric_limits<double>::max()};
   // Parameter lambda
   double lambda_{std::numeric_limits<double>::max()};
   // Reference pressure

@@ -78,12 +78,12 @@ class LinearElastic : public Material<Tdim> {
   using Material<Tdim>::properties_;
   //! Logger
   using Material<Tdim>::console_;
-
+  //! Objective stress rate
+  mpm::StressRate stress_rate_{mpm::StressRate::None};
+  
  private:
   //! Compute elastic tensor
   bool compute_elastic_tensor();
-//! Objective stress rate
-mpm::StressRate stress_rate_{mpm::StressRate::None};
 
 //! Compute stress using objective algorithm assuming Jaumann rate
 //! \param[in] stress Stress (Voigt)

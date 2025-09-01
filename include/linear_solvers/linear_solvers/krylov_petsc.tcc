@@ -1,4 +1,4 @@
-//! Conjugate Gradient with default initial guess
+//! Krylov PETSC solvers
 template <typename Traits>
 Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
     const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& b) {
@@ -76,9 +76,14 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
       KSPCGSetType(solver, KSP_CG_SYMMETRIC);
     } else if (sub_solver_type_ == "gmres")
       KSPSetType(solver, KSPGMRES);
+    else if (sub_solver_type_ == "fgmres")
+      KSPSetType(solver, KSPFGMRES);
     else if (sub_solver_type_ == "bicgstab")
       KSPSetType(solver, KSPBCGS);
-    else if (sub_solver_type_ == "lsqr")
+    else if (sub_solver_type_ == "bicgstab_l") {
+      KSPSetType(solver, KSPBCGSL);
+      KSPBCGSLSetEll(solver, 5);
+    } else if (sub_solver_type_ == "lsqr")
       KSPSetType(solver, KSPLSQR);
     else {
       if (verbosity_ > 0 && mpi_rank == 0)
@@ -107,25 +112,30 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
       if (preconditioner_type_ == "icc") PCSetType(pc, PCICC);
     }
 
+    // Print residual at each iteration
+    if (verbosity_ >= 2) {
+      PetscViewerAndFormat* vf;
+      PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD,
+                                 PETSC_VIEWER_DEFAULT, &vf);
+      KSPMonitorSet(solver,
+                    (PetscErrorCode(*)(KSP, PetscInt, PetscReal,
+                                       void*))KSPMonitorTrueResidual,
+                    vf, (PetscErrorCode(*)(void**))PetscViewerAndFormatDestroy);
+    }
+
     // Solve linear system of equation x = A^(-1) b
     KSPSolve(solver, petsc_b, petsc_x);
     KSPGetConvergedReason(solver, &reason);
 
-    // Print residual in each iteration
+    // Check total number of iteration
     if (verbosity_ >= 1) {
       PetscViewerAndFormat* vf;
       PetscViewerAndFormatCreate(PETSC_VIEWER_STDOUT_WORLD,
                                  PETSC_VIEWER_DEFAULT, &vf);
       PetscInt its;
       KSPGetIterationNumber(solver, &its);
-      PetscPrintf(PETSC_COMM_WORLD, "\nConvergence in %d iterations.\n",
+      PetscPrintf(MPI_COMM_WORLD, "\nConvergence in %d iterations.\n",
                   (int)its);
-      PetscReal rnorm;
-      if (verbosity_ >= 2) {
-        for (int i = 0; i < its; i++) {
-          KSPMonitorTrueResidual(solver, i, rnorm, vf);
-        }
-      }
     }
 
     // Warn if solver does not converge
@@ -167,6 +177,12 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
         VecGetValues(petsc_x, 1, &global_index, &value);
         x(i) = value;
       }
+    }
+
+    // Output solution vector
+    if (verbosity_ == 3) {
+      PetscViewerASCIIGetStdout(MPI_COMM_WORLD, &viewer);
+      VecView(petsc_x, viewer);
     }
 
     // Free work space

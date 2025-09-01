@@ -166,7 +166,7 @@ void mpm::ParticleUPML<Tdim>::map_pml_properties_to_nodes() noexcept {
   const auto& Fe = this->evanescent_damping_functions();
 
   // Damping scalar
-  VectorDim f_M = Fe.prod() * Eigen::VectorXd::Constant(Tdim, 1.0);
+  Eigen::Matrix<double, Tdim, 1>  f_M = Fe.prod() * Eigen::Matrix<double, Tdim, 1>::Ones();
 
   // Map damped mass, displacement vector to nodal property
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -875,7 +875,7 @@ template <unsigned Tdim>
 Eigen::VectorXd mpm::ParticleUPML<Tdim>::combined_damping_functions(
     const Eigen::VectorXd& Fa, const Eigen::VectorXd& Fb,
     bool identical_index) const noexcept {
-  // Initialize damping functions
+  // Initialise damping functions
   Eigen::Vector3d damping_functions;
 
   // Compute joint damping function

@@ -206,8 +206,8 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   //! \param[in] prop Particle vector property to be reduced
   Eigen::MatrixXd reduce_voigt(Eigen::Matrix<double, 6, 1> prop) noexcept;
 
-  //! Call indicatedtime integrated variable
-  //! \param[in] stain_bool Indicator for time integratd strain or stress
+  //! Call indicated time integrated variable
+  //! \param[in] strain_bool Indicator for time integrated strain or stress
   //! variable
   Eigen::Matrix<double, 6, 1> call_state_var(bool strain_bool) noexcept;
 

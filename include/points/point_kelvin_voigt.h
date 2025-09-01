@@ -79,7 +79,7 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   //! \param[in] dt Analysis time step
   void compute_updated_position_flip(double dt, double blending_ratio,unsigned phase) noexcept;
 
-  //! Map point stiffness matrix to cell
+ //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell(double newmark_beta,
                      double newmark_gamma, double dt) override;
   

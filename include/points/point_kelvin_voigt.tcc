@@ -44,22 +44,20 @@ void mpm::PointKelvinVoigt<Tdim>::initialise_property(double dt) {
   // Nothing to do here for kelvin voigt
 }
 
-// Assign boundary normal
+//! Assign boundary normal
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::assign_boundary_normal(
     const std::string& normal_type, const VectorDim& normal_vector) {
-  if (normal_type == "cartesian") {
+  if (normal_type == "cartesian")
     normal_type_ = mpm::NormalType::Cartesian;
-  } else if (normal_type == "assign") {
+  else if (normal_type == "assign")
     normal_type_ = mpm::NormalType::Assign;
-    this->normal_ = normal_vector;
-  } else if (normal_type == "auto") {
+  else if (normal_type == "auto")
     normal_type_ = mpm::NormalType::Automatic;
-  }
-  
+  normal_ = normal_vector;
 }
 
-// Apply point velocity constraints
+//! Apply point velocity constraints
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::apply_point_kelvin_voigt_constraints(
     unsigned dir, double delta, double h_min, double incidence_a, double incidence_b) {  
@@ -147,9 +145,9 @@ void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(double newm
     Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
     point_stiffness.setZero();
     // TODO: Fix input parameters pathway/pull from nodes
-    double E = 60e6;
+    double E = 2000000000.0;
     double v = 0.25;
-    double rho = 1600;
+    double rho = 2000;
     double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
     double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
@@ -193,9 +191,9 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
     point_stiffness.setZero();
 
     // TODO: Fix input parameters pathway/pull from nodes
-    double E = 60e6;
+    double E = 2000000000.0;
     double v = 0.25;
-    double rho = 1600;
+    double rho = 2000;
     double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
     double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
@@ -206,7 +204,7 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
     // Normal matrix
     normal_.normalize();
     Eigen::Matrix<double, Tdim, Tdim> normal_matrix = normal_ * normal_.transpose();
-
+    
     // Identity matrix
     const Eigen::Matrix<double, Tdim, Tdim> identity =
         Eigen::Matrix<double, Tdim, Tdim>::Identity();
@@ -235,9 +233,9 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
   // TODO: Fix input parameters pathway/pull from nodes
-  double E = 60e6;
+  double E = 2000000000.0;
   double v = 0.25;
-  double rho = 1600;
+  double rho = 2000;
   double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
   double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 

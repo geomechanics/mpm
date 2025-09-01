@@ -111,6 +111,96 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   return true;
 }
 
+// Write JSON Configuration file for mpm_base warnings
+bool write_json_warnings(unsigned dim, bool material_sets, bool math_functions,
+                         std::string math_functions_type, int grav_dim,
+                         std::string file_name) {
+  // 2D and 3D inputs
+  std::string dimension = (dim == 3) ? "3d" : "2d";
+  auto particle_type = (dim == 3) ? "P3D" : "P2D";
+  auto node_type = (dim == 3) ? "N3D" : "N2D";
+  auto cell_type = (dim == 3) ? "ED3H8" : "ED2Q4";
+  auto io_type = (dim == 3) ? "Ascii3D" : "Ascii2D";
+  auto analysis = (dim == 3) ? "MPMExplicit3D" : "MPMExplicit2D";
+  std::string material = (dim == 3) ? "LinearElastic3D" : "LinearElastic2D";
+  std::vector<double> gravity = (grav_dim == 3)
+                                    ? std::vector<double>{0., 0., -9.81}
+                                    : std::vector<double>{0., -9.81};
+
+  // JSON without BCs, entity_sets, damping, mpm_scheme, velocity_update, VTK
+  Json json_file = {{"title", "Example JSON Input for MPM"},
+                    {"mesh",
+                     {{"mesh", "mesh-" + dimension + ".txt"},
+                      {"entity_sets", "entity_sets_0.json"},
+                      {"io_type", io_type},
+                      {"check_duplicates", true},
+                      {"isoparametric", false},
+                      {"node_type", node_type},
+                      {"boundary_conditions", {}},
+                      {"cell_type", cell_type}}},
+                    {"particles",
+                     {{{"generator",
+                        {{"type", "file"},
+                         {"material_id", 0},
+                         {"pset_id", 0},
+                         {"io_type", io_type},
+                         {"particle_type", particle_type},
+                         {"check_duplicates", true},
+                         {"location", "particles-" + dimension + ".txt"}}}}}},
+                    {"materials",
+                     {{{"id", 0},
+                       {"type", material},
+                       {"density", 1000.},
+                       {"youngs_modulus", 1.0E+8},
+                       {"poisson_ratio", 0.495}}}},
+                    {"external_loading_conditions", {{"gravity", gravity}}},
+                    {"analysis",
+                     {{"type", analysis},
+                      {"locate_particles", true},
+                      {"dt", 0.001},
+                      {"uuid", file_name + "-" + dimension},
+                      {"nsteps", 10},
+                      {"resume",
+                       {{"resume", "false"},
+                        {"uuid", file_name + "-" + dimension},
+                        {"step", 5}}}}},
+                    {"post_processing",
+                     {{"path", "results/"},
+                      {"vtk", {}},
+                      {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {}}}}},
+                      {"output_steps", 5}}}};
+
+  // Conditionally add math functions
+  if (math_functions) {
+    json_file["math_functions"] = {{{"id", 0},
+                                    {"type", math_functions_type},
+                                    {"xvalues", {0.0, 0.5, 1.0}},
+                                    {"fxvalues", {0.0, 1.0, 1.0}}}};
+  }
+
+  // Conditionally add empty material_sets
+  if (material_sets) json_file["material_sets"] = {};
+
+  // Add analysis section (missing mpm_scheme, velocity_update, damping)
+  json_file["analysis"] = {{"type", "explicit"},
+                           {"locate_particles", true},
+                           {"dt", 0.001},
+                           {"uuid", file_name + "-" + dimension},
+                           {"nsteps", 10},
+                           {"resume",
+                            {{"resume", false},
+                             {"uuid", file_name + "-" + dimension},
+                             {"step", 5}}}};
+
+  // Write JSON to file
+  std::string fname = file_name + "-" + dimension + ".json";
+  std::ofstream file(fname);
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
 // Write JSON Configuration file for absorbing boundary
 bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,
@@ -435,8 +525,8 @@ bool write_json_friction(unsigned dim, bool resume, const std::string& analysis,
   return true;
 }
 
-// Write JSON Configuration file for cohesion constraint
-bool write_json_cohesion(unsigned dim, bool resume, const std::string& analysis,
+// Write JSON Configuration file for adhesion constraint
+bool write_json_adhesion(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& file_name, const unsigned dir) {
   // Make json object with input files
   // 2D
@@ -472,11 +562,11 @@ bool write_json_cohesion(unsigned dim, bool resume, const std::string& analysis,
                       {"isoparametric", false},
                       {"node_type", node_type},
                       {"boundary_conditions",
-                       {{"cohesion_constraints",
+                       {{"adhesion_constraints",
                          {{{"nset_id", 1},
                            {"dir", dir},
                            {"sign_n", -1},
-                           {"cohesion", 100},
+                           {"adhesion", 100},
                            {"h_min", 0.25},
                            {"nposition", 3}}}}}},
                       {"cell_type", cell_type}}},
@@ -523,7 +613,7 @@ bool write_json_cohesion(unsigned dim, bool resume, const std::string& analysis,
                       {"nload_balance_steps", 1000}}},
                     {"post_processing",
                      {{"path", "results/"},
-                      {"vtk", {"stresses", "strains", "velocities"}},
+                      {"vtk", {"geometry", "id", "material"}},
                       {"output_steps", 5}}}};
 
   // Dump JSON as an input file to be read

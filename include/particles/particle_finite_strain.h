@@ -57,27 +57,18 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
     return strain;
   }
 
-  //! Return deformation gradient increment of the particle
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment() const {
-    return deformation_gradient_increment_;
-  }
-
   //! Update volume based on deformation gradient increment
   //! Note: Volume is updated in compute_strain() and
   //! compute_strain_volume_newmark() for particle with finite strain
   void update_volume() noexcept override{};
 
-  //! Compute deformation gradient
-  //! Note: Deformation gradient is updated in update_stress_strain() and
-  //! compute stress() for particle with finite strain
-  void update_deformation_gradient(const std::string& type,
-                                   double dt) noexcept override{};
-
   //! Compute deformation gradient increment using nodal velocity
+  //! \param[in] dt Analysis time step
   void compute_strain(double dt) noexcept override;
 
   //! Compute stress and update deformation gradient
-  void compute_stress() noexcept override;
+  //! \param[in] dt Analysis time step
+  void compute_stress(double dt) noexcept override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
@@ -86,7 +77,8 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
-  void initialise_constitutive_law() noexcept override;
+  //! \param[in] dt Analysis time step
+  void initialise_constitutive_law(double dt) noexcept override;
 
   //! Map mass, material and geometric stiffness matrix to cell
   //! (used in equilibrium equation LHS)
@@ -103,11 +95,13 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  void compute_stress_newmark() noexcept override;
+  //! \param[in] dt Analysis time step
+  void compute_stress_newmark(double dt) noexcept override;
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
-  void update_stress_strain() noexcept override;
+  //! \param[in] dt Analysis time step
+  void update_stress_strain(double dt) noexcept override;
   /**@}*/
 
  protected:
@@ -170,8 +164,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Deformation gradient
   using Particle<Tdim>::deformation_gradient_;
   //! Deformation gradient increment
-  Eigen::Matrix<double, 3, 3> deformation_gradient_increment_{
-      Eigen::Matrix<double, 3, 3>::Identity()};
+  using Particle<Tdim>::deformation_gradient_increment_;
   //! Shape function gradient at the reference configuration
   Eigen::MatrixXd reference_dn_dx_;
   /**@}*/

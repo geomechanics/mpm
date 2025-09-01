@@ -9,9 +9,9 @@
 
 namespace mpm {
 
-//! Bingham class
-//! \brief Bingham fluid material model
-//! \details Bingham class stresses and strains
+//! Papanastasiou-Roussel Bingham class
+//! \brief Papanastasiou-Roussel Bingham fluid material model
+//! \details Papanastasiou-Roussel Bingham class stresses and strains
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
 class Bingham : public Material<Tdim> {
@@ -50,7 +50,7 @@ class Bingham : public Material<Tdim> {
   //! \retval updated_stress Updated value of stress
   Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
                           const ParticleBase<Tdim>* ptr,
-                          mpm::dense_map* state_vars) override;
+                          mpm::dense_map* state_vars, double dt) override;
 
  protected:
   //! material id
@@ -61,14 +61,8 @@ class Bingham : public Material<Tdim> {
   using Material<Tdim>::console_;
 
  private:
-  //! Thermodynamic pressure
-  //! \param[in] volumetric_strain dVolumetric_strain
-  //! \retval pressure Pressure for volumetric strain
-  double thermodynamic_pressure(double volumetric_strain) const;
-
   //! Dirac delta function in Voigt notation
   Eigen::Matrix<double, 6, 1> dirac_delta() const;
-
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Youngs modulus
@@ -77,16 +71,31 @@ class Bingham : public Material<Tdim> {
   double bulk_modulus_{std::numeric_limits<double>::max()};
   //! Poisson ratio
   double poisson_ratio_{std::numeric_limits<double>::max()};
-  //! Tau0 - shear yield stress in unit of [Pa]
+  //! Shear modulus
+  double shear_modulus_{std::numeric_limits<double>::max()};
+  //! Volumetric wave speed
+  double c_{std::numeric_limits<double>::max()};
+  //! Gamma
+  double gamma_{std::numeric_limits<double>::max()};
+  //! Dynamic viscosity
+  double dynamic_viscosity_{std::numeric_limits<double>::max()};
+  //! Tau0
   double tau0_{std::numeric_limits<double>::max()};
-  //! mu - constant plastic viscosity [N s / m^2 or kg / m / s]
-  double mu_{std::numeric_limits<double>::max()};
+  //! Initial flocculation state
+  double lambda0_{std::numeric_limits<double>::max()};
+  //! Flocullation parameter
+  double athix_{std::numeric_limits<double>::max()};
+  //! Thixotropy deflocculation rate
+  double alpha_{std::numeric_limits<double>::max()};
+  //! Rest time
+  double rt_{std::numeric_limits<double>::max()};
+  //! Regularization shape factor m
+  double m_{std::numeric_limits<double>::max()};
   //! Critical yielding shear rate
   double critical_shear_rate_{std::numeric_limits<double>::max()};
   //! Compressibility multiplier
   double compressibility_multiplier_{1.0};
-
-};  // Bingham class
+};  // Papanastasiou-Roussel Bingham class
 }  // namespace mpm
 
 #include "bingham.tcc"

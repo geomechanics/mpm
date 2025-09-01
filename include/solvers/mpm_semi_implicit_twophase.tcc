@@ -21,7 +21,7 @@ void mpm::MPMSemiImplicitTwoPhase<Tdim>::compute_stress_strain() {
       &mpm::ParticleBase<Tdim>::update_porosity, std::placeholders::_1, dt_));
   // Iterate over each particle to compute stress of soil skeleton
   mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1));
+      &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1, dt_));
   // Pressure smoothing
   if (pressure_smoothing_) this->pressure_smoothing(mpm::ParticlePhase::Solid);
   // Pore pressure smoothing
@@ -421,9 +421,14 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     // Locate particle
     auto unlocatable_particles = mesh_->locate_particles_mesh();
 
-    if (!unlocatable_particles.empty() && this->locate_particles_)
-      throw std::runtime_error("Particle outside the mesh domain");
-
+    // Throw error with listed unlocatable particles
+    if (!unlocatable_particles.empty() && this->locate_particles_) {
+      std::ostringstream unloc_mp;
+      for (const auto& particle : unlocatable_particles)
+        unloc_mp << particle->id() << " ";
+      throw std::runtime_error("Particle(s) outside the mesh domain: " +
+                               unloc_mp.str());
+    }
     // If unable to locate particles remove particles
     if (!unlocatable_particles.empty() && !this->locate_particles_)
       for (const auto& remove_particle : unlocatable_particles)

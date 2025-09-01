@@ -13,7 +13,7 @@ void mpm::Particle<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
 
 //! Function to reinitialise material to be run at the beginning of each time
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::initialise_constitutive_law() noexcept {
+void mpm::Particle<Tdim>::initialise_constitutive_law(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
 
@@ -25,7 +25,7 @@ void mpm::Particle<Tdim>::initialise_constitutive_law() noexcept {
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
           stress_, previous_stress_, dstrain_, this,
-          &state_variables_[mpm::ParticlePhase::Solid]);
+          &state_variables_[mpm::ParticlePhase::Solid], dt);
 }
 
 //! Map inertial force
@@ -274,6 +274,11 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
   this->volume_ /= (1. + dvolumetric_strain_);
   this->mass_density_ *= (1. + dvolumetric_strain_);
 
+  // Compute deformation gradient increment from previous time step
+  this->deformation_gradient_increment_ =
+      this->compute_deformation_gradient_increment(this->dn_dx_,
+                                                   mpm::ParticlePhase::Solid);
+
   // Compute strain increment from previous time step
   this->dstrain_ =
       this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
@@ -288,7 +293,7 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
 
 // Compute stress using implicit updating scheme
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
+void mpm::Particle<Tdim>::compute_stress_newmark(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Clone state variables
@@ -296,12 +301,12 @@ void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
   // Calculate stress
   this->stress_ = (this->material())
                       ->compute_stress(previous_stress_, dstrain_, this,
-                                       &temp_state_variables);
+                                       &temp_state_variables, dt);
 
   // Compute current consititutive matrix
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
-          stress_, previous_stress_, dstrain_, this, &temp_state_variables);
+          stress_, previous_stress_, dstrain_, this, &temp_state_variables, dt);
 }
 
 // Compute updated position of the particle by Newmark scheme
@@ -336,12 +341,12 @@ void mpm::Particle<Tdim>::compute_updated_position_newmark(double dt) noexcept {
 
 // Update stress and strain after convergence of Newton-Raphson iteration
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::update_stress_strain() noexcept {
+void mpm::Particle<Tdim>::update_stress_strain(double dt) noexcept {
   // Update converged stress
   this->stress_ =
       (this->material())
           ->compute_stress(previous_stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+                           &state_variables_[mpm::ParticlePhase::Solid], dt);
 
   // Update initial stress of the time step
   this->previous_stress_ = this->stress_;
@@ -352,6 +357,13 @@ void mpm::Particle<Tdim>::update_stress_strain() noexcept {
   // Reset strain increment
   this->dstrain_.setZero();
   this->dvolumetric_strain_ = 0.;
+
+  // Update deformation gradient
+  this->deformation_gradient_ =
+      this->deformation_gradient_increment_ * this->deformation_gradient_;
+
+  // Reset deformation gradient increment
+  this->deformation_gradient_increment_.setIdentity();
 }
 
 // Assign acceleration to the particle

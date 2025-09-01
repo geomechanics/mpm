@@ -8,6 +8,7 @@
 #include "hexahedron_element.h"
 #include "linear_function.h"
 #include "material.h"
+#include "math_utility.h"
 #include "node.h"
 #include "particle.h"
 #include "pod_particle.h"
@@ -121,6 +122,9 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
     bool status = true;
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::Particle<Dim>>(id, coords, status);
+
+    // Check scalar data: ID
+    REQUIRE(particle->scalar_data("id") == 0);
 
     // Check scalar data: mass
     REQUIRE(particle->scalar_data("mass") ==
@@ -573,11 +577,35 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle->id() == 0);
   }
 
+  //! Check id is a positive value
   SECTION("Particle id is positive") {
-    //! Check for id is a positive value
     mpm::Index id = std::numeric_limits<mpm::Index>::max();
     auto particle = std::make_shared<mpm::Particle<Dim>>(id, coords);
     REQUIRE(particle->id() == std::numeric_limits<mpm::Index>::max());
+  }
+
+  //! Test particles scalar, vector and tensor data
+  SECTION("Check particle scalar, vector, and tensor data") {
+    mpm::Index id = 0;
+    const double Tolerance = 1.E-7;
+    bool status = true;
+    std::shared_ptr<mpm::ParticleBase<Dim>> particle =
+        std::make_shared<mpm::Particle<Dim>>(id, coords, status);
+
+    // Assign material
+    unsigned mid = 42;
+    // Initialise material
+    Json jmaterial;
+    jmaterial["density"] = 1000.;
+    jmaterial["youngs_modulus"] = 1.0E+7;
+    jmaterial["poisson_ratio"] = 0.3;
+
+    auto material =
+        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
+            "LinearElastic2D", std::move(mid), jmaterial);
+
+    // Assign material properties
+    REQUIRE(particle->assign_material(material) == true);
   }
 
   //! Test coordinates function
@@ -931,10 +959,14 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle->assign_volume(2.0) == true);
     // Check volume
     REQUIRE(particle->volume() == Approx(2.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(1.5957691).epsilon(Tolerance));
     // Compute volume
     REQUIRE_NOTHROW(particle->compute_volume());
     // Check volume
     REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(1.1283792).epsilon(Tolerance));
 
     // Check reference location
     coords << -0.5, -0.5;
@@ -1045,7 +1077,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
                 0., 1., 0.,
                 0., 0., 1.;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     auto deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -1053,7 +1086,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
         REQUIRE(deformation_grad(i, j) ==
                 Approx(def_grad(i, j)).epsilon(Tolerance));
 
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("displacement", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment());
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -1093,7 +1127,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
               0.05,1.25, 0.,
                 0.,  0., 1.;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -1123,7 +1158,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
+    REQUIRE_NOTHROW(particle->compute_stress(dt));
 
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
@@ -1137,6 +1172,9 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
+
+    // Put stress back to values from Lines 1129-1134
+    particle->initial_stress(stress);
 
     // Check body force
     Eigen::Matrix<double, 2, 1> gravity;
@@ -1353,7 +1391,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
               Approx(volumetric_strain).epsilon(Tolerance));
 
       // Compute stress
-      REQUIRE_NOTHROW(particle->compute_stress());
+      REQUIRE_NOTHROW(particle->compute_stress(dt));
 
       REQUIRE(
           particle->pressure() ==
@@ -2416,10 +2454,14 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle->assign_volume(2.0) == true);
     // Check volume
     REQUIRE(particle->volume() == Approx(2.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(1.5631853).epsilon(Tolerance));
     // Compute volume
     REQUIRE_NOTHROW(particle->compute_volume());
     // Check volume
     REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
+    // Check diameter
+    REQUIRE(particle->diameter() == Approx(2.4814020).epsilon(Tolerance));
 
     // Check reference location
     coords << 0.5, 0.5, 0.5;
@@ -2540,7 +2582,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
                 0., 1., 0.,
                 0., 0., 1.;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     auto deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -2548,7 +2591,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
         REQUIRE(deformation_grad(i, j) ==
                 Approx(def_grad(i, j)).epsilon(Tolerance));
 
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("displacement", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment());
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -2595,7 +2639,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
                 -0.025, 1.075, 0.2,
                  -0.05,  0.15, 1.4;
     // clang-format on
-    REQUIRE_NOTHROW(particle->update_deformation_gradient("velocity", 0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient_increment(0.1));
+    REQUIRE_NOTHROW(particle->update_deformation_gradient());
     deformation_grad = particle->deformation_gradient();
 
     for (unsigned i = 0; i < 3; ++i)
@@ -2626,7 +2671,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress());
+    REQUIRE_NOTHROW(particle->compute_stress(dt));
 
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
@@ -2640,6 +2685,9 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     // Check stress
     for (unsigned i = 0; i < stress.rows(); ++i)
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
+
+    // Put stress back to values from Lines 2651-2656
+    particle->initial_stress(stress);
 
     // Check body force
     Eigen::Matrix<double, 3, 1> gravity;
@@ -2832,7 +2880,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
               Approx(volumetric_strain).epsilon(Tolerance));
 
       // Compute stress
-      REQUIRE_NOTHROW(particle->compute_stress());
+      REQUIRE_NOTHROW(particle->compute_stress(dt));
 
       REQUIRE(
           particle->pressure() ==

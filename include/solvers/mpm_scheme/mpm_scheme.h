@@ -1,6 +1,8 @@
 #ifndef MPM_MPM_SCHEME_H_
 #define MPM_MPM_SCHEME_H_
 
+#include <sstream>
+
 #ifdef USE_GRAPH_PARTITIONING
 #include "graph.h"
 #endif
@@ -40,8 +42,8 @@ class MPMScheme {
                                                bool pressure_smoothing) = 0;
 
   //! Postcompute stress and strain (empty call)
-  //! \param[in] phase Phase to smooth postssure
-  //! \param[in] postssure_smoothing Enable or disable postssure smoothing
+  //! \param[in] phase Phase to smooth pressure
+  //! \param[in] pressure_smoothing Enable or disable pressure smoothing
   virtual inline void postcompute_stress_strain(unsigned phase,
                                                 bool pressure_smoothing) = 0;
 
@@ -68,11 +70,10 @@ class MPMScheme {
   //! \param[in] phase Phase of particle
   //! \param[in] damping_type Type of damping
   //! \param[in] damping_factor Value of critical damping
-  //! \param[in] update_defgrad Update deformation gradient
   virtual inline void compute_particle_kinematics(
       mpm::VelocityUpdate velocity_update, double blending_ratio,
       unsigned phase, const std::string& damping_type, double damping_factor,
-      unsigned step, bool update_defgrad);
+      unsigned step);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

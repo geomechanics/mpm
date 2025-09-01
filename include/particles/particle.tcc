@@ -324,8 +324,13 @@ void mpm::Particle<Tdim>::initialise() {
   normal_.setZero();
   volume_ = std::numeric_limits<double>::max();
   deformation_gradient_.setIdentity();
+  deformation_gradient_increment_.setIdentity();
 
   // Initialize scalar, vector, and tensor data properties
+  this->scalar_properties_["id"] = [&]() { return static_cast<double>(id_); };
+  this->scalar_properties_["material"] = [&]() {
+    return static_cast<double>(material_id_[mpm::ParticlePhase::Solid]);
+  };
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
@@ -604,7 +609,7 @@ template <unsigned Tdim>
 double mpm::Particle<Tdim>::diameter() const {
   double diameter = 0.;
   if (Tdim == 2) diameter = 2.0 * std::sqrt(volume_ / M_PI);
-  if (Tdim == 3) diameter = 2.0 * std::pow(volume_ * 0.75 / M_PI, (1 / 3));
+  if (Tdim == 3) diameter = 2.0 * std::cbrt(volume_ * 0.75 / M_PI);
   return diameter;
 }
 
@@ -872,14 +877,15 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
 // Compute stress
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress() noexcept {
+void mpm::Particle<Tdim>::compute_stress(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
-  // Calculate stress
+
+  // Compute material part of stress
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+                           &state_variables_[mpm::ParticlePhase::Solid], dt);
 }
 
 //! Map body force
@@ -1621,23 +1627,34 @@ inline Eigen::Matrix<double, 3, 3>
   return deformation_gradient_rate;
 }
 
-//! Compute deformation gradient
+//! Update deformation gradient increment using displacement (for implicit
+//! schemes)
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::update_deformation_gradient(const std::string& type,
-                                                      double dt) noexcept {
-  // Compute deformation gradient increment
-  Eigen::Matrix<double, 3, 3> def_grad_increment =
-      Eigen::Matrix<double, 3, 3>::Identity();
-  if (type == "displacement")
-    def_grad_increment = this->compute_deformation_gradient_increment(
-        this->dn_dx_, mpm::ParticlePhase::SinglePhase);
-  else if (type == "velocity")
-    def_grad_increment = this->compute_deformation_gradient_increment(
-        this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
+void mpm::Particle<Tdim>::update_deformation_gradient_increment() noexcept {
+  // Update deformation gradient increment
+  this->deformation_gradient_increment_ =
+      this->compute_deformation_gradient_increment(
+          this->dn_dx_, mpm::ParticlePhase::SinglePhase);
+}
 
+//! Update deformation gradient increment using velocity (for explicit
+//! schemes)
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::update_deformation_gradient_increment(
+    double dt) noexcept {
+  // Update deformation gradient increment
+  this->deformation_gradient_increment_ =
+      this->compute_deformation_gradient_increment(
+          this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
+}
+
+//! Update deformation gradient provided that the deformation gradient increment
+//! exists
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::update_deformation_gradient() noexcept {
   // Update deformation gradient
   this->deformation_gradient_ =
-      def_grad_increment * this->deformation_gradient_;
+      this->deformation_gradient_increment_ * this->deformation_gradient_;
 }
 
 // Compute velocity gradient
@@ -1703,10 +1720,11 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
   }
 
   // Check if the incremental Jacobian is in compressive mode
-  const auto def_grad_increment = this->compute_deformation_gradient_increment(
-      this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
-  const double J = def_grad_increment.determinant();
-  if (J < 1.0) beta = 0.0;
+  const auto new_def_grad_increment =
+      this->compute_deformation_gradient_increment(
+          this->dn_dx_, mpm::ParticlePhase::SinglePhase, dt);
+  const double new_J = new_def_grad_increment.determinant();
+  if (new_J < 1.0) beta = 0.0;
 
   return beta;
 }

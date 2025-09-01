@@ -5,7 +5,7 @@
 
 #include "absorbing_constraint.h"
 #include "acceleration_constraint.h"
-#include "cohesion_constraint.h"
+#include "adhesion_constraint.h"
 #include "displacement_constraint.h"
 #include "friction_constraint.h"
 #include "logger.h"
@@ -67,20 +67,20 @@ class Constraints {
       const std::vector<std::tuple<mpm::Index, unsigned, int, double>>&
           friction_constraints);
 
-  //! Assign nodal cohesional constraints
+  //! Assign nodal adhesional constraints
   //! \param[in] setid Node set id
-  //! \param[in] cohesion_constraints Constraint at node, dir, sign_n, cohesion,
+  //! \param[in] adhesion_constraints Constraint at node, dir, sign_n, adhesion,
   //! h_min, nposition
-  bool assign_nodal_cohesional_constraint(
+  bool assign_nodal_adhesional_constraint(
       int nset_id,
-      const std::shared_ptr<mpm::CohesionConstraint>& cconstraints);
+      const std::shared_ptr<mpm::AdhesionConstraint>& aconstraints);
 
-  //! Assign cohesion constraints to nodes
-  //! \param[in] cohesion_constraints Constraint at node, dir, sign_n, cohesion,
+  //! Assign adhesion constraints to nodes
+  //! \param[in] adhesion_constraints Constraint at node, dir, sign_n, adhesion,
   //! h_min, nposition
-  bool assign_nodal_cohesion_constraints(
+  bool assign_nodal_adhesion_constraints(
       const std::vector<std::tuple<mpm::Index, unsigned, int, double, double,
-                                   int>>& cohesion_constraints);
+                                   int>>& adhesion_constraints);
 
   //! Assign nodal pressure constraints
   //! \param[in] mfunction Math function if defined

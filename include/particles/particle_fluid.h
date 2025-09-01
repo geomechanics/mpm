@@ -36,7 +36,8 @@ class FluidParticle : public mpm::Particle<Tdim> {
   FluidParticle& operator=(const FluidParticle<Tdim>&) = delete;
 
   //! Compute stress
-  void compute_stress() noexcept override;
+  //! \param[in] dt Analysis time step
+  void compute_stress(double dt) noexcept override;
 
   //! Map internal force
   inline void map_internal_force() noexcept override;

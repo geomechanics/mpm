@@ -8,6 +8,11 @@ namespace mpm_test {
 bool write_json(unsigned dim, bool resume, const std::string& analysis,
                 const std::string& mpm_scheme, const std::string& file_name);
 
+// Write JSON Configuration file for mpm_base warnings
+bool write_json_warnings(unsigned dim, bool material_sets, bool math_functions,
+                         std::string math_functions_type, int grav_dim,
+                         std::string file_name);
+
 // Write JSON Configuration file for absorbing boundary
 bool write_json_absorbing(unsigned dim, bool resume,
                           const std::string& analysis,
@@ -24,8 +29,8 @@ bool write_json_acceleration(unsigned dim, bool resume,
 bool write_json_friction(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& file_name, const unsigned dir);
 
-// Write JSON Configuration file for cohesion boundary
-bool write_json_cohesion(unsigned dim, bool resume, const std::string& analysis,
+// Write JSON Configuration file for adhesion boundary
+bool write_json_adhesion(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& file_name, const unsigned dir);
 
 // Write JSON Configuration file for velocity boundary

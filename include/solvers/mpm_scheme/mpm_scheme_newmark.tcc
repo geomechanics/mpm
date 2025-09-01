@@ -32,7 +32,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Initialise material
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
-                    std::placeholders::_1));
+                    std::placeholders::_1, dt_));
     }
 
     // Spawn a task for points
@@ -115,8 +115,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
   if (pressure_smoothing) this->pressure_smoothing(phase);
 
   // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress_newmark, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_stress_newmark,
+                std::placeholders::_1, dt_));
 }
 
 //! Precompute stresses and strains
@@ -186,23 +187,11 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step,
-    bool update_defgrad) {
+    const std::string& damping_type, double damping_factor, unsigned step) {
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
-                std::placeholders::_1, dt_));
-
-  // Iterate over each particle to update deformation gradient
-  if (update_defgrad)
-    mesh_->iterate_over_particles(
-        std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
-                  std::placeholders::_1, "displacement", dt_));
-
-  // Iterate over each point to compute updated position
-  mesh_->iterate_over_points(
-      std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
                 std::placeholders::_1, dt_));
 }
 
@@ -211,8 +200,9 @@ template <unsigned Tdim>
 inline void
     mpm::MPMSchemeNewmark<Tdim>::update_particle_stress_strain_volume() {
   // Iterate over each particle to update particle stress and strain
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::update_stress_strain,
+                std::placeholders::_1, dt_));
 }
 
 //! Postcompute nodal kinematics - map mass and momentum to nodes

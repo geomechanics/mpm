@@ -119,8 +119,6 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Nonlocal node neighbourhood
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
-  //! Update deformation gradient
-  using mpm::MPMBase<Tdim>::update_defgrad_;
   //! Pressure smoothing
   bool pressure_smoothing_{false};
 

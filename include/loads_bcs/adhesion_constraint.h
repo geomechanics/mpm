@@ -1,28 +1,28 @@
-#ifndef MPM_COHESION_CONSTRAINT_H_
-#define MPM_COHESION_CONSTRAINT_H_
+#ifndef MPM_ADHESION_CONSTRAINT_H_
+#define MPM_ADHESION_CONSTRAINT_H_
 
 #include "data_types.h"
 
 namespace mpm {
 
-//! CohesionConstraint class to store cohesion constraint on a set
-//! \brief CohesionConstraint class to store a constraint on a set
-//! \details CohesionConstraint stores the constraint as a static value
-class CohesionConstraint {
+//! AdhesionConstraint class to store adhesion constraint on a set
+//! \brief AdhesionConstraint class to store a constraint on a set
+//! \details AdhesionConstraint stores the constraint as a static value
+class AdhesionConstraint {
  public:
   // Constructor
   //! \param[in] setid  set id
   //! \param[in] dir Direction of constraint load (normal)
   //! \param[in] sign_n Sign of normal vector
-  //! \param[in] cohesion Constraint cohesion
+  //! \param[in] adhesion Constraint adhesion
   //! \param[in] h_min Characteristic length (cell height)
   //! \param[in] nposition Nodal location, nposition, along boundary
-  CohesionConstraint(int setid, unsigned dir, int sign_n, double cohesion,
+  AdhesionConstraint(int setid, unsigned dir, int sign_n, double adhesion,
                      double h_min, int nposition = 0)
       : setid_{setid},
         dir_{dir},
         sign_n_{sign_n},
-        cohesion_{cohesion},
+        adhesion_{adhesion},
         h_min_{h_min},
         nposition_{nposition} {};
 
@@ -35,8 +35,8 @@ class CohesionConstraint {
   // Sign of normal direction
   int sign_n() const { return sign_n_; }
 
-  // Return cohesion
-  double cohesion() const { return cohesion_; }
+  // Return adhesion
+  double adhesion() const { return adhesion_; }
 
   // Cell height
   double h_min() const { return h_min_; }
@@ -55,12 +55,12 @@ class CohesionConstraint {
   unsigned dir_;
   // Sign of normal direction
   int sign_n_;
-  // Cohesion
-  double cohesion_;
+  // Adhesion
+  double adhesion_;
   // Cell height
   double h_min_;
   // Node nposition
   int nposition_;
 };
 }  // namespace mpm
-#endif  // MPM_COHESION_CONSTRAINT_H_
+#endif  // MPM_ADHESION_CONSTRAINT_H_

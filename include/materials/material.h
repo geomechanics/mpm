@@ -10,6 +10,7 @@
 #include "logger.h"
 #include "map.h"
 #include "material_utility.h"
+#include "math_utility.h"
 #include "particle.h"
 #include "particle_base.h"
 
@@ -21,6 +22,12 @@ namespace mpm {
 // Forward declaration of ParticleBase
 template <unsigned Tdim>
 class ParticleBase;
+
+//! Objective stress rate type
+//! None: No objective stress rate
+//! Jaumann: Objective stress rate considering Jaumann rate
+//! GreenNaghdi: Objective stress rate considering Green-Naghdi rate
+enum class StressRate { None, Jaumann, GreenNaghdi };
 
 //! Material base class
 //! \brief Base class that stores the information about materials
@@ -85,11 +92,12 @@ class Material {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \retval updated_stress Updated value of stress
   virtual Vector6d compute_stress(const Vector6d& stress,
                                   const Vector6d& dstrain,
                                   const ParticleBase<Tdim>* ptr,
-                                  mpm::dense_map* state_vars) {
+                                  mpm::dense_map* state_vars, double dt) {
     auto error = Vector6d::Zero();
     throw std::runtime_error(
         "Calling the base class function (compute_stress) "
@@ -104,11 +112,12 @@ class Material {
   //! \param[in] dstrain Strain
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \retval dmatrix Constitutive relations mattrix
   virtual Matrix6x6 compute_consistent_tangent_matrix(
       const Vector6d& stress, const Vector6d& prev_stress,
       const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
-      mpm::dense_map* state_vars) {
+      mpm::dense_map* state_vars, double dt) {
     auto error = Matrix6x6::Zero();
     throw std::runtime_error(
         "Calling the base class function (compute_consistent_tangent_matrix) "
@@ -128,12 +137,13 @@ class Material {
   //! \param[in] deformation_gradient_increment Deformation gradient increment
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \retval updated_stress Updated value of stress
   virtual Vector6d compute_stress(
       const Vector6d& stress,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
-      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
     auto error = Vector6d::Zero();
     throw std::runtime_error(
         "Calling the base class function (compute_stress) "
@@ -149,12 +159,13 @@ class Material {
   //! \param[in] deformation_gradient_increment Deformation gradient increment
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \retval dmatrix Constitutive relations mattrix
   virtual Matrix6x6 compute_consistent_tangent_matrix(
       const Vector6d& stress, const Vector6d& prev_stress,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient,
       const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
-      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+      const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
     auto error = Matrix6x6::Zero();
     throw std::runtime_error(
         "Calling the base class function "

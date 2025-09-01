@@ -2,6 +2,7 @@
 #define MPM_MPM_BASE_H_
 
 #include <numeric>
+#include <sstream>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -182,10 +183,10 @@ class MPMBase : public MPM {
   void nodal_frictional_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
-  //! Nodal cohesional constraints
+  //! Nodal adhesional constraints
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] mesh_io Mesh IO handle
-  void nodal_cohesional_constraints(
+  void nodal_adhesional_constraints(
       const Json& mesh_prop, const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
 
   //! Nodal pressure constraints
@@ -309,6 +310,8 @@ class MPMBase : public MPM {
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Mathematical functions
   std::map<unsigned, std::shared_ptr<mpm::FunctionBase>> math_functions_;
+  //! VTK geometry output bool
+  bool geometry_vtk_{false};
   //! VTK particle variables
   tsl::robin_map<mpm::VariableType, std::vector<std::string>> vtk_vars_;
   //! VTK state variables
@@ -323,8 +326,6 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
-  //! Boolean to update deformation gradient
-  bool update_defgrad_{false};
 
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM

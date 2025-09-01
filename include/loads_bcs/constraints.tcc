@@ -216,27 +216,27 @@ bool mpm::Constraints<Tdim>::assign_nodal_friction_constraints(
   return status;
 }
 
-//! Assign cohesion constraints to nodes
+//! Assign adhesion constraints to nodes
 template <unsigned Tdim>
-bool mpm::Constraints<Tdim>::assign_nodal_cohesional_constraint(
-    int nset_id, const std::shared_ptr<mpm::CohesionConstraint>& cconstraint) {
+bool mpm::Constraints<Tdim>::assign_nodal_adhesional_constraint(
+    int nset_id, const std::shared_ptr<mpm::AdhesionConstraint>& aconstraint) {
   bool status = true;
   try {
-    int set_id = cconstraint->setid();
+    int set_id = aconstraint->setid();
     auto nset = mesh_->nodes(set_id);
     if (nset.size() == 0)
       throw std::runtime_error(
-          "Node set is empty for assignment of cohesion constraints");
-    unsigned dir = cconstraint->dir();
-    int sign_n = cconstraint->sign_n();
-    double cohesion = cconstraint->cohesion();
-    double h_min = cconstraint->h_min();
-    int nposition = cconstraint->nposition();
+          "Node set is empty for assignment of adhesion constraints");
+    unsigned dir = aconstraint->dir();
+    int sign_n = aconstraint->sign_n();
+    double adhesion = aconstraint->adhesion();
+    double h_min = aconstraint->h_min();
+    int nposition = aconstraint->nposition();
     for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
-      if (!(*nitr)->assign_cohesion_constraint(dir, sign_n, cohesion, h_min,
+      if (!(*nitr)->assign_adhesion_constraint(dir, sign_n, adhesion, h_min,
                                                nposition))
         throw std::runtime_error(
-            "Failed to initialise cohesion constraint at node");
+            "Failed to initialise adhesion constraint at node");
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -245,32 +245,32 @@ bool mpm::Constraints<Tdim>::assign_nodal_cohesional_constraint(
   return status;
 }
 
-//! Assign cohesion constraints to nodes
+//! Assign adhesion constraints to nodes
 template <unsigned Tdim>
-bool mpm::Constraints<Tdim>::assign_nodal_cohesion_constraints(
+bool mpm::Constraints<Tdim>::assign_nodal_adhesion_constraints(
     const std::vector<std::tuple<mpm::Index, unsigned, int, double, double,
-                                 int>>& cohesion_constraints) {
+                                 int>>& adhesion_constraints) {
   bool status = true;
   try {
-    for (const auto& cohesion_constraint : cohesion_constraints) {
+    for (const auto& adhesion_constraint : adhesion_constraints) {
       // Node id
-      mpm::Index nid = std::get<0>(cohesion_constraint);
+      mpm::Index nid = std::get<0>(adhesion_constraint);
       // Direction (normal)
-      unsigned dir = std::get<1>(cohesion_constraint);
+      unsigned dir = std::get<1>(adhesion_constraint);
       // Sign of normal direction
-      int sign_n = std::get<2>(cohesion_constraint);
-      // Cohesion
-      double cohesion = std::get<3>(cohesion_constraint);
+      int sign_n = std::get<2>(adhesion_constraint);
+      // Adhesion
+      double adhesion = std::get<3>(adhesion_constraint);
       // Cell height for area computation
-      double h_min = std::get<4>(cohesion_constraint);
+      double h_min = std::get<4>(adhesion_constraint);
       // Location of node for area computation
-      int nposition = std::get<5>(cohesion_constraint);
+      int nposition = std::get<5>(adhesion_constraint);
 
       // Apply constraint
-      if (!mesh_->node(nid)->assign_cohesion_constraint(dir, sign_n, cohesion,
+      if (!mesh_->node(nid)->assign_adhesion_constraint(dir, sign_n, adhesion,
                                                         h_min, nposition))
         throw std::runtime_error(
-            "Nodal cohesion constraints assignment failed");
+            "Nodal adhesion constraints assignment failed");
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

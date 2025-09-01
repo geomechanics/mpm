@@ -25,9 +25,6 @@ mpm::UnsplitPML<Tdim>::UnsplitPML(unsigned id, const Json& material_properties)
     // Damping power
     dpower_ = material_properties.at("damping_power").template get<double>();
 
-    // Set elastic tensor
-    this->compute_elastic_tensor();
-
     // Properties
     properties_ = material_properties;
   } catch (Json::exception& except) {

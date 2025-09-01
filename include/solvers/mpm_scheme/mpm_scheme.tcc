@@ -233,7 +233,8 @@ inline void mpm::MPMScheme<Tdim>::finalise_pml_boundary_properties() {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step) {
+    const mpm::Damping damping_type, double damping_factor, unsigned step,
+    bool update_defgrad, bool pml_boundary) {
 
   // Update nodal acceleration constraints
   mesh_->update_nodal_acceleration_constraints(step * dt_);
@@ -274,8 +275,14 @@ inline void mpm::MPMScheme<Tdim>::locate_particles(bool locate_particles) {
 
   auto unlocatable_particles = mesh_->locate_particles_mesh();
 
-  if (!unlocatable_particles.empty() && locate_particles)
-    throw std::runtime_error("Particle outside the mesh domain");
+  // Throw error with listed unlocatable particles
+  if (!unlocatable_particles.empty() && locate_particles) {
+    std::ostringstream unloc_mp;
+    for (const auto& particle : unlocatable_particles)
+      unloc_mp << particle->id() << " ";
+    throw std::runtime_error("Particle(s) outside the mesh domain: " +
+                             unloc_mp.str());
+  }
   // If unable to locate particles remove particles
   if (!unlocatable_particles.empty() && !locate_particles)
     for (const auto& remove_particle : unlocatable_particles)

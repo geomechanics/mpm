@@ -49,7 +49,7 @@ Eigen::Matrix<double, 6, 1> mpm::HenckyHyperElastic<Tdim>::compute_stress(
     const Vector6d& stress,
     const Eigen::Matrix<double, 3, 3>& deformation_gradient,
     const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // Updated deformation gradient
   const Eigen::Matrix<double, 3, 3> updated_deformation_gradient =
@@ -100,7 +100,7 @@ Eigen::Matrix<double, 6, 6>
         const Vector6d& stress, const Vector6d& prev_stress,
         const Eigen::Matrix<double, 3, 3>& deformation_gradient,
         const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
-        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // Updated deformation gradient
   const Eigen::Matrix<double, 3, 3> updated_deformation_gradient =

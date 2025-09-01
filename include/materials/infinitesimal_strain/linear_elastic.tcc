@@ -72,7 +72,7 @@ bool mpm::LinearElastic<Tdim>::compute_elastic_tensor() {
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::LinearElastic<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
-    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars) {
+    const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // Compute new stress
   Vector6d new_stress;
@@ -167,6 +167,6 @@ Eigen::Matrix<double, 6, 6>
     mpm::LinearElastic<Tdim>::compute_consistent_tangent_matrix(
         const Vector6d& stress, const Vector6d& prev_stress,
         const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
-        mpm::dense_map* state_vars) {
+        mpm::dense_map* state_vars, double dt) {
   return de_;
 }

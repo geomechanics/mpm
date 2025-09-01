@@ -4,7 +4,7 @@ void mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::
     initialise_bspline_connectivity_properties(
         const Eigen::MatrixXd& nodal_coordinates,
         const std::vector<std::vector<unsigned>>& nodal_properties,
-        bool kernel_correction) {
+        bool kernel_correction, unsigned kc_niteration, double kc_tol) {
   assert(nodal_coordinates.rows() == nodal_properties.size());
 
   this->nconnectivity_ = nodal_coordinates.rows();
@@ -15,8 +15,10 @@ void mpm::QuadrilateralBSplineElement<Tdim, Tpolynomial>::
   this->spacing_length_ =
       std::abs(nodal_coordinates(1, 0) - nodal_coordinates(0, 0));
 
-  //! Kernel correction boolean
+  //! Kernel correction boolean and niteration
   this->kernel_correction_ = kernel_correction;
+  this->kc_niteration_ = kc_niteration;
+  this->kc_tol_ = kc_tol;
 }
 
 //! Return shape functions of a Quadrilateral BSpline Element at a given
@@ -82,10 +84,12 @@ inline Eigen::VectorXd
       //! Check if we need to apply kernel correction if the shapefn is not
       //! equal to 1 (partition of unity is violated)
       bool apply_kernel_correction = false;
-      if (std::abs(shapefn.sum() - 1.0) > 1.e-8) apply_kernel_correction = true;
+      if (std::abs(shapefn.sum() - 1.0) > kc_tol_)
+        apply_kernel_correction = true;
 
-      // If kernel correction is needed
-      if (apply_kernel_correction) {
+      // Perform iteration
+      unsigned it = 0;
+      while (apply_kernel_correction) {
         // Compute M inverse matrix
         Eigen::Matrix<double, Tdim + 1, Tdim + 1> M =
             Eigen::Matrix<double, Tdim + 1, Tdim + 1>::Zero();
@@ -99,10 +103,19 @@ inline Eigen::VectorXd
         const VectorDim& C2 = M_inv.block(1, 0, Tdim, 1);
 
         // Corrected shape function calculation
+        apply_kernel_correction = false;
         for (unsigned n = 0; n < this->nconnectivity_; ++n) {
           shapefn(n) *=
               (C1 + C2.dot(nodal_coordinates_.row(n).transpose() - pcoord));
+          if (kc_niteration_ > 1 && (shapefn(n) < 0.0)) {
+            shapefn(n) = 0;
+            apply_kernel_correction = true;
+          }
         }
+
+        // Check iteration, exit if not needed
+        it++;
+        if (!(it < kc_niteration_)) break;
       }
     }
 
@@ -194,7 +207,8 @@ inline Eigen::MatrixXd
       //! Check if we need to apply kernel correction if the shapefn is not
       //! equal to 1 (partition of unity is violated)
       bool apply_kernel_correction = false;
-      if (std::abs(shapefn.sum() - 1.0) > 1.e-8) apply_kernel_correction = true;
+      if (std::abs(shapefn.sum() - 1.0) > kc_tol_)
+        apply_kernel_correction = true;
 
       if (!apply_kernel_correction) {
         //! Compute the shape function gradient following a multiplicative rule

@@ -84,7 +84,7 @@ void mpm::Particle<Tdim>::map_inertia_to_nodes_taylor() noexcept {
 
 //! Function to reinitialise material to be run at the beginning of each time
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::initialise_constitutive_law() noexcept {
+void mpm::Particle<Tdim>::initialise_constitutive_law(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
 
@@ -96,7 +96,7 @@ void mpm::Particle<Tdim>::initialise_constitutive_law() noexcept {
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
           stress_, previous_stress_, dstrain_, this,
-          &state_variables_[mpm::ParticlePhase::Solid]);
+          &state_variables_[mpm::ParticlePhase::Solid], dt);
 }
 
 //! Map inertial force
@@ -280,7 +280,7 @@ inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define strain rincrement
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -297,7 +297,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_increment(
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -319,7 +319,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_increment(
 // Compute strain increment of the particle
 template <>
 inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
-    const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept {
+    const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -344,7 +344,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_increment(
 
 // Compute strain and volume of the particle using nodal displacement
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
+void mpm::Particle<Tdim>::compute_strain_volume_newmark(double dt) noexcept {
   // Compute the volume at the previous time step
   this->volume_ /= (1. + dvolumetric_strain_);
   this->mass_density_ *= (1. + dvolumetric_strain_);
@@ -356,7 +356,7 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
 
   // Compute strain increment from previous time step
   this->dstrain_ =
-      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid);
+      this->compute_strain_increment(dn_dx_, mpm::ParticlePhase::Solid, dt);
 
   // Updated volumetric strain increment
   this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
@@ -368,7 +368,7 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
 
 // Compute stress using implicit updating scheme
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
+void mpm::Particle<Tdim>::compute_stress_newmark(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Clone state variables
@@ -376,12 +376,12 @@ void mpm::Particle<Tdim>::compute_stress_newmark() noexcept {
   // Calculate stress
   this->stress_ = (this->material())
                       ->compute_stress(previous_stress_, dstrain_, this,
-                                       &temp_state_variables);
+                                       &temp_state_variables, dt);
 
   // Compute current consititutive matrix
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
-          stress_, previous_stress_, dstrain_, this, &temp_state_variables);
+          stress_, previous_stress_, dstrain_, this, &temp_state_variables, dt);
 }
 
 // Compute updated position of the particle by Newmark scheme
@@ -482,7 +482,7 @@ void mpm::Particle<Tdim>::update_stress_strain(double dt) noexcept {
   this->stress_ =
       (this->material())
           ->compute_stress(previous_stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid]);
+                           &state_variables_[mpm::ParticlePhase::Solid], dt);
 
   // Update initial stress of the time step
   this->previous_stress_ = this->stress_;

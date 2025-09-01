@@ -29,6 +29,8 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
   // Tolerance
   const double Tolerance = 1.E-7;
 
+  const double dt = 1.0;
+
   // Coordinates
   Eigen::Vector2d coords;
   coords.setZero();
@@ -275,10 +277,10 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_volume_newmark();
+    particle->compute_strain_volume_newmark(dt);
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress_newmark());
+    REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
     stress <<  961538.4615384613,
@@ -293,7 +295,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 2D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain(0.0);
+    particle->update_stress_strain(dt);
 
     // Strain
     Eigen::Matrix<double, 6, 1> strain;
@@ -341,6 +343,8 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
   const unsigned Nphases = 1;
   // Tolerance
   const double Tolerance = 1.E-7;
+
+  const double dt = 1.0;
 
   // Coordinates
   Eigen::Vector3d coords;
@@ -644,10 +648,10 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
     REQUIRE(std::isnan(particle->pressure()) == true);
 
     // Compute strain increment
-    particle->compute_strain_volume_newmark();
+    particle->compute_strain_volume_newmark(dt);
 
     // Compute stress
-    REQUIRE_NOTHROW(particle->compute_stress_newmark());
+    REQUIRE_NOTHROW(particle->compute_stress_newmark(dt));
     Eigen::Matrix<double, 6, 1> stress;
     // clang-format off
     stress << 2948717.9487179490,
@@ -662,7 +666,7 @@ TEST_CASE("Implicit ParticleBbar is checked for 3D case",
       REQUIRE(particle->stress()(i) == Approx(stress(i)).epsilon(Tolerance));
 
     // Update stress and strain
-    particle->update_stress_strain(0.0);
+    particle->update_stress_strain(dt);
 
     // Strain
     Eigen::Matrix<double, 6, 1> strain;

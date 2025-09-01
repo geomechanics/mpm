@@ -1,6 +1,8 @@
 #ifndef MPM_MPM_SCHEME_H_
 #define MPM_MPM_SCHEME_H_
 
+#include <sstream>
+
 #ifdef USE_GRAPH_PARTITIONING
 #include "graph.h"
 #endif
@@ -123,7 +125,8 @@ class MPMScheme {
   //! \param[in] phase Phase to smooth pressure
   //! \param[in] pml_boundary Boolean to indicate the use of pml
   virtual inline void update_nodal_kinematics_newmark(
-      unsigned phase, bool pml_boundary = false) {
+      unsigned phase, double newmark_beta, double newmark_gamma,
+      bool pml_boundary = false) {
     throw std::runtime_error(
         "Calling the base class function (update_nodal_kinematics_newmark) in "
         "MPMScheme:: illegal operation!");

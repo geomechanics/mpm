@@ -37,7 +37,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Initialise material
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
-                    std::placeholders::_1));
+                    std::placeholders::_1, dt_));
     }
 
     // Spawn a task for points
@@ -96,19 +96,20 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
 //! Update nodal kinematics by Newmark scheme
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
-    unsigned phase, bool pml_boundary) {
+    unsigned phase, double newmark_beta, double newmark_gamma,
+    bool pml_boundary) {
 
   // Update nodal velocity and acceleration
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark,
-                std::placeholders::_1, phase, beta_, gamma_, dt_),
+                std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
   if (pml_boundary)
     mesh_->iterate_over_nodes_predicate(
         std::bind(
             &mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark_pml,
-            std::placeholders::_1, phase, beta_, gamma_, dt_),
+            std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
         std::bind(&mpm::NodeBase<Tdim>::pml, std::placeholders::_1));
 }
 
@@ -121,14 +122,15 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
   // displacement
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_strain_volume_newmark,
-                std::placeholders::_1));
+                std::placeholders::_1, dt_));
 
   // Pressure smoothing
   if (pressure_smoothing) this->pressure_smoothing(phase);
 
   // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress_newmark, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_stress_newmark,
+                std::placeholders::_1, dt_));
 }
 
 //! Precompute stresses and strains
@@ -217,6 +219,12 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
                 std::placeholders::_1, dt_, gamma_, step, velocity_update,
                 blending_ratio));
 
+  // Iterate over each particle to update deformation gradient
+  if (update_defgrad)
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
+                  std::placeholders::_1)); // , "displacement", dt_
+  
   // Iterate over each point to compute updated position
   mesh_->iterate_over_points(
       std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
@@ -273,6 +281,64 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties(
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_pml_properties_to_nodes,
                 std::placeholders::_1));
+
+// Halo exchange for all mapped pml properties
+#ifdef USE_MPI
+  // Run if there is more than a single MPI task
+  if (mpi_size_ > 1) {
+    // All reduce node boolean status of PML
+    mesh_->assign_pml_nodes();
+
+    // MPI all reduce nodal damped mass
+    mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+        std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                  "damped_masses", 0, Tdim),
+        std::bind(&mpm::NodeBase<Tdim>::update_property, std::placeholders::_1,
+                  false, "damped_masses", std::placeholders::_2, 0, Tdim));
+    // MPI all reduce nodal damped mass displacement
+    mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+        std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                  "damped_mass_displacements", 0, Tdim),
+        std::bind(&mpm::NodeBase<Tdim>::update_property, std::placeholders::_1,
+                  false, "damped_mass_displacements", std::placeholders::_2, 0,
+                  Tdim));
+
+    if (pml_type) {
+      // MPI all reduce nodal damped mass
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j1", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j1", std::placeholders::_2, 0,
+                    Tdim));
+      // MPI all reduce nodal damped mass displacement
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j2", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j2", std::placeholders::_2, 0,
+                    Tdim));
+      // MPI all reduce nodal damped mass
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j3", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j3", std::placeholders::_2, 0,
+                    Tdim));
+      // MPI all reduce nodal damped mass displacement
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_j4", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_j4", std::placeholders::_2, 0,
+                    Tdim));
+    }
+  }
+#endif
 
   // Recompute velocity for PML nodes
   mesh_->iterate_over_nodes_predicate(

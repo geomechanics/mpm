@@ -171,10 +171,6 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
   REQUIRE_NOTHROW(particle1->assign_volume(4.0));
   REQUIRE_NOTHROW(particle2->assign_volume(3.0));
 
-  // Assign zero mass
-  REQUIRE_NOTHROW(particle1->assign_mass(0.0));
-  REQUIRE_NOTHROW(particle2->assign_mass(0.0));
-
   SECTION("Check USF") {
     auto mpm_scheme = std::make_shared<mpm::MPMSchemeUSF<Dim>>(mesh, 0.01);
     // Phase
@@ -188,7 +184,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Mass momentum and compute velocity at nodes
     REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
+        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -199,14 +195,21 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
 
     // Particle kinematics
+    mpm::Damping damping_type = mpm::Damping::Cundall;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, false,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, false,
+        false));
+
+    damping_type = mpm::Damping::None;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, false,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, false,
+        false));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
@@ -230,7 +233,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Mass momentum and compute velocity at nodes
     REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
+        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -243,13 +246,18 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     // Particle kinematics
     mpm::Damping damping_type = mpm::Damping::Cundall;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
+        false));
+    damping_type = mpm::Damping::None;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
+        false));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
@@ -273,7 +281,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Mass momentum and compute velocity at nodes
     REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
+        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -286,13 +294,19 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     // Particle kinematics
     mpm::Damping damping_type = mpm::Damping::Cundall;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "Cundall", 0.02, step));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
+        false));
+
+    damping_type = mpm::Damping::None;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::FLIP, 1.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::FLIP, 1.0, phase, damping_type, 0.02, step, true,
+        false));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));
@@ -308,7 +322,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
   }
 
   SECTION("Check Newmark") {
-    auto mpm_scheme = std::make_shared<mpm::MPMSchemeNewmark<Dim>>(mesh, 0.01);
+    auto mpm_scheme = std::make_shared<mpm::MPMSchemeNewmark<Dim>>(mesh, 0.01, 0.25, 0.5, 0.0);
     // Phase
     unsigned phase = 0;
     // Step
@@ -320,7 +334,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
 
     // Mass momentum and compute velocity at nodes
     REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
+        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -335,9 +349,11 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     // Particle kinematics
     mpm::Damping damping_type = mpm::Damping::None;
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, true,
+        false));
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
-        mpm::VelocityUpdate::PIC, 0.0, phase, "None", 0.02, step));
+        mpm::VelocityUpdate::PIC, 0.0, phase, damping_type, 0.02, step, false,
+        false));
 
     // Update Stress Last
     REQUIRE_NOTHROW(mpm_scheme->postcompute_stress_strain(phase, true));

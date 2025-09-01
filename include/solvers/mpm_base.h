@@ -2,6 +2,7 @@
 #define MPM_MPM_BASE_H_
 
 #include <numeric>
+#include <sstream>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid.hpp>

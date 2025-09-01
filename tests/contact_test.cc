@@ -163,6 +163,7 @@ TEST_CASE("Contact test case", "[contact][friction][3D]") {
   SECTION("Check ContactFriction") {
 
     unsigned phase = 0;
+    unsigned step = 0;
 
     // Initialise material
     Json jmaterial;
@@ -208,7 +209,7 @@ TEST_CASE("Contact test case", "[contact][friction][3D]") {
 
     // Mass momentum and compute velocity at nodes
     REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase));
+        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
     // Contact compute forces
     REQUIRE_NOTHROW(contact->compute_contact_forces());
   }

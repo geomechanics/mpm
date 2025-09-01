@@ -10,6 +10,7 @@
 #include "cell.h"
 #include "logger.h"
 #include "math_utility.h"
+#include "math_utility.h"
 #include "particle_base.h"
 
 namespace mpm {
@@ -185,8 +186,13 @@ class Particle : public ParticleBase<Tdim> {
     return strain_rate_;
   };
 
-  //! Return dvolumetric strain of centroid
-  //! \retval dvolumetric strain at centroid
+  //! Assign dvolumetric strain
+  void assign_dvolumetric_strain(double dvol_strain) noexcept override {
+    dvolumetric_strain_ = dvol_strain;
+  }
+
+  //! Return dvolumetric strain
+  //! \retval dvolumetric strain
   double dvolumetric_strain() const override { return dvolumetric_strain_; }
 
   //! Assign deformation gradient increment
@@ -457,11 +463,12 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Compute strain and volume using nodal displacement
   //! \ingroup Implicit
-  void compute_strain_volume_newmark() noexcept override;
+  void compute_strain_volume_newmark(double dt) noexcept override;
 
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
-  void compute_stress_newmark() noexcept override;
+  //! \param[in] dt Analysis time step
+  void compute_stress_newmark(double dt) noexcept override;
 
   //! Return stress at the previous time step of the particle
   //! \ingroup Implicit
@@ -480,12 +487,13 @@ class Particle : public ParticleBase<Tdim> {
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  virtual void update_stress_strain(double dt) noexcept override;
+  void update_stress_strain(double dt) noexcept override;
 
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
-  void initialise_constitutive_law() noexcept override;
+  //! \param[in] dt Analysis time step
+  void initialise_constitutive_law(double dt) noexcept override;
   /**@}*/
 
   //! Map PML rayleigh damping force
@@ -551,7 +559,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] phase Index to indicate phase
   //! \retval strain increment at particle inside a cell
   virtual inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase) noexcept;
+      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept;
 
   //! Compute deformation gradient increment using nodal displacement
   //! \ingroup Implicit

@@ -246,7 +246,8 @@ class Particle : public ParticleBase<Tdim> {
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;
-
+  //! Map body force not gravity
+  void map_body_force_not_gravity() noexcept override;
   //! Map internal force
   inline void map_internal_force(double dt) noexcept override;
 
@@ -272,6 +273,11 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval status Assignment status
   bool assign_traction(unsigned direction, double traction) override;
 
+  //!  Assign body force to the particle
+  //! \param[in] direction Index corresponding to the direction of body force
+  //! \param[in] bodyforce Particle bodyforce in specified direction
+  //! \retval status Assignment status
+  bool assign_body_force(unsigned direction, double bodyforce) override;
   //! Return traction of the particle
   VectorDim traction() const override { return traction_; }
 
@@ -753,6 +759,9 @@ class Particle : public ParticleBase<Tdim> {
   bool set_traction_{false};
   //! Surface Traction (given as a stress; force/area)
   Eigen::Matrix<double, Tdim, 1> traction_;
+  //! Set bodyforce
+  bool set_bodyforce_{false};
+  Eigen::Matrix<double, Tdim, 1> body_force_;
   //! Shape functions
   Eigen::VectorXd shapefn_;
   //! dN/dX

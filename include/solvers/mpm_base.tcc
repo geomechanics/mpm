@@ -869,6 +869,32 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
         "#{}: Concentrated nodal forces are undefined; Concentrated nodal "
         "forces JSON data not found",
         __LINE__);
+  // Read and assign body forces
+  if (loads.find("particle_body_force") != loads.end()) {
+    for (const auto& bf : loads["particle_body_force"]) {
+      // Get the math function
+      std::shared_ptr<FunctionBase> bfunction = nullptr;
+      // If a math function is defined, set to function or use scalar
+      if (bf.find("math_function_id") != bf.end())
+        bfunction = math_functions_.at(
+            bf.at("math_function_id").template get<unsigned>());
+      // Set id
+      int pset_id = bf.at("pset_id").template get<int>();
+      // Direction
+      unsigned dir = bf.at("dir").template get<unsigned>();
+      // Body force magnitude
+      double amplitude = bf.at("amplitude").template get<double>();
+
+      // Create body forces
+      bool body_forces =
+          mesh_->create_particles_body_force(bfunction, pset_id, dir, amplitude);
+      if (!body_forces)
+        throw std::runtime_error(
+            "Body forces are not properly assigned");
+    }
+  } else
+    console_->warn("No body force is defined for the analysis");
+
 }
 
 //! Initialise math functions

@@ -2139,32 +2139,6 @@ void mpm::MPMBase<Tdim>::point_entity_sets(bool check_duplicates) {
   }
 }
 
-//! Point entity sets
-template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::point_entity_sets(bool check_duplicates) {
-  // Get mesh properties
-  auto mesh_props = io_->json_object("mesh");
-  // Read and assign point sets
-  try {
-    if (mesh_props.find("entity_sets") != mesh_props.end()) {
-      std::string entity_sets =
-          mesh_props["entity_sets"].template get<std::string>();
-      if (!io_->file_name(entity_sets).empty()) {
-        bool point_sets = mesh_->create_point_sets(
-            (io_->entity_sets(io_->file_name(entity_sets), "point_sets")),
-            check_duplicates);
-
-        if (!point_sets) throw std::runtime_error("Point set creation failed");
-      }
-    } else
-      throw std::runtime_error("Point entity set JSON not found");
-
-  } catch (std::exception& exception) {
-    console_->warn("#{}: Point sets are undefined {} ", __LINE__,
-                   exception.what());
-  }
-}
-
 // Initialise Damping
 template <unsigned Tdim>
 bool mpm::MPMBase<Tdim>::initialise_damping(const Json& damping_props) {

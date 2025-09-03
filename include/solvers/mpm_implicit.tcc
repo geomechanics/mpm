@@ -401,7 +401,8 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
                                 set_node_concentrated_force_, quasi_static_);
 
     // Add rayleigh damping to stiffness matrix and force
-    if (!quasi_static_ && pml_boundary_ && (!pml_type_ || damping_type_ == mpm::Damping::Rayleigh)) {
+    if (!quasi_static_ && pml_boundary_ &&
+        (!pml_type_ || damping_type_ == mpm::Damping::Rayleigh)) {
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::map_rayleigh_damping_matrix_to_cell,
           std::placeholders::_1, newmark_gamma_, newmark_beta_, dt_,

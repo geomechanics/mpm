@@ -484,8 +484,8 @@ class ParticleBase {
   //! \param[in] dt Analysis time step
   virtual void map_rayleigh_damping_force(double damping_factor, double dt) = 0;
 
-  //! Map gravity force 
-  //! \param[in] dt Analysis time step 
+  //! Map gravity force
+  //! \param[in] dt Analysis time step
   virtual void map_gravity_force(double dt) noexcept = 0;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium

@@ -60,7 +60,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Update volume based on deformation gradient increment
   //! Note: Volume is updated in compute_strain() and
   //! compute_strain_volume_newmark() for particle with finite strain
-  void update_volume() noexcept override{};
+  void update_volume() noexcept override {};
 
   //! Compute deformation gradient increment using nodal velocity
   //! \param[in] dt Analysis time step

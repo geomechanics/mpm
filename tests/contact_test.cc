@@ -208,8 +208,8 @@ TEST_CASE("Contact test case", "[contact][friction][3D]") {
     REQUIRE_NOTHROW(contact->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(
+        mpm::VelocityUpdate::FLIP, phase, step));
     // Contact compute forces
     REQUIRE_NOTHROW(contact->compute_contact_forces());
   }

@@ -1000,7 +1000,8 @@ void mpm::Particle<Tdim>::map_traction_force() noexcept {
 }
 // Assign body force to the particle
 template <unsigned Tdim>
-bool mpm::Particle<Tdim>::assign_body_force(unsigned direction, double bodyforce) {
+bool mpm::Particle<Tdim>::assign_body_force(unsigned direction,
+                                            double bodyforce) {
   bool status = false;
   try {
     if (direction >= Tdim ||

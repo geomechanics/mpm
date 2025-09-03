@@ -886,15 +886,13 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
       double amplitude = bf.at("amplitude").template get<double>();
 
       // Create body forces
-      bool body_forces =
-          mesh_->create_particles_body_force(bfunction, pset_id, dir, amplitude);
+      bool body_forces = mesh_->create_particles_body_force(bfunction, pset_id,
+                                                            dir, amplitude);
       if (!body_forces)
-        throw std::runtime_error(
-            "Body forces are not properly assigned");
+        throw std::runtime_error("Body forces are not properly assigned");
     }
   } else
     console_->warn("No body force is defined for the analysis");
-
 }
 
 //! Initialise math functions

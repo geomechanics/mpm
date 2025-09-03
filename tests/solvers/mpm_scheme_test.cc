@@ -183,8 +183,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(
+        mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -232,8 +232,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(
+        mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -280,8 +280,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(
+        mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
@@ -322,7 +322,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
   }
 
   SECTION("Check Newmark") {
-    auto mpm_scheme = std::make_shared<mpm::MPMSchemeNewmark<Dim>>(mesh, 0.01, 0.25, 0.5, 0.0);
+    auto mpm_scheme = std::make_shared<mpm::MPMSchemeNewmark<Dim>>(
+        mesh, 0.01, 0.25, 0.5, 0.0);
     // Phase
     unsigned phase = 0;
     // Step
@@ -333,8 +334,8 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->initialise());
 
     // Mass momentum and compute velocity at nodes
-    REQUIRE_NOTHROW(
-        mpm_scheme->compute_nodal_kinematics(mpm::VelocityUpdate::FLIP, phase, step));
+    REQUIRE_NOTHROW(mpm_scheme->compute_nodal_kinematics(
+        mpm::VelocityUpdate::FLIP, phase, step));
 
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));

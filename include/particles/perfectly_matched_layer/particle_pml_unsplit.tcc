@@ -166,7 +166,8 @@ void mpm::ParticleUPML<Tdim>::map_pml_properties_to_nodes() noexcept {
   const auto& Fe = this->evanescent_damping_functions();
 
   // Damping scalar
-  Eigen::Matrix<double, Tdim, 1>  f_M = Fe.prod() * Eigen::Matrix<double, Tdim, 1>::Ones();
+  Eigen::Matrix<double, Tdim, 1> f_M =
+      Fe.prod() * Eigen::Matrix<double, Tdim, 1>::Ones();
 
   // Map damped mass, displacement vector to nodal property
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -199,7 +200,8 @@ void mpm::ParticleUPML<Tdim>::map_body_force(
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::map_internal_force(double dt) noexcept {
   // Call damping functions and pass for efficiency
-  // Reduces number of normal_damping_function calls by 2. Evanescent included for consistency
+  // Reduces number of normal_damping_function calls by 2. Evanescent included
+  // for consistency
   const auto& Fe = this->evanescent_damping_functions();
   const auto& Fp = this->normal_damping_functions();
 
@@ -218,7 +220,8 @@ void mpm::ParticleUPML<Tdim>::map_internal_force(double dt) noexcept {
 
 //! Compute internal force from total displacement
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_internal_force_disp(const Eigen::VectorXd& Fp, double dt) noexcept {
+void mpm::ParticleUPML<Tdim>::map_internal_force_disp(const Eigen::VectorXd& Fp,
+                                                      double dt) noexcept {
   unsigned phase = mpm::ParticlePhase::SinglePhase;
   // Calculate damping value
   double f_H = Fp.prod();
@@ -234,7 +237,8 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_disp(const Eigen::VectorXd& Fp,
 
 //! Compute internal force from strain
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_internal_force_strain(const Eigen::VectorXd& Fe, const Eigen::VectorXd& Fp, double dt) noexcept {
+void mpm::ParticleUPML<Tdim>::map_internal_force_strain(
+    const Eigen::VectorXd& Fe, const Eigen::VectorXd& Fp, double dt) noexcept {
   // Call reduced material and strain information
   const auto& de = this->reduce_dmatrix(this->constitutive_matrix_);
   auto strain = this->reduce_voigt(this->strain_);
@@ -272,7 +276,8 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_strain(const Eigen::VectorXd& F
 
 //! Compute internal force from stress
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_internal_force_stress(const Eigen::VectorXd& Fp) noexcept {
+void mpm::ParticleUPML<Tdim>::map_internal_force_stress(
+    const Eigen::VectorXd& Fp) noexcept {
   // Call reduced stress information
   auto stress_2int = this->reduce_voigt(this->call_state_var(false));
 
@@ -662,7 +667,7 @@ void mpm::ParticleUPML<Tdim>::compute_damping_functions(
       (this->material())
           ->template property<double>(std::string("damping_power"));
   const double& boundary_thickness = state_vars.at("boundary_thickness");
-  
+
   const double& multiplier = std::pow(1.0 / boundary_thickness, dpower);
 
   // Compute damping functions in state variables

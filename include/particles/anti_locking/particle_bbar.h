@@ -78,7 +78,8 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   //! \param[in] phase Index to indicate phase
   //! \retval strain increment at particle inside a cell
   inline Eigen::Matrix<double, 6, 1> compute_strain_increment(
-      const Eigen::MatrixXd& dn_dx, unsigned phase, double dt) noexcept override;
+      const Eigen::MatrixXd& dn_dx, unsigned phase,
+      double dt) noexcept override;
   /**@}*/
 
  protected:

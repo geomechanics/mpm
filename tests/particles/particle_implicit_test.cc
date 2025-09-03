@@ -386,7 +386,8 @@ TEST_CASE("Implicit Particle is checked for 2D case",
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location
-    REQUIRE_NOTHROW(particle->compute_updated_position_newmark(dt, newmark_gamma, step));
+    REQUIRE_NOTHROW(
+        particle->compute_updated_position_newmark(dt, newmark_gamma, step));
     // Check particle displacement
     Eigen::Vector2d displacement;
     displacement << 0., 0.1875;
@@ -837,7 +838,8 @@ TEST_CASE("Implicit Particle is checked for 3D case",
       REQUIRE(coordinates(i) == Approx(coords(i)).epsilon(Tolerance));
 
     // Compute updated particle location
-    REQUIRE_NOTHROW(particle->compute_updated_position_newmark(dt, newmark_gamma, step));
+    REQUIRE_NOTHROW(
+        particle->compute_updated_position_newmark(dt, newmark_gamma, step));
     // Check particle displacement
     Eigen::Vector3d displacement;
     displacement << 0.0, 0.5875, 1.175;

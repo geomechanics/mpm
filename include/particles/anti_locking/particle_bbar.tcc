@@ -223,7 +223,8 @@ inline Eigen::MatrixXd mpm::ParticleBbar<3>::compute_bmatrix() noexcept {
 template <>
 inline Eigen::Matrix<double, 6, 1>
     mpm::ParticleBbar<1>::compute_strain_increment(const Eigen::MatrixXd& dn_dx,
-                                                   unsigned phase, double dt) noexcept {
+                                                   unsigned phase,
+                                                   double dt) noexcept {
   // Define strain rincrement
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -241,7 +242,8 @@ inline Eigen::Matrix<double, 6, 1>
 template <>
 inline Eigen::Matrix<double, 6, 1>
     mpm::ParticleBbar<2>::compute_strain_increment(const Eigen::MatrixXd& dn_dx,
-                                                   unsigned phase, double dt) noexcept {
+                                                   unsigned phase,
+                                                   double dt) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();
@@ -267,7 +269,8 @@ inline Eigen::Matrix<double, 6, 1>
 template <>
 inline Eigen::Matrix<double, 6, 1>
     mpm::ParticleBbar<3>::compute_strain_increment(const Eigen::MatrixXd& dn_dx,
-                                                   unsigned phase, double dt) noexcept {
+                                                   unsigned phase,
+                                                   double dt) noexcept {
   // Define strain increment
   Eigen::Matrix<double, 6, 1> strain_increment =
       Eigen::Matrix<double, 6, 1>::Zero();

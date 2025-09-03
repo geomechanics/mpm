@@ -89,10 +89,9 @@ class LinearElastic : public Material<Tdim> {
   //! \param[in] state_vars History-dependent state variables
   //! \retval updated_stress Updated value of stress with Jaumann rate
   Vector6d compute_jaumann_stress(const Vector6d& stress,
-                                   const Vector6d& dstrain,
-                                   const Matrix6x6& de,
-                                   const ParticleBase<Tdim>* ptr,
-                                   mpm::dense_map* state_vars);
+                                  const Vector6d& dstrain, const Matrix6x6& de,
+                                  const ParticleBase<Tdim>* ptr,
+                                  mpm::dense_map* state_vars);
 
   //! Compute stress using objective algorithm assuming Green-Naghdi rate
   //! \param[in] stress Stress (Voigt)
@@ -102,11 +101,11 @@ class LinearElastic : public Material<Tdim> {
   //! \param[in] state_vars History-dependent state variables
   //! \retval updated_stress Updated value of stress with Green-Naghdi rate
   Vector6d compute_green_naghdi_stress(const Vector6d& stress,
-                                        const Vector6d& dstrain,
-                                        const Matrix6x6& de,
-                                        const ParticleBase<Tdim>* ptr,
-                                        mpm::dense_map* state_vars);
- 
+                                       const Vector6d& dstrain,
+                                       const Matrix6x6& de,
+                                       const ParticleBase<Tdim>* ptr,
+                                       mpm::dense_map* state_vars);
+
  private:
   //! Compute elastic tensor
   bool compute_elastic_tensor();

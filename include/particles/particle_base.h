@@ -483,6 +483,7 @@ class ParticleBase {
   //! \param[in] damping_factor Rayleigh damping factor
   //! \param[in] dt parameter beta of Newmark scheme
   virtual void map_rayleigh_damping_force(double damping_factor, double dt) = 0;
+  virtual void map_gravity_force(double dt) noexcept = 0;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)

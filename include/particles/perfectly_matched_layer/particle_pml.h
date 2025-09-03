@@ -82,6 +82,8 @@ class ParticlePML : public mpm::Particle<Tdim> {
 
   //! Map internal force
   virtual void map_internal_force(double dt) noexcept override;
+
+  //! Map gravity force
   void map_gravity_force(double dt) noexcept override;
   /**@}*/
 

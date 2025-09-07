@@ -150,8 +150,10 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 
       // Apply particle traction and map to nodes
       mesh_->apply_traction_on_particles(step * dt_);
+
       // Apply body force on particles
       mesh_->apply_body_force_on_particles(step * dt_);
+
       // Iterate over each node to add concentrated node force to external
       // force
       if (concentrated_nodal_forces)

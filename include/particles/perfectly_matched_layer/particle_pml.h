@@ -2,6 +2,7 @@
 #define MPM_PARTICLE_PML_H_
 
 #include <array>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>

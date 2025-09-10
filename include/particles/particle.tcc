@@ -977,7 +977,9 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
           "Particle traction property: volume / direction is invalid");
     }
     // Assign traction
-    traction_(direction) = traction * this->volume_ / this->size_(direction);
+    // Compute size of particle in each direction
+    const double length = std::pow(this->volume_, static_cast<double>(1. / Tdim));
+    traction_(direction) = traction * this->volume_ / length;
     status = true;
     this->set_traction_ = true;
   } catch (std::exception& exception) {

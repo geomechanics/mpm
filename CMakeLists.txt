@@ -49,7 +49,10 @@ option(USE_PETSC "Use PETSC solver library" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # Boost Archive
-find_package(Boost REQUIRED COMPONENTS filesystem system)
+find_package(Boost REQUIRED COMPONENTS filesystem)
+if(Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 69)
+  find_package(Boost REQUIRED COMPONENTS filesystem system)
+endif()
 include_directories(${BOOST_INCLUDE_DIRS})
 link_libraries(${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 
@@ -263,6 +266,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/io/vtk_writer_test.cc
     ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/bingham_viscoplastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/linear_elastic_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/modified_cam_clay_test.cc

@@ -19,6 +19,8 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
 
   const unsigned Dim = 3;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -181,8 +183,8 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     material->initialise(&state_vars);
 
     // Compute stress
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) == Approx(-193727.6266809207).epsilon(Tolerance));
@@ -194,7 +196,7 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
@@ -255,8 +257,8 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     material->initialise(&state_vars);
 
     // Compute stress
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) == Approx(-192882.4825752268).epsilon(Tolerance));
@@ -272,7 +274,7 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
@@ -339,8 +341,8 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     material->initialise(&state_vars);
 
     // Compute stress
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) == Approx(-193727.6266809207).epsilon(Tolerance));
@@ -355,7 +357,7 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
@@ -416,8 +418,8 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
     material->initialise(&state_vars);
 
     // Compute stress
-    auto updated_stress =
-        material->compute_stress(stress, dstrain, particle.get(), &state_vars);
+    auto updated_stress = material->compute_stress(
+        stress, dstrain, particle.get(), &state_vars, dt);
 
     // Check stresses
     REQUIRE(updated_stress(0) == Approx(-162537.902087049).epsilon(Tolerance));
@@ -435,7 +437,7 @@ TEST_CASE("Modified cam clay undrained condition is checked in 3D",
 
     // Compute consistent tangent matrix
     auto dep = material->compute_consistent_tangent_matrix(
-        updated_stress, stress, dstrain, particle.get(), &state_vars);
+        updated_stress, stress, dstrain, particle.get(), &state_vars, dt);
 
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;

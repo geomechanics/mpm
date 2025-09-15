@@ -21,6 +21,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
   const unsigned Dim = 2;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -42,6 +44,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["packing_fraction"] = 0.6;
+  jmaterial["packing_fraction_minimum"] = 0.4;
 
   //! Check for id = 0
   SECTION("MohrCoulomb id is zero") {
@@ -102,6 +106,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
     REQUIRE(material->template property<double>("tension_cutoff") ==
             Approx(jmaterial["tension_cutoff"]).epsilon(Tolerance));
+    REQUIRE(material->template property<double>("packing_fraction") ==
+            Approx(jmaterial["packing_fraction"]).epsilon(Tolerance));
 
     // Check if state variable is initialised
     SECTION("State variable is initialised") {
@@ -129,6 +135,118 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
     }
   }
 
+  //! Check separation state
+  SECTION("MohrCoulomb check separation state") {
+    unsigned id = 0;
+    auto material =
+        Factory<mpm::Material<Dim>, unsigned, const Json&>::instance()->create(
+            "MohrCoulomb2D", std::move(0), jmaterial);
+
+    auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
+
+    REQUIRE(material->id() == 0);
+
+    // Coordinates of nodes for the cell
+    mpm::Index cell_id = 0;
+    const unsigned Dof = 2;
+    const unsigned Nphases = 1;
+    const unsigned Nnodes = 4;
+
+    coords << -2, -2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node0 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(0, coords);
+    coords << 2, -2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node1 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(1, coords);
+    coords << 2, 2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node2 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(2, coords);
+    coords << -2, 2;
+    std::shared_ptr<mpm::NodeBase<Dim>> node3 =
+        std::make_shared<mpm::Node<Dim, Dof, Nphases>>(3, coords);
+
+    std::shared_ptr<mpm::Element<Dim>> shapefn =
+        Factory<mpm::Element<Dim>>::instance()->create("ED2Q4");
+
+    node0->assign_velocity_constraint(0, 0.02);
+    node0->assign_velocity_constraint(1, 0.03);
+    node0->apply_velocity_constraints();
+
+    auto cell = std::make_shared<mpm::Cell<Dim>>(cell_id, Nnodes, shapefn);
+
+    cell->add_node(0, node0);
+    cell->add_node(1, node1);
+    cell->add_node(2, node2);
+    cell->add_node(3, node3);
+
+    // Initialise cell
+    REQUIRE(cell->initialise() == true);
+    // Check if cell is initialised, after addition of nodes
+    REQUIRE(cell->is_initialised() == true);
+
+    particle->assign_cell(cell);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
+    particle->assign_dvolumetric_strain(1.0);
+    particle->update_volume();
+
+    // Initialise stress
+    mpm::Material<Dim>::Vector6d stress;
+    stress.setZero();
+    stress(0) = -5000.;
+    stress(1) = -6000.;
+    stress(2) = -7000.;
+    stress(3) = -1000.;
+
+    // Initialise incremental of strain
+    mpm::Material<Dim>::Vector6d dstrain;
+    dstrain.setZero();
+    dstrain(0) = -0.001;
+    dstrain(1) = 0.;
+    dstrain(2) = 0.;
+    dstrain(3) = 0.;
+
+    // Initialise state variables
+    mpm::dense_map state_variables = material->initialise_state_variables();
+
+    // Initialise elastic state
+    material->initialise(&state_variables);
+
+    // Check compute stress
+    mpm::Material<Dim>::Vector6d updated_stress = mohr_coulomb->compute_stress(
+        stress, dstrain, particle.get(), &state_variables, dt);
+
+    // Check update stress
+    REQUIRE(updated_stress(0) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(3) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(4) == Approx(0.).epsilon(Tolerance));
+    REQUIRE(updated_stress(5) == Approx(0.).epsilon(Tolerance));
+
+    // Compute consistent tangent matrix
+    auto dep = material->compute_consistent_tangent_matrix(
+        updated_stress, stress, dstrain, particle.get(), &state_variables, dt);
+
+    // Values of reduced constitutive relations matrix
+    Eigen::Matrix<double, 6, 6> dep_check;
+    // clang-format off
+            dep_check << 0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0,
+                         0,  0,  0,  0,  0,  0;
+    // clang-format on
+    // Check cell stiffness matrix
+    for (unsigned i = 0; i < dep.rows(); ++i)
+      for (unsigned j = 0; j < dep.cols(); ++j)
+        REQUIRE(dep(i, j) == Approx(dep_check(i, j)).epsilon(Tolerance));
+  }
+
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
     unsigned id = 0;
@@ -139,6 +257,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -299,7 +422,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) ==
               Approx(-16697.4520573296).epsilon(Tolerance));
@@ -313,7 +436,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -404,7 +528,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-920.7979744249).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-4207.8691181054).epsilon(Tolerance));
@@ -415,7 +539,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -444,6 +569,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -602,7 +732,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(0.).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-1348.42814081).epsilon(Tolerance));
@@ -613,7 +743,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -642,6 +773,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
 
   const unsigned Dim = 2;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -663,6 +796,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["packing_fraction"] = 0.6;
+  jmaterial["packing_fraction_minimum"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -674,6 +809,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -836,7 +976,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-4615.3075306146).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-5748.3019110924).epsilon(Tolerance));
@@ -847,7 +987,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -938,7 +1079,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-58.2831643542).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-4519.4698892777).epsilon(Tolerance));
@@ -949,7 +1090,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -978,6 +1120,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -1138,7 +1285,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-1790.7690510275).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-5719.5499679831).epsilon(Tolerance));
@@ -1149,7 +1296,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -1178,6 +1326,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
 
   const unsigned Dim = 2;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -1199,6 +1349,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["porosity"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -1210,6 +1361,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -1279,7 +1435,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
                                 &df_dsigma, &dp_dsigma, &dp_dq, &softening);
-    ;
+
     // Check plastic correction component based on stress
     // Check dF/dSigma
     REQUIRE(df_dsigma(0) == Approx(0.62666187).epsilon(Tolerance));
@@ -1369,7 +1525,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-5508.1587191762).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-6766.3597033789).epsilon(Tolerance));
@@ -1380,7 +1536,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -1471,7 +1628,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-58.2831643542).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-4519.4698892777).epsilon(Tolerance));
@@ -1482,7 +1639,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -1511,6 +1669,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Initialise stress
     mpm::Material<Dim>::Vector6d stress;
@@ -1670,7 +1833,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-2277.6593888847).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-6762.4063766522).epsilon(Tolerance));
@@ -1681,7 +1844,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -1710,6 +1874,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
 
   const unsigned Dim = 2;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -1731,6 +1897,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
   jmaterial["peak_pdstrain"] = 0.;
   jmaterial["residual_pdstrain"] = 0.001;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["porosity"] = 0.4;
+  jmaterial["kx"] = 5.e-6;
+  jmaterial["ky"] = 5.e-6;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -1742,6 +1911,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =
@@ -1915,7 +2089,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) ==
               Approx(-6033.5560234765).epsilon(Tolerance_stress));
@@ -1934,7 +2108,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -2075,7 +2250,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-5508.1587191762).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-6766.3597033789).epsilon(Tolerance));
@@ -2090,7 +2265,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -2245,7 +2421,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-4826.1458346954).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-5054.6398805243).epsilon(Tolerance));
@@ -2260,7 +2436,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -2289,6 +2466,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =
@@ -2463,7 +2645,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) ==
               Approx(-3619.2832146878).epsilon(Tolerance_stress));
@@ -2482,7 +2664,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -2624,7 +2807,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-1350.6363584257).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-5681.3871173645).epsilon(Tolerance));
@@ -2639,7 +2822,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -2794,7 +2978,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-5020.5904156363).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-5199.8658146281).epsilon(Tolerance));
@@ -2809,7 +2993,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -2838,6 +3023,8 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
 
   const unsigned Dim = 3;
 
+  const double dt = 1.0;
+
   // Add particle
   mpm::Index pid = 0;
   Eigen::Matrix<double, Dim, 1> coords;
@@ -2859,6 +3046,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
   jmaterial["peak_pdstrain"] = 1.E-16;
   jmaterial["residual_pdstrain"] = 0.001;
   jmaterial["tension_cutoff"] = 0.;
+  jmaterial["porosity"] = 0.4;
 
   //! Check yield correction based on trial stress
   SECTION("MohrCoulomb check yield correction based on trial stress") {
@@ -2870,6 +3058,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =
@@ -3052,7 +3245,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) ==
               Approx(-7322.6057761629).epsilon(Tolerance_stress));
@@ -3073,7 +3266,8 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -3223,7 +3417,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-7093.4329819478).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-7149.3913315503).epsilon(Tolerance));
@@ -3238,7 +3432,8 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -3401,7 +3596,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-4747.3896037574).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-4876.3051981213).epsilon(Tolerance));
@@ -3416,7 +3611,8 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -3445,6 +3641,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
     auto mohr_coulomb = std::make_shared<mpm::MohrCoulomb<Dim>>(id, jmaterial);
 
     REQUIRE(material->id() == 0);
+
+    // Assign particle mass and volume
+    particle->assign_volume(1.0);
+    particle->assign_material(mohr_coulomb, 0);
+    particle->compute_mass();
 
     // Calculate modulus values
     const double K =
@@ -3628,7 +3829,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) ==
               Approx(-3505.5428972498).epsilon(Tolerance_stress));
@@ -3649,7 +3850,8 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -3800,7 +4002,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-1586.3024514519).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-5772.7074804481).epsilon(Tolerance));
@@ -3815,7 +4017,8 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;
@@ -3978,7 +4181,7 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check compute stress
       mpm::Material<Dim>::Vector6d updated_stress =
           mohr_coulomb->compute_stress(stress, dstrain, particle.get(),
-                                       &state_variables);
+                                       &state_variables, dt);
       // Check update stress
       REQUIRE(updated_stress(0) == Approx(-4206.8535416451).epsilon(Tolerance));
       REQUIRE(updated_stress(1) == Approx(-5293.085016198).epsilon(Tolerance));
@@ -3993,7 +4196,8 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
 
       // Compute consistent tangent matrix
       auto dep = material->compute_consistent_tangent_matrix(
-          updated_stress, stress, dstrain, particle.get(), &state_variables);
+          updated_stress, stress, dstrain, particle.get(), &state_variables,
+          dt);
 
       // Values of reduced constitutive relations matrix
       Eigen::Matrix<double, 6, 6> dep_check;

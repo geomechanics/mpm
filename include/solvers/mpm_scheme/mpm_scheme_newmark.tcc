@@ -32,7 +32,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Initialise material
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
-                    std::placeholders::_1));
+                    std::placeholders::_1, dt_));
     }
 
     // Spawn a task for points
@@ -115,8 +115,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
   if (pressure_smoothing) this->pressure_smoothing(phase);
 
   // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::compute_stress_newmark, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::compute_stress_newmark,
+                std::placeholders::_1, dt_));
 }
 
 //! Precompute stresses and strains
@@ -204,8 +205,9 @@ template <unsigned Tdim>
 inline void
     mpm::MPMSchemeNewmark<Tdim>::update_particle_stress_strain_volume() {
   // Iterate over each particle to update particle stress and strain
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::update_stress_strain, std::placeholders::_1));
+  mesh_->iterate_over_particles(
+      std::bind(&mpm::ParticleBase<Tdim>::update_stress_strain,
+                std::placeholders::_1, dt_));
 }
 
 //! Postcompute nodal kinematics - map mass and momentum to nodes

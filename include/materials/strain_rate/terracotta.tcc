@@ -152,35 +152,38 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   const double current_tm = (*state_vars).at("tm");
   double new_tm = current_tm;
 
-  // Start Newton-Raphson iteration for meso-scale temperature
-  unsigned iter = 0;
-  double initial_rt;
-  double rt_m, jac_rt_m;
-  const double A = (alpha_ * std::pow(vol_strain_rate, 2) +
-                    beta_ * std::pow(dev_strain_rate, 2)) *
-                   separation_multiplier;
+  // Only update new_tm if the current_tm is non-zero
+  if (!(new_tm < std::numeric_limits<double>::epsilon())) {
+    // Start Newton-Raphson iteration for meso-scale temperature
+    unsigned iter = 0;
+    double initial_rt;
+    double rt_m, jac_rt_m;
+    const double A = (alpha_ * std::pow(vol_strain_rate, 2) +
+                      beta_ * std::pow(dev_strain_rate, 2)) *
+                     separation_multiplier;
 
-  while (iter < max_iter_) {
-    const double tm_rate = A - eta_ * std::pow(new_tm, 2);
+    while (iter < max_iter_) {
+      const double tm_rate = A - eta_ * std::pow(new_tm, 2);
 
-    rt_m = new_tm - current_tm - dt * (tm_rate);
+      rt_m = new_tm - current_tm - dt * (tm_rate);
 
-    // Check convergence based on residual norm
-    if (iter == 0)
-      initial_rt = rt_m;
-    else {
-      if (rt_m / initial_rt < rel_tol_) break;
+      // Check convergence based on residual norm
+      if (iter == 0)
+        initial_rt = rt_m;
+      else {
+        if (rt_m / initial_rt < rel_tol_) break;
+      }
+
+      // Compute Jacobian
+      jac_rt_m = 1.0 + dt * (2.0 * eta_ * new_tm);
+
+      // Update meso-scale temperature
+      const double delta_tm = -rt_m / jac_rt_m;
+      new_tm += delta_tm;
+
+      // Increment iteration counter
+      iter++;
     }
-
-    // Compute Jacobian
-    jac_rt_m = 1.0 + dt * (2.0 * eta_ * new_tm);
-
-    // Update meso-scale temperature
-    const double delta_tm = -rt_m / jac_rt_m;
-    new_tm += delta_tm;
-
-    // Increment iteration counter
-    iter++;
   }
 
   // Update stress and state variables

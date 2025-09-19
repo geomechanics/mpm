@@ -122,6 +122,16 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   // for this model since phi will be used in computing the stiffness
   // current_packing_fraction = std::min(current_packing_fraction, 1.0);
 
+  // Convert dstrain to Mandel's notation
+  Vector6d dstrain_mandel = dstrain;
+  dstrain_mandel.tail(3) *= 0.5 * std::sqrt(2.0);
+
+  // Strain increment decomposition (vol strain rate is positive in compression)
+  Vector6d dstrain_dev = dstrain_mandel;
+  const double dvol_strain = -dstrain_mandel.head(3).sum();
+  dstrain_dev.head(3).noalias() +=
+      (1.0 / 3.0) * Eigen::Vector3d::Constant(dvol_strain);
+
   // Get strain rate
   auto strain_rate = ptr->strain_rate();
   // Convert strain rate to rate of deformation tensor
@@ -129,16 +139,13 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   // Convert strain rate to Mandel's notation
   strain_rate.tail(3) *= std::sqrt(2.0);
 
-  // Strain decomposition (vol strain rate is positive in compression)
+  // Strain rate decomposition (vol strain rate is positive in compression)
   Vector6d strain_rate_dev = strain_rate;
   const double vol_strain_rate = -strain_rate.head(3).sum();
   strain_rate_dev.head(3).noalias() +=
       (1.0 / 3.0) * Eigen::Vector3d::Constant(vol_strain_rate);
   const double dev_strain_rate =
       std::sqrt(2.0 / 3.0 * strain_rate_dev.dot(strain_rate_dev));
-  Vector6d n_d = Vector6d::Zero();
-  if (dev_strain_rate > std::numeric_limits<double>::epsilon())
-    n_d = strain_rate_dev / (std::sqrt(3.0 / 2.0) * dev_strain_rate);
 
   // Switch for granular separation
   bool separation_state = false;
@@ -261,10 +268,9 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     while (iter < max_iter_) {
       // Compute residuals
       res_m(0) = new_vol_elastic_strain - current_vol_elastic_strain -
-                 vol_strain_rate * dt +
-                 new_tm * dt * (a * pe_m + b_m.dot(se_m));
+                 dvol_strain + dt * new_tm * (a * pe_m + b_m.dot(se_m));
       res_m.tail(6) = new_elastic_strain_dev - current_elastic_strain_dev -
-                      dt * (strain_rate_dev - new_tm * (b_m * pe_m + c * se_m));
+                      dstrain_dev + dt * new_tm * (b_m * pe_m + c * se_m);
 
       // Check convergence based on residual norm
       if (res_m.norm() < abs_tol_) break;

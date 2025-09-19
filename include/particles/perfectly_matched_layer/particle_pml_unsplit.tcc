@@ -216,6 +216,10 @@ void mpm::ParticleUPML<Tdim>::map_internal_force(double dt) noexcept {
 
   // Compute internal force from stiffness
   this->map_internal_force_stiffness(dt);
+
+  // Map anti-body force from initialized stress if any
+  if (stress_.norm() > std::numeric_limits<double>::epsilon())
+    this->map_anti_body_force(dt);
 }
 
 //! Compute internal force from total displacement

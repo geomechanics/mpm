@@ -60,7 +60,7 @@ class ParticleBase {
   ParticleBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~ParticleBase(){};
+  virtual ~ParticleBase() {};
 
   //! Delete copy constructor
   ParticleBase(const ParticleBase<Tdim>&) = delete;
@@ -483,10 +483,6 @@ class ParticleBase {
   //! \param[in] damping_factor Rayleigh damping factor
   //! \param[in] dt Analysis time step
   virtual void map_rayleigh_damping_force(double damping_factor, double dt) = 0;
-
-  //! Map gravity force
-  //! \param[in] dt Analysis time step
-  virtual void map_gravity_force(double dt) noexcept = 0;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)

@@ -412,11 +412,6 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::map_rayleigh_damping_force,
                     std::placeholders::_1, damping_factor_, dt_));
-
-      // Iterate over each particle to compute nodal gravity force
-      mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::map_gravity_force,
-                    std::placeholders::_1, dt_));
     }
 
     // Assemble global stiffness matrix

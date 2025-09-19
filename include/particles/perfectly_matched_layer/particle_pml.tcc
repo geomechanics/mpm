@@ -265,14 +265,15 @@ void mpm::ParticlePML<Tdim>::map_body_force(
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,
                                      (pgravity * mass_ * shapefn_(i)));
 }
+
 //! Map internal force
 template <>
-void mpm::ParticlePML<1>::map_gravity_force(double dt) noexcept {
+void mpm::ParticlePML<1>::map_anti_body_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 1, 1> force;
-    force[0] = -1. * dn_dx_(i, 0) * volume_ * initial_stress_[0];
+    force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
@@ -280,15 +281,13 @@ void mpm::ParticlePML<1>::map_gravity_force(double dt) noexcept {
 
 //! Map internal force
 template <>
-void mpm::ParticlePML<2>::map_gravity_force(double dt) noexcept {
+void mpm::ParticlePML<2>::map_anti_body_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 2, 1> force;
-    force[0] =
-        dn_dx_(i, 0) * initial_stress_[0] + dn_dx_(i, 1) * initial_stress_[3];
-    force[1] =
-        dn_dx_(i, 1) * initial_stress_[1] + dn_dx_(i, 0) * initial_stress_[3];
+    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
+    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
 
     force *= -1. * this->volume_;
 
@@ -298,22 +297,19 @@ void mpm::ParticlePML<2>::map_gravity_force(double dt) noexcept {
 
 //! Map internal force
 template <>
-void mpm::ParticlePML<3>::map_gravity_force(double dt) noexcept {
+void mpm::ParticlePML<3>::map_anti_body_force(double dt) noexcept {
   // Compute nodal internal forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     // Compute force: -pstress * volume
     Eigen::Matrix<double, 3, 1> force;
-    force[0] = dn_dx_(i, 0) * initial_stress_[0] +
-               dn_dx_(i, 1) * initial_stress_[3] +
-               dn_dx_(i, 2) * initial_stress_[5];
+    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
+               dn_dx_(i, 2) * stress_[5];
 
-    force[1] = dn_dx_(i, 1) * initial_stress_[1] +
-               dn_dx_(i, 0) * initial_stress_[3] +
-               dn_dx_(i, 2) * initial_stress_[4];
+    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
+               dn_dx_(i, 2) * stress_[4];
 
-    force[2] = dn_dx_(i, 2) * initial_stress_[2] +
-               dn_dx_(i, 1) * initial_stress_[4] +
-               dn_dx_(i, 0) * initial_stress_[5];
+    force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
+               dn_dx_(i, 0) * stress_[5];
 
     force *= -1. * this->volume_;
 
@@ -406,6 +402,10 @@ void mpm::ParticlePML<Tdim>::map_internal_force(double dt) noexcept {
     force *= -1. * this->volume_;
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
   }
+
+  // Map anti-body force from initialized stress if any
+  if (stress_.norm() > std::numeric_limits<double>::epsilon())
+    this->map_anti_body_force(dt);
 }
 
 //! Function to update pml displacement functions
@@ -901,4 +901,35 @@ inline Eigen::MatrixXd
   }
 
   return local_stiffness;
+}
+
+// Compute stress using implicit updating scheme
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::compute_stress_newmark(double dt) noexcept {
+  // Check if material ptr is valid
+  assert(this->material() != nullptr);
+
+  // Compute current consititutive matrix
+  this->constitutive_matrix_ =
+      material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
+          stress_, previous_stress_, dstrain_, this,
+          &state_variables_[mpm::ParticlePhase::Solid], dt);
+}
+
+// Update stress and strain after convergence of Newton-Raphson iteration
+template <unsigned Tdim>
+void mpm::ParticlePML<Tdim>::update_stress_strain(double dt) noexcept {
+  // Update total strain
+  this->strain_.noalias() += this->dstrain_;
+
+  // Reset strain increment
+  this->dstrain_.setZero();
+  this->dvolumetric_strain_ = 0.;
+
+  // Update deformation gradient
+  this->deformation_gradient_ =
+      this->deformation_gradient_increment_ * this->deformation_gradient_;
+
+  // Reset deformation gradient increment
+  this->deformation_gradient_increment_.setIdentity();
 }

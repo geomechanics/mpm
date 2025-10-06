@@ -2303,16 +2303,18 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
             "kernel_correction_tolerance", kc_tolerance));
 
         // Iterate over node type
-        for (const auto& node_type :
-             mesh_props["nonlocal_mesh_properties"]["node_types"]) {
-          // Set id
-          int nset_id = node_type.at("nset_id").template get<int>();
-          // Direction
-          unsigned dir = node_type.at("dir").template get<unsigned>();
-          // Type
-          unsigned type = node_type.at("type").template get<unsigned>();
-          // Assign nodal nonlocal type
-          mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+        if (!kernel_correction) {
+          for (const auto& node_type :
+               mesh_props["nonlocal_mesh_properties"]["node_types"]) {
+            // Set id
+            int nset_id = node_type.at("nset_id").template get<int>();
+            // Direction
+            unsigned dir = node_type.at("dir").template get<unsigned>();
+            // Type
+            unsigned type = node_type.at("type").template get<unsigned>();
+            // Assign nodal nonlocal type
+            mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+          }
         }
       }
     }

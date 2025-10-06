@@ -6,7 +6,7 @@ using Json = nlohmann::json;
 
 #include "io_mesh_ascii.h"
 
-// Check IOMeshAscii
+//! \brief Check IOMeshAscii for 2D
 TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
 
   // Dimension
@@ -188,6 +188,74 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
                   Approx(coordinates[i][j]).epsilon(Tolerance));
         }
       }
+    }
+  }
+
+  SECTION("Check levelset file") {
+    // Vector of levelset inputs
+    std::vector<std::tuple<mpm::Index, double, double, double, double>>
+        levelset_input_file;
+
+    // Inputs
+    levelset_input_file.emplace_back(
+        std::make_tuple(0, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(1, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(2, 0.50, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(3, 0.50, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(4, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(5, 0.50, 0.1, 1000., 1.0E+06));
+
+    // Dump levelset inputs as a file to be read
+    std::ofstream file;
+    file.open("levelset-nodal-values-2d.txt");
+    // Write particle coordinates
+    for (const auto& levelset_inputs : levelset_input_file) {
+      file << std::get<0>(levelset_inputs) << "\t";
+      file << std::get<1>(levelset_inputs) << "\t";
+      file << std::get<2>(levelset_inputs) << "\t";
+      file << std::get<3>(levelset_inputs) << "\t";
+      file << std::get<4>(levelset_inputs) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+  }
+
+  // Check read levelset inputs
+  SECTION("Check levelset inputs") {
+    // Create a read_mesh object
+    auto read_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+    // Try to read inputs from a non-existant file
+    auto levelset_inputs =
+        read_mesh->read_levelset_input("levelset-nodal-values-missing.txt");
+    // Check number of inputs
+    REQUIRE(levelset_inputs.size() == 0);
+
+    // Check inputs
+    levelset_inputs =
+        read_mesh->read_levelset_input("levelset-nodal-values-2d.txt");
+    // Check number of particles
+    REQUIRE(levelset_inputs.size() == levelset_inputs.size());
+
+    // Check coordinates of nodes
+    for (unsigned i = 0; i < levelset_inputs.size(); ++i) {
+      REQUIRE(std::get<0>(levelset_inputs.at(i)) ==
+              Approx(std::get<0>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<1>(levelset_inputs.at(i)) ==
+              Approx(std::get<1>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<2>(levelset_inputs.at(i)) ==
+              Approx(std::get<2>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<3>(levelset_inputs.at(i)) ==
+              Approx(std::get<3>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<4>(levelset_inputs.at(i)) ==
+              Approx(std::get<4>(levelset_inputs.at(i))).epsilon(Tolerance));
     }
   }
 
@@ -843,14 +911,14 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
       auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
 
       // Try to read particles scalar properties from a non-existant file
-      auto read_particles_scalars = io_mesh->read_particles_scalar_properties(
-          "particles-scalar-missing.txt");
+      auto read_particles_scalars =
+          io_mesh->read_scalar_properties("particles-scalar-missing.txt");
       // Check number of particles scalar properties
       REQUIRE(read_particles_scalars.size() == 0);
 
       // Check particles scalar properties
       read_particles_scalars =
-          io_mesh->read_particles_scalar_properties("particles-scalars-2d.txt");
+          io_mesh->read_scalar_properties("particles-scalars-2d.txt");
 
       // Check number of particles
       REQUIRE(read_particles_scalars.size() == particles_scalars.size());
@@ -912,7 +980,7 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
   }
 }
 
-// Check IOMeshAscii
+//! \brief Check IOMeshAscii for 3D
 TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
 
   // Dimension
@@ -1136,6 +1204,86 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
                   Approx(coordinates[i][j]).epsilon(Tolerance));
         }
       }
+    }
+  }
+
+  SECTION("Check levelset file") {
+    // Vector of levelset inputs
+    std::vector<std::tuple<mpm::Index, double, double, double, double>>
+        levelset_input_file;
+
+    // Inputs
+    levelset_input_file.emplace_back(
+        std::make_tuple(0, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(1, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(2, 0.50, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(3, 0.50, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(4, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(5, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(6, 0.50, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(7, 0.50, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(8, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(9, 0.50, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(10, 0.00, 0.1, 1000., 1.0E+06));
+    levelset_input_file.emplace_back(
+        std::make_tuple(11, 0.50, 0.1, 1000., 1.0E+06));
+
+    // Dump levelset inputs as a file to be read
+    std::ofstream file;
+    file.open("levelset-nodal-values-3d.txt");
+    // Write particle coordinates
+    for (const auto& levelset_inputs : levelset_input_file) {
+      file << std::get<0>(levelset_inputs) << "\t";
+      file << std::get<1>(levelset_inputs) << "\t";
+      file << std::get<2>(levelset_inputs) << "\t";
+      file << std::get<3>(levelset_inputs) << "\t";
+      file << std::get<4>(levelset_inputs) << "\t";
+
+      file << "\n";
+    }
+
+    file.close();
+  }
+
+  // Check read levelset inputs
+  SECTION("Check levelset inputs") {
+    // Create a read_mesh object
+    auto read_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+    // Try to read inputs from a non-existant file
+    auto levelset_inputs =
+        read_mesh->read_levelset_input("levelset-nodal-values-missing.txt");
+    // Check number of inputs
+    REQUIRE(levelset_inputs.size() == 0);
+
+    // Check inputs
+    levelset_inputs =
+        read_mesh->read_levelset_input("levelset-nodal-values-3d.txt");
+    // Check number of particles
+    REQUIRE(levelset_inputs.size() == levelset_inputs.size());
+
+    // Check coordinates of nodes
+    for (unsigned i = 0; i < levelset_inputs.size(); ++i) {
+      REQUIRE(std::get<0>(levelset_inputs.at(i)) ==
+              Approx(std::get<0>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<1>(levelset_inputs.at(i)) ==
+              Approx(std::get<1>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<2>(levelset_inputs.at(i)) ==
+              Approx(std::get<2>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<3>(levelset_inputs.at(i)) ==
+              Approx(std::get<3>(levelset_inputs.at(i))).epsilon(Tolerance));
+      REQUIRE(std::get<4>(levelset_inputs.at(i)) ==
+              Approx(std::get<4>(levelset_inputs.at(i))).epsilon(Tolerance));
     }
   }
 
@@ -1792,14 +1940,14 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
       auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
 
       // Try to read particles scalar properties from a non-existant file
-      auto read_particles_scalars = io_mesh->read_particles_scalar_properties(
-          "particles-scalar-missing.txt");
+      auto read_particles_scalars =
+          io_mesh->read_scalar_properties("particles-scalar-missing.txt");
       // Check number of particles scalar properties
       REQUIRE(read_particles_scalars.size() == 0);
 
       // Check particles scalar properties
       read_particles_scalars =
-          io_mesh->read_particles_scalar_properties("particles-scalars-3d.txt");
+          io_mesh->read_scalar_properties("particles-scalars-3d.txt");
 
       // Check number of particles
       REQUIRE(read_particles_scalars.size() == particles_scalars.size());

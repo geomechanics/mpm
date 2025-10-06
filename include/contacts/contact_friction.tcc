@@ -4,9 +4,9 @@ mpm::ContactFriction<Tdim>::ContactFriction(
     const std::shared_ptr<mpm::Mesh<Tdim>>& mesh)
     : mpm::Contact<Tdim>(mesh) {}
 
-//! Initialize nodal properties
+//! Initialise nodal properties
 template <unsigned Tdim>
-inline void mpm::ContactFriction<Tdim>::initialise() {
+void mpm::ContactFriction<Tdim>::initialise() {
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
 
@@ -16,9 +16,9 @@ inline void mpm::ContactFriction<Tdim>::initialise() {
                 std::placeholders::_1));
 }
 
-//! Compute contact forces
+//! Compute contact reaction forces
 template <unsigned Tdim>
-inline void mpm::ContactFriction<Tdim>::compute_contact_forces() {
+void mpm::ContactFriction<Tdim>::compute_contact_forces() {
 
   // Map multimaterial properties from particles to nodes
   mesh_->iterate_over_particles(std::bind(

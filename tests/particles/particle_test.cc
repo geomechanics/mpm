@@ -10,7 +10,9 @@
 #include "material.h"
 #include "math_utility.h"
 #include "node.h"
+#include "node_levelset.h"
 #include "particle.h"
+#include "particle_levelset.h"
 #include "pod_particle.h"
 #include "quadrilateral_element.h"
 
@@ -187,6 +189,34 @@ TEST_CASE("Particle is checked for 1D case", "[particle][1D]") {
     REQUIRE(particle->tensor_data("invalid").size() == 6);
     for (unsigned i = 0; i < particle->tensor_data("invalid").size(); ++i)
       REQUIRE(std::isnan(particle->tensor_data("invalid")(i)) == true);
+  }
+
+  //! Test levelset particles scalar, vector and tensor data
+  SECTION("Check levelset particle scalar, vector, and tensor data") {
+    mpm::Index id = 0;
+    const double Tolerance = 1.E-7;
+    bool status = true;
+
+    //! Create levelset particle
+    std::shared_ptr<mpm::ParticleBase<Dim>> base_particle =
+        std::make_shared<mpm::ParticleLevelset<Dim>>(id, coords, status);
+    auto particle =
+        std::dynamic_pointer_cast<mpm::ParticleLevelset<Dim>>(base_particle);
+
+    particle->initialise();
+
+    // Check scalar data: levelset
+    REQUIRE(particle->scalar_data("levelset") ==
+            Approx(0.0).epsilon(Tolerance));
+
+    // Check vector data: levelset_reaction_forces
+    Eigen::VectorXd levelset_reaction;
+    levelset_reaction.resize(Dim);
+
+    REQUIRE(particle->vector_data("levelset_reaction_forces").size() == Dim);
+    for (unsigned i = 0; i < levelset_reaction.size(); ++i)
+      REQUIRE(particle->vector_data("levelset_reaction_forces")(i) ==
+              Approx(0.).epsilon(Tolerance));
   }
 
   //! Test particles velocity constraints
@@ -865,6 +895,122 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     // Check apply constraints
     REQUIRE(particle->velocity()(0) == Approx(10.5).epsilon(Tolerance));
     REQUIRE(particle->velocity()(1) == Approx(-12.5).epsilon(Tolerance));
+  }
+
+  //! Test particles levelset
+  SECTION("Particle with levelset") {
+    const double Tolerance = 1.E-7;
+    bool status = true;
+
+    //! Levelset static variables
+    mpm::ParticleLevelset<Dim>::set_levelset_properties(0.05, false, 0.01);
+
+    // Particle ID and Coordinates
+    mpm::Index id1 = 0;
+    mpm::Index id2 = 1;
+    Eigen::Vector2d coords1;
+    Eigen::Vector2d coords2;
+    coords1 << 0.5, 0.2;
+    coords2 << 0.5, 0.4;
+
+    //! Create levelset particle
+    std::shared_ptr<mpm::ParticleLevelset<Dim>> particle1 =
+        std::make_shared<mpm::ParticleLevelset<Dim>>(id1, coords1, status);
+    std::shared_ptr<mpm::ParticleLevelset<Dim>> particle2 =
+        std::make_shared<mpm::ParticleLevelset<Dim>>(id2, coords2, status);
+
+    // Initialise particle
+    particle1->initialise();
+    particle2->initialise();
+
+    // Assign particle properties
+    Eigen::Vector2d velocity;
+    velocity << 1., 0.1;
+    REQUIRE(particle1->assign_velocity(velocity) == true);
+    REQUIRE(particle1->assign_volume(0.25) == true);
+    particle1->assign_mass(2000.);
+
+    // Check particle type
+    REQUIRE(particle1->type() == "P2DLS");
+    REQUIRE(particle2->type() == "P2DLS");
+
+    // Check initial levelset value
+    REQUIRE(particle1->levelset() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle2->levelset() == Approx(0.0).epsilon(Tolerance));
+
+    // Check initial reaction force
+    auto reaction_force1 = particle1->reaction_force();
+    auto reaction_force2 = particle2->reaction_force();
+    REQUIRE(reaction_force1.size() == Dim);
+    REQUIRE(reaction_force2.size() == Dim);
+    for (unsigned i = 0; i < Dim; ++i) {
+      REQUIRE(reaction_force1(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
+    }
+
+    // Create cell
+    const unsigned Nnodes = 4;
+    auto element = std::make_shared<mpm::QuadrilateralElement<Dim, Nnodes>>();
+    auto cell = std::make_shared<mpm::Cell<Dim>>(10, Nnodes, element);
+
+    // Add nodes to the cell
+    Eigen::Vector2d node_coords;
+    std::vector<std::shared_ptr<mpm::NodeBase<Dim>>> nodes;
+    node_coords << 0.0, 0.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(0, node_coords));
+    node_coords << 1.0, 0.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(1, node_coords));
+    node_coords << 1.0, 1.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(2, node_coords));
+    node_coords << 0.0, 1.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(3, node_coords));
+
+    for (unsigned i = 0; i < nodes.size(); ++i) cell->add_node(i, nodes[i]);
+
+    // Initialise cell
+    cell->initialise();
+
+    // Assign the cell to the particle
+    REQUIRE(particle1->assign_cell(cell) == true);
+    REQUIRE(particle2->assign_cell(cell) == true);
+
+    // Assign levelset values to nodes
+    REQUIRE(nodes[0]->assign_levelset(0.0, 0.1, 1000, 1E+06) == true);
+    REQUIRE(nodes[1]->assign_levelset(0.0, 0.1, 1000, 1E+06) == true);
+    REQUIRE(nodes[2]->assign_levelset(1.0, 0.1, 1000, 1E+06) == true);
+    REQUIRE(nodes[3]->assign_levelset(1.0, 0.1, 1000, 1E+06) == true);
+
+    // Compute shape functions and map levelset to particle
+    particle1->compute_shapefn();
+    particle2->compute_shapefn();
+    REQUIRE_NOTHROW(particle1->levelset_contact_force(0.1));
+    REQUIRE_NOTHROW(particle2->levelset_contact_force(0.1));
+
+    // Check mapped levelset value
+    REQUIRE(particle1->levelset() == Approx(0.20).epsilon(Tolerance));
+    REQUIRE(particle2->levelset() == Approx(0.40).epsilon(Tolerance));
+
+    // Check reaction force for particle not in contact
+    reaction_force2 = particle2->reaction_force();
+    for (unsigned i = 0; i < Dim; ++i) {
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
+    }
+
+    // Check reaction force after contact reaction force computation
+    reaction_force1 = particle1->reaction_force();
+    REQUIRE(reaction_force1(0) == Approx(-9040.8465928880).epsilon(Tolerance));
+    REQUIRE(reaction_force1(1) == Approx(85658.4659288802).epsilon(Tolerance));
+
+    // Check mapped nodal contact reaction force
+    for (const auto& node : nodes) {
+      auto external_force = node->external_force(0);
+      REQUIRE(external_force(0) != Approx(0.0).epsilon(Tolerance));
+      REQUIRE(external_force(1) != Approx(0.0).epsilon(Tolerance));
+    }
   }
 
   //! Test particle, cell and node functions
@@ -2337,6 +2483,140 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle->velocity()(0) == Approx(10.5).epsilon(Tolerance));
     REQUIRE(particle->velocity()(1) == Approx(-12.5).epsilon(Tolerance));
     REQUIRE(particle->velocity()(2) == Approx(14.5).epsilon(Tolerance));
+  }
+
+  //! Test particles levelset
+  SECTION("Particle with levelset") {
+    const double Tolerance = 1.E-7;
+    bool status = true;
+
+    //! Levelset static variables
+    mpm::ParticleLevelset<Dim>::set_levelset_properties(0.05, false, 0.01);
+
+    // Particle ID and Coordinates
+    mpm::Index id1 = 0;
+    mpm::Index id2 = 1;
+    Eigen::Vector3d coords1;
+    Eigen::Vector3d coords2;
+    coords1 << 0.5, 0.2, 0.5;
+    coords2 << 0.5, 0.4, 0.5;
+
+    //! Create levelset particle
+    std::shared_ptr<mpm::ParticleLevelset<Dim>> particle1 =
+        std::make_shared<mpm::ParticleLevelset<Dim>>(id1, coords1, status);
+    std::shared_ptr<mpm::ParticleLevelset<Dim>> particle2 =
+        std::make_shared<mpm::ParticleLevelset<Dim>>(id2, coords2, status);
+
+    // Initialise particle
+    particle1->initialise();
+    particle2->initialise();
+
+    // Assign particle properties
+    Eigen::Vector3d velocity;
+    velocity << 1., 0.1, 1.;
+    REQUIRE(particle1->assign_velocity(velocity) == true);
+    REQUIRE(particle1->assign_volume(0.4) == true);
+    particle1->assign_mass(2000.);
+
+    // Check particle type
+    REQUIRE(particle1->type() == "P3DLS");
+    REQUIRE(particle2->type() == "P3DLS");
+
+    // Check initial levelset value
+    REQUIRE(particle1->levelset() == Approx(0.0).epsilon(Tolerance));
+    REQUIRE(particle2->levelset() == Approx(0.0).epsilon(Tolerance));
+
+    // Check initial reaction force
+    auto reaction_force1 = particle1->reaction_force();
+    auto reaction_force2 = particle2->reaction_force();
+    REQUIRE(reaction_force1.size() == Dim);
+    REQUIRE(reaction_force2.size() == Dim);
+    for (unsigned i = 0; i < Dim; ++i) {
+      REQUIRE(reaction_force1(i) == Approx(0.0).epsilon(Tolerance));
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
+    }
+
+    // Create cell
+    const unsigned Nnodes = 8;
+    auto element = std::make_shared<mpm::HexahedronElement<Dim, Nnodes>>();
+    auto cell = std::make_shared<mpm::Cell<Dim>>(10, Nnodes, element);
+
+    // Add nodes to the cell
+    Eigen::Vector3d node_coords;
+    std::vector<std::shared_ptr<mpm::NodeBase<Dim>>> nodes;
+    node_coords << 0.0, 0.0, 0.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(0, node_coords));
+    node_coords << 1.0, 0.0, 0.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(1, node_coords));
+    node_coords << 1.0, 1.0, 0.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(2, node_coords));
+    node_coords << 0.0, 1.0, 0.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(3, node_coords));
+    node_coords << 0.0, 0.0, 1.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(4, node_coords));
+    node_coords << 1.0, 0.0, 1.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(5, node_coords));
+    node_coords << 1.0, 1.0, 1.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(6, node_coords));
+    node_coords << 0.0, 1.0, 1.0;
+    nodes.emplace_back(
+        std::make_shared<mpm::NodeLevelset<Dim, Dim, 1>>(7, node_coords));
+
+    for (unsigned i = 0; i < nodes.size(); ++i) cell->add_node(i, nodes[i]);
+
+    // Initialise cell
+    cell->initialise();
+
+    // Assign the cell to the particle
+    REQUIRE(particle1->assign_cell(cell) == true);
+    REQUIRE(particle2->assign_cell(cell) == true);
+
+    // Assign levelset values to nodes
+    REQUIRE(nodes[0]->assign_levelset(0.0, 0.1, 1000, 1E+05) == true);
+    REQUIRE(nodes[1]->assign_levelset(0.0, 0.1, 1000, 1E+05) == true);
+    REQUIRE(nodes[2]->assign_levelset(1.0, 0.1, 1000, 1E+05) == true);
+    REQUIRE(nodes[3]->assign_levelset(1.0, 0.1, 1000, 1E+05) == true);
+    REQUIRE(nodes[4]->assign_levelset(0.0, 0.1, 1000, 1E+05) == true);
+    REQUIRE(nodes[5]->assign_levelset(0.0, 0.1, 1000, 1E+05) == true);
+    REQUIRE(nodes[6]->assign_levelset(1.0, 0.1, 1000, 1E+05) == true);
+    REQUIRE(nodes[7]->assign_levelset(1.0, 0.1, 1000, 1E+05) == true);
+
+    // Compute shape functions and map levelset to particle
+    particle1->compute_shapefn();
+    particle2->compute_shapefn();
+    REQUIRE_NOTHROW(particle1->levelset_contact_force(0.1));
+    REQUIRE_NOTHROW(particle2->levelset_contact_force(0.1));
+
+    // Check mapped levelset value
+    REQUIRE(particle1->levelset() == Approx(0.20).epsilon(Tolerance));
+    REQUIRE(particle2->levelset() == Approx(0.40).epsilon(Tolerance));
+
+    // Check reaction force for particle not in contact
+    reaction_force2 = particle2->reaction_force();
+    for (unsigned i = 0; i < Dim; ++i) {
+      REQUIRE(reaction_force2(i) == Approx(0.0).epsilon(Tolerance));
+    }
+
+    // Check reaction force after contact reaction force computation
+    reaction_force1 = particle1->reaction_force();
+    REQUIRE(reaction_force1(0) == Approx(-5569.4624469601).epsilon(Tolerance));
+    REQUIRE(reaction_force1(1) == Approx(71764.4334287699).epsilon(Tolerance));
+    REQUIRE(reaction_force1(2) == Approx(-5569.4624469601).epsilon(Tolerance));
+
+    // Check mapped nodal contact reaction force
+    for (const auto& node : nodes) {
+      auto external_force = node->external_force(0);
+      REQUIRE(external_force(0) != Approx(0.0).epsilon(Tolerance));
+      REQUIRE(external_force(1) != Approx(0.0).epsilon(Tolerance));
+      REQUIRE(external_force(2) != Approx(0.0).epsilon(Tolerance));
+    }
   }
 
   //! Test particle, cell and node functions

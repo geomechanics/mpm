@@ -24,6 +24,7 @@
 #include "constraints.h"
 #include "contact.h"
 #include "contact_friction.h"
+#include "contact_levelset.h"
 #include "mpm.h"
 #include "mpm_scheme.h"
 #include "mpm_scheme_musl.h"
@@ -222,6 +223,24 @@ class MPMBase : public MPM {
   void initialise_particle_types();
 
   /**
+   * \defgroup Interface Functions (includes multimaterial and levelset)
+   */
+  /**@{*/
+  //! \ingroup Interface
+  //! Return if interface and levelset are active
+  //! \retval levelset status of mesh
+  bool is_levelset();
+
+  //! \ingroup Interface
+  //! Nodal levelset inputs
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] mesh_io Mesh IO handle
+  void interface_inputs(const Json& mesh_prop,
+                        const std::shared_ptr<mpm::IOMesh<Tdim>>& mesh_io);
+
+  /**@}*/
+
+  /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */
   /**@{*/
@@ -259,8 +278,6 @@ class MPMBase : public MPM {
   std::string stress_update_{"usf"};
   //! Stress update scheme
   std::shared_ptr<mpm::MPMScheme<Tdim>> mpm_scheme_{nullptr};
-  //! Interface scheme
-  std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
   //! Velocity update method
   mpm::VelocityUpdate velocity_update_{mpm::VelocityUpdate::FLIP};
   //! FLIP-PIC blending ratio
@@ -293,6 +310,24 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
+
+  /**
+   * \defgroup Interface Variables (includes multimaterial and levelset)
+   * @{
+   */
+  //! Interface scheme
+  std::shared_ptr<mpm::Contact<Tdim>> contact_{nullptr};
+  //! Interface bool
+  bool interface_{false};
+  //! Interface type
+  std::string interface_type_{"none"};
+  //! Levelset damping factor
+  double levelset_damping_{0.05};
+  //! Levelset PIC contact velocity
+  bool levelset_pic_{true};
+  //! Levelset violation correction factor
+  double levelset_violation_corrector_{0.01};
+  /**@}*/
 
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM

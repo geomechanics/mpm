@@ -13,6 +13,7 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODParticle, displacement_x),
     HOFFSET(PODParticle, displacement_y),
     HOFFSET(PODParticle, displacement_z),
+    HOFFSET(PODParticle, size),
     HOFFSET(PODParticle, nsize_x),
     HOFFSET(PODParticle, nsize_y),
     HOFFSET(PODParticle, nsize_z),
@@ -92,6 +93,7 @@ const size_t dst_sizes[NFIELDS] = {
     sizeof(particle.displacement_x),
     sizeof(particle.displacement_y),
     sizeof(particle.displacement_z),
+    sizeof(particle.size),
     sizeof(particle.nsize_x),
     sizeof(particle.nsize_y),
     sizeof(particle.nsize_z),
@@ -170,6 +172,7 @@ const char* field_names[NFIELDS] = {
     "displacement_x",
     "displacement_y",
     "displacement_z",
+    "size",
     "nsize_x",
     "nsize_y",
     "nsize_z",
@@ -248,15 +251,15 @@ const hid_t field_type[NFIELDS] = {
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_HBOOL,  H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_HBOOL,  H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_HBOOL,  H5T_NATIVE_LLONG,
-    H5T_NATIVE_UINT,   H5T_NATIVE_UINT,   H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_HBOOL,
+    H5T_NATIVE_LLONG,  H5T_NATIVE_UINT,   H5T_NATIVE_UINT,   H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE};
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE};
 }  // namespace particle
 }  // namespace pod
 }  // namespace mpm

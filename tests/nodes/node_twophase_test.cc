@@ -764,7 +764,7 @@ TEST_CASE("Twophase Node is checked for 1D case", "[node][1D][2Phase]") {
   }
 }
 
-// \brief Check node class for 2D case
+//! \brief Check node class for 2D case
 TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
   const unsigned Dim = 2;
   const unsigned Dof = 2;
@@ -1755,7 +1755,7 @@ TEST_CASE("Twophase Node is checked for 2D case", "[node][2D][2Phase]") {
   }
 }
 
-// \brief Check node class for 3D case
+//! \brief Check node class for 3D case
 TEST_CASE("Twophase Node is checked for 3D case", "[node][3D][2Phase]") {
   const unsigned Dim = 3;
   const unsigned Dof = 3;

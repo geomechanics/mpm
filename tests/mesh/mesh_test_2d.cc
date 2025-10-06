@@ -17,11 +17,13 @@
 #include "hexahedron_element.h"
 #include "linear_function.h"
 #include "mesh.h"
+#include "mesh_levelset.h"
 #include "node.h"
+#include "node_levelset.h"
 #include "partio_writer.h"
 #include "quadrilateral_element.h"
 
-//! Check mesh class for 2D case
+//! \brief Check mesh class for 2D case
 TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
   // Dimension
   const unsigned Dim = 2;
@@ -1119,6 +1121,7 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                           particles_stresses) == false);
             }
 
+            //! Boundary Conditions from Entity Sets
             // Test assign particles velocity constraints
             SECTION("Check assign particles velocity constraints") {
               tsl::robin_map<mpm::Index, std::vector<mpm::Index>> particle_sets;
@@ -1459,6 +1462,7 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                       mfunction, -1, 0, pressure) == true);
         }
 
+        //! Boundary Conditions from Files
         // Test assign acceleration constraints to nodes
         SECTION("Check assign acceleration constraints to nodes") {
           // Vector of particle coordinates
@@ -1692,6 +1696,191 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
           auto mesh_fail = std::make_shared<mpm::Mesh<Dim>>(1);
           REQUIRE(mesh_fail->compute_nodal_rotation_matrices(euler_angles) ==
                   false);
+        }
+      }
+    }
+  }
+
+  //! Levelset Mesh
+  //! Check create nodes and cells in a levelset mesh
+  SECTION("Check create levelset nodes and cells") {
+    // Vector of nodal coordinates
+    std::vector<Eigen::Matrix<double, Dim, 1>> coordinates;
+
+    // Nodal coordinates
+    Eigen::Matrix<double, Dim, 1> node;
+
+    // Cell 0
+    // Node 0
+    node << 0., 0.;
+    coordinates.emplace_back(node);
+    // Node 1
+    node << 0.5, 0.;
+    coordinates.emplace_back(node);
+    // Node 2
+    node << 0.5, 0.5;
+    coordinates.emplace_back(node);
+    // Node 3
+    node << 0., 0.5;
+    coordinates.emplace_back(node);
+
+    // Cell 1
+    // Node 4
+    node << 1.0, 0.;
+    coordinates.emplace_back(node);
+    // Node 5
+    node << 1.0, 0.5;
+    coordinates.emplace_back(node);
+
+    //! Create a new levelset mesh
+    unsigned meshid = 0;
+    auto mesh = std::make_shared<mpm::MeshLevelset<Dim>>(meshid, false);
+
+    SECTION("Check creation of levelset nodes") {
+      //! Node type 2DLS
+      const std::string node_type = "N2DLS";
+      // Global node index
+      mpm::Index gnid = 0;
+      mesh->create_nodes(gnid, node_type, coordinates, false);
+      // Check if mesh has added nodes
+      REQUIRE(mesh->nnodes() == coordinates.size());
+      // Try again this shouldn't add more coordinates
+      mesh->create_nodes(gnid, node_type, coordinates);
+      // Check if mesh has added nodes
+      REQUIRE(mesh->nnodes() == coordinates.size());
+      // Clear coordinates and try creating a list of nodes with an empty list
+      unsigned nnodes = coordinates.size();
+      coordinates.clear();
+      // This fails with empty list error in node creation
+      mesh->create_nodes(gnid, node_type, coordinates);
+      REQUIRE(mesh->nnodes() == nnodes);
+
+      SECTION("Check creation of levelset cells") {
+        // Cell with node ids
+        std::vector<std::vector<mpm::Index>> cells{// cell #0
+                                                   {0, 1, 2, 3},
+                                                   // cell #1
+                                                   {1, 4, 5, 2}};
+        // Assign 4-noded quadrilateral element to cell
+        std::shared_ptr<mpm::Element<Dim>> element =
+            Factory<mpm::Element<Dim>>::instance()->create("ED2Q4");
+
+        // Global cell index
+        mpm::Index gcid = 0;
+        mesh->create_cells(gcid, element, cells, false);
+        // Check if mesh has added cells
+        REQUIRE(mesh->ncells() == cells.size());
+        // Try again this shouldn't add more cells
+        mesh->create_cells(gcid, element, cells);
+        // Check if mesh has added cells
+        REQUIRE(mesh->ncells() == cells.size());
+        // Clear cells and try creating a list of empty cells
+        unsigned ncells = cells.size();
+        cells.clear();
+        // This fails with empty list error in node creation
+        gcid = 10;
+        mesh->create_cells(gcid, element, cells);
+        REQUIRE(mesh->ncells() == ncells);
+
+        // Try with invalid node ids
+        cells = {// cell #0
+                 {10, 11, 12, 13},
+                 // cell #1
+                 {11, 14, 15, 12}};
+        gcid = 20;
+        mesh->create_cells(gcid, element, cells);
+        REQUIRE(mesh->ncells() == ncells);
+
+        SECTION("Check creation of levelset particles") {
+          // Vector of particle coordinates
+          std::vector<Eigen::Matrix<double, Dim, 1>> coordinates;
+          coordinates.clear();
+
+          // Particle coordinates
+          Eigen::Matrix<double, Dim, 1> particle;
+
+          // Cell 0
+          // Particle 0
+          particle << 0.125, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 1
+          particle << 0.25, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 2
+          particle << 0.25, 0.25;
+          coordinates.emplace_back(particle);
+          // Particle 3
+          particle << 0.125, 0.25;
+          coordinates.emplace_back(particle);
+
+          // Cell 1
+          // Particle 4
+          particle << 0.675, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 5
+          particle << 0.85, 0.125;
+          coordinates.emplace_back(particle);
+          // Particle 6
+          particle << 0.85, 0.25;
+          coordinates.emplace_back(particle);
+          // Particle 7
+          particle << 0.675, 0.25;
+          coordinates.emplace_back(particle);
+
+          // Initialise material models in mesh
+          mesh->initialise_material_models(materials);
+
+          SECTION("Check addition of levelset particles to levelset mesh") {
+            //! Particle type 2DLS
+            const std::string particle_type = "P2DLS";
+            // Create particles from file
+            mesh->create_particles(particle_type, coordinates, mids, 0, false);
+            // Check if mesh has added particles
+            REQUIRE(mesh->nparticles() == coordinates.size());
+          }
+        }
+
+        //! Boundary Conditions from Files
+        // Test assign levelset inputs to nodes from file
+        SECTION("Check assign levelset inputs to nodes") {
+          // Levelset inputs
+          std::vector<std::tuple<mpm::Index, double, double, double, double>>
+              levelset_inputs;
+
+          levelset_inputs.emplace_back(
+              std::make_tuple(0, 0.05, 0.1, 1000., 1.0E+06));
+          levelset_inputs.emplace_back(
+              std::make_tuple(1, 0.05, 0.1, 1000., 1.0E+06));
+          levelset_inputs.emplace_back(
+              std::make_tuple(2, 0.05, 0.1, 1000., 1.0E+06));
+          levelset_inputs.emplace_back(
+              std::make_tuple(3, 0.05, 0.1, 1000., 1.0E+06));
+
+          REQUIRE(mesh != nullptr);
+          REQUIRE(mesh->assign_nodal_levelset_values(levelset_inputs) == true);
+
+          // Check assigned values
+          for (const auto& levelset_input : levelset_inputs) {
+            auto node_id = std::get<0>(levelset_input);
+            auto node = mesh->node(node_id);
+            REQUIRE(node->levelset() ==
+                    Approx(std::get<1>(levelset_input)).epsilon(Tolerance));
+            REQUIRE(node->levelset_mu() ==
+                    Approx(std::get<2>(levelset_input)).epsilon(Tolerance));
+            REQUIRE(node->levelset_alpha() ==
+                    Approx(std::get<3>(levelset_input)).epsilon(Tolerance));
+            REQUIRE(node->barrier_stiffness() ==
+                    Approx(std::get<4>(levelset_input)).epsilon(Tolerance));
+          }
+
+          // Failing inputs (negative mu and alpha)
+          levelset_inputs.emplace_back(
+              std::make_tuple(3, 0.05, -0.1, -1000., 1.0E+06));
+          REQUIRE(mesh->assign_nodal_levelset_values(levelset_inputs) == false);
+          // Failing inputs (negative barrier stiffness)
+          levelset_inputs.emplace_back(
+              std::make_tuple(3, 0.05, 0.1, 1000., -1.0E+06));
+          REQUIRE(mesh->assign_nodal_levelset_values(levelset_inputs) == false);
         }
       }
     }

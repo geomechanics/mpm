@@ -332,11 +332,11 @@ class Node : public NodeBase<Tdim> {
    */
   /**@{*/
   //! Initialise nodal properties for implicit solver
-  //! \ingroup Impolicit
+  //! \ingroup Implicit
   void initialise_implicit() noexcept override;
 
   //! Initialise nodal forces
-  //! \ingroup Impolicit
+  //! \ingroup Implicit
   void initialise_force() noexcept override;
 
   //! Update inertia at the nodes

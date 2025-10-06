@@ -317,9 +317,21 @@ class Mesh {
       const std::map<mpm::Index, Eigen::Matrix<double, Tdim, 1>>& euler_angles);
 
   //! Assign particles volumes
-  //! \param[in] particle_volumes Volume at dir on particle
+  //! \param[in] particle_volumes Volume on particle
   bool assign_particles_volumes(
       const std::vector<std::tuple<mpm::Index, double>>& particle_volumes);
+
+  //! Assign particles velocities
+  //! \param[in] particle_velocities Initial particle velocity
+  bool assign_particles_velocities(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_velocities);
+
+  //! Assign particles accelerations
+  //! \param[in] particle_accelerations Initial particle velocity
+  bool assign_particles_accelerations(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_accelerations);
 
   //! Create particles tractions
   //! \param[in] mfunction Math function if defined

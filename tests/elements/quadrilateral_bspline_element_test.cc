@@ -626,9 +626,8 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(gradsf.cols() == Dim);
 
         Eigen::Matrix<double, 12, Dim> gradsf_ans;
-        gradsf_ans << -0.333333, -0.25, 0.333333, -0.25, 0.166667, 0.25,
-            -0.166667, 0.25, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, -0, 0, -0, 0, -0,
-            -0;
+        gradsf_ans << -0.25, -0.25, 0.25, -0.25, 0.25, 0.25, -0.25, 0.25, 0, -0,
+            0, 0, 0, 0, 0, 0, -0, 0, -0, 0, -0, 0, -0, -0;
 
         for (unsigned i = 0; i < gradsf.rows(); ++i)
           for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -699,8 +698,8 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(gradsf.cols() == Dim);
 
         Eigen::Matrix<double, 12, Dim> gradsf_ans;
-        gradsf_ans << -0.386719, -0.140625, 0.315104, -0.34375, 0.0286458,
-            0.34375, -0.0351562, 0.140625, 0.0716146, -0.015625, 0.00651042,
+        gradsf_ans << -0.299395, -0.140625, 0.243952, -0.34375, 0.0997984,
+            0.34375, -0.12248, 0.140625, 0.0554435, -0.015625, 0.0226815,
             0.015625, 0, 0, 0, 0, -0, 0, -0, 0, -0, 0, -0, -0;
 
         for (unsigned i = 0; i < gradsf.rows(); ++i)
@@ -846,10 +845,10 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(quad->nfunctions_local() == 4);
         REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-        REQUIRE(shapefn(0) == Approx(0.222222).epsilon(Tolerance));
-        REQUIRE(shapefn(1) == Approx(0.277778).epsilon(Tolerance));
-        REQUIRE(shapefn(2) == Approx(0.222222).epsilon(Tolerance));
-        REQUIRE(shapefn(3) == Approx(0.277778).epsilon(Tolerance));
+        REQUIRE(shapefn(0) == Approx(0.25).epsilon(Tolerance));
+        REQUIRE(shapefn(1) == Approx(0.25).epsilon(Tolerance));
+        REQUIRE(shapefn(2) == Approx(0.25).epsilon(Tolerance));
+        REQUIRE(shapefn(3) == Approx(0.25).epsilon(Tolerance));
         REQUIRE(shapefn(4) == Approx(0).epsilon(Tolerance));
         REQUIRE(shapefn(5) == Approx(0).epsilon(Tolerance));
         REQUIRE(shapefn(6) == Approx(0).epsilon(Tolerance));
@@ -871,8 +870,8 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(gradsf.cols() == Dim);
 
         Eigen::Matrix<double, 9, Dim> gradsf_ans;
-        gradsf_ans << -0.333333, -0.333333, 0.333333, -0.166667, 0.166667,
-            0.166667, -0.166667, 0.333333, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0;
+        gradsf_ans << -0.25, -0.25, 0.25, -0.25, 0.25, 0.25, -0.25, 0.25, 0, -0,
+            0, 0, 0, 0, 0, 0, -0, 0;
 
         for (unsigned i = 0; i < gradsf.rows(); ++i)
           for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -915,15 +914,15 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(shapefn.size() == 9);
         REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-        REQUIRE(shapefn(0) == Approx(0.0805614).epsilon(Tolerance));
-        REQUIRE(shapefn(1) == Approx(0.200013).epsilon(Tolerance));
-        REQUIRE(shapefn(2) == Approx(0.431412).epsilon(Tolerance));
-        REQUIRE(shapefn(3) == Approx(0.200013).epsilon(Tolerance));
-        REQUIRE(shapefn(4) == Approx(0.0143406).epsilon(Tolerance));
-        REQUIRE(shapefn(5) == Approx(0.028744).epsilon(Tolerance));
-        REQUIRE(shapefn(6) == Approx(0.00183064).epsilon(Tolerance));
-        REQUIRE(shapefn(7) == Approx(0.028744).epsilon(Tolerance));
-        REQUIRE(shapefn(8) == Approx(0.0143406).epsilon(Tolerance));
+        REQUIRE(shapefn(0) == Approx(0.0791016).epsilon(Tolerance));
+        REQUIRE(shapefn(1) == Approx(0.193359).epsilon(Tolerance));
+        REQUIRE(shapefn(2) == Approx(0.472656).epsilon(Tolerance));
+        REQUIRE(shapefn(3) == Approx(0.193359).epsilon(Tolerance));
+        REQUIRE(shapefn(4) == Approx(0.00878906).epsilon(Tolerance));
+        REQUIRE(shapefn(5) == Approx(0.0214844).epsilon(Tolerance));
+        REQUIRE(shapefn(6) == Approx(0.000976562).epsilon(Tolerance));
+        REQUIRE(shapefn(7) == Approx(0.0214844).epsilon(Tolerance));
+        REQUIRE(shapefn(8) == Approx(0.00878906).epsilon(Tolerance));
 
         // Check linear reproduction property
         Eigen::Matrix<double, Dim, 1> rep_coords;
@@ -940,10 +939,10 @@ TEST_CASE("Quadrilateral bspline elements are checked",
         REQUIRE(gradsf.cols() == Dim);
 
         Eigen::Matrix<double, 9, Dim> gradsf_ans;
-        gradsf_ans << -0.160169, -0.160169, 0.132839, -0.253602, 0.210328,
-            0.210328, -0.253602, 0.132839, 0.0273305, -0.0133475, 0.0432733,
-            0.0110699, 0.00227754, 0.00227754, 0.0110699, 0.0432733, -0.0133475,
-            0.0273305;
+        gradsf_ans << -0.105469, -0.105469, 0.0703125, -0.257812, 0.171875,
+            0.171875, -0.257812, 0.0703125, 0.0351562, -0.0117188, 0.0859375,
+            0.0078125, 0.00390625, 0.00390625, 0.0078125, 0.0859375, -0.0117188,
+            0.0351562;
 
         for (unsigned i = 0; i < gradsf.rows(); ++i)
           for (unsigned j = 0; j < gradsf.cols(); ++j)

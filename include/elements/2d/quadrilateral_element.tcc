@@ -787,7 +787,7 @@ void mpm::QuadrilateralElement<Tdim, Tnfunctions>::
     initialise_bspline_connectivity_properties(
         const Eigen::MatrixXd& nodal_coordinates,
         const std::vector<std::vector<unsigned>>& nodal_properties,
-        bool kernel_correction) {
+        bool kernel_correction, unsigned kc_niteration, double kc_tol) {
   throw std::runtime_error(
       "Function to initialise bspline connectivity is not implemented for "
       "Quad<Tdim, Tnfunctions> ");

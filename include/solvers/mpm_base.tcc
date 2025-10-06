@@ -1883,17 +1883,45 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
         nonlocal_properties.insert(std::pair<std::string, bool>(
             "kernel_correction", kernel_correction));
 
+        // Kernel correction iteration
+        unsigned kc_niteration = 1;
+        if (kernel_correction)
+          if (mesh_props["nonlocal_mesh_properties"].contains(
+                  "kernel_correction_iteration")) {
+            kc_niteration = mesh_props["nonlocal_mesh_properties"]
+                                      ["kernel_correction_iteration"]
+                                          .template get<unsigned>();
+          }
+        nonlocal_properties.insert(std::pair<std::string, unsigned>(
+            "kernel_correction_iteration", kc_niteration));
+
+        // Kernel correction tolerance
+        // In 2D, setting tolerance to 1.e-8 is better for convergence
+        // In 3D, setting tolerance to 0.0 is better for stability
+        double kc_tolerance = (Tdim == 2) ? 1.e-8 : 0.0;
+        if (kernel_correction)
+          if (mesh_props["nonlocal_mesh_properties"].contains(
+                  "kernel_correction_tolerance")) {
+            kc_tolerance = mesh_props["nonlocal_mesh_properties"]
+                                     ["kernel_correction_tolerance"]
+                                         .template get<double>();
+          }
+        nonlocal_properties.insert(std::pair<std::string, double>(
+            "kernel_correction_tolerance", kc_tolerance));
+
         // Iterate over node type
-        for (const auto& node_type :
-             mesh_props["nonlocal_mesh_properties"]["node_types"]) {
-          // Set id
-          int nset_id = node_type.at("nset_id").template get<int>();
-          // Direction
-          unsigned dir = node_type.at("dir").template get<unsigned>();
-          // Type
-          unsigned type = node_type.at("type").template get<unsigned>();
-          // Assign nodal nonlocal type
-          mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+        if (!kernel_correction) {
+          for (const auto& node_type :
+               mesh_props["nonlocal_mesh_properties"]["node_types"]) {
+            // Set id
+            int nset_id = node_type.at("nset_id").template get<int>();
+            // Direction
+            unsigned dir = node_type.at("dir").template get<unsigned>();
+            // Type
+            unsigned type = node_type.at("type").template get<unsigned>();
+            // Assign nodal nonlocal type
+            mesh_->assign_nodal_nonlocal_type(nset_id, dir, type);
+          }
         }
       }
     }

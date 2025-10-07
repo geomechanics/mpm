@@ -38,7 +38,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
   ParticlePML(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~ParticlePML() override {};
+  ~ParticlePML() override{};
 
   //! Delete copy constructor
   ParticlePML(const ParticlePML<Tdim>&) = delete;

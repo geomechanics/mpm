@@ -141,8 +141,10 @@ class PointBase {
   virtual void initialise_property(double dt) = 0;
 
   //! Compute updated position
-  virtual void compute_updated_position(double dt, unsigned phase, 
-                                        mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::APIC) noexcept = 0;
+  virtual void compute_updated_position(
+      double dt, unsigned phase,
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::APIC) noexcept = 0;
 
   //! Type of point
   virtual std::string type() const = 0;
@@ -163,20 +165,19 @@ class PointBase {
   virtual void assign_penalty_parameter(const std::string& constraint_type,
                                         double penalty_factor,
                                         const std::string& normal_type,
-                                        const VectorDim& normal_vector) {
-  };
+                                        const VectorDim& normal_vector) {};
 
   //! Assign boundary normal
   //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
   //! \param[in] normal_vector Normal vector
   virtual void assign_boundary_normal(const std::string& normal_type,
-                                      const VectorDim& normal_vector) {
-  };
+                                      const VectorDim& normal_vector) {};
 
   //! Apply point velocity constraints
   //! \param[in] dir Direction of point velocity constraint
   //! \param[in] velocity Applied point velocity constraint
-  virtual void apply_point_velocity_constraints(unsigned dir, double velocity) {};
+  virtual void apply_point_velocity_constraints(unsigned dir, double velocity) {
+  };
 
   //! Apply point kelvin voigt constraints
   //! \param[in] dir Direction of kelvin voigt constraint
@@ -184,13 +185,15 @@ class PointBase {
   //! \param[in] h_min Characteristic length
   //! \param[in] incidence_a Incidence parameter a
   //! \param[in] incidence_b Incidence parameter b
-  virtual void apply_point_kelvin_voigt_constraints(
-      unsigned dir, double delta, double h_min, double incidence_a,
-      double incidence_b) {};
-  
+  virtual void apply_point_kelvin_voigt_constraints(unsigned dir, double delta,
+                                                    double h_min,
+                                                    double incidence_a,
+                                                    double incidence_b) {};
+
   //! Map point stiffness matrix to cell
   virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
-  double newmark_gamma, double dt) {
+                                                   double newmark_gamma,
+                                                   double dt) {
     throw std::runtime_error(
         "Calling the base class function (map_stiffness_matrix_to_cell) in "
         "PointBase:: illegal operation!");

@@ -476,7 +476,7 @@ class Mesh {
 
   //! Apply points kelvin voigt constraints
   void apply_point_kelvin_voigt_constraints();
-  
+
   //! Assign nodal concentrated force
   //! \param[in] nodal_forces Force at dir on nodes
   bool assign_nodal_concentrated_forces(

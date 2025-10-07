@@ -12,8 +12,10 @@ std::map<int, std::string> PointTypeName = {{0, "POINT2DDIRPEN"},
                                             {2, "POINT2DKV"},
                                             {3, "POINT3DKV"}};
 std::map<std::string, std::string> PointPODTypeName = {
-    {"POINT2DDIRPEN", "points"}, {"POINT3DDIRPEN", "points"},
-    {"POINT2DKV", "points"},     {"POINT3DKV", "points"}};
+    {"POINT2DDIRPEN", "points"},
+    {"POINT3DDIRPEN", "points"},
+    {"POINT2DKV", "points"},
+    {"POINT3DKV", "points"}};
 }  // namespace mpm
 
 // PointDirichletPenalty2D (2 Dim)

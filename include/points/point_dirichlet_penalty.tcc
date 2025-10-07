@@ -81,8 +81,8 @@ void mpm::PointDirichletPenalty<Tdim>::compute_updated_position(
 
 //! Map penalty stiffness matrix to cell
 template <unsigned Tdim>
-inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell(double newmark_beta,
-  double newmark_gamma, double dt) {
+inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell(
+    double newmark_beta, double newmark_gamma, double dt) {
   bool status = true;
   try {
     // Initialise stiffness matrix

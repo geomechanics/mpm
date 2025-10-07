@@ -92,10 +92,11 @@ class LinearElastic : public Material<Tdim> {
   //! \param[in] state_vars History-dependent state variables
   //! \retval updated_stress Updated value of stress with Green-Naghdi rate
   virtual Vector6d compute_green_naghdi_stress(const Vector6d& stress,
-                                              const Vector6d& dstrain,
-                                              const Matrix6x6& de,
-                                              const ParticleBase<Tdim>* ptr,
-                                              mpm::dense_map* state_vars);
+                                               const Vector6d& dstrain,
+                                               const Matrix6x6& de,
+                                               const ParticleBase<Tdim>* ptr,
+                                               mpm::dense_map* state_vars);
+
  protected:
   //! material id
   using Material<Tdim>::id_;
@@ -105,7 +106,7 @@ class LinearElastic : public Material<Tdim> {
   using Material<Tdim>::console_;
   //! Objective stress rate
   mpm::StressRate stress_rate_{mpm::StressRate::None};
-  
+
  private:
   //! Compute elastic tensor
   bool compute_elastic_tensor();

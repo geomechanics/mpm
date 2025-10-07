@@ -66,35 +66,39 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   //! \param[in] h_min Characteristic length
   //! \param[in] incidence_a Incidence parameter a
   //! \param[in] incidence_b Incidence parameter b
-  void apply_point_kelvin_voigt_constraints(
-      unsigned dir, double delta, double h_min, double incidence_a,
-      double incidence_b) override;
+  void apply_point_kelvin_voigt_constraints(unsigned dir, double delta,
+                                            double h_min, double incidence_a,
+                                            double incidence_b) override;
 
   //! Compute updated position
   //! \param[in] dt Analysis time step
-  void compute_updated_position(double dt, unsigned phase, 
-                                mpm::VelocityUpdate velocity_update = mpm::VelocityUpdate::APIC) noexcept override;
+  void compute_updated_position(
+      double dt, unsigned phase,
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::APIC) noexcept override;
 
   //! Compute updated position: FLIP
   //! \param[in] dt Analysis time step
-  void compute_updated_position_flip(double dt, double blending_ratio,unsigned phase) noexcept;
+  void compute_updated_position_flip(double dt, double blending_ratio,
+                                     unsigned phase) noexcept;
 
- //! Map point stiffness matrix to cell
+  //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell(double newmark_beta,
-                     double newmark_gamma, double dt) override;
-  
+                                           double newmark_gamma,
+                                           double dt) override;
+
   //! Map spring stiffness matrix to cell
   inline void map_spring_stiffness_matrix_to_cell();
-  
+
   //! Map dashpot damping matrix to cell
   inline void map_dashpot_damping_matrix_to_cell(double newmark_beta,
-                     double newmark_gamma, double dt);
+                                                 double newmark_gamma,
+                                                 double dt);
 
   //! Map enforcement boundary force to node
   //! \param[in] phase Index corresponding to the phase
   void map_boundary_force(unsigned phase) override;
 
- 
   // //! Serialize
   // //! \retval buffer Serialized buffer data
   // std::vector<uint8_t> serialize() override;
@@ -125,10 +129,10 @@ class PointKelvinVoigt : public PointBase<Tdim> {
     return (Tdim == 2) ? "POINT2DKV" : "POINT3DKV";
   }
 
-//  protected:
-//   //! Compute pack size
-//   //! \retval pack size of serialized object
-//   int compute_pack_size() const override;
+  //  protected:
+  //   //! Compute pack size
+  //   //! \retval pack size of serialized object
+  //   int compute_pack_size() const override;
 
  protected:
   //! point id

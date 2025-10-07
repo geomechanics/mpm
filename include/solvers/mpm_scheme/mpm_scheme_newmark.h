@@ -55,8 +55,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   inline void compute_particle_kinematics(mpm::VelocityUpdate velocity_update,
                                           double blending_ratio, unsigned phase,
                                           const mpm::Damping damping_type,
-                                          double damping_factor,
-                                          unsigned step,
+                                          double damping_factor, unsigned step,
                                           bool update_defgrad,
                                           bool pml_boundary) override;
 

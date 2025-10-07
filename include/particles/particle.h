@@ -11,7 +11,6 @@
 #include "cell.h"
 #include "logger.h"
 #include "math_utility.h"
-#include "math_utility.h"
 #include "particle_base.h"
 
 namespace mpm {
@@ -41,7 +40,7 @@ class Particle : public ParticleBase<Tdim> {
   Particle(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~Particle() override {};
+  ~Particle() override{};
 
   //! Delete copy constructor
   Particle(const Particle<Tdim>&) = delete;

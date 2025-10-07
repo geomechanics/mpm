@@ -2107,8 +2107,11 @@ bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
       if (constraint->dir() < Tdim)
         point_kelvin_voigt_constraints_.emplace_back(constraint);
       else
-        throw std::runtime_error("Invalid direction of Kelvin Voigt constraint");
-      if (constraint->delta() < constraint->h_min() / (2 * std::max(constraint->a(), constraint->b()))) {
+        throw std::runtime_error(
+            "Invalid direction of Kelvin Voigt constraint");
+      if (constraint->delta() <
+          constraint->h_min() /
+              (2 * std::max(constraint->a(), constraint->b()))) {
         throw std::runtime_error("Invalid delta for Kelvin Voigt constraint");
       }
       // Assign normal vecotr

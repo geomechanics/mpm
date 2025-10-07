@@ -9,8 +9,8 @@ mpm::PointKelvinVoigt<Tdim>::PointKelvinVoigt(Index id, const VectorDim& coord)
   nodes_.clear();
 
   // Logger
-  std::string logger = "PointKelvinVoigt" + std::to_string(Tdim) +
-                       "d::" + std::to_string(id);
+  std::string logger =
+      "PointKelvinVoigt" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
@@ -25,8 +25,8 @@ mpm::PointKelvinVoigt<Tdim>::PointKelvinVoigt(Index id, const VectorDim& coord,
   // Nodes
   nodes_.clear();
   // Logger
-  std::string logger = "PointKelvinVoigt" + std::to_string(Tdim) +
-                       "d::" + std::to_string(id);
+  std::string logger =
+      "PointKelvinVoigt" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
@@ -60,10 +60,11 @@ void mpm::PointKelvinVoigt<Tdim>::assign_boundary_normal(
 //! Apply point velocity constraints
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::apply_point_kelvin_voigt_constraints(
-    unsigned dir, double delta, double h_min, double incidence_a, double incidence_b) {  
+    unsigned dir, double delta, double h_min, double incidence_a,
+    double incidence_b) {
   // Adjust normal vector
   if (normal_type_ == mpm::NormalType::Cartesian) this->normal_(dir) = 1.0;
-  
+
   // Assign parameters
   this->delta_ = delta;
   this->h_min_ = h_min;
@@ -101,8 +102,7 @@ void mpm::PointKelvinVoigt<Tdim>::compute_updated_position_flip(
       Eigen::Matrix<double, Tdim, 1>::Zero();
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodal_velocity.noalias() +=
-        shapefn_[i] * nodes_[i]->velocity(phase);
+    nodal_velocity.noalias() += shapefn_[i] * nodes_[i]->velocity(phase);
     nodal_acceleration.noalias() +=
         shapefn_[i] * nodes_[i]->acceleration(phase);
   }
@@ -114,15 +114,15 @@ void mpm::PointKelvinVoigt<Tdim>::compute_updated_position_flip(
   //                  (1.0 - blending_ratio) * nodal_velocity;
 
   // New position  current position + velocity * dt
-  //this->coordinates_.noalias() += nodal_velocity * dt;
+  // this->coordinates_.noalias() += nodal_velocity * dt;
   // Update displacement (displacement is initialized from zero)
-  //this->displacement_.noalias() += nodal_velocity * dt;
+  // this->displacement_.noalias() += nodal_velocity * dt;
 }
 
 //! Map penalty stiffness matrix to cell
 template <unsigned Tdim>
-inline bool mpm::PointKelvinVoigt<Tdim>::map_stiffness_matrix_to_cell(double newmark_beta,
-  double newmark_gamma, double dt) {
+inline bool mpm::PointKelvinVoigt<Tdim>::map_stiffness_matrix_to_cell(
+    double newmark_beta, double newmark_gamma, double dt) {
   bool status = true;
   try {
     // Map spring stiffness to cell
@@ -139,94 +139,103 @@ inline bool mpm::PointKelvinVoigt<Tdim>::map_stiffness_matrix_to_cell(double new
 }
 
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(double newmark_beta, double newmark_gamma, double dt) {
-    // Initialise stiffness matrix
-    const unsigned matrix_size = nodes_.size() * Tdim;
-    Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
-    point_stiffness.setZero();
-    // TODO: Fix input parameters pathway/pull from nodes
-    double E = 2000000000.0;
-    double v = 0.25;
-    double rho = 2000;
-    double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
-    double vs = std::sqrt(E / (2 * (1 + v)) / rho);
+void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(
+    double newmark_beta, double newmark_gamma, double dt) {
+  // Initialise stiffness matrix
+  const unsigned matrix_size = nodes_.size() * Tdim;
+  Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
+  point_stiffness.setZero();
+  // TODO: Fix input parameters pathway/pull from nodes
+  double E = 2000000000.0;
+  double v = 0.25;
+  double rho = 2000;
+  double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
+  double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
-    // Normal and Tangent multipliers
-    const double normal_mult = incidence_a_ * rho * vp;
-    const double tangent_mult = incidence_b_ * rho * vs;
+  // Normal and Tangent multipliers
+  const double normal_mult = incidence_a_ * rho * vp;
+  const double tangent_mult = incidence_b_ * rho * vs;
 
-    // Normal matrix
-    normal_.normalize();
-    Eigen::Matrix<double, Tdim, Tdim> normal_matrix = normal_ * normal_.transpose();
+  // Normal matrix
+  normal_.normalize();
+  Eigen::Matrix<double, Tdim, Tdim> normal_matrix =
+      normal_ * normal_.transpose();
 
-    // Identity matrix
-    const Eigen::Matrix<double, Tdim, Tdim> identity =
-        Eigen::Matrix<double, Tdim, Tdim>::Identity();
+  // Identity matrix
+  const Eigen::Matrix<double, Tdim, Tdim> identity =
+      Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
-    // Arrange shape function
-    Eigen::MatrixXd shape_function(Tdim, matrix_size);
-    shape_function.setZero();
-    for (unsigned i = 0; i < nodes_.size(); i++) {
-      if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
-        // Arrange shape function
-        for (unsigned int j = 0; j < Tdim; j++) {
-          shape_function(j, Tdim * i + j) = shapefn_[i];
-        }
+  // Arrange shape function
+  Eigen::MatrixXd shape_function(Tdim, matrix_size);
+  shape_function.setZero();
+  for (unsigned i = 0; i < nodes_.size(); i++) {
+    if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
+      // Arrange shape function
+      for (unsigned int j = 0; j < Tdim; j++) {
+        shape_function(j, Tdim * i + j) = shapefn_[i];
       }
     }
+  }
 
-    // Assign stiffness matrix
-    point_stiffness.noalias() +=  shape_function.transpose() * (normal_mult * normal_matrix + 
-                                  tangent_mult * (identity - normal_matrix)) * shape_function;
+  // Assign stiffness matrix
+  point_stiffness.noalias() += shape_function.transpose() *
+                               (normal_mult * normal_matrix +
+                                tangent_mult * (identity - normal_matrix)) *
+                               shape_function;
 
-    // Compute local penalty stiffness matrix
-    cell_->compute_local_stiffness_matrix_block(0, 0, point_stiffness, area_, newmark_gamma / (newmark_beta * dt));
+  // Compute local penalty stiffness matrix
+  cell_->compute_local_stiffness_matrix_block(
+      0, 0, point_stiffness, area_, newmark_gamma / (newmark_beta * dt));
 }
 
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
-    // Initialise stiffness matrix
-    const unsigned matrix_size = nodes_.size() * Tdim;
-    Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
-    point_stiffness.setZero();
+  // Initialise stiffness matrix
+  const unsigned matrix_size = nodes_.size() * Tdim;
+  Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
+  point_stiffness.setZero();
 
-    // TODO: Fix input parameters pathway/pull from nodes
-    double E = 2000000000.0;
-    double v = 0.25;
-    double rho = 2000;
-    double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
-    double vs = std::sqrt(E / (2 * (1 + v)) / rho);
+  // TODO: Fix input parameters pathway/pull from nodes
+  double E = 2000000000.0;
+  double v = 0.25;
+  double rho = 2000;
+  double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
+  double vs = std::sqrt(E / (2 * (1 + v)) / rho);
 
-    // Normal and Tangent multipliers
-    const double normal_mult = rho * vp * vp / delta_;
-    const double tangent_mult = rho * vs * vs / delta_;
+  // Normal and Tangent multipliers
+  const double normal_mult = rho * vp * vp / delta_;
+  const double tangent_mult = rho * vs * vs / delta_;
 
-    // Normal matrix
-    normal_.normalize();
-    Eigen::Matrix<double, Tdim, Tdim> normal_matrix = normal_ * normal_.transpose();
-    
-    // Identity matrix
-    const Eigen::Matrix<double, Tdim, Tdim> identity =
-        Eigen::Matrix<double, Tdim, Tdim>::Identity();
+  // Normal matrix
+  normal_.normalize();
+  Eigen::Matrix<double, Tdim, Tdim> normal_matrix =
+      normal_ * normal_.transpose();
 
-    // Arrange shape function
-    Eigen::MatrixXd shape_function(Tdim, matrix_size);
-    shape_function.setZero();
-    for (unsigned i = 0; i < nodes_.size(); i++) {
-      if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
-        // Arrange shape function
-        for (unsigned int j = 0; j < Tdim; j++) {
-          shape_function(j, Tdim * i + j) = shapefn_[i];
-        }
+  // Identity matrix
+  const Eigen::Matrix<double, Tdim, Tdim> identity =
+      Eigen::Matrix<double, Tdim, Tdim>::Identity();
+
+  // Arrange shape function
+  Eigen::MatrixXd shape_function(Tdim, matrix_size);
+  shape_function.setZero();
+  for (unsigned i = 0; i < nodes_.size(); i++) {
+    if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
+      // Arrange shape function
+      for (unsigned int j = 0; j < Tdim; j++) {
+        shape_function(j, Tdim * i + j) = shapefn_[i];
       }
     }
+  }
 
-    // Assign stiffness matrix
-    point_stiffness.noalias() +=  shape_function.transpose() * (normal_mult * normal_matrix + 
-                                  tangent_mult * (identity - normal_matrix)) * shape_function;
+  // Assign stiffness matrix
+  point_stiffness.noalias() += shape_function.transpose() *
+                               (normal_mult * normal_matrix +
+                                tangent_mult * (identity - normal_matrix)) *
+                               shape_function;
 
-    // Compute local penalty stiffness matrix
-    cell_->compute_local_stiffness_matrix_block(0, 0, point_stiffness, area_, 1.0);
+  // Compute local penalty stiffness matrix
+  cell_->compute_local_stiffness_matrix_block(0, 0, point_stiffness, area_,
+                                              1.0);
 }
 
 //! Map enforcement force
@@ -249,7 +258,8 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 
   // Normal matrix
   normal_.normalize();
-  Eigen::Matrix<double, Tdim, Tdim> normal_matrix = normal_ * normal_.transpose();
+  Eigen::Matrix<double, Tdim, Tdim> normal_matrix =
+      normal_ * normal_.transpose();
 
   // Identity matrix
   const Eigen::Matrix<double, Tdim, Tdim> identity =
@@ -280,10 +290,16 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
   }
 
   // Penalty force vector
-  const auto& spring_force = shape_function.transpose() * (normal_spring_mult * normal_matrix + 
-                                tangent_spring_mult * (identity - normal_matrix)) * shape_function * nodal_disp * area_;
-  const auto& dashpot_force = shape_function.transpose() * (normal_dashpot_mult * normal_matrix + 
-                                tangent_dashpot_mult * (identity - normal_matrix)) * shape_function * nodal_vel * area_;
+  const auto& spring_force =
+      shape_function.transpose() *
+      (normal_spring_mult * normal_matrix +
+       tangent_spring_mult * (identity - normal_matrix)) *
+      shape_function * nodal_disp * area_;
+  const auto& dashpot_force =
+      shape_function.transpose() *
+      (normal_dashpot_mult * normal_matrix +
+       tangent_dashpot_mult * (identity - normal_matrix)) *
+      shape_function * nodal_vel * area_;
 
   // Compute nodal external forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -333,7 +349,8 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 // #ifdef USE_MPI
 //   // Type
 //   int type = PointType.at(this->type());
-//   MPI_Pack(&type, 1, MPI_INT, data_ptr, data.size(), &position, MPI_COMM_WORLD);
+//   MPI_Pack(&type, 1, MPI_INT, data_ptr, data.size(), &position,
+//   MPI_COMM_WORLD);
 //
 //   // ID
 //   MPI_Pack(&id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(), &position,
@@ -374,7 +391,8 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 //            MPI_COMM_WORLD);
 //
 //   // Normal vector
-//   MPI_Pack(normal_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
+//   MPI_Pack(normal_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
+//   &position,
 //            MPI_COMM_WORLD);
 //
 // #endif
@@ -396,7 +414,8 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 //   assert(type == PointType.at(this->type()));
 //
 //   // ID
-//   MPI_Unpack(data_ptr, data.size(), &position, &id_, 1, MPI_UNSIGNED_LONG_LONG,
+//   MPI_Unpack(data_ptr, data.size(), &position, &id_, 1,
+//   MPI_UNSIGNED_LONG_LONG,
 //              MPI_COMM_WORLD);
 //   // area
 //   MPI_Unpack(data_ptr, data.size(), &position, &area_, 1, MPI_DOUBLE,
@@ -417,7 +436,8 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 //              MPI_COMM_WORLD);
 //
 //   // Penalty factor
-//   MPI_Unpack(data_ptr, data.size(), &position, &penalty_factor_, 1, MPI_DOUBLE,
+//   MPI_Unpack(data_ptr, data.size(), &position, &penalty_factor_, 1,
+//   MPI_DOUBLE,
 //              MPI_COMM_WORLD);
 //
 //   // Slip
@@ -429,11 +449,13 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 //              MPI_COMM_WORLD);
 //
 //   // Normal type
-//   MPI_Unpack(data_ptr, data.size(), &position, &normal_type_, 1, MPI_UNSIGNED,
+//   MPI_Unpack(data_ptr, data.size(), &position, &normal_type_, 1,
+//   MPI_UNSIGNED,
 //              MPI_COMM_WORLD);
 //
 //   // Normal vector
-//   MPI_Unpack(data_ptr, data.size(), &position, normal_.data(), Tdim, MPI_DOUBLE,
+//   MPI_Unpack(data_ptr, data.size(), &position, normal_.data(), Tdim,
+//   MPI_DOUBLE,
 //              MPI_COMM_WORLD);
 //
 // #endif

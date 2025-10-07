@@ -457,9 +457,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   // Read and assign particles velocity constraints
   this->particle_velocity_constraints();
   console_->info("Rank {} Create particle sets: {} ms", mpi_rank,
-    std::chrono::duration_cast<std::chrono::milliseconds>(
-        particles_volume_end - particles_volume_begin)
-        .count());
+                 std::chrono::duration_cast<std::chrono::milliseconds>(
+                     particles_volume_end - particles_volume_begin)
+                     .count());
 
   // Material id update using particle sets
   try {
@@ -2047,12 +2047,14 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
 
   try {
     if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
-        mesh_props["boundary_conditions"].find("points_kelvin_voigt_constraints") !=
+        mesh_props["boundary_conditions"].find(
+            "points_kelvin_voigt_constraints") !=
             mesh_props["boundary_conditions"].end()) {
 
       // Iterate over velocity constraints
       for (const auto& constraints :
-           mesh_props["boundary_conditions"]["points_kelvin_voigt_constraints"]) {
+           mesh_props["boundary_conditions"]
+                     ["points_kelvin_voigt_constraints"]) {
 
         // Set id
         int pset_id = constraints.at("pset_id").template get<int>();
@@ -2061,10 +2063,13 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
         // Delta
         double delta = constraints.at("delta").template get<double>();
         // Incidence
-        double incidence_a = constraints.at("incidence_a").template get<double>();
-        double incidence_b = constraints.at("incidence_b").template get<double>();
+        double incidence_a =
+            constraints.at("incidence_a").template get<double>();
+        double incidence_b =
+            constraints.at("incidence_b").template get<double>();
         // Penalty factor
-        double h_min = constraints.at("characteristic_length").template get<double>();
+        double h_min =
+            constraints.at("characteristic_length").template get<double>();
         // Dummy Position
         mpm::Position pos = mpm::Position::None;
 
@@ -2095,12 +2100,11 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
         }
 
         // Add absorbing constraint to mesh
-        auto absorbing_constraint =
-            std::make_shared<mpm::AbsorbingConstraint>(pset_id, dir, delta, 
-                                                       h_min, incidence_a, incidence_b, 
-                                                       pos);
+        auto absorbing_constraint = std::make_shared<mpm::AbsorbingConstraint>(
+            pset_id, dir, delta, h_min, incidence_a, incidence_b, pos);
 
-        mesh_->create_point_kelvin_voigt_constraint(pset_id, absorbing_constraint, normal_type, normal);
+        mesh_->create_point_kelvin_voigt_constraint(
+            pset_id, absorbing_constraint, normal_type, normal);
       }
     } else
       throw std::runtime_error("Point Kelvin Voigt constraints JSON not found");

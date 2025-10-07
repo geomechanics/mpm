@@ -404,17 +404,17 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
 #pragma omp section
       {
         // Compute local cell stiffness matrices
-        mesh_->iterate_over_particles(std::bind(
-            &mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
-            std::placeholders::_1, newmark_beta_, newmark_gamma_,
-                  bossak_alpha_, dt_, quasi_static_));
+        mesh_->iterate_over_particles(
+            std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
+                      std::placeholders::_1, newmark_beta_, newmark_gamma_,
+                      bossak_alpha_, dt_, quasi_static_));
       }
 
 #pragma omp section
       {
-        mesh_->iterate_over_points(
-            std::bind(&mpm::PointBase<Tdim>::map_stiffness_matrix_to_cell,
-                      std::placeholders::_1, newmark_beta_, newmark_gamma_, dt_));
+        mesh_->iterate_over_points(std::bind(
+            &mpm::PointBase<Tdim>::map_stiffness_matrix_to_cell,
+            std::placeholders::_1, newmark_beta_, newmark_gamma_, dt_));
       }
     }
 

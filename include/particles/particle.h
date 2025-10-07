@@ -2,6 +2,7 @@
 #define MPM_PARTICLE_H_
 
 #include <array>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
@@ -40,7 +41,7 @@ class Particle : public ParticleBase<Tdim> {
   Particle(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~Particle() override{};
+  ~Particle() override {};
 
   //! Delete copy constructor
   Particle(const Particle<Tdim>&) = delete;
@@ -154,7 +155,7 @@ class Particle : public ParticleBase<Tdim> {
   void map_pml_properties_to_nodes() noexcept override;
 
   // ! Finalise pml properties
-  void finalise_pml_properties(double dt) noexcept override{};
+  void finalise_pml_properties(double dt) noexcept override {};
 
   //! Assign nodal mass to particles
   //! \param[in] mass Mass from the particles in a cell
@@ -247,7 +248,8 @@ class Particle : public ParticleBase<Tdim> {
   //! Map body force
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;
-
+  //! Map body force not gravity
+  void map_body_force_not_gravity() noexcept override;
   //! Map internal force
   inline void map_internal_force(double dt) noexcept override;
 
@@ -273,6 +275,11 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval status Assignment status
   bool assign_traction(unsigned direction, double traction) override;
 
+  //!  Assign body force to the particle
+  //! \param[in] direction Index corresponding to the direction of body force
+  //! \param[in] bodyforce Particle bodyforce in specified direction
+  //! \retval status Assignment status
+  bool assign_body_force(unsigned direction, double bodyforce) override;
   //! Return traction of the particle
   VectorDim traction() const override { return traction_; }
 
@@ -500,7 +507,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] damping_factor Rayleigh damping factor
   //! \param[in] dt parameter beta of Newmark scheme
   void map_rayleigh_damping_force(double damping_factor,
-                                  double dt) noexcept override{};
+                                  double dt) noexcept override {};
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)
@@ -754,6 +761,9 @@ class Particle : public ParticleBase<Tdim> {
   bool set_traction_{false};
   //! Surface Traction (given as a stress; force/area)
   Eigen::Matrix<double, Tdim, 1> traction_;
+  //! Set bodyforce
+  bool set_bodyforce_{false};
+  Eigen::Matrix<double, Tdim, 1> body_force_;
   //! Shape functions
   Eigen::VectorXd shapefn_;
   //! dN/dX

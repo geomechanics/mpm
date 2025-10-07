@@ -25,7 +25,6 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! \param[in] id Particle id
   //! \param[in] coord Coordinates of the particles
   FluidParticle(Index id, const VectorDim& coord);
-
   //! Destructor
   ~FluidParticle() override{};
 

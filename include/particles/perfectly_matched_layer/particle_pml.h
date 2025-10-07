@@ -2,6 +2,7 @@
 #define MPM_PARTICLE_PML_H_
 
 #include <array>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
@@ -37,7 +38,7 @@ class ParticlePML : public mpm::Particle<Tdim> {
   ParticlePML(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~ParticlePML() override{};
+  ~ParticlePML() override {};
 
   //! Delete copy constructor
   ParticlePML(const ParticlePML<Tdim>&) = delete;
@@ -83,6 +84,15 @@ class ParticlePML : public mpm::Particle<Tdim> {
   //! Map internal force
   virtual void map_internal_force(double dt) noexcept override;
 
+  //! Compute stress using implicit updating scheme
+  //! \ingroup Implicit
+  //! \param[in] dt Analysis time step
+  void compute_stress_newmark(double dt) noexcept override;
+
+  //! Update stress and strain after convergence of Newton-Raphson iteration
+  //! \ingroup Implicit
+  //! \param[in] dt Analysis time step
+  void update_stress_strain(double dt) noexcept override;
   /**@}*/
 
  protected:
@@ -120,6 +130,9 @@ class ParticlePML : public mpm::Particle<Tdim> {
   virtual inline bool map_rayleigh_damping_matrix_to_cell(
       double newmark_gamma, double newmark_beta, double dt,
       double damping_factor) override;
+
+  //! Map anti-body force
+  void map_anti_body_force(double dt) noexcept;
   /**@}*/
 
   /**

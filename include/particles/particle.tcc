@@ -87,7 +87,6 @@ bool mpm::Particle<Tdim>::initialise_particle(PODParticle& particle) {
   this->stress_[4] = particle.tau_yz;
   this->stress_[5] = particle.tau_xz;
   this->previous_stress_ = stress_;
-
   // Strain
   this->strain_[0] = particle.strain_xx;
   this->strain_[1] = particle.strain_yy;
@@ -319,6 +318,7 @@ void mpm::Particle<Tdim>::initialise() {
   previous_stress_.setZero();
   stress_.setZero();
   traction_.setZero();
+  body_force_.setZero();
   velocity_.setZero();
   acceleration_.setZero();
   normal_.setZero();
@@ -977,7 +977,9 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
           "Particle traction property: volume / direction is invalid");
     }
     // Assign traction
-    traction_(direction) = traction * this->volume_ / this->size_(direction);
+    // Compute size of particle in each direction
+    const double length = std::pow(this->volume_, static_cast<double>(1. / Tdim));
+    traction_(direction) = traction * this->volume_ / length;
     status = true;
     this->set_traction_ = true;
   } catch (std::exception& exception) {
@@ -997,7 +999,34 @@ void mpm::Particle<Tdim>::map_traction_force() noexcept {
                                        (shapefn_[i] * traction_));
   }
 }
+// Assign body force to the particle
+template <unsigned Tdim>
+bool mpm::Particle<Tdim>::assign_body_force(unsigned direction,
+                                            double bodyforce) {
+  bool status = false;
+  try {
+    if (direction >= Tdim ||
+        this->mass_ == std::numeric_limits<double>::max()) {
+      throw std::runtime_error(
+          "Particle body force property: mass / direction is invalid");
+    }
+    // Assign body force
+    body_force_.setZero();
+    body_force_(direction) = bodyforce;
+    status = true;
+    this->set_bodyforce_ = true;
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
 
+//! Map body force
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_body_force_not_gravity() noexcept {
+  if (this->set_bodyforce_) this->map_body_force(body_force_);
+}
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(

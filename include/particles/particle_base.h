@@ -60,7 +60,7 @@ class ParticleBase {
   ParticleBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~ParticleBase(){};
+  virtual ~ParticleBase() {};
 
   //! Delete copy constructor
   ParticleBase(const ParticleBase<Tdim>&) = delete;
@@ -293,7 +293,8 @@ class ParticleBase {
 
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
-
+  //! Map body force not gravity
+  virtual void map_body_force_not_gravity() noexcept = 0;
   //! Map internal force
   virtual void map_internal_force(double dt) noexcept = 0;
 
@@ -319,6 +320,8 @@ class ParticleBase {
 
   //! Assign traction
   virtual bool assign_traction(unsigned direction, double traction) = 0;
+  //! Assign body force
+  virtual bool assign_body_force(unsigned direction, double traction) = 0;
 
   //! Return traction
   virtual VectorDim traction() const = 0;
@@ -478,7 +481,7 @@ class ParticleBase {
 
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] dt Analysis time step
   virtual void map_rayleigh_damping_force(double damping_factor, double dt) = 0;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium

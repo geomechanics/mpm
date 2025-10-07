@@ -230,7 +230,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties(
 #ifdef USE_MPI
   // Run if there is more than a single MPI task
   if (mpi_size_ > 1) {
-    
+
     // All reduce node boolean status of PML
     mesh_->assign_pml_nodes();
     // MPI all reduce nodal damped mass
@@ -281,7 +281,6 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties(
                     "damped_mass_displacements_j4", std::placeholders::_2, 0,
                     Tdim));
     }
-
   }
 #endif
 

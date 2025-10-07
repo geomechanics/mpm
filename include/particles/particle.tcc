@@ -978,7 +978,8 @@ bool mpm::Particle<Tdim>::assign_traction(unsigned direction, double traction) {
     }
     // Assign traction
     // Compute size of particle in each direction
-    const double length = std::pow(this->volume_, static_cast<double>(1. / Tdim));
+    const double length =
+        std::pow(this->volume_, static_cast<double>(1. / Tdim));
     traction_(direction) = traction * this->volume_ / length;
     status = true;
     this->set_traction_ = true;

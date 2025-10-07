@@ -254,12 +254,6 @@ void mpm::ParticlePML<Tdim>::finalise_pml_properties(double dt) noexcept {
 template <unsigned Tdim>
 void mpm::ParticlePML<Tdim>::map_body_force(
     const VectorDim& pgravity) noexcept {
-  // Damping functions
-  const VectorDim& damping_functions = this->mass_damping_functions();
-
-  // Modify gravity
-  const VectorDim& pgravity_mod = pgravity.cwiseProduct(damping_functions);
-
   // Compute nodal body forces
   for (unsigned i = 0; i < nodes_.size(); ++i)
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::SinglePhase,

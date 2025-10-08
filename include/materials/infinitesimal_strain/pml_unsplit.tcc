@@ -14,14 +14,39 @@ mpm::UnsplitPML<Tdim>::UnsplitPML(unsigned id, const Json& material_properties)
               (1. - 2. * poisson_ratio_);
     shear_modulus_ = youngs_modulus_ / (2.0 * (1. + poisson_ratio_));
 
-    // Normal damping ratio
-    reflec_coeff_ =
-        material_properties.at("reflection_coefficient").template get<double>();
     // Characteristic length
     h_char_ =
         material_properties.at("characteristic_length").template get<double>();
     // Damping power
     dpower_ = material_properties.at("damping_power").template get<double>();
+
+    // Check for damping ratio and reflection coefficient
+    bool has_damping_ratio = material_properties.contains("damping_ratio");
+    bool has_reflec_coeff = material_properties.contains("reflection_coefficient");
+
+    // Warn if both are provided, error if none are provided
+    if (has_damping_ratio && has_reflec_coeff) {
+      // Damping ratio
+      damping_ratio_ = material_properties.at("damping_ratio").template get<double>();
+      // Set reflection coefficient to 0
+      reflec_coeff_ = 0.0;
+      console_->warn(
+          "Both 'damping_ratio' and 'reflection_coefficient' are provided. "
+          "'damping_ratio' will be used and overwrites 'reflection_coefficient'.");
+    } else if (!has_damping_ratio && !has_reflec_coeff) {
+      // Reflection coefficient
+      reflec_coeff_ = material_properties.at("reflection_coefficient").template get<double>();
+    } else if (has_reflec_coeff) {
+      // Reflection coefficient
+      reflec_coeff_ = material_properties.at("reflection_coefficient").template get<double>();
+      // Set damping ratio to 0
+      damping_ratio_ = 0.0;
+    } else if (has_damping_ratio) {
+      // Damping ratio
+      damping_ratio_ = material_properties.at("damping_ratio").template get<double>();
+      // Set reflection coefficient to 0
+      reflec_coeff_ = 0.0;
+    }
 
     // Calculate p wave velocity
     vp_ = std::sqrt((lambda_ + 2. * shear_modulus_) / density_);

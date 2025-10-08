@@ -673,21 +673,34 @@ void mpm::ParticleUPML<Tdim>::update_pml_properties(double dt) noexcept {
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::compute_damping_functions(
     mpm::dense_map& state_vars) noexcept {
-  // PML properties: m
-  const double& dpower =
-      (this->material())
-          ->template property<double>(std::string("damping_power"));
-  // PML properties: L
-  const double& boundary_thickness = state_vars.at("boundary_thickness");
-  // PML properties: R
-  const double& reflec_coeff =
-      (this->material())
-          ->template property<double>(std::string("reflection_coefficient"));
+  // If max damping ratio is specified, use it to compute base damping
+  if ((this->material())->template property<double>(std::string("max_damping_ratio"))) {
+    // PML properties: c_p
+    const double& c_p =
+        (this->material())
+            ->template property<double>(std::string("pwave_velocity"));
+    // Compute base damping multiplier
+    state_vars.at("base_damping") =
+        (this->material())
+            ->template property<double>(std::string("max_damping_ratio")) / c_p;
+  }
+  else {
+    // PML properties: m
+    const double& dpower =
+        (this->material())
+            ->template property<double>(std::string("damping_power"));
+    // PML properties: L
+    const double& boundary_thickness = state_vars.at("boundary_thickness");
+    // PML properties: R
+    const double& reflec_coeff =
+        (this->material())
+            ->template property<double>(std::string("reflection_coefficient"));
 
-  // Compute base damping multiplier
-  state_vars.at("base_damping") =
-      (dpower + 1.0) * std::log(1.0 / reflec_coeff) /
-      (2.0 * std::pow(boundary_thickness, dpower + 1.0));
+    // Compute base damping multiplier
+    state_vars.at("base_damping") =
+        (dpower + 1.0) * std::log(1.0 / reflec_coeff) /
+        (2.0 * std::pow(boundary_thickness, dpower + 1.0));
+  };
 }
 
 //! Function to return damping factors for waves propagating normal to boundary

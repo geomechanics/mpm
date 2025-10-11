@@ -175,6 +175,12 @@ class Particle : public ParticleBase<Tdim> {
     return strain_rate_;
   };
 
+  //! Assign strain rate of the particle
+  inline void assign_strain_rate(
+      const Eigen::Matrix<double, 6, 1>& sr) override {
+    strain_rate_ = sr;
+  }
+
   //! Assign dvolumetric strain
   void assign_dvolumetric_strain(double dvol_strain) noexcept override {
     dvolumetric_strain_ = dvol_strain;

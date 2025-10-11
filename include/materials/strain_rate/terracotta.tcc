@@ -250,13 +250,11 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
 
     // Initialize transport parameters (a and c are constants, while b changing
     // over iterations)
-    const double a = std::sqrt(eta_ / alpha_) * (1 - current_packing_fraction) /
-                     p1_ / std::pow(current_packing_fraction, lambda_);
+    const double a = std::sqrt(eta_ / alpha_) / p1_ / std::pow(current_packing_fraction, lambda_);
     Vector6d b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
     Matrix6x6 c =
         3. / 2. *
-        (std::sqrt(eta_ / beta_) * (1 - current_packing_fraction) / m_ /
-             omega_ / p1_ / std::pow(current_packing_fraction, lambda_) +
+        (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ / std::pow(current_packing_fraction, lambda_) +
          a / m_ / m_) *
         fourth_order_identity_mandel;
 

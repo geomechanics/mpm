@@ -86,6 +86,9 @@ class ParticleBase {
   //! \retval particle POD of the particle
   virtual std::shared_ptr<void> pod() const = 0;
 
+  //! Assign strain rate of the particle 
+  virtual inline void assign_strain_rate(const Eigen::Matrix<double, 6, 1>& sr) =0;
+
   //! Return id of the particleBase
   Index id() const { return id_; }
 

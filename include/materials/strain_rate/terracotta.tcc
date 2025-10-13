@@ -157,38 +157,14 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
 
   // Compute meso-scale temperature
   const double current_tm = (*state_vars).at("tm");
-  double new_tm = current_tm;
 
   // Start Newton-Raphson iteration for meso-scale temperature
-  unsigned iter = 0;
-  double initial_rt;
-  double rt_m, jac_rt_m;
   const double A = (alpha_ * std::pow(vol_strain_rate, 2) +
                     beta_ * std::pow(dev_strain_rate, 2)) *
                    separation_multiplier;
-
-  while (iter < max_iter_) {
-    const double tm_rate = A - eta_ * std::pow(new_tm, 2);
-
-    rt_m = new_tm - current_tm - dt * (tm_rate);
-
-    // Check convergence based on residual norm
-    if (iter == 0)
-      initial_rt = rt_m;
-    else {
-      if (rt_m / initial_rt < rel_tol_) break;
-    }
-
-    // Compute Jacobian
-    jac_rt_m = 1.0 + dt * (2.0 * eta_ * new_tm);
-
-    // Update meso-scale temperature
-    const double delta_tm = -rt_m / jac_rt_m;
-    new_tm += delta_tm;
-
-    // Increment iteration counter
-    iter++;
-  }
+  const double new_tm = (-1.0 + std::sqrt(1.0 + 4 * A * dt * dt * eta_ +
+                                          4.0 * dt * eta_ * current_tm)) /
+                        (2.0 * dt * eta_);
 
   // Update stress and state variables
   Vector6d new_elastic_strain = Vector6d::Zero();
@@ -250,16 +226,17 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
 
     // Initialize transport parameters (a and c are constants, while b changing
     // over iterations)
-    const double a = std::sqrt(eta_ / alpha_) / p1_ / std::pow(current_packing_fraction, lambda_);
+    const double a = std::sqrt(eta_ / alpha_) / p1_ /
+                     std::pow(current_packing_fraction, lambda_);
     Vector6d b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
-    Matrix6x6 c =
-        3. / 2. *
-        (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ / std::pow(current_packing_fraction, lambda_) +
-         a / m_ / m_) *
-        fourth_order_identity_mandel;
+    Matrix6x6 c = 3. / 2. *
+                  (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ /
+                       std::pow(current_packing_fraction, lambda_) +
+                   a / m_ / m_) *
+                  fourth_order_identity_mandel;
 
     // Start Newton-Raphson iteration for elastic strain
-    iter = 0;
+    unsigned iter = 0;
     double initial_res_norm;
     Eigen::Matrix<double, 7, 1> res_m;
     Eigen::Matrix<double, 7, 7> jac_m;

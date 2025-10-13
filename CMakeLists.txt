@@ -217,75 +217,74 @@ target_link_libraries(mpm git)
 if(MPM_BUILD_TESTING)
   SET(test_src_unit
     ${mpm_SOURCE_DIR}/tests/test_main.cc
-    # ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_bbar_test.cc
-    # ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_test.cc
-    # ${mpm_SOURCE_DIR}/tests/cells/cell_test.cc
-    # ${mpm_SOURCE_DIR}/tests/cells/cell_vector_test.cc
-    # ${mpm_SOURCE_DIR}/tests/contact_test.cc
-    # ${mpm_SOURCE_DIR}/tests/convergence_criteria_test.cc
-    # ${mpm_SOURCE_DIR}/tests/factory_test.cc
-    # ${mpm_SOURCE_DIR}/tests/geometry_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/hexahedron_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/hexahedron_bspline_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/hexahedron_lme_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/hexahedron_gimp_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/hexahedron_quadrature_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_gimp_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_bspline_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_lme_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_quadrature_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/tetrahedron_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/tetrahedron_quadrature_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/triangle_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/triangle_lme_element_test.cc
-    # ${mpm_SOURCE_DIR}/tests/elements/triangle_quadrature_test.cc
-    # ${mpm_SOURCE_DIR}/tests/functions/linear_function_test.cc
-    # ${mpm_SOURCE_DIR}/tests/functions/material_utility_test.cc
-    # ${mpm_SOURCE_DIR}/tests/functions/math_utility_test.cc
-    # ${mpm_SOURCE_DIR}/tests/functions/sin_function_test.cc
-    # ${mpm_SOURCE_DIR}/tests/functions/radial_basis_function_test.cc
-    # ${mpm_SOURCE_DIR}/tests/graph_test.cc
-    # ${mpm_SOURCE_DIR}/tests/interface_test.cc
-    # ${mpm_SOURCE_DIR}/tests/io/io_mesh_ascii_test.cc
-    # ${mpm_SOURCE_DIR}/tests/io/io_test.cc
-    # ${mpm_SOURCE_DIR}/tests/io/vtk_writer_test.cc
-    # ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/bingham_viscoplastic_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/linear_elastic_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/modified_cam_clay_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/mohr_coulomb_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/newtonian_test.cc
-    # ${mpm_SOURCE_DIR}/tests/materials/norsand_test.cc
-    # ${mpm_SOURCE_DIR}/tests/mesh/mesh_free_surface_test.cc
-    # ${mpm_SOURCE_DIR}/tests/mesh/mesh_neighbours_test.cc
-    # ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_2d.cc
-    # ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_3d.cc
-    # ${mpm_SOURCE_DIR}/tests/mpi_transfer_particle_test.cc
-    # ${mpm_SOURCE_DIR}/tests/nodes/nodal_properties_test.cc
-    # ${mpm_SOURCE_DIR}/tests/nodes/node_implicit_test.cc
-    # ${mpm_SOURCE_DIR}/tests/nodes/node_map_test.cc
-    # ${mpm_SOURCE_DIR}/tests/nodes/node_test.cc
-    # ${mpm_SOURCE_DIR}/tests/nodes/node_twophase_test.cc
-    # ${mpm_SOURCE_DIR}/tests/nodes/node_vector_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_finite_strain_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_finite_strain_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_bbar_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_cell_crossing_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_bbar_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_twophase_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_traction_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_vector_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_fluid_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
-    # ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
-    # ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
-    # ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
-    /media/vietkhuyen/731dd29b-7e48-4eb4-b39a-e94ff7556784/VietKhuyensimulation/mpm-examples/Terracotta/tx_terracotta.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_bbar_test.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_implicit_test.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_test.cc
+    ${mpm_SOURCE_DIR}/tests/cells/cell_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/contact_test.cc
+    ${mpm_SOURCE_DIR}/tests/convergence_criteria_test.cc
+    ${mpm_SOURCE_DIR}/tests/factory_test.cc
+    ${mpm_SOURCE_DIR}/tests/geometry_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/hexahedron_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/hexahedron_bspline_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/hexahedron_lme_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/hexahedron_gimp_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/hexahedron_quadrature_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_gimp_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_bspline_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_lme_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/quadrilateral_quadrature_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/tetrahedron_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/tetrahedron_quadrature_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/triangle_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/triangle_lme_element_test.cc
+    ${mpm_SOURCE_DIR}/tests/elements/triangle_quadrature_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/linear_function_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/material_utility_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/math_utility_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/sin_function_test.cc
+    ${mpm_SOURCE_DIR}/tests/functions/radial_basis_function_test.cc
+    ${mpm_SOURCE_DIR}/tests/graph_test.cc
+    ${mpm_SOURCE_DIR}/tests/interface_test.cc
+    ${mpm_SOURCE_DIR}/tests/io/io_mesh_ascii_test.cc
+    ${mpm_SOURCE_DIR}/tests/io/io_test.cc
+    ${mpm_SOURCE_DIR}/tests/io/vtk_writer_test.cc
+    ${mpm_SOURCE_DIR}/tests/linear_solver_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/bingham_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/bingham_viscoplastic_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/hencky_hyper_elastic_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/linear_elastic_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/modified_cam_clay_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/mohr_coulomb_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/newtonian_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/norsand_test.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_free_surface_test.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_neighbours_test.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_2d.cc
+    ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_3d.cc
+    ${mpm_SOURCE_DIR}/tests/mpi_transfer_particle_test.cc
+    ${mpm_SOURCE_DIR}/tests/nodes/nodal_properties_test.cc
+    ${mpm_SOURCE_DIR}/tests/nodes/node_implicit_test.cc
+    ${mpm_SOURCE_DIR}/tests/nodes/node_map_test.cc
+    ${mpm_SOURCE_DIR}/tests/nodes/node_test.cc
+    ${mpm_SOURCE_DIR}/tests/nodes/node_twophase_test.cc
+    ${mpm_SOURCE_DIR}/tests/nodes/node_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_finite_strain_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_bbar_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_cell_crossing_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_bbar_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_implicit_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_twophase_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_traction_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_vector_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_fluid_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
+    ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
+    ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
   )
   SET(test_src_small
     ${mpm_SOURCE_DIR}/tests/test_main.cc
@@ -333,8 +332,3 @@ if(ENABLE_COVERAGE)
   add_coverage(mpmtest_coverage_unit)
   add_coverage(mpmtest_coverage_small)
 endif()
-
-# # ---- Local: add Terracotta test ----
-# if (MPM_BUILD_TESTING AND TARGET mpmtest_unit)
-#   target_sources(mpmtest_unit PRIVATE /media/vietkhuyen/731dd29b-7e48-4eb4-b39a-e94ff7556784/VietKhuyensimulation/mpm-examples/Terracotta)
-# endif()

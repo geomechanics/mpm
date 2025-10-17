@@ -86,6 +86,15 @@ mpm::dense_map mpm::Terracotta<Tdim>::initialise_state_variables() {
                                {"elastic_strain3", 0.},
                                {"elastic_strain4", 0.},
                                {"elastic_strain5", 0.},
+                               // Previous-step temperature and elastic strain (for BDF2)
+                               {"tm_prev", initial_tm_},
+                               {"elastic_strain0_prev", 0.},
+                               {"elastic_strain1_prev", 0.},
+                               {"elastic_strain2_prev", 0.},
+                               {"elastic_strain3_prev", 0.},
+                               {"elastic_strain4_prev", 0.},
+                               {"elastic_strain5_prev", 0.},
+                               {"bdf2_active", 0.0},
                                // Packing fraction
                                {"packing_fraction", initial_packing_fraction_}};
   return state_vars;
@@ -94,16 +103,25 @@ mpm::dense_map mpm::Terracotta<Tdim>::initialise_state_variables() {
 //! State variables
 template <unsigned Tdim>
 std::vector<std::string> mpm::Terracotta<Tdim>::state_variables() const {
-  const std::vector<std::string> state_vars = {"pressure",
-                                               "q",
-                                               "tm",
-                                               "elastic_strain0",
-                                               "elastic_strain1",
-                                               "elastic_strain2",
-                                               "elastic_strain3",
-                                               "elastic_strain4",
-                                               "elastic_strain5",
-                                               "packing_fraction"};
+  const std::vector<std::string> state_vars = {
+      "pressure",
+      "q",
+      "tm",
+      "elastic_strain0",
+      "elastic_strain1",
+      "elastic_strain2",
+      "elastic_strain3",
+      "elastic_strain4",
+      "elastic_strain5",
+      "tm_prev",
+      "elastic_strain0_prev",
+      "elastic_strain1_prev",
+      "elastic_strain2_prev",
+      "elastic_strain3_prev",
+      "elastic_strain4_prev",
+      "elastic_strain5_prev",
+      "bdf2_active",
+      "packing_fraction"};
   return state_vars;
 }
 
@@ -156,15 +174,40 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   }
 
   // Compute meso-scale temperature
-  const double current_tm = (*state_vars).at("tm");
+  const double tm_n = (*state_vars).at("tm");
+  const double tm_nm1 = (*state_vars).at("tm_prev");
+  const bool bdf2_active =
+      (*state_vars).at("bdf2_active") > 0.5 && dt > 0.0;
 
   // Start Newton-Raphson iteration for meso-scale temperature
   const double A = (alpha_ * std::pow(vol_strain_rate, 2) +
                     beta_ * std::pow(dev_strain_rate, 2)) *
                    separation_multiplier;
-  const double new_tm = (-1.0 + std::sqrt(1.0 + 4 * A * dt * dt * eta_ +
-                                          4.0 * dt * eta_ * current_tm)) /
-                        (2.0 * dt * eta_);
+  double new_tm = tm_n;
+  if (!bdf2_active) {
+    // Backward Euler update (used to initialise BDF2 history)
+    new_tm = (-1.0 + std::sqrt(1.0 + 4 * A * dt * dt * eta_ +
+                               4.0 * dt * eta_ * tm_n)) /
+             (2.0 * dt * eta_);
+  } else {
+    // BDF2 implicit update: (3 tm_{n+1} - 4 tm_n + tm_{n-1})/(2 dt) = A - eta * tm_{n+1}^2
+    const double coef_quad = 2.0 * dt * eta_;
+    const double coef_lin = 3.0;
+    const double coef_const =
+        -(4.0 * tm_n - tm_nm1) - 2.0 * dt * A;
+    const double small = 1.0e-12;
+    if (std::abs(coef_quad) < small) {
+    // Degenerates to linear equation when eta_ is ~0
+      new_tm = ((4.0 * tm_n - tm_nm1) + 2.0 * dt * A) / coef_lin;
+    } else {
+      double discriminant =
+          coef_lin * coef_lin - 4.0 * coef_quad * coef_const;
+      discriminant = (discriminant < 0.0) ? 0.0 : discriminant;
+      new_tm =
+          (-coef_lin + std::sqrt(discriminant)) / (2.0 * coef_quad);
+    }
+  }
+  if (new_tm < 0.0) new_tm = 0.0;
 
   // Update stress and state variables
   Vector6d new_elastic_strain = Vector6d::Zero();
@@ -172,6 +215,18 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   // Second order identity tensor in Mandel's notation
   Vector6d m_mandel;
   m_mandel << 1.0, 1.0, 1.0, 0.0, 0.0, 0.0;
+  Vector6d elastic_strain_voigt_old;
+  elastic_strain_voigt_old << (*state_vars).at("elastic_strain0"),
+      (*state_vars).at("elastic_strain1"), (*state_vars).at("elastic_strain2"),
+      (*state_vars).at("elastic_strain3"), (*state_vars).at("elastic_strain4"),
+      (*state_vars).at("elastic_strain5");
+  Vector6d elastic_strain_voigt_prev_state;
+  elastic_strain_voigt_prev_state << (*state_vars).at("elastic_strain0_prev"),
+      (*state_vars).at("elastic_strain1_prev"),
+      (*state_vars).at("elastic_strain2_prev"),
+      (*state_vars).at("elastic_strain3_prev"),
+      (*state_vars).at("elastic_strain4_prev"),
+      (*state_vars).at("elastic_strain5_prev");
   if (separation_state) {
     const double pt = new_tm * new_tm / gamma_;
     const double new_p = pt;
@@ -184,20 +239,22 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     new_elastic_strain.setZero();
   } else {
     // Current elastic strain tensor in tensorial Voigt notation
-    Vector6d current_elastic_strain;
-    current_elastic_strain << (*state_vars).at("elastic_strain0"),
-        (*state_vars).at("elastic_strain1"),
-        (*state_vars).at("elastic_strain2"),
-        (*state_vars).at("elastic_strain3"),
-        (*state_vars).at("elastic_strain4"),
-        (*state_vars).at("elastic_strain5");
+    Vector6d current_elastic_strain = elastic_strain_voigt_old;
+    Vector6d previous_elastic_strain = elastic_strain_voigt_prev_state;
     // Convert to Mandel's notation
     current_elastic_strain.tail(3) *= std::sqrt(2.0);
+    previous_elastic_strain.tail(3) *= std::sqrt(2.0);
     const double current_vol_elastic_strain =
         -current_elastic_strain.head(3).sum();
+    const double previous_vol_elastic_strain =
+        -previous_elastic_strain.head(3).sum();
     Vector6d current_elastic_strain_dev = current_elastic_strain;
     current_elastic_strain_dev.head(3).noalias() +=
         (1.0 / 3.0) * Eigen::Vector3d::Constant(current_vol_elastic_strain);
+    Vector6d previous_elastic_strain_dev = previous_elastic_strain;
+    previous_elastic_strain_dev.head(3).noalias() +=
+        (1.0 / 3.0) *
+        Eigen::Vector3d::Constant(previous_vol_elastic_strain);
     const double current_dev_elastic_strain = std::sqrt(
         2.0 / 3.0 * current_elastic_strain_dev.dot(current_elastic_strain_dev));
 
@@ -242,10 +299,25 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     Eigen::Matrix<double, 7, 7> jac_m;
     while (iter < max_iter_) {
       // Compute residuals
-      res_m(0) = new_vol_elastic_strain - current_vol_elastic_strain -
-                 dvol_strain + dt * new_tm * (a * pe_m + b_m.dot(se_m));
-      res_m.tail(6) = new_elastic_strain_dev - current_elastic_strain_dev -
-                      dstrain_dev + dt * new_tm * (b_m * pe_m + c * se_m);
+      if (bdf2_active) {
+        const double dt_fac = 2.0 / 3.0 * dt;
+        res_m(0) = new_vol_elastic_strain -
+                   (4.0 / 3.0) * current_vol_elastic_strain +
+                   (1.0 / 3.0) * previous_vol_elastic_strain -
+                   dt_fac *
+                       (vol_strain_rate -
+                        new_tm * (a * pe_m + b_m.dot(se_m)));
+        res_m.tail(6) = new_elastic_strain_dev -
+                        (4.0 / 3.0) * current_elastic_strain_dev +
+                        (1.0 / 3.0) * previous_elastic_strain_dev -
+                        dt_fac * (strain_rate_dev -
+                                  new_tm * (b_m * pe_m + c * se_m));
+      } else {
+        res_m(0) = new_vol_elastic_strain - current_vol_elastic_strain -
+                   dvol_strain + dt * new_tm * (a * pe_m + b_m.dot(se_m));
+        res_m.tail(6) = new_elastic_strain_dev - current_elastic_strain_dev -
+                        dstrain_dev + dt * new_tm * (b_m * pe_m + c * se_m);
+      }
 
       // Check convergence based on residual norm
       if (res_m.norm() < abs_tol_) break;
@@ -278,18 +350,44 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
           db_dp * dp_dgamma.transpose() + db_ds * ds_dgamma;
 
       // Compute residual derivatives
-      const double drv_epsv =
-          1.0 +
-          dt * new_tm * (a * dp_depsv + db_depsv.dot(se_m) + b_m.dot(ds_depsv));
-      const Vector6d drv_dgamma = dt * new_tm *
-                                  (a * dp_dgamma + db_dgamma * se_m +
-                                   (b_m.transpose() * ds_dgamma).transpose());
-      const Vector6d drs_depsv =
-          dt * new_tm * (pe_m * db_depsv + dp_depsv * b_m + c * ds_depsv);
-      const Matrix6x6 drs_dgamma =
-          fourth_order_identity_mandel +
-          dt * new_tm *
-              (pe_m * db_dgamma + b_m * dp_dgamma.transpose() + c * ds_dgamma);
+      double drv_epsv;
+      Vector6d drv_dgamma;
+      Vector6d drs_depsv;
+      Matrix6x6 drs_dgamma;
+      if (bdf2_active) {
+        const double dt_fac = 2.0 / 3.0 * dt;
+        drv_epsv =
+            1.0 + dt_fac * new_tm *
+                      (a * dp_depsv + db_depsv.dot(se_m) +
+                       b_m.dot(ds_depsv));
+        drv_dgamma =
+            dt_fac * new_tm *
+            (a * dp_dgamma + db_dgamma * se_m +
+             (b_m.transpose() * ds_dgamma).transpose());
+        drs_depsv =
+            dt_fac * new_tm *
+            (pe_m * db_depsv + dp_depsv * b_m + c * ds_depsv);
+        drs_dgamma =
+            fourth_order_identity_mandel +
+            dt_fac * new_tm *
+                (pe_m * db_dgamma + b_m * dp_dgamma.transpose() +
+                 c * ds_dgamma);
+      } else {
+        drv_epsv =
+            1.0 + dt * new_tm * (a * dp_depsv + db_depsv.dot(se_m) +
+                                 b_m.dot(ds_depsv));
+        drv_dgamma =
+            dt * new_tm *
+            (a * dp_dgamma + db_dgamma * se_m +
+             (b_m.transpose() * ds_dgamma).transpose());
+        drs_depsv =
+            dt * new_tm * (pe_m * db_depsv + dp_depsv * b_m + c * ds_depsv);
+        drs_dgamma =
+            fourth_order_identity_mandel +
+            dt * new_tm *
+                (pe_m * db_dgamma + b_m * dp_dgamma.transpose() +
+                 c * ds_dgamma);
+      }
 
       // Construct Jacobian matrix
       jac_m.setZero();
@@ -355,6 +453,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   }
 
   // Update state variables
+  (*state_vars).at("tm_prev") = tm_n;
   (*state_vars).at("tm") = new_tm;
   (*state_vars).at("elastic_strain0") = new_elastic_strain(0);
   (*state_vars).at("elastic_strain1") = new_elastic_strain(1);
@@ -362,6 +461,13 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   (*state_vars).at("elastic_strain3") = new_elastic_strain(3);
   (*state_vars).at("elastic_strain4") = new_elastic_strain(4);
   (*state_vars).at("elastic_strain5") = new_elastic_strain(5);
+  (*state_vars).at("elastic_strain0_prev") = elastic_strain_voigt_old(0);
+  (*state_vars).at("elastic_strain1_prev") = elastic_strain_voigt_old(1);
+  (*state_vars).at("elastic_strain2_prev") = elastic_strain_voigt_old(2);
+  (*state_vars).at("elastic_strain3_prev") = elastic_strain_voigt_old(3);
+  (*state_vars).at("elastic_strain4_prev") = elastic_strain_voigt_old(4);
+  (*state_vars).at("elastic_strain5_prev") = elastic_strain_voigt_old(5);
+  if (!bdf2_active && dt > 0.0) (*state_vars).at("bdf2_active") = 1.0;
   (*state_vars).at("packing_fraction") = current_packing_fraction;
 
   return updated_stress;

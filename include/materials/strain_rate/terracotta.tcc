@@ -190,24 +190,14 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
                                4.0 * dt * eta_ * tm_n)) /
              (2.0 * dt * eta_);
   } else {
-    // BDF2 implicit update: (3 tm_{n+1} - 4 tm_n + tm_{n-1})/(2 dt) = A - eta * tm_{n+1}^2
-    const double coef_quad = 2.0 * dt * eta_;
-    const double coef_lin = 3.0;
-    const double coef_const =
-        -(4.0 * tm_n - tm_nm1) - 2.0 * dt * A;
-    const double small = 1.0e-12;
-    if (std::abs(coef_quad) < small) {
-    // Degenerates to linear equation when eta_ is ~0
-      new_tm = ((4.0 * tm_n - tm_nm1) + 2.0 * dt * A) / coef_lin;
-    } else {
-      double discriminant =
-          coef_lin * coef_lin - 4.0 * coef_quad * coef_const;
-      discriminant = (discriminant < 0.0) ? 0.0 : discriminant;
-      new_tm =
-          (-coef_lin + std::sqrt(discriminant)) / (2.0 * coef_quad);
-    }
+    // BDF2 implicit update (second-order)
+    new_tm =
+        (-3.0 + std::sqrt(std::max(
+                     0.0, 9.0 + 32.0 * tm_n * dt * eta_ +
+                               16.0 * A * dt * dt * eta_ -
+                               8.0 * dt * eta_ * tm_nm1))) /
+        (4.0 * dt * eta_);
   }
-  if (new_tm < 0.0) new_tm = 0.0;
 
   // Update stress and state variables
   Vector6d new_elastic_strain = Vector6d::Zero();

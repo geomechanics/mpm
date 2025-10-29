@@ -13,7 +13,7 @@ void mpm::QuadrilateralLMEElement<Tdim>::initialise_lme_connectivity_properties(
   const double spacing_length =
       std::abs(nodal_coordinates(1, 0) - nodal_coordinates(0, 0));
   const double gamma = beta * spacing_length * spacing_length;
-  if (gamma > 6.0) this->preconditioner_ = true;
+  if (gamma > 5.0) this->preconditioner_ = true;
 }
 
 //! Return shape functions of a Quadrilateral LME Element at a given

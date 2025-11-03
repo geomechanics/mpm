@@ -32,20 +32,6 @@ mpm::BinghamViscoPlastic<Tdim>::BinghamViscoPlastic(
     alpha_ =
         material_properties.at("deflocculation_rate").template get<double>();
 
-    // Parameters for return mapping algorithm
-    if (material_properties.contains("rmap_absolute_tolerance")) {
-      abs_tol_ = material_properties.at("rmap_absolute_tolerance")
-                     .template get<double>();
-    }
-    if (material_properties.contains("rmap_relative_tolerance")) {
-      rel_tol_ = material_properties.at("rmap_relative_tolerance")
-                     .template get<double>();
-    }
-    if (material_properties.contains("rmap_max_iteration")) {
-      max_iter_ =
-          material_properties.at("rmap_max_iteration").template get<unsigned>();
-    }
-
     // Properties
     properties_ = material_properties;
   } catch (std::exception& except) {
@@ -62,8 +48,6 @@ mpm::dense_map mpm::BinghamViscoPlastic<Tdim>::initialise_state_variables() {
       {"yield_state", 0},
       // Pressure
       {"pressure", 0.},
-      // Number of iteration in return mapping algorithm
-      {"rmap_niteration", 0},
       // Volumetric strain
       {"volumetric_strain", 0.},
       // Shear stress ratio
@@ -82,8 +66,8 @@ template <unsigned Tdim>
 std::vector<std::string> mpm::BinghamViscoPlastic<Tdim>::state_variables()
     const {
   const std::vector<std::string> state_vars = {
-      "yield_state",        "pressure", "rmap_niteration", "volumetric_strain",
-      "shear_stress_ratio", "lambda",   "pgamma_dot",      "pdstrain"};
+      "yield_state", "pressure",   "volumetric_strain", "shear_stress_ratio",
+      "lambda",      "pgamma_dot", "pdstrain"};
   return state_vars;
 }
 
@@ -126,66 +110,30 @@ Eigen::Matrix<double, 6, 1> mpm::BinghamViscoPlastic<Tdim>::compute_stress(
 
   // Elastic state: stress point is less than yield surface
   const double p_new = p_tr;
-  if (tau_tr <= static_yield_stress) {
+  const double f_tr = tau_tr - static_yield_stress;
+  if (f_tr <= 0.0) {
     updated_stress = trial_stress;
     gamma_dot = 0.0;
     (*state_vars).at("yield_state") = 0;
-    (*state_vars).at("rmap_niteration") = 1;
     (*state_vars).at("shear_stress_ratio") = 1.0;
     (*state_vars).at("lambda") = lambda_tr;
   }
   // Plastic state: stress point is outside yield surface
   else {
-    // Initialize variables
-    double tau_new = tau_tr - shear_modulus_ * dt * gamma_dot;
-    double lambda_new = lambda_tr;
+    // Compute gamma_dot
+    const double xi =
+        dynamic_viscosity_ + dt * (shear_modulus_ + alpha_ * (tau0_ - tau_tr));
+    const double zeta =
+        2.0 * alpha_ * dt * (dt * shear_modulus_ + dynamic_viscosity_);
+    gamma_dot = (std::sqrt(xi * xi + 2.0 * zeta * f_tr) - xi) / zeta;
 
-    // Start Newton-Raphson iteration
-    unsigned iter = 0;
-    double initial_res;
-    Eigen::Matrix<double, 2, 1> res_m;
-    Eigen::Matrix<double, 2, 2> jac_m;
-    while (iter < max_iter_) {
-      // Compute residuals
-      res_m(0) =
-          tau_new - dynamic_viscosity_ * gamma_dot - tau0_ * (1.0 + lambda_new);
-      res_m(1) = (1.0 + alpha_ * gamma_dot * dt) * lambda_new - lambda_tr;
-
-      // Check convergence based on residual
-      if (res_m.norm() < abs_tol_) break;
-      if (iter == 0)
-        initial_res = res_m.norm();
-      else {
-        if (res_m.norm() / initial_res < rel_tol_) break;
-      }
-
-      // Compute Jacobian
-      jac_m(0, 0) = -(dt * shear_modulus_ + dynamic_viscosity_);
-      jac_m(0, 1) = -tau0_;
-      jac_m(1, 0) = alpha_ * lambda_new * dt;
-      jac_m(1, 1) = (1.0 + alpha_ * dt * gamma_dot);
-
-      // Update gamma_dot
-      const Eigen::Matrix<double, 2, 1> delta_unknown =
-          jac_m.inverse() * (-res_m);
-      gamma_dot += delta_unknown(0);
-      lambda_new += delta_unknown(1);
-
-      // Update parameters
-      tau_new = tau_tr - shear_modulus_ * dt * gamma_dot;
-
-      // Check convergence based on solution
-      if (delta_unknown.norm() < abs_tol_) break;
-
-      // Increment iteration counter
-      iter++;
-    }
-    (*state_vars).at("rmap_niteration") = iter + 1;
+    // Update parameters
+    const double tau_new = tau_tr - shear_modulus_ * dt * gamma_dot;
+    const double lambda_new = lambda_tr / (1.0 + alpha_ * gamma_dot * dt);
 
     const double shear_stress_ratio = tau_new / tau_tr;
     updated_stress =
         shear_stress_ratio * deviatoric_stress_tr - p_new * m_voigt;
-    gamma_dot = ((tau_tr - tau_new) / shear_modulus_) / dt;
     (*state_vars).at("yield_state") = 1;
     (*state_vars).at("shear_stress_ratio") = shear_stress_ratio;
     (*state_vars).at("lambda") = lambda_new;

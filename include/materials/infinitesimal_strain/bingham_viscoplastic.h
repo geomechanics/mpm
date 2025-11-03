@@ -122,17 +122,6 @@ class BinghamViscoPlastic : public InfinitesimalElastoPlastic<Tdim> {
   //! Thixotropy deflocculation rate
   double alpha_{std::numeric_limits<double>::max()};
 
-  //! Return mapping parameters
-  //! Absolute tolerance
-  double abs_tol_{1.e-10};
-  //! Relative tolerance
-  double rel_tol_{1.e-8};
-  //! Maximum number of iterations
-  unsigned max_iter_{15};
-
-  //! Discrete tolerance
-  double tolerance_{1.0e-15};
-
   //! Failure state map
   std::map<int, mpm::bingham_viscoplastic::FailureState> yield_type_ = {
       {0, mpm::bingham_viscoplastic::FailureState::Elastic},

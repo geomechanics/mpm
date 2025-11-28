@@ -106,7 +106,9 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       // Theta
       {"theta", 0.},
       // Plastic deviatoric strain
-      {"pdstrain", 0.}};
+      {"pdstrain", 0.},
+      // Increment of plastic deviatoric strain
+      {"dpdstrain", 0.}};
   return state_vars;
 }
 
@@ -115,7 +117,7 @@ template <unsigned Tdim>
 std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
       "yield_state", "phi", "psi",   "cohesion", "tension_cutoff",
-      "epsilon",     "rho", "theta", "pdstrain"};
+      "epsilon",     "rho", "theta", "pdstrain", "dpdstrain"};
   return state_vars;
 }
 
@@ -404,6 +406,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // Return the updated stress in elastic state
   if (yield_type_trial == mpm::mohrcoulomb::FailureState::Elastic) {
     (*state_vars).at("yield_state") = 0;
+    (*state_vars).at("dpdstrain") = 0.;
     return trial_stress;
   }
   //-------------------------------------------------------------------------
@@ -508,6 +511,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
 
   // Update plastic deviatoric strain
   (*state_vars).at("pdstrain") += dpdstrain;
+  (*state_vars).at("dpdstrain") = dpdstrain;
 
   return updated_stress;
 }

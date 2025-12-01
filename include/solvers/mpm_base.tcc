@@ -790,6 +790,24 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
         "invalid");
   }
 
+  if (loads.find("rotation_forces") != loads.end()) {
+    auto rotation_props = loads.at("rotation_forces");
+    // Read the origin
+    if (rotation_props.at("origin").is_array() &&
+        rotation_props.at("origin").size() == Tdim) {
+      for (unsigned i = 0; i < Tdim; ++i) {
+        rotation_origin_[i] = rotation_props.at("origin").at(i);
+      }
+    } else {
+      throw std::runtime_error(
+          "'rotation_forces': 'origin' must be an array of size Tdim");
+    }
+    rotation_omega_ = rotation_props.at("omega").template get<double>();
+    rotation_clockwise_ = rotation_props.at("clockwise").template get<bool>();
+    //! Enable rotation forces
+    rotation_forces_ = true;
+  }
+
   // Create a file reader
   const std::string io_type =
       io_->json_object("mesh")["io_type"].template get<std::string>();

@@ -64,6 +64,8 @@ class UnsplitPML : public LinearElastic<Tdim> {
   double shear_modulus_{std::numeric_limits<double>::max()};
   //! P wave velocity
   double vp_{std::numeric_limits<double>::max()};
+  //! Maximum damping ratio
+  double max_damping_ratio_{std::numeric_limits<double>::max()};
   //! Reflection coefficient
   double reflec_coeff_{std::numeric_limits<double>::max()};
   //! Characteristic element length

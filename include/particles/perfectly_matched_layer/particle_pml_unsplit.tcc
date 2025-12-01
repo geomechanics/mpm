@@ -679,15 +679,27 @@ void mpm::ParticleUPML<Tdim>::compute_damping_functions(
           ->template property<double>(std::string("damping_power"));
   // PML properties: L
   const double& boundary_thickness = state_vars.at("boundary_thickness");
-  // PML properties: R
-  const double& reflec_coeff =
+  // PML properties: R or \Beta_max
+  if ((this->material())
+          ->template contain_property<double>(std::string("reflection_coefficient"))) {
+    const double& reflec_coeff =
+        (this->material())->template property<double>(std::string("reflection_coefficient"));
+    // Compute base damping multiplier
+    state_vars.at("base_damping") =
+        (dpower + 1.0) * std::log(1.0 / reflec_coeff) /
+        (2.0 * std::pow(boundary_thickness, dpower + 1.0));
+  }
+  else if ((this->material())->template contain_property<double>(std::string("maximum_damping_ratio"))) {
+    // PML properties: c_p
+    const double& c_p =
       (this->material())
-          ->template property<double>(std::string("reflection_coefficient"));
-
-  // Compute base damping multiplier
-  state_vars.at("base_damping") =
-      (dpower + 1.0) * std::log(1.0 / reflec_coeff) /
-      (2.0 * std::pow(boundary_thickness, dpower + 1.0));
+          ->template property<double>(std::string("pwave_velocity"));
+    // PML properties: \beta_max
+    const double max_damping_ratio =
+        (this->material())->template property<double>(std::string("maximum_damping_ratio"));
+    // Assign base damping multiplier
+    state_vars.at("base_damping") = max_damping_ratio / c_p;
+  }
 }
 
 //! Function to return damping factors for waves propagating normal to boundary

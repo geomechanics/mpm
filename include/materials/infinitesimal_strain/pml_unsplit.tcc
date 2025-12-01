@@ -14,15 +14,24 @@ mpm::UnsplitPML<Tdim>::UnsplitPML(unsigned id, const Json& material_properties)
               (1. - 2. * poisson_ratio_);
     shear_modulus_ = youngs_modulus_ / (2.0 * (1. + poisson_ratio_));
 
-    // Normal damping ratio
-    reflec_coeff_ =
-        material_properties.at("reflection_coefficient").template get<double>();
     // Characteristic length
     h_char_ =
         material_properties.at("characteristic_length").template get<double>();
     // Damping power
     dpower_ = material_properties.at("damping_power").template get<double>();
 
+    // Check optional inputs
+    if (material_properties.contains("reflection_coefficient")) {
+      reflec_coeff_ =
+          material_properties.at("reflection_coefficient").template get<double>();
+    }
+    else if (material_properties.contains("maximum_damping_ratio")) {
+      const double max_damping_ratio_ =
+          material_properties.at("maximum_damping_ratio").template get<double>();
+    } else {
+      reflec_coeff_ = 1.e-4;  // Default value
+    }
+    
     // Calculate p wave velocity
     vp_ = std::sqrt((lambda_ + 2. * shear_modulus_) / density_);
 

@@ -68,6 +68,13 @@ class Material {
   template <typename Ttype>
   Ttype property(const std::string& key);
 
+  //! Check if material contains property
+  //! \tparam Ttype Return type for property
+  //! \param[in] key Material property key
+  //! \retval exists True if property exists, false otherwise
+  template <typename Ttype>
+  bool contain_property(const std::string& key);
+
   //! Initialise history variables
   virtual mpm::dense_map initialise_state_variables() = 0;
 

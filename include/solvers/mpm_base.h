@@ -300,6 +300,13 @@ class MPMBase : public MPM {
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
 
+  bool rotation_forces_{false};
+  //! Origin of the centrifuge rotation
+  Eigen::Matrix<double, Tdim, 1> rotation_origin_;
+  //! Magnitude of the centrifuge angular velocity
+  double rotation_omega_{0.0};
+  //! Boolean to set rotation direction
+  bool rotation_clockwise_{false};
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM
    * @{

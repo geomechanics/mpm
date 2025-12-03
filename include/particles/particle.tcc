@@ -1012,7 +1012,6 @@ bool mpm::Particle<Tdim>::assign_body_force(unsigned direction,
           "Particle body force property: mass / direction is invalid");
     }
     // Assign body force
-    body_force_.setZero();
     body_force_(direction) = bodyforce;
     status = true;
     this->set_bodyforce_ = true;

@@ -140,8 +140,10 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
 
     // Compute forces
-    mpm_scheme_->compute_forces(gravity_, phase, step_,
-                                set_node_concentrated_force_);
+    mpm_scheme_->compute_forces(
+        gravity_, phase, step_, set_node_concentrated_force_,
+        this->rotation_forces_, this->rotation_origin_, this->rotation_omega_,
+        this->rotation_clockwise_);
 
     // Apply Absorbing Constraint
     if (absorbing_boundary_) {

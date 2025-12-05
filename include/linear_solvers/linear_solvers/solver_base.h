@@ -1,3 +1,6 @@
+// ========================================
+// File: solver_base.h
+// ========================================
 #ifndef MPM_SOLVER_BASE_H_
 #define MPM_SOLVER_BASE_H_
 
@@ -59,6 +62,36 @@ class SolverBase {
   //! Set verbosity
   void set_verbosity(unsigned v) noexcept { verbosity_ = v; }
 
+  //! Set drop tolerance for ILUT preconditioner
+  void set_drop_tolerance(double tol) noexcept { drop_tolerance_ = tol; }
+
+  //! Set fill factor for ILUT preconditioner
+  void set_fill_factor(int factor) noexcept { fill_factor_ = factor; }
+
+  //! Set restart iterations for GMRES
+  void set_restart_iterations(int restart) noexcept { 
+    restart_iterations_ = restart; 
+  }
+
+  //! Enable/disable use of initial guess
+  void set_use_initial_guess(bool use) noexcept { 
+    use_initial_guess_ = use; 
+  }
+
+  //! Enable/disable use of last solution as initial guess
+  void set_use_last_solution(bool use) noexcept { 
+    use_last_solution_ = use; 
+  }
+
+  //! Set initial guess vector
+  void set_initial_guess(const Eigen::VectorXd& guess) {
+    initial_guess_ = guess;
+    use_initial_guess_ = true;
+  }
+
+  //! Clear stored last solution
+  void clear_last_solution() { last_solution_.resize(0); }
+
  protected:
   //! Solver type
   std::string sub_solver_type_;
@@ -69,14 +102,30 @@ class SolverBase {
   //! Relative tolerance
   double tolerance_;
   //! Absolute tolerance
-  double abs_tolerance_;
+  double abs_tolerance_{1e-10};
   //! Divergence tolerance
-  double div_tolerance_;
+  double div_tolerance_{1e10};
   //! Verbosity
   unsigned verbosity_{0};
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  
+  // ===== Extended parameters for preconditioners and solvers =====
+  //! Drop tolerance for ILUT preconditioner
+  double drop_tolerance_{1e-5};
+  //! Fill factor for ILUT preconditioner
+  int fill_factor_{30};
+  //! Restart iterations for GMRES
+  int restart_iterations_{1000};
+  //! Use initial guess flag
+  bool use_initial_guess_{false};
+  //! Use last solution as initial guess
+  bool use_last_solution_{false};
+  //! User-provided initial guess
+  Eigen::VectorXd initial_guess_;
+  //! Stored last solution for reuse
+  Eigen::VectorXd last_solution_;
 };
 }  // namespace mpm
 
-#endif
+#endif  // MPM_SOLVER_BASE_H_

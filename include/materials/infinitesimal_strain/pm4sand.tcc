@@ -608,9 +608,10 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
   Matrix3d dEpsilon = voigt_to_tensor(dstrain_tensor_voigt);
 
   bool model_initialized = (get_scalar(state_vars, "model_initialized") > 0.5);
-  if (!model_initialized) {
+  if (!(m_Ado < 0) || m_z_max < 0) {
     // ... (Keep the initialization logic here) ...
-    double p0 = stress_prev.trace() * c_one3;
+    // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+    double p0 = 0.5 * (stress_prev(0,0) + stress_prev(1,1));
     m_Pmin = std::max(p0 / 200.0, m_P_atm / 200.0);
     m_Pmin2 = m_Pmin * 10.0;
     double e_init = get_scalar(state_vars, "void_ratio");
@@ -639,7 +640,7 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
       }
     } else {
       this->m_Mb =
-          m_Mc * std::exp(-1.0 * m_nb / 4.0 * ksi);    // this->m_Mb に代入
+          m_Mc * std::exp(-1.0 * m_nb / 4.0 * ksi);     // this->m_Mb に代入
       this->m_Md = m_Mc * std::exp(m_nd * 4.0 * ksi);  // this->m_Md に代入
       if (m_Ado < 0) m_Ado = 1.24;
     }
@@ -662,6 +663,9 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
           r * (Mcut - m_m) /
           (Mcut + c_tolerance);  // Standalone版の alpha 計算 (ゼロ割防止追加)
     }
+    double s_scale = std::min(1.0,(0.9*this->m_Mb)/(Mfin + c_tolerance));
+    Matrix3d alpha_in = initial_alpha * s_scale;
+    if(model_initialized<0.5){
     set_tensor(state_vars, "alpha", initial_alpha);
     set_tensor(state_vars, "alpha_in", initial_alpha);
     set_tensor(state_vars, "alpha_in_true", initial_alpha);
@@ -672,6 +676,7 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
     set_scalar(state_vars, "pzp", std::max(p0, m_Pmin) / 100.0);
     set_scalar(state_vars, "mean_stress", p0);
     set_scalar(state_vars, "model_initialized", 1.0);
+    }
     // this->console_->info("Material {}: PM4Sand model initialized. p0={:.2e},
     // Dr={:.2f}, pmin={:.2e}", this->id_, p0, initial_Dr, m_Pmin);
   }
@@ -745,7 +750,8 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
     current_alpha_in_p = current_alpha_in;
     current_alpha_in_true = current_alpha;
     current_fabric_in = current_fabric;
-    double p_rev = current_stress.trace() * c_one3;
+    // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+    double p_rev = 0.5 * (current_stress(0,0) + current_stress(1,1));
     p_rev = std::max(p_rev, m_Pmin);
     double zxpTemp = tensorNorm(current_fabric) * p_rev;
     if (((zxpTemp > current_zxp) && (p_rev > current_pzp)) || current_pzpFlag) {
@@ -838,7 +844,8 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
 
     // Calculate predictor L1
     Matrix3d r1;  // *** USE IF/ELSE ***
-    double p1 = current_stress.trace() * c_one3;
+    // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+    double p1 = 0.5 * (current_stress(0,0) + current_stress(1,1));
     if (p1 < m_Pmin) {
       r1 = Matrix3d::Zero();
     } else {
@@ -897,7 +904,8 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
     Matrix3d stress_mid = current_stress + dSigma1_e - dSigma1_p;
     Matrix3d alpha_mid = current_alpha + dAlpha1;
     Matrix3d fabric_mid = current_fabric + dFabric1;
-    double p_mid = stress_mid.trace() * c_one3;
+    // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+    double p_mid = 0.5 * (stress_mid(0,0) + stress_mid(1,1));
 
     // Check for negative pressure in predictor
     if (p_mid < m_Pmin / 5.0) {
@@ -1024,7 +1032,8 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
           std::max(max_fabric_norm_in_step,
                    tensorNorm(current_fabric) *
                        c_root12);  // ステップ中の最大ノルムを更新
-      double p_next_sub = current_stress.trace() * c_one3;
+      // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+      double p_next_sub = 0.5 * (current_stress(0,0) + current_stress(1,1));
       if (p_next_sub < m_Pmin / 5.0) {
         this->console_->debug(
             "Material {}: p < p_min/5 after substep update (p={}). Clamping "
@@ -1069,8 +1078,9 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
   // 5. Stress Correction
   // -------------------------------------------------
   double F_yield_final = getF(nextStress, nextAlpha, state_vars);
+  // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation for check
   if (F_yield_final > c_tolerance * 10.0 ||
-      nextStress.trace() * c_one3 < m_Pmin / 5.0) {
+      0.5 * (nextStress(0,0) + nextStress(1,1)) < m_Pmin / 5.0) {
     if (F_yield_final > c_tolerance * 10.0)
       this->console_->debug(
           "Material {}: Yield condition violated after full step integration "
@@ -1080,7 +1090,7 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
       this->console_->debug(
           "Material {}: p < p_min/5 after full step integration (p={:.2e}). "
           "Applying stress correction.",
-          this->id_, nextStress.trace() * c_one3);
+          this->id_, 0.5 * (nextStress(0,0) + nextStress(1,1)));
 
     stressCorrection(nextStress, nextAlpha, stress_prev, alpha_in_n,
                      alpha_in_p_n,  // Use alpha history from start of step
@@ -1090,7 +1100,7 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
     F_yield_final = getF(nextStress, nextAlpha, state_vars);
     this->console_->debug(
         "Material {}: Stress correction finished (F={:.2e}, p={:.2e}).",
-        this->id_, F_yield_final, nextStress.trace() * c_one3);
+        this->id_, F_yield_final, 0.5 * (nextStress(0,0) + nextStress(1,1)));
   }
 
   // -------------------------------------------------
@@ -1103,7 +1113,8 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::compute_stress(
       max_fabric_norm_in_step);  // ステップ終了時に更新 (ステップ中の最大
                                  // Fabric ノルムと初期値を比較)
 
-  set_scalar(state_vars, "mean_stress", nextStress.trace() * c_one3);
+  // IGNORE_SIGMA_ZZ_FIX: Store 2D mean stress
+  set_scalar(state_vars, "mean_stress", 0.5 * (nextStress(0,0) + nextStress(1,1)));
   set_scalar(state_vars, "total_vol_strain", next_total_vol_strain);
   set_scalar(state_vars, "elastic_vol_strain", next_elastic_vol_strain);
   set_scalar(state_vars, "void_ratio", next_void_ratio);
@@ -1205,7 +1216,8 @@ void PM4Sand<Tdim>::getElasticModuli(const Matrix3d& sigma, double& K,
   // Full implementation matching PM4Sand_claude_2.cpp logic
   int msr = 4;
   double Csr0 = 0.5;
-  double pn = sigma.trace() * c_one3;
+  // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+  double pn = 0.5 * (sigma(0,0) + sigma(1,1));
   pn = std::max(pn, m_Pmin);  // Use p_min threshold
 
   Matrix3d deviatoricStress = getDevPart(sigma);
@@ -1274,7 +1286,8 @@ Eigen::Matrix3d PM4Sand<Tdim>::getNormalToYield(const Matrix3d& stress,
                                                 const Matrix3d& alpha,
                                                 dense_map* /*state_vars*/) {
   // Implementation matching PM4Sand_claude_2.cpp logic
-  double p = stress.trace() * c_one3;
+  // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+  double p = 0.5 * (stress(0,0) + stress(1,1));
   Matrix3d n;
   Matrix3d s = getDevPart(stress);
 
@@ -1307,7 +1320,8 @@ double PM4Sand<Tdim>::getF(const Matrix3d& stress, const Matrix3d& alpha,
                            dense_map* /*state_vars*/) {
   // Implementation matching PM4Sand_claude_2.cpp logic
   Matrix3d s = getDevPart(stress);
-  double p = stress.trace() * c_one3;
+  // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+  double p = 0.5 * (stress(0,0) + stress(1,1));
   p = std::max(p, m_Pmin);  // Use p_min threshold
 
   Matrix3d s_eff =
@@ -1327,14 +1341,15 @@ void PM4Sand<Tdim>::getStateDependent(
     const double& pzp,   // Input state scalars
     const double& Mcur,  // Input Mcur (const ref OK)
     const double& dr,    // Input current Dr (const ref OK)
-    Matrix3d& n, double& D, Matrix3d& R, double& K_p,       // Outputs
+    Matrix3d& n, double& D, Matrix3d& R, double& K_p,        // Outputs
     Matrix3d& alphaD, double& Cka, double& h, Matrix3d& b,  // Outputs
     double& alphaAlphaBDotN, dense_map* state_vars) {       // Output
 
   // --- Implementation based on PM4Sand_claude_2.cpp getStateDependent ---
   // Ensure variables are accessed correctly (inputs vs outputs).
-
-  double p = stress.trace() * c_one3;
+  
+  // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+  double p = 0.5 * (stress(0,0) + stress(1,1));
   p = std::max(p, m_Pmin);  // Use p_min threshold
 
   double ksi = getKsi(dr, p);
@@ -1534,7 +1549,8 @@ void PM4Sand<Tdim>::stressCorrection(
   double K_iter, G_iter, Mcur_iter;  // Elastic moduli
 
   // Check for small p (Function 2 logic)
-  p_iter = nStress.trace() * c_one3;
+  // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+  p_iter = 0.5 * (nStress(0,0) + nStress(1,1));
   fr = getF(nStress, nAlpha,
             state_vars);  // Calculate fr regardless of p initially
 
@@ -1601,7 +1617,8 @@ void PM4Sand<Tdim>::stressCorrection(
       nStress;  // Newton-Raphson開始時の応力（二分法の参照用）
   Matrix3d nAlpha_newton_start = nAlpha;  // Newton-Raphson開始時のアルファ
   for (int i = 1; i <= maxIter; i++) {
-    p_iter = nStress.trace() * c_one3;
+    // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+    p_iter = 0.5 * (nStress(0,0) + nStress(1,1));
     p_iter = std::max(p_iter, m_Pmin);  // Ensure p >= p_min
 
     // Calculate stress ratio tensor r (Function 2 logic)
@@ -1632,7 +1649,7 @@ void PM4Sand<Tdim>::stressCorrection(
             1e-2) {  // dGammaが意味のある大きさの場合のみdSigmaPを計算
       dSigmaP =
           dGamma_step *
-          (2.0 * G_iter * n_iter +
+          (2.0 * G_iter * R_iter +
            K_iter * D_iter *
                m_I);  // R_iterではなくn_iterを使用するスタンドアローン版のdSigmaPの計算方法に近づけるか検討が必要。PM4Sand.cpp(OpenSees)ではRを使っている。ここでは元のMPM版のR_iterのままとする。
       // dSigmaP = dGamma_step * (2.0 * G_iter * R_iter + K_iter * D_iter *
@@ -1773,7 +1790,8 @@ void PM4Sand<Tdim>::stressCorrection(
   nextStress = nStress;
   nextAlpha = nAlpha;
   // 最終チェック：平均主応力が負でないか、m_Pminを下回っていないか
-  p_iter = nextStress.trace() * c_one3;
+  // IGNORE_SIGMA_ZZ_FIX: Use 2D mean stress calculation
+  p_iter = 0.5 * (nextStress(0,0) + nextStress(1,1));
   if (p_iter < m_Pmin) {
 
     Matrix3d s_final = getDevPart(nextStress);
@@ -1791,6 +1809,19 @@ typename PM4Sand<Tdim>::Vector6d PM4Sand<Tdim>::voigtI() const {
   return I_voigt;
 }
 
+// --- Helper: Get Deviatoric Part (IGNORE_SIGMA_ZZ_FIX) ---
+template <unsigned Tdim>
+Eigen::Matrix3d PM4Sand<Tdim>::getDevPart(const Matrix3d& stress) {
+  // IGNORE_SIGMA_ZZ_FIX: Deviatoric part calculation ignoring sigma_zz
+  // Matches OpenSees PM4Sand::GetDevPart logic where p = 0.5 * (xx + yy)
+  double p = 0.5 * (stress(0, 0) + stress(1, 1));
+  Eigen::Matrix3d s = stress;
+  s(0, 0) -= p;
+  s(1, 1) -= p;
+  // Force deviatoric zz component to zero so it doesn't affect invariants (q, etc.)
+  s(2, 2) = 0.0; 
+  return s;
+}
 // Explicit instantiation for 2D and 3D to avoid linking debugs if used
 // elsewhere If the class is only used with Tdim=2, only instantiate for 2. If
 // the framework might instantiate with Tdim=3, include 3 as well.

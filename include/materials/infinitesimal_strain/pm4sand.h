@@ -147,11 +147,11 @@ class PM4Sand : public InfinitesimalElastoPlastic<Tdim> {
     // return std::sqrt((A.array() * A.array()).sum()); // Equivalent manual
     // calculation
   }
-
-  inline Matrix3d getDevPart(const Matrix3d& A) const {
-    // Deviatoric part: A - trace(A)/3 * I
-    return A - (A.trace() / 3.0) * Matrix3d::Identity();
-  }
+  Matrix3d getDevPart(const Matrix3d& A);
+  // inline Matrix3d getDevPart(const Matrix3d& A) const {
+  //   // Deviatoric part: A - trace(A)/3 * I
+  //   return A - (A.trace() / 3.0) * Matrix3d::Identity();
+  // }
 
   inline double getTrace(const Matrix3d& A) const {
     // Trace of the matrix

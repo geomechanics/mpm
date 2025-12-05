@@ -124,7 +124,27 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   inline double check_low(double val) {
     return (val > 1.0e-15 ? val : 1.0e-15);
   }
+  Vector6d apply_plane_strain_to_stress(const Vector6d& stress);
+  Vector6d apply_plane_strain_to_dstrain(const Vector6d& dstrain);
+  void update_softening_parameters(mpm::dense_map* state_vars);
+  std::tuple<Vector6d, double, bool> compute_single_surface_return(
+      mpm::mohrcoulomb::FailureState yield_type,
+      const Eigen::Matrix<double, 2, 1>& yield_function,
+      const Vector6d& current_stress,
+      const Matrix6x6& de,
+      mpm::dense_map* state_vars);
 
+  //! コーナーリターンマッピング（マルチサーフェス法）
+  std::tuple<Vector6d, double, bool> compute_corner_return(
+      const Vector6d& current_stress,
+      const Matrix6x6& de,
+      mpm::dense_map* state_vars);
+
+  //! 収束失敗時のフォールバック補正
+  void apply_fallback_correction(
+      Vector6d* current_stress,
+      mpm::dense_map* state_vars,
+      const Matrix6x6& de);
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Grain density

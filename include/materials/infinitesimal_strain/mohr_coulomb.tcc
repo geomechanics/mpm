@@ -140,7 +140,7 @@ typename mpm::mohrcoulomb::FailureState
         Eigen::Matrix<double, 2, 1>* yield_function,
         const mpm::dense_map& state_vars) {
   // Tolerance for yield function
-  const double Tolerance = -1E-1;
+  const double Tolerance = 1E-7;
   // Get stress invariants
   const double epsilon = state_vars.at("epsilon");
   const double rho = state_vars.at("rho");
@@ -342,174 +342,663 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
         (-1.) * ((df_dphi * dphi_dpstrain) + (df_dc * dc_dpstrain)) * (*dp_dq);
   }
 }
-
-//! Compute stress
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
-  // Density and packing parameters
+  // =========================================================================
+  // 1. 定数・初期設定
+  // =========================================================================
+  const double Tolerance = 1E-7;     // 降伏判定の許容値
+  const double Min_Denominator = 1E-15;  // 分母の最小値
+  const unsigned itr_max = 50;       // 最大反復回数
+  const double G = shear_modulus_;
+  
+  // 密度チェック（粒子が分離状態にあるか）
   const double current_packing_density = ptr->mass_density();
   const double critical_density = minimum_packing_fraction_ * grain_density_;
 
-  // Get previous time step state variable
-  const auto prev_state_vars = (*state_vars);
-  const double pdstrain = (*state_vars).at("pdstrain");
-  // Update MC parameters using a linear softening rule
-  if (softening_ && pdstrain > pdstrain_peak_) {
-    if (pdstrain < pdstrain_residual_) {
-      (*state_vars).at("phi") =
-          phi_residual_ +
-          ((phi_peak_ - phi_residual_) * (pdstrain - pdstrain_residual_) /
-           (pdstrain_peak_ - pdstrain_residual_));
-      (*state_vars).at("psi") =
-          psi_residual_ +
-          ((psi_peak_ - psi_residual_) * (pdstrain - pdstrain_residual_) /
-           (pdstrain_peak_ - pdstrain_residual_));
-      (*state_vars).at("cohesion") =
-          cohesion_residual_ + ((cohesion_peak_ - cohesion_residual_) *
-                                (pdstrain - pdstrain_residual_) /
-                                (pdstrain_peak_ - pdstrain_residual_));
-    } else {
-      (*state_vars).at("phi") = phi_residual_;
-      (*state_vars).at("psi") = psi_residual_;
-      (*state_vars).at("cohesion") = cohesion_residual_;
-    }
-    // Modify tension cutoff acoording to softening law
-    const double apex =
-        (*state_vars).at("cohesion") / std::tan((*state_vars).at("phi"));
-    if ((*state_vars).at("tension_cutoff") > apex)
-      (*state_vars).at("tension_cutoff") = check_low(apex);
-  }
-  //-------------------------------------------------------------------------
-  // Elastic-predictor stage: compute the trial stress
+  // 弾性テンソルの計算
   (*state_vars).at("yield_state") = 0;
   Matrix6x6 de = this->compute_elastic_tensor(state_vars);
+
+  // =========================================================================
+  // 2. Elastic Predictor (試行応力の計算)
+  // =========================================================================
   Vector6d trial_stress =
       this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
-  // Separated state: current packing density is less than critical density
+
+  // Separated state (引張による分離): 応力をゼロにしてリターン
   if (current_packing_density <= critical_density) {
-    (*state_vars).at("pdstrain") +=
-        mpm::materials::q(trial_stress) / 3.0 / shear_modulus_;
-    (*state_vars).at("yield_state") = 3;
+    (*state_vars).at("pdstrain") += mpm::materials::q(trial_stress) / (3.0 * G);
+    (*state_vars).at("yield_state") = 3; 
     return Vector6d::Zero();
   }
-  // Compute stress invariants based on trial stress
+
+  // 試行応力での不変量計算
   this->compute_stress_invariants(trial_stress, state_vars);
-  // Compute yield function based on the trial stress
-  Eigen::Matrix<double, 2, 1> yield_function_trial;
-  auto yield_type_trial =
-      this->compute_yield_state(&yield_function_trial, (*state_vars));
-  // Return the updated stress in elastic state
-  if (yield_type_trial == mpm::mohrcoulomb::FailureState::Elastic) {
+
+  // 試行応力での降伏関数値の確認
+  Eigen::Matrix<double, 2, 1> yield_function;
+  auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
+
+  // 弾性判定: 両方の降伏関数が許容値以下なら試行応力をそのまま返す
+  if (yield_function(0) <= Tolerance && yield_function(1) <= Tolerance) {
     (*state_vars).at("yield_state") = 0;
     return trial_stress;
   }
-  //-------------------------------------------------------------------------
-  // Plastic-corrector stage: correct the stress back to the yield surface
-  // Define tolerance of yield function
-  const double Tolerance = 1E-1;
-  // Compute plastic multiplier based on trial stress (Lambda trial)
-  double softening_trial = 0.;
-  double dp_dq_trial = 0.;
-  Vector6d df_dsigma_trial = Vector6d::Zero();
-  Vector6d dp_dsigma_trial = Vector6d::Zero();
-  this->compute_df_dp(yield_type_trial, state_vars, trial_stress,
-                      &df_dsigma_trial, &dp_dsigma_trial, &dp_dq_trial,
-                      &softening_trial);
-  double yield_trial = 0.;
-  if (yield_type_trial == mpm::mohrcoulomb::FailureState::Tensile) {
-    (*state_vars).at("yield_state") = 2;
-    yield_trial = yield_function_trial(0);
-  }
-  if (yield_type_trial == mpm::mohrcoulomb::FailureState::Shear) {
-    (*state_vars).at("yield_state") = 1;
-    yield_trial = yield_function_trial(1);
-  }
-  de = this->compute_elastic_tensor(state_vars);
-  double lambda_trial =
-      yield_trial /
-      ((df_dsigma_trial.transpose() * de).dot(dp_dsigma_trial.transpose()) +
-       softening_trial);
-  // Compute stress invariants based on stress input
-  this->compute_stress_invariants(stress, state_vars);
-  // Compute yield function based on stress input
-  Eigen::Matrix<double, 2, 1> yield_function;
-  auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
-  // Initialise value of yield function based on stress
-  double yield{std::numeric_limits<double>::max()};
-  if (yield_type == mpm::mohrcoulomb::FailureState::Tensile)
-    yield = yield_function(0);
-  if (yield_type == mpm::mohrcoulomb::FailureState::Shear)
-    yield = yield_function(1);
-  // Compute plastic multiplier based on stress input (Lambda)
-  double softening = 0.;
-  double dp_dq = 0.;
-  Vector6d df_dsigma = Vector6d::Zero();
-  Vector6d dp_dsigma = Vector6d::Zero();
-  this->compute_df_dp(yield_type, state_vars, stress, &df_dsigma, &dp_dsigma,
-                      &dp_dq, &softening);
-  const double lambda =
-      ((df_dsigma.transpose() * de).dot(dstrain)) /
-      (((df_dsigma.transpose() * de).dot(dp_dsigma)) + softening);
-  // Initialise updated stress
-  Vector6d updated_stress = trial_stress;
-  // Initialise incremental of plastic deviatoric strain
-  double dpdstrain = 0.;
-  // Correction stress based on stress
-  if (fabs(yield) < Tolerance) {
-    // Compute updated stress
-    updated_stress += -(lambda * de * dp_dsigma);
-    // Compute incremental of plastic deviatoric strain
-    dpdstrain = lambda * dp_dq;
-  } else {
-    // Compute updated stress
-    updated_stress += -(lambda_trial * de * dp_dsigma_trial);
-    // Compute incremental of plastic deviatoric strain
-    dpdstrain = lambda_trial * dp_dq_trial;
-  }
 
-  // Define the maximum iteration step
-  const int itr_max = 100;
-  // Correct the stress again
+  // =========================================================================
+  // 3. Plastic Corrector (Cutting Plane Method + Corner Return)
+  // =========================================================================
+  
+  Vector6d current_stress = trial_stress;
+  double lambda_total = 0.0;
+  bool converged = false;
+  unsigned final_itr = 0;
+
   for (unsigned itr = 0; itr < itr_max; ++itr) {
-    // Check the update stress
-    // Compute stress invariants based on updated stress
-    this->compute_stress_invariants(updated_stress, state_vars);
-    // Compute yield function based on updated stress
-    yield_type_trial =
-        this->compute_yield_state(&yield_function_trial, (*state_vars));
-    // Check yield function
-    if (yield_function_trial(0) < Tolerance &&
-        yield_function_trial(1) < Tolerance) {
+    final_itr = itr;
+    
+    // ---------------------------------------------------------------------
+    // A. 現在の応力状態での降伏状態・不変量を再評価
+    // ---------------------------------------------------------------------
+    this->compute_stress_invariants(current_stress, state_vars);
+    yield_type = this->compute_yield_state(&yield_function, (*state_vars));
+
+    // ---------------------------------------------------------------------
+    // B. 収束判定
+    // ---------------------------------------------------------------------
+    if (yield_function(0) <= Tolerance && yield_function(1) <= Tolerance) {
+      converged = true;
+      // 最終的なyield_stateを設定
+      if (yield_function(0) > -Tolerance && yield_function(1) <= -Tolerance) {
+        (*state_vars).at("yield_state") = 2;  // Tensile
+      } else if (yield_function(1) > -Tolerance && yield_function(0) <= -Tolerance) {
+        (*state_vars).at("yield_state") = 1;  // Shear
+      } else {
+        (*state_vars).at("yield_state") = 0;  // Elastic
+      }
       break;
     }
-    // Compute plastic multiplier based on updated stress
-    this->compute_df_dp(yield_type_trial, state_vars, updated_stress,
-                        &df_dsigma_trial, &dp_dsigma_trial, &dp_dq_trial,
-                        &softening_trial);
-    if (yield_type_trial == mpm::mohrcoulomb::FailureState::Tensile)
-      yield_trial = yield_function_trial(0);
-    if (yield_type_trial == mpm::mohrcoulomb::FailureState::Shear)
-      yield_trial = yield_function_trial(1);
-    // Compute plastic multiplier based on updated stress
-    lambda_trial =
-        yield_trial /
-        ((df_dsigma_trial.transpose() * de).dot(dp_dsigma_trial.transpose()) +
-         softening_trial);
-    // Correct stress back to the yield surface
-    updated_stress += -(lambda_trial * de * dp_dsigma_trial);
-    // Update incremental of plastic deviatoric strain
-    dpdstrain += lambda_trial * dp_dq_trial;
+
+    // ---------------------------------------------------------------------
+    // C. 降伏タイプの判定とコーナー処理
+    // ---------------------------------------------------------------------
+    const bool tension_violated = (yield_function(0) > Tolerance);
+    const bool shear_violated = (yield_function(1) > Tolerance);
+
+    Vector6d stress_correction = Vector6d::Zero();
+    double dpdstrain_inc = 0.0;
+
+    if (tension_violated && shear_violated) {
+      // =================================================================
+      // コーナーリターンマッピング（マルチサーフェス法）
+      // 両方の降伏関数が違反している場合
+      // =================================================================
+      auto [corner_correction, corner_dpdstrain, corner_success] = 
+          this->compute_corner_return(current_stress, de, state_vars);
+      
+      if (corner_success) {
+        stress_correction = corner_correction;
+        dpdstrain_inc = corner_dpdstrain;
+      } else {
+        // コーナーリターンが失敗した場合、より違反が大きい方で単一面リターン
+        if (yield_function(0) > yield_function(1)) {
+          yield_type = mpm::mohrcoulomb::FailureState::Tensile;
+        } else {
+          yield_type = mpm::mohrcoulomb::FailureState::Shear;
+        }
+        auto [single_correction, single_dpdstrain, single_success] =
+            this->compute_single_surface_return(
+                yield_type, yield_function, current_stress, de, state_vars);
+        stress_correction = single_correction;
+        dpdstrain_inc = single_dpdstrain;
+      }
+    } else {
+      // =================================================================
+      // 単一面リターンマッピング
+      // =================================================================
+      if (tension_violated) {
+        yield_type = mpm::mohrcoulomb::FailureState::Tensile;
+        (*state_vars).at("yield_state") = 2;
+      } else {
+        yield_type = mpm::mohrcoulomb::FailureState::Shear;
+        (*state_vars).at("yield_state") = 1;
+      }
+      
+      auto [single_correction, single_dpdstrain, single_success] =
+          this->compute_single_surface_return(
+              yield_type, yield_function, current_stress, de, state_vars);
+      stress_correction = single_correction;
+      dpdstrain_inc = single_dpdstrain;
+    }
+
+    // ---------------------------------------------------------------------
+    // D. 応力と塑性ひずみの更新
+    // ---------------------------------------------------------------------
+    current_stress += stress_correction;
+    (*state_vars).at("pdstrain") += dpdstrain_inc;
+
+    // 軟化パラメータの更新
+    if (softening_) {
+      this->update_softening_parameters(state_vars);
+    }
   }
-  // Compute stress invariants based on updated stress
-  this->compute_stress_invariants(updated_stress, state_vars);
 
-  // Update plastic deviatoric strain
-  (*state_vars).at("pdstrain") += dpdstrain;
+  // =========================================================================
+  // 4. 収束判定と警告処理
+  // =========================================================================
+  if (!converged) {
+    // 収束しなかった場合の警告
+    console_->warn(
+        "MohrCoulomb::compute_stress: Return mapping did not converge "
+        "after {} iterations. Final yield functions: f_t = {}, f_s = {}",
+        itr_max, yield_function(0), yield_function(1));
+    
+    // フォールバック処理: 最後の状態をそのまま使用するが、
+    // 降伏面から大きく外れている場合は追加処理
+    if (yield_function(0) > 1.0 || yield_function(1) > 1.0) {
+      // 大きく違反している場合は、近似的なスケーリング補正
+      this->apply_fallback_correction(&current_stress, state_vars, de);
+    }
+  }
 
-  return updated_stress;
+  // 最終的な不変量計算
+  this->compute_stress_invariants(current_stress, state_vars);
+
+  return current_stress;
+}
+//! 単一面リターンマッピング
+//! 戻り値: (応力補正量, 塑性偏差ひずみ増分, 成功フラグ)
+template <unsigned Tdim>
+std::tuple<Eigen::Matrix<double, 6, 1>, double, bool>
+mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
+    mpm::mohrcoulomb::FailureState yield_type,
+    const Eigen::Matrix<double, 2, 1>& yield_function,
+    const Vector6d& current_stress,
+    const Matrix6x6& de,
+    mpm::dense_map* state_vars) {
+  
+  const double Min_Denominator = 1E-15;
+  
+  // 降伏関数値の取得
+  double f_current = (yield_type == mpm::mohrcoulomb::FailureState::Tensile) 
+                     ? yield_function(0) : yield_function(1);
+  
+  // 勾配と硬化係数の計算
+  Vector6d df_dsigma = Vector6d::Zero();
+  Vector6d dp_dsigma = Vector6d::Zero();
+  double dp_dq = 0.0;
+  double softening_modulus = 0.0;
+
+  this->compute_df_dp(yield_type, state_vars, current_stress,
+                      &df_dsigma, &dp_dsigma, &dp_dq, &softening_modulus);
+
+  // 分母の計算と検証
+  double denominator = (df_dsigma.transpose() * de).dot(dp_dsigma) + softening_modulus;
+  
+  // =========================================================================
+  // 分母のゼロ/負チェック（修正ポイント1）
+  // =========================================================================
+  bool success = true;
+  if (denominator < Min_Denominator) {
+    if (denominator < -Min_Denominator) {
+      // 負の分母: 材料の局所的不安定性（軟化が強すぎる）
+      console_->warn(
+          "MohrCoulomb: Negative denominator detected ({:.6e}). "
+          "This indicates material instability (strong softening). "
+          "Using regularization.",
+          denominator);
+      // 正則化: 小さな正の値を使用
+      denominator = Min_Denominator;
+      success = false;  // 完全な成功ではないことを示す
+    } else {
+      // ゼロに近い分母: 数値的特異性
+      console_->debug(
+          "MohrCoulomb: Near-zero denominator detected ({:.6e}). "
+          "Applying regularization.",
+          denominator);
+      denominator = Min_Denominator;
+    }
+  }
+
+  // 塑性乗数の計算
+  double dlambda = f_current / denominator;
+  
+  // 塑性乗数の妥当性チェック
+  if (dlambda < 0.0) {
+    // 負の塑性乗数は物理的に不正
+    console_->warn(
+        "MohrCoulomb: Negative plastic multiplier ({:.6e}). Setting to zero.",
+        dlambda);
+    dlambda = 0.0;
+    success = false;
+  }
+  
+  // 過大な塑性乗数のクランプ（数値安定性のため）
+  const double max_dlambda = 1.0;  // 問題に応じて調整
+  if (dlambda > max_dlambda) {
+    console_->debug(
+        "MohrCoulomb: Large plastic multiplier ({:.6e}). Clamping to {:.6e}.",
+        dlambda, max_dlambda);
+    dlambda = max_dlambda;
+  }
+
+  // 応力補正量と塑性ひずみ増分の計算
+  Vector6d stress_correction = -dlambda * de * dp_dsigma;
+  double dpdstrain = dlambda * dp_dq;
+
+  return {stress_correction, dpdstrain, success};
+}
+
+//! コーナーリターンマッピング（マルチサーフェス法）
+//! Tension面とShear面の両方が違反している場合のKoiter's rule適用
+//! 戻り値: (応力補正量, 塑性偏差ひずみ増分, 成功フラグ)
+template <unsigned Tdim>
+std::tuple<Eigen::Matrix<double, 6, 1>, double, bool>
+mpm::MohrCoulomb<Tdim>::compute_corner_return(
+    const Vector6d& current_stress,
+    const Matrix6x6& de,
+    mpm::dense_map* state_vars) {
+  
+  const double Min_Denominator = 1E-15;
+  
+  // 両方の降伏面に対する勾配を計算
+  Vector6d df_dsigma_t = Vector6d::Zero();  // Tension
+  Vector6d dp_dsigma_t = Vector6d::Zero();
+  double dp_dq_t = 0.0;
+  double softening_t = 0.0;
+  
+  Vector6d df_dsigma_s = Vector6d::Zero();  // Shear
+  Vector6d dp_dsigma_s = Vector6d::Zero();
+  double dp_dq_s = 0.0;
+  double softening_s = 0.0;
+
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, 
+                      current_stress, &df_dsigma_t, &dp_dsigma_t, &dp_dq_t, &softening_t);
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars,
+                      current_stress, &df_dsigma_s, &dp_dsigma_s, &dp_dq_s, &softening_s);
+
+  // 降伏関数値を再計算
+  Eigen::Matrix<double, 2, 1> yield_function;
+  this->compute_yield_state(&yield_function, (*state_vars));
+  const double f_t = yield_function(0);  // Tension
+  const double f_s = yield_function(1);  // Shear
+
+  // =========================================================================
+  // 2x2連立方程式を解いて2つの塑性乗数を求める
+  // [A11 A12] [λ_t]   [f_t]
+  // [A21 A22] [λ_s] = [f_s]
+  // 
+  // A_ij = n_i^T * De * m_j + H_i * δ_ij
+  // =========================================================================
+  
+  Eigen::Matrix<double, 2, 2> A;
+  Eigen::Vector2d b;
+  
+  // 係数行列の構築
+  Vector6d de_dp_t = de * dp_dsigma_t;
+  Vector6d de_dp_s = de * dp_dsigma_s;
+  
+  A(0, 0) = df_dsigma_t.dot(de_dp_t) + softening_t;
+  A(0, 1) = df_dsigma_t.dot(de_dp_s);
+  A(1, 0) = df_dsigma_s.dot(de_dp_t);
+  A(1, 1) = df_dsigma_s.dot(de_dp_s) + softening_s;
+  
+  b(0) = f_t;
+  b(1) = f_s;
+
+  // 行列式のチェック
+  double det_A = A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
+  
+  if (std::abs(det_A) < Min_Denominator) {
+    // 特異または準特異行列: コーナーリターン失敗
+    console_->debug(
+        "MohrCoulomb: Corner return matrix is singular (det = {:.6e}). "
+        "Falling back to single surface return.",
+        det_A);
+    return {Vector6d::Zero(), 0.0, false};
+  }
+
+  // 逆行列を使って解く（2x2なので直接計算）
+  Eigen::Matrix<double, 2, 2> A_inv;
+  A_inv(0, 0) =  A(1, 1) / det_A;
+  A_inv(0, 1) = -A(0, 1) / det_A;
+  A_inv(1, 0) = -A(1, 0) / det_A;
+  A_inv(1, 1) =  A(0, 0) / det_A;
+  
+  Eigen::Vector2d lambdas = A_inv * b;
+  double lambda_t = lambdas(0);
+  double lambda_s = lambdas(1);
+
+  // =========================================================================
+  // 塑性乗数の妥当性チェック（修正ポイント1の一部）
+  // =========================================================================
+  bool success = true;
+  
+  // 負の塑性乗数のチェック
+  if (lambda_t < 0.0 || lambda_s < 0.0) {
+    if (lambda_t < 0.0 && lambda_s < 0.0) {
+      // 両方が負: コーナーリターンは不適切
+      console_->debug(
+          "MohrCoulomb: Both plastic multipliers negative (λ_t={:.6e}, λ_s={:.6e}). "
+          "Corner return failed.",
+          lambda_t, lambda_s);
+      return {Vector6d::Zero(), 0.0, false};
+    } else if (lambda_t < 0.0) {
+      // Tension側のみ負: Shear面への単一面リターンが適切
+      console_->debug(
+          "MohrCoulomb: Tension plastic multiplier negative. "
+          "Should use single shear surface return.");
+      return {Vector6d::Zero(), 0.0, false};
+    } else {
+      // Shear側のみ負: Tension面への単一面リターンが適切
+      console_->debug(
+          "MohrCoulomb: Shear plastic multiplier negative. "
+          "Should use single tension surface return.");
+      return {Vector6d::Zero(), 0.0, false};
+    }
+  }
+
+  // 過大な塑性乗数のクランプ
+  const double max_lambda = 1.0;
+  if (lambda_t > max_lambda) {
+    lambda_t = max_lambda;
+    success = false;
+  }
+  if (lambda_s > max_lambda) {
+    lambda_s = max_lambda;
+    success = false;
+  }
+
+  // =========================================================================
+  // 応力補正量の計算（Koiter's rule）
+  // Δσ = -De * (λ_t * m_t + λ_s * m_s)
+  // =========================================================================
+  Vector6d stress_correction = -de * (lambda_t * dp_dsigma_t + lambda_s * dp_dsigma_s);
+  
+  // 塑性偏差ひずみ増分（両方の寄与を合算）
+  double dpdstrain = lambda_t * dp_dq_t + lambda_s * dp_dq_s;
+
+  return {stress_correction, dpdstrain, success};
+}
+
+//! 収束失敗時のフォールバック補正（修正ポイント3）
+template <unsigned Tdim>
+void mpm::MohrCoulomb<Tdim>::apply_fallback_correction(
+    Vector6d* current_stress,
+    mpm::dense_map* state_vars,
+    const Matrix6x6& de) {
+  
+  // 降伏関数を再評価
+  this->compute_stress_invariants(*current_stress, state_vars);
+  Eigen::Matrix<double, 2, 1> yield_function;
+  auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
+
+  // 最も違反している面を特定
+  double max_violation = std::max(yield_function(0), yield_function(1));
+  if (max_violation <= 0.0) return;  // 違反なし
+
+  // 違反している場合、応力をスケーリングして降伏面上に近似的に戻す
+  // これは厳密なリターンではないが、発散を防ぐための緊急措置
+  
+  console_->warn(
+      "MohrCoulomb: Applying fallback stress scaling. "
+      "Max yield violation = {:.6e}",
+      max_violation);
+
+  // 簡易的なスケーリング: 偏差応力を縮小
+  const double p = mpm::materials::p(*current_stress);
+  Vector6d dev_stress = *current_stress;
+  dev_stress(0) -= p;
+  dev_stress(1) -= p;
+  dev_stress(2) -= p;
+
+  // スケーリング係数（経験的な値）
+  double scale_factor = 1.0 / (1.0 + max_violation);
+  if (scale_factor < 0.1) scale_factor = 0.1;  // 過度な縮小を防止
+
+  dev_stress *= scale_factor;
+  
+  (*current_stress)(0) = dev_stress(0) + p;
+  (*current_stress)(1) = dev_stress(1) + p;
+  (*current_stress)(2) = dev_stress(2) + p;
+  (*current_stress)(3) = dev_stress(3);
+  (*current_stress)(4) = dev_stress(4);
+  (*current_stress)(5) = dev_stress(5);
+
+  // Tensionカットオフの処理
+  if (yield_function(0) > yield_function(1)) {
+    // 引張が支配的: 平均応力も調整
+    const double tension_cutoff = (*state_vars).at("tension_cutoff");
+    double new_p = mpm::materials::p(*current_stress);
+    if (new_p > tension_cutoff * 0.9) {  // 90%に制限
+      double dp = new_p - tension_cutoff * 0.9;
+      (*current_stress)(0) -= dp;
+      (*current_stress)(1) -= dp;
+      (*current_stress)(2) -= dp;
+    }
+  }
+}
+// //! Compute stress
+// template <unsigned Tdim>
+// Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
+//     const Vector6d& stress, const Vector6d& dstrain,
+//     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
+
+//   // Density and packing parameters
+//   const double current_packing_density = ptr->mass_density();
+//   const double critical_density = minimum_packing_fraction_ * grain_density_;
+
+//   // Get previous time step state variable
+//   const auto prev_state_vars = (*state_vars);
+//   const double pdstrain = (*state_vars).at("pdstrain");
+//   // Update MC parameters using a linear softening rule
+//   if (softening_ && pdstrain > pdstrain_peak_) {
+//     if (pdstrain < pdstrain_residual_) {
+//       (*state_vars).at("phi") =
+//           phi_residual_ +
+//           ((phi_peak_ - phi_residual_) * (pdstrain - pdstrain_residual_) /
+//            (pdstrain_peak_ - pdstrain_residual_));
+//       (*state_vars).at("psi") =
+//           psi_residual_ +
+//           ((psi_peak_ - psi_residual_) * (pdstrain - pdstrain_residual_) /
+//            (pdstrain_peak_ - pdstrain_residual_));
+//       (*state_vars).at("cohesion") =
+//           cohesion_residual_ + ((cohesion_peak_ - cohesion_residual_) *
+//                                 (pdstrain - pdstrain_residual_) /
+//                                 (pdstrain_peak_ - pdstrain_residual_));
+//     } else {
+//       (*state_vars).at("phi") = phi_residual_;
+//       (*state_vars).at("psi") = psi_residual_;
+//       (*state_vars).at("cohesion") = cohesion_residual_;
+//     }
+//     // Modify tension cutoff acoording to softening law
+//     const double apex =
+//         (*state_vars).at("cohesion") / std::tan((*state_vars).at("phi"));
+//     if ((*state_vars).at("tension_cutoff") > apex)
+//       (*state_vars).at("tension_cutoff") = check_low(apex);
+//   }
+//   //-------------------------------------------------------------------------
+//   // Elastic-predictor stage: compute the trial stress
+//   (*state_vars).at("yield_state") = 0;
+//   Matrix6x6 de = this->compute_elastic_tensor(state_vars);
+//   Vector6d trial_stress =
+//       this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
+//   // Separated state: current packing density is less than critical density
+//   if (current_packing_density <= critical_density) {
+//     (*state_vars).at("pdstrain") +=
+//         mpm::materials::q(trial_stress) / 3.0 / shear_modulus_;
+//     (*state_vars).at("yield_state") = 3;
+//     return Vector6d::Zero();
+//   }
+//   // Compute stress invariants based on trial stress
+//   this->compute_stress_invariants(trial_stress, state_vars);
+//   // Compute yield function based on the trial stress
+//   Eigen::Matrix<double, 2, 1> yield_function_trial;
+//   auto yield_type_trial =
+//       this->compute_yield_state(&yield_function_trial, (*state_vars));
+//   // Return the updated stress in elastic state
+//   if (yield_type_trial == mpm::mohrcoulomb::FailureState::Elastic) {
+//     (*state_vars).at("yield_state") = 0;
+//     return trial_stress;
+//   }
+//   //-------------------------------------------------------------------------
+//   // Plastic-corrector stage: correct the stress back to the yield surface
+//   // Define tolerance of yield function
+//   const double Tolerance = 1E-1;
+//   // Compute plastic multiplier based on trial stress (Lambda trial)
+//   double softening_trial = 0.;
+//   double dp_dq_trial = 0.;
+//   Vector6d df_dsigma_trial = Vector6d::Zero();
+//   Vector6d dp_dsigma_trial = Vector6d::Zero();
+//   this->compute_df_dp(yield_type_trial, state_vars, trial_stress,
+//                       &df_dsigma_trial, &dp_dsigma_trial, &dp_dq_trial,
+//                       &softening_trial);
+//   double yield_trial = 0.;
+//   if (yield_type_trial == mpm::mohrcoulomb::FailureState::Tensile) {
+//     (*state_vars).at("yield_state") = 2;
+//     yield_trial = yield_function_trial(0);
+//   }
+//   if (yield_type_trial == mpm::mohrcoulomb::FailureState::Shear) {
+//     (*state_vars).at("yield_state") = 1;
+//     yield_trial = yield_function_trial(1);
+//   }
+//   de = this->compute_elastic_tensor(state_vars);
+//   double lambda_trial =
+//       yield_trial /
+//       ((df_dsigma_trial.transpose() * de).dot(dp_dsigma_trial.transpose()) +
+//        softening_trial);
+//   // Compute stress invariants based on stress input
+//   this->compute_stress_invariants(stress, state_vars);
+//   // Compute yield function based on stress input
+//   Eigen::Matrix<double, 2, 1> yield_function;
+//   auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
+//   // Initialise value of yield function based on stress
+//   double yield{std::numeric_limits<double>::max()};
+//   if (yield_type == mpm::mohrcoulomb::FailureState::Tensile)
+//     yield = yield_function(0);
+//   if (yield_type == mpm::mohrcoulomb::FailureState::Shear)
+//     yield = yield_function(1);
+//   // Compute plastic multiplier based on stress input (Lambda)
+//   double softening = 0.;
+//   double dp_dq = 0.;
+//   Vector6d df_dsigma = Vector6d::Zero();
+//   Vector6d dp_dsigma = Vector6d::Zero();
+//   this->compute_df_dp(yield_type, state_vars, stress, &df_dsigma, &dp_dsigma,
+//                       &dp_dq, &softening);
+//   const double lambda =
+//       ((df_dsigma.transpose() * de).dot(dstrain)) /
+//       (((df_dsigma.transpose() * de).dot(dp_dsigma)) + softening);
+//   // Initialise updated stress
+//   Vector6d updated_stress = trial_stress;
+//   // Initialise incremental of plastic deviatoric strain
+//   double dpdstrain = 0.;
+//   // Correction stress based on stress
+//   if (fabs(yield) < Tolerance) {
+//     // Compute updated stress
+//     updated_stress += -(lambda * de * dp_dsigma);
+//     // Compute incremental of plastic deviatoric strain
+//     dpdstrain = lambda * dp_dq;
+//   } else {
+//     // Compute updated stress
+//     updated_stress += -(lambda_trial * de * dp_dsigma_trial);
+//     // Compute incremental of plastic deviatoric strain
+//     dpdstrain = lambda_trial * dp_dq_trial;
+//   }
+
+//   // Define the maximum iteration step
+//   const int itr_max = 100;
+//   // Correct the stress again
+//   for (unsigned itr = 0; itr < itr_max; ++itr) {
+//     // Check the update stress
+//     // Compute stress invariants based on updated stress
+//     this->compute_stress_invariants(updated_stress, state_vars);
+//     // Compute yield function based on updated stress
+//     yield_type_trial =
+//         this->compute_yield_state(&yield_function_trial, (*state_vars));
+//     // Check yield function
+//     if (yield_function_trial(0) < Tolerance &&
+//         yield_function_trial(1) < Tolerance) {
+//       break;
+//     }
+//     // Compute plastic multiplier based on updated stress
+//     this->compute_df_dp(yield_type_trial, state_vars, updated_stress,
+//                         &df_dsigma_trial, &dp_dsigma_trial, &dp_dq_trial,
+//                         &softening_trial);
+//     if (yield_type_trial == mpm::mohrcoulomb::FailureState::Tensile)
+//       yield_trial = yield_function_trial(0);
+//     if (yield_type_trial == mpm::mohrcoulomb::FailureState::Shear)
+//       yield_trial = yield_function_trial(1);
+//     // Compute plastic multiplier based on updated stress
+//     lambda_trial =
+//         yield_trial /
+//         ((df_dsigma_trial.transpose() * de).dot(dp_dsigma_trial.transpose()) +
+//          softening_trial);
+//     // Correct stress back to the yield surface
+//     updated_stress += -(lambda_trial * de * dp_dsigma_trial);
+//     // Update incremental of plastic deviatoric strain
+//     dpdstrain += lambda_trial * dp_dq_trial;
+//   }
+//   // Compute stress invariants based on updated stress
+//   this->compute_stress_invariants(updated_stress, state_vars);
+
+//   // Update plastic deviatoric strain
+//   (*state_vars).at("pdstrain") += dpdstrain;
+
+//   return updated_stress;
+// }
+//! 軟化パラメータの更新（既存コードの改良版）
+template <unsigned Tdim>
+void mpm::MohrCoulomb<Tdim>::update_softening_parameters(mpm::dense_map* state_vars) {
+  const double pdstrain = (*state_vars).at("pdstrain");
+  
+  if (pdstrain <= pdstrain_peak_) {
+    // ピーク前: ピーク値を維持
+    (*state_vars).at("phi") = phi_peak_;
+    (*state_vars).at("psi") = psi_peak_;
+    (*state_vars).at("cohesion") = cohesion_peak_;
+  } else if (pdstrain >= pdstrain_residual_) {
+    // 残留状態: 残留値を維持
+    (*state_vars).at("phi") = phi_residual_;
+    (*state_vars).at("psi") = psi_residual_;
+    (*state_vars).at("cohesion") = cohesion_residual_;
+  } else {
+    // 軟化領域: 線形補間
+    const double ratio = (pdstrain - pdstrain_peak_) / 
+                         (pdstrain_residual_ - pdstrain_peak_);
+    (*state_vars).at("phi") = phi_peak_ + ratio * (phi_residual_ - phi_peak_);
+    (*state_vars).at("psi") = psi_peak_ + ratio * (psi_residual_ - psi_peak_);
+    (*state_vars).at("cohesion") = cohesion_peak_ + ratio * (cohesion_residual_ - cohesion_peak_);
+  }
+  
+  // Tension cutoffの更新（Apex制限）
+  const double phi = (*state_vars).at("phi");
+  const double cohesion = (*state_vars).at("cohesion");
+  
+  // tan(phi)がゼロに近い場合の保護
+  const double tan_phi = std::tan(phi);
+  const double min_tan_phi = 1.0e-10;
+  
+  double apex;
+  if (std::abs(tan_phi) < min_tan_phi) {
+    // φ ≈ 0 の場合、apex は非常に大きい（事実上無限大）
+    apex = std::numeric_limits<double>::max();
+  } else {
+    apex = cohesion / tan_phi;
+  }
+  
+  // Tension cutoffはapex以下に制限
+  if ((*state_vars).at("tension_cutoff") > apex) {
+    (*state_vars).at("tension_cutoff") = apex;
+  }
+  
+  // Tension cutoffが負にならないよう保護
+  if ((*state_vars).at("tension_cutoff") < 0.0) {
+    (*state_vars).at("tension_cutoff") = 0.0;
+  }
 }
 
 //! Compute elastic tensor

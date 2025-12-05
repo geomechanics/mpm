@@ -157,6 +157,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! \retval porosity Porosity
   double porosity() const override { return porosity_; }
 
+  double saturation() const override { return liquid_saturation_; }
   //! Type of particle
   std::string type() const override {
     return (Tdim == 2) ? "P2D2PHASE" : "P3D2PHASE";
@@ -213,8 +214,8 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
 
  private:
   //! Assign liquid mass and momentum to nodes
-  virtual void map_liquid_mass_momentum_to_nodes() noexcept;
-
+  virtual void map_liquid_mass_momentum_to_nodes(mpm::VelocityUpdate velocity_update) noexcept;
+  virtual void map_liquid_mass_momentum_to_nodes_taylor() noexcept;
   //! Map two phase mixture body force
   //! \param[in] mixture Identification for Mixture
   //! \param[in] pgravity Gravity of the particle
@@ -267,6 +268,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   //! \ingroup AdvancedMapping
   //! \param[in] dt Analysis time step
   virtual void compute_updated_liquid_velocity_pic(double dt) noexcept;
+  virtual void compute_updated_liquid_velocity_tpic(double dt) noexcept;
 
   /**@}*/
 
@@ -333,6 +335,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   using Particle<Tdim>::deformation_gradient_;
   //! Mapping matrix
   using Particle<Tdim>::mapping_matrix_;
+  Eigen::MatrixXd mapping_matrix_liquid_;
 
   //! Liquid mass
   double liquid_mass_;

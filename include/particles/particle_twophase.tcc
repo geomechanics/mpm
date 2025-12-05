@@ -379,7 +379,13 @@ void mpm::TwoPhaseParticle<Tdim>::compute_mass() noexcept {
       liquid_saturation_ * porosity_ *
       (this->material(mpm::ParticlePhase::Liquid))
           ->template property<double>(std::string("density"));
-  this->liquid_mass_ = volume_ * liquid_mass_density_;
+  if (liquid_saturation_ > 0){
+    this->liquid_mass_ = volume_ * liquid_mass_density_;
+  }
+  else{
+    this->liquid_mass_ = 0.;
+    this->liquid_velocity_.setZero();
+  }
 }
 
 //! Map particle mass and momentum to nodes
@@ -387,13 +393,20 @@ template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::map_mass_momentum_to_nodes(
     mpm::VelocityUpdate velocity_update) noexcept {
   mpm::Particle<Tdim>::map_mass_momentum_to_nodes(velocity_update);
-  this->map_liquid_mass_momentum_to_nodes();
+  if (this->liquid_mass_ > 0){
+    this->map_liquid_mass_momentum_to_nodes(velocity_update);
+  }
 }
 
 //! Map liquid mass and momentum to nodes
 template <unsigned Tdim>
-void mpm::TwoPhaseParticle<Tdim>::map_liquid_mass_momentum_to_nodes() noexcept {
+void mpm::TwoPhaseParticle<Tdim>::map_liquid_mass_momentum_to_nodes(mpm::VelocityUpdate velocity_update) noexcept {
   // Check if liquid mass is set and positive
+  switch (velocity_update) {
+    case mpm::VelocityUpdate::TPIC:
+      this->map_liquid_mass_momentum_to_nodes_taylor();
+      break;
+    default:
   assert(liquid_mass_ != std::numeric_limits<double>::max());
 
   // Map liquid mass and momentum to nodes
@@ -403,11 +416,39 @@ void mpm::TwoPhaseParticle<Tdim>::map_liquid_mass_momentum_to_nodes() noexcept {
     nodes_[i]->update_momentum(true, mpm::ParticlePhase::Liquid,
                                liquid_mass_ * shapefn_[i] * liquid_velocity_);
   }
+  break;
 }
+}
+//! Map particle mass and momentum to nodes for approximate taylor expansion
+template <unsigned Tdim>
+void mpm::TwoPhaseParticle<Tdim>::map_liquid_mass_momentum_to_nodes_taylor() noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
 
+  // Initialise Mapping matrix if necessary
+  if (mapping_matrix_liquid_.rows() != Tdim) {
+    mapping_matrix_liquid_.resize(Tdim, Tdim);
+    mapping_matrix_liquid_.setZero();
+  }
+
+  // Map mass and momentum to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    // Initialise map velocity
+    VectorDim map_velocity = liquid_velocity_;
+    map_velocity.noalias() +=
+        mapping_matrix_liquid_ * (nodes_[i]->coordinates() - this->coordinates_);
+
+    // Map mass and momentum
+    nodes_[i]->update_mass(true, mpm::ParticlePhase::Liquid,
+                           liquid_mass_ * shapefn_[i]);
+    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Liquid,
+                               liquid_mass_ * shapefn_[i] * map_velocity);
+  }
+}
 //! Compute pore pressure
 template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::compute_pore_pressure(double dt) noexcept {
+  if (this->liquid_mass_ == 0) return;
   // Check if liquid material and cell pointer are set and positive
   assert(this->material(mpm::ParticlePhase::Liquid) != nullptr &&
          cell_ != nullptr);
@@ -440,7 +481,9 @@ template <unsigned Tdim>
 void mpm::TwoPhaseParticle<Tdim>::map_body_force(
     const VectorDim& pgravity) noexcept {
   this->map_mixture_body_force(mpm::ParticlePhase::Mixture, pgravity);
-  this->map_liquid_body_force(pgravity);
+  if (this->liquid_mass_ > 0){
+    this->map_liquid_body_force(pgravity);
+  }
 }
 
 //! Map liquid phase body force
@@ -500,8 +543,10 @@ void mpm::TwoPhaseParticle<Tdim>::map_liquid_traction_force() noexcept {
 template <unsigned Tdim>
 inline void mpm::TwoPhaseParticle<Tdim>::map_internal_force() noexcept {
   mpm::TwoPhaseParticle<Tdim>::map_mixture_internal_force();
-  mpm::TwoPhaseParticle<Tdim>::map_liquid_internal_force();
-  mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force();
+  if (this->liquid_mass_ > 0){
+    mpm::TwoPhaseParticle<Tdim>::map_liquid_internal_force();
+    mpm::TwoPhaseParticle<Tdim>::map_liquid_advection_force();
+  }
 }
 
 //! Map liquid phase internal force
@@ -595,9 +640,10 @@ inline void mpm::TwoPhaseParticle<1>::map_mixture_internal_force() noexcept {
 template <>
 inline void mpm::TwoPhaseParticle<2>::map_mixture_internal_force() noexcept {
   // pore pressure
-  const double pressure =
+  double pressure =
       -this->state_variable("pressure", mpm::ParticlePhase::Liquid);
   // total stress
+  if(this->liquid_mass_ == 0) pressure = 0.0;
   Eigen::Matrix<double, 6, 1> total_stress = this->stress_;
   total_stress(0) += pressure * this->projection_param_;
   total_stress(1) += pressure * this->projection_param_;
@@ -724,11 +770,23 @@ void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity(
       this->compute_updated_liquid_velocity_pic(dt);
       break;
     case mpm::VelocityUpdate::TPIC:
-      this->compute_updated_liquid_velocity_pic(dt);
+      this->compute_updated_liquid_velocity_tpic(dt);
       break;
   }
 }
+// Compute updated position of the particle assuming TPIC scheme
+template <unsigned Tdim>
+void mpm::TwoPhaseParticle<Tdim>::compute_updated_liquid_velocity_tpic(double dt) noexcept {
+  // Check if particle has a valid cell ptr
+  assert(cell_ != nullptr);
 
+  // Compute auxiliary mapping matrix
+  mapping_matrix_liquid_ = this->compute_velocity_gradient(
+      this->dn_dx_, mpm::ParticlePhase::Liquid);
+
+  // Perform PIC update
+  this->compute_updated_liquid_velocity_pic(dt);
+}
 // Compute updated velocity of the liquid phase based on nodal velocity assuming
 // FLIP scheme
 template <unsigned Tdim>
@@ -872,6 +930,7 @@ template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::map_drag_force_coefficient() {
   bool status = true;
   try {
+    if(this->liquid_mass_ == 0) return status;
     // Porosity parameter
     const double k_p =
         std::pow(this->porosity_, 3) / std::pow((1. - this->porosity_), 2);
@@ -1411,6 +1470,7 @@ template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::map_drag_matrix_to_cell() {
   bool status = true;
   try {
+    if(this->liquid_mass_ == 0) return status;
     // Porosity parameter
     const double k_p =
         std::pow(this->porosity_, 3) / std::pow((1. - this->porosity_), 2);
@@ -1455,6 +1515,7 @@ template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::map_laplacian_to_cell() {
   bool status = true;
   try {
+    if (this->liquid_mass_ == 0) return status;
     // Compute multiplier
     const double multiplier =
         (1 - this->porosity_) /
@@ -1534,6 +1595,7 @@ template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::map_poisson_right_to_cell() {
   bool status = true;
   try {
+    if (this->liquid_mass_ == 0) return status;
     // Compute local poisson rhs matrix for solid part
     cell_->compute_local_poisson_right_twophase(mpm::ParticlePhase::Solid,
                                                 shapefn_, dn_dx_, volume_,
@@ -1557,16 +1619,22 @@ bool mpm::TwoPhaseParticle<Tdim>::compute_updated_pressure() {
     for (unsigned i = 0; i < nodes_.size(); ++i) {
       pressure_increment += shapefn_(i) * nodes_[i]->pressure_increment();
     }
-
-    // Get interpolated nodal pressure
-    state_variables_[mpm::ParticlePhase::Liquid].at("pressure") =
+    double pressure_dummy =
         state_variables_[mpm::ParticlePhase::Liquid].at("pressure") *
             projection_param_ +
         pressure_increment;
+    if(pressure_dummy < 0) pressure_dummy = 0.0;
+    state_variables_[mpm::ParticlePhase::Liquid].at("pressure") = pressure_dummy;
+    // Get interpolated nodal pressure
+    // state_variables_[mpm::ParticlePhase::Liquid].at("pressure") =
+    //     state_variables_[mpm::ParticlePhase::Liquid].at("pressure") *
+    //         projection_param_ +
+    //     pressure_increment;
 
     // Overwrite pressure if free surface
-    if (this->free_surface())
+    if (this->free_surface() || (this->liquid_mass_ == 0)) {
       state_variables_[mpm::ParticlePhase::Liquid].at("pressure") = 0.0;
+    }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

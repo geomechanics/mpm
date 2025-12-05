@@ -254,7 +254,6 @@ template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::compute_free_surface_by_density(
     double volume_tolerance, unsigned cell_neighbourhood) {
   bool status = true;
-
   // Get number of MPI ranks
   int mpi_rank = 0;
   int mpi_size = 1;
@@ -374,7 +373,7 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_density(
       }
 
       //! Check volume fraction only for boundary cell
-      if (!internal) {
+      if (!internal || (*citr)->volume_fraction() < volume_tolerance) {
         if ((*citr)->volume_fraction() < volume_tolerance) {
           cell_at_interface = true;
           fs_neighbour_check((*citr), cell_neighbourhood, fs_neighbour_check);
@@ -443,7 +442,10 @@ bool mpm::Mesh<Tdim>::compute_free_surface_by_density(
           return ptr->assign_free_surface(status);
         }
       });
-
+  // auto fsnode = free_surface_nodes();
+  // for (auto nid : fsnode){
+  //   std::cout << "fs node:" << nid << std::endl;
+  // }
   return status;
 }
 
@@ -483,10 +485,19 @@ void mpm::Mesh<Tdim>::compute_cell_vol_fraction() {
     if (c_ptr->status()) {
       // Compute volume fraction
       double cell_volume_fraction = 0.0;
-      for (const auto p_id : c_ptr->particles())
-        cell_volume_fraction += map_particles[p_id]->volume();
-
+      for (const auto p_id : c_ptr->particles()){
+        double particle_saturation = map_particles[p_id]->saturation(); 
+        cell_volume_fraction += particle_saturation*map_particles[p_id]->volume();
+        // cell_volume_fraction += map_particles[p_id]->volume();
+      }
       cell_volume_fraction = cell_volume_fraction / c_ptr->volume();
+      // if(cell_volume_fraction>1){
+      //   std::cout << c_ptr->id() << " Warning: volume fraction greater than 1 :" << cell_volume_fraction << std::endl;
+      //   auto node_ids = c_ptr->nodes_id();
+      //   for (const auto nid : node_ids){
+      //     std::cout << "   node id: " << nid << std::endl;
+      //   }
+      // }
       return c_ptr->assign_volume_fraction(cell_volume_fraction);
     }
   });

@@ -601,8 +601,10 @@ void mpm::Particle<Tdim>::update_volume() noexcept {
   assert(cell_ != nullptr && volume_ != std::numeric_limits<double>::max());
   // Compute at centroid
   // Strain rate for reduced integration
-  this->volume_ *= (1. + dvolumetric_strain_);
-  this->mass_density_ = this->mass_density_ / (1. + dvolumetric_strain_);
+  // this->volume_ *= (1. + dvolumetric_strain_);
+  // this->mass_density_ = this->mass_density_ / (1. + dvolumetric_strain_);
+  this->volume_ *= std::exp(dvolumetric_strain_);
+  this->mass_density_ = this->mass_density_ / std::exp(dvolumetric_strain_);
 }
 
 //! Return the approximate particle diameter
@@ -873,7 +875,8 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
       this->compute_strain_rate(dn_dx_centroid_, mpm::ParticlePhase::Solid);
 
   // Assign volumetric strain at centroid
-  dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+  // dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+  dvolumetric_strain_ = dt * strain_rate_.head(Tdim).sum();
 }
 
 // Compute stress
@@ -991,7 +994,6 @@ bool mpm::Particle<Tdim>::assign_body_force(unsigned direction,
           "Particle body force property: mass / direction is invalid");
     }
     // Assign body force
-    body_force_.setZero();
     body_force_(direction) = bodyforce;
     status = true;
     this->set_bodyforce_ = true;
@@ -1002,7 +1004,7 @@ bool mpm::Particle<Tdim>::assign_body_force(unsigned direction,
   return status;
 }
 
-//! Map traction force
+//! Map input body force
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_body_force_not_gravity() noexcept {
   if (this->set_bodyforce_) this->map_body_force(body_force_);

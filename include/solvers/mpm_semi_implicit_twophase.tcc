@@ -1,3 +1,9 @@
+#include <chrono>   // 時間計測
+#include <iostream> // デバッグ用（std::cout を使うなら）
+double ms(const std::chrono::steady_clock::time_point& start, const std::chrono::steady_clock::time_point& end)
+{
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+}
 //! Constructor
 template <unsigned Tdim>
 mpm::MPMSemiImplicitTwoPhase<Tdim>::MPMSemiImplicitTwoPhase(
@@ -139,6 +145,9 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::assign_permeability, std::placeholders::_1));
 
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::assign_saturation_degree,
+        std::placeholders::_1));
     // Compute mass for each phase
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
@@ -361,21 +370,24 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
 
     // Compute poisson equation
     this->compute_poisson_equation();
-
+    auto t0 = std::chrono::steady_clock::now();
     // Assign pressure to nodes
     mesh_->iterate_over_nodes_predicate(
         std::bind(&mpm::NodeBase<Tdim>::update_pressure_increment,
                   std::placeholders::_1, assembler_->pressure_increment(),
                   mpm::NodePhase::NLiquid, this->step_ * this->dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    auto t1 = std::chrono::steady_clock::now();
 
     // Use nodal pressure to update particle pressure
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::compute_updated_pressure,
                   std::placeholders::_1));
+    auto t2 = std::chrono::steady_clock::now();
 
     // Compute correction force
     this->compute_correction_force();
+    auto t3 = std::chrono::steady_clock::now();
 
 #ifdef USE_MPI
     // Run if there is more than a single MPI task
@@ -430,6 +442,7 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
               std::placeholders::_1, mpm::NodePhase::NLiquid, this->dt_),
           std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
     }
+    auto t4 = std::chrono::steady_clock::now();
 
     // Update particle position and kinematics
     mesh_->iterate_over_particles(std::bind(
@@ -467,6 +480,9 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
 
     // Write outputs
     this->write_outputs(this->step_ + 1);
+  // std::cout<<" t1 "<< ms(t0,t1) <<" t2 "<<ms(t1,t2)<<" t3 "<<ms(t2,t3)<<" t4 "<<ms(t3,t4)<<std::endl;
+  // std::cout<<"t1 "<< ms(t0,t1) <<std::endl;
+
   }
   auto solver_end = std::chrono::steady_clock::now();
   console_->info("Rank {}, SemiImplicit TwoPhase solver duration: {} ms",
@@ -474,7 +490,6 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
                  std::chrono::duration_cast<std::chrono::milliseconds>(
                      solver_end - solver_begin)
                      .count());
-
   return status;
 }
 
@@ -782,16 +797,22 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::compute_correction_force() {
   bool status = true;
   try {
     // Map correction matrix from particles to cell
+    auto t0 = std::chrono::steady_clock::now();
+
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_correction_matrix_to_cell,
                   std::placeholders::_1));
+    auto t1 = std::chrono::steady_clock::now();
 
     // Assemble correction matrix
     assembler_->assemble_corrector_right(dt_);
+    auto t2= std::chrono::steady_clock::now();
 
     // Assign correction force
     mesh_->compute_nodal_correction_force_twophase(
         assembler_->correction_matrix(), assembler_->pressure_increment(), dt_);
+    auto t3 = std::chrono::steady_clock::now();
+  // std::cout<<" t1 "<< ms(t0,t1) <<" t2 "<<ms(t1,t2)<<" t3 "<<ms(t2,t3)<<std::endl;
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

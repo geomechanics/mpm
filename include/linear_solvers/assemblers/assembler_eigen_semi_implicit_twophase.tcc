@@ -241,48 +241,63 @@ bool mpm::AssemblerEigenSemiImplicitTwoPhase<Tdim>::assemble_corrector_right(
     double dt) {
   bool status = true;
   try {
-    // Resize correction matrix
-    correction_matrix_.resize(2 * active_dof_, active_dof_ * Tdim);
-    correction_matrix_.setZero();
-
-    // Reserve storage for sparse matrix
-    correction_matrix_.reserve(
-        Eigen::VectorXi::Constant(active_dof_ * Tdim, 2 * sparse_row_size_));
-
-    // Cell pointer
+    // 1. トリプレット（行, 列, 値 の組）を格納する配列を用意
+    std::vector<Eigen::Triplet<double>> triplets;
+    
+    // 必要なメモリを概算して予約（再確保のコストを防ぐ）
+    // (セル数 * ノード数^2 * 次元 * 2相分) 程度
     const auto& cells = mesh_->cells();
+    unsigned estimated_entries = cells.size() * 64 * Tdim * 2; // 適当な係数
+    triplets.reserve(estimated_entries);
 
-    // Iterate over cells
+    // 2. セルごとのループ（OpenMPで並列化可能！）
+    // Tripletへの追加はスレッドセーフではないので、
+    // 並列化する場合はスレッドごとにvectorを作るなどの工夫が必要ですが、
+    // 単純化のためここではシリアルで書きます（それでもcoeffRefより圧倒的に速い）
+
     unsigned cid = 0;
     for (auto cell_itr = cells.cbegin(); cell_itr != cells.cend(); ++cell_itr) {
       if ((*cell_itr)->status()) {
-        // Number of nodes in cell
-        unsigned nnodes_per_cell = global_node_indices_.at(cid).size();
-        // Local correction matrix for solid
+        const auto& cell_nodes = global_node_indices_.at(cid);
+        unsigned nnodes_per_cell = cell_nodes.size();
+
+        // Local correction matrices
         auto correction_matrix_solid =
             (*cell_itr)->correction_matrix(mpm::NodePhase::NSolid);
-        // Local correction matrix for liquid
         auto coefficient_matrix_liquid =
             (*cell_itr)->correction_matrix(mpm::NodePhase::NLiquid);
+
         for (unsigned k = 0; k < Tdim; k++) {
           for (unsigned i = 0; i < nnodes_per_cell; i++) {
+            unsigned row_solid = cell_nodes(i);
+            unsigned row_liquid = cell_nodes(i) + active_dof_;
+            
             for (unsigned j = 0; j < nnodes_per_cell; j++) {
-              // Solid phase
-              correction_matrix_.coeffRef(
-                  global_node_indices_.at(cid)(i),
-                  k * active_dof_ + global_node_indices_.at(cid)(j)) +=
-                  correction_matrix_solid(i, j + k * nnodes_per_cell);
-              // Liquid phase
-              correction_matrix_.coeffRef(
-                  global_node_indices_.at(cid)(i) + active_dof_,
-                  k * active_dof_ + global_node_indices_.at(cid)(j)) +=
-                  coefficient_matrix_liquid(i, j + k * nnodes_per_cell);
+              unsigned col = k * active_dof_ + cell_nodes(j);
+
+              // Solid phase value
+              double val_solid = correction_matrix_solid(i, j + k * nnodes_per_cell);
+              if (std::abs(val_solid) > 1e-16) { // ゼロに近い値は入れないのも手
+                 triplets.emplace_back(row_solid, col, val_solid);
+              }
+
+              // Liquid phase value
+              double val_liquid = coefficient_matrix_liquid(i, j + k * nnodes_per_cell);
+              if (std::abs(val_liquid) > 1e-16) {
+                 triplets.emplace_back(row_liquid, col, val_liquid);
+              }
             }
           }
         }
         cid++;
       }
     }
+
+    // 3. 行列のリサイズと構築を一括で行う
+    correction_matrix_.resize(2 * active_dof_, active_dof_ * Tdim);
+    // 重複したインデックスの値は自動的に加算される
+    correction_matrix_.setFromTriplets(triplets.begin(), triplets.end());
+
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -362,39 +377,87 @@ bool mpm::AssemblerEigenSemiImplicitTwoPhase<
   return status;
 }
 
-//! Apply velocity constraints to preditor RHS vector
+//! Apply velocity constraints to predictor RHS vector (use prune like #1)
 template <unsigned Tdim>
-bool mpm::AssemblerEigenSemiImplicitTwoPhase<
-    Tdim>::apply_velocity_constraints() {
+bool mpm::AssemblerEigenSemiImplicitTwoPhase<Tdim>::apply_velocity_constraints() {
   bool status = false;
   try {
-    // Modify the force vector(b = b - A * bc)
-    for (unsigned dir = 0; dir < Tdim; dir++) {
+    // dir ごとに独立な線形系:  b_dir = b_dir - A_dir * bc_dir
+    for (unsigned dir = 0; dir < Tdim; ++dir) {
       predictor_rhs_vector_.col(dir) +=
           -predictor_lhs_matrix_.at(dir) * velocity_constraints_.col(dir);
 
-      // Iterate over velocity constraints (non-zero elements)
-      for (unsigned j = 0; j < velocity_constraints_.outerSize(); ++j) {
-        for (Eigen::SparseMatrix<double>::InnerIterator itr(
-                 velocity_constraints_, j);
-             itr; ++itr) {
-          // Check direction
-          if (itr.col() == dir) {
-            // Assign 0 to specified column
-            predictor_lhs_matrix_.at(dir).col(itr.row()) *= 0;
-            // Assign 0 to specified row
-            predictor_lhs_matrix_.at(dir).row(itr.row()) *= 0;
-            // Assign 1  to diagnal element
-            predictor_lhs_matrix_.at(dir).coeffRef(itr.row(), itr.row()) = 1.0;
-
-            predictor_rhs_vector_(itr.row(), itr.col()) = 0.;
-          }
-        }
+      // この方向で拘束されている DOF を収集
+      std::unordered_set<int> constrained_dofs;
+      // 速度拘束行列は [ndof x Tdim] を想定。列 dir の非ゼロが拘束DOF
+      for (Eigen::SparseMatrix<double>::InnerIterator it(velocity_constraints_, static_cast<int>(dir));
+           it; ++it) {
+        const int dof = it.row();
+        constrained_dofs.insert(dof);
+        // RHS は拘束値に置き換える（A*bc 減算後なので、最終的に b(dof)=bc）
+        predictor_rhs_vector_(dof, static_cast<int>(dir)) = 0.0;
       }
+
+      // 行列を prune で間引く：拘束行 or 列に触れる非対角成分は落とす
+      auto& A = predictor_lhs_matrix_.at(dir);
+      A.prune([&constrained_dofs](int r, int c, double /*v*/) {
+        if (constrained_dofs.count(r) || constrained_dofs.count(c)) {
+          return r == c;            // 対角のみ残す
+        }
+        return true;                // 非拘束は残す
+      });
+
+      // 対角に 1 を再挿入（ゼロの場合も coeffRef で生やす）
+      for (int dof : constrained_dofs) {
+        A.coeffRef(dof, dof) = 1.0;
+      }
+
+      // ゼロ項目を落として圧縮
+      A.prune(0.0);
+      A.makeCompressed();
     }
 
+    status = true;
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }
   return status;
 }
+
+
+//! Apply velocity constraints to preditor RHS vector
+// template <unsigned Tdim>
+// bool mpm::AssemblerEigenSemiImplicitTwoPhase<
+//     Tdim>::apply_velocity_constraints() {
+//   bool status = false;
+//   try {
+//     // Modify the force vector(b = b - A * bc)
+//     for (unsigned dir = 0; dir < Tdim; dir++) {
+//       predictor_rhs_vector_.col(dir) +=
+//           -predictor_lhs_matrix_.at(dir) * velocity_constraints_.col(dir);
+
+//       // Iterate over velocity constraints (non-zero elements)
+//       for (unsigned j = 0; j < velocity_constraints_.outerSize(); ++j) {
+//         for (Eigen::SparseMatrix<double>::InnerIterator itr(
+//                  velocity_constraints_, j);
+//              itr; ++itr) {
+//           // Check direction
+//           if (itr.col() == dir) {
+//             // Assign 0 to specified column
+//             predictor_lhs_matrix_.at(dir).col(itr.row()) *= 0;
+//             // Assign 0 to specified row
+//             predictor_lhs_matrix_.at(dir).row(itr.row()) *= 0;
+//             // Assign 1  to diagnal element
+//             predictor_lhs_matrix_.at(dir).coeffRef(itr.row(), itr.row()) = 1.0;
+
+//             predictor_rhs_vector_(itr.row(), itr.col()) = 0.;
+//           }
+//         }
+//       }
+//     }
+
+//   } catch (std::exception& exception) {
+//     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+//   }
+//   return status;
+// }

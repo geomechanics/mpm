@@ -3,7 +3,9 @@
 
 #include <Eigen/Sparse>
 #include <string>
-
+#include <unordered_set>
+#include <utility>      // std::pairのため
+#include <iterator>     // std::make_move_iteratorのため
 // Speed log
 #include "assembler_base.h"
 #include "spdlog/spdlog.h"

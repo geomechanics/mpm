@@ -181,45 +181,99 @@ bool mpm::AssemblerEigenSemiImplicitNavierStokes<
   return status;
 }
 
-//! Apply pressure constraints vector
+
+//! Apply pressure constraints vector (use prune like #1)
 template <unsigned Tdim>
-void mpm::AssemblerEigenSemiImplicitNavierStokes<
-    Tdim>::apply_pressure_constraints() {
+void mpm::AssemblerEigenSemiImplicitNavierStokes<Tdim>::apply_pressure_constraints() {
   try {
-    // Modify poisson_rhs_vector_
+    // まず b = b - A * bc（ここで A=laplacian, b=poisson_rhs, bc=pressure_constraints）
     poisson_rhs_vector_ += -laplacian_matrix_ * pressure_constraints_;
 
-    // Apply free surface
+    std::unordered_set<int> constrained_dofs;
+
+    // 自由表面ノードを拘束集合に追加（値は 0 とみなす）
     if (!free_surface_.empty()) {
       const auto& nodes = mesh_->nodes();
       for (const auto& free_node : free_surface_) {
-        const auto column_index = nodes[free_node]->active_id();
-        // Modify poisson_rhs_vector
-        poisson_rhs_vector_(column_index) = 0;
-        // Modify laplacian_matrix
-        laplacian_matrix_.row(column_index) *= 0;
-        laplacian_matrix_.col(column_index) *= 0;
-        laplacian_matrix_.coeffRef(column_index, column_index) = 1;
+        const int dof = nodes[free_node]->active_id();
+        constrained_dofs.insert(dof);
+        // 自由表面は p=0 を課す
+        poisson_rhs_vector_(dof) = 0.0;
       }
-      // Clear the vector
       free_surface_.clear();
     }
 
-    // Apply pressure constraints
+    // 明示的な圧力拘束（疎ベクトルの非ゼロ）
     for (Eigen::SparseVector<double>::InnerIterator it(pressure_constraints_);
          it; ++it) {
-      // Modify poisson_rhs_vector
-      poisson_rhs_vector_(it.index()) = it.value();
-      // Modify laplacian_matrix
-      laplacian_matrix_.row(it.index()) *= 0;
-      laplacian_matrix_.col(it.index()) *= 0;
-      laplacian_matrix_.coeffRef(it.index(), it.index()) = 1;
+      constrained_dofs.insert(it.index());
+      // A*bc 減算後なので、RHS は拘束値に置き換える
+      poisson_rhs_vector_(it.index()) = 0.0;
     }
+
+    // 行列を prune：拘束行/列に関わる非対角を落とす
+    laplacian_matrix_.prune([&constrained_dofs](int r, int c, double /*v*/) {
+      if (constrained_dofs.count(r) || constrained_dofs.count(c)) {
+        return r == c;
+      }
+      return true;
+    });
+
+    // 対角 1 を再挿入
+    for (int dof : constrained_dofs) {
+      laplacian_matrix_.coeffRef(dof, dof) = 1.0;
+    }
+
+    // ゼロを整理して圧縮
+    laplacian_matrix_.prune(0.0);
+    laplacian_matrix_.makeCompressed();
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }
 }
+
+
+
+//! Apply pressure constraints vector
+// template <unsigned Tdim>
+// void mpm::AssemblerEigenSemiImplicitNavierStokes<
+//     Tdim>::apply_pressure_constraints() {
+//   try {
+//     // Modify poisson_rhs_vector_
+//     poisson_rhs_vector_ += -laplacian_matrix_ * pressure_constraints_;
+
+//     // Apply free surface
+//     if (!free_surface_.empty()) {
+//       const auto& nodes = mesh_->nodes();
+//       for (const auto& free_node : free_surface_) {
+//         const auto column_index = nodes[free_node]->active_id();
+//         // Modify poisson_rhs_vector
+//         poisson_rhs_vector_(column_index) = 0;
+//         // Modify laplacian_matrix
+//         laplacian_matrix_.row(column_index) *= 0;
+//         laplacian_matrix_.col(column_index) *= 0;
+//         laplacian_matrix_.coeffRef(column_index, column_index) = 1;
+//       }
+//       // Clear the vector
+//       free_surface_.clear();
+//     }
+
+//     // Apply pressure constraints
+//     for (Eigen::SparseVector<double>::InnerIterator it(pressure_constraints_);
+//          it; ++it) {
+//       // Modify poisson_rhs_vector
+//       poisson_rhs_vector_(it.index()) = it.value();
+//       // Modify laplacian_matrix
+//       laplacian_matrix_.row(it.index()) *= 0;
+//       laplacian_matrix_.col(it.index()) *= 0;
+//       laplacian_matrix_.coeffRef(it.index(), it.index()) = 1;
+//     }
+
+//   } catch (std::exception& exception) {
+//     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+//   }
+// }
 
 //! Assign pressure constraints
 template <unsigned Tdim>

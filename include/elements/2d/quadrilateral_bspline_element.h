@@ -275,6 +275,7 @@ class QuadrilateralBSplineElement : public QuadrilateralElement<2, 4> {
   unsigned kc_niteration_{1};
   //! Kernel correction tolerance
   double kc_tol_{0.0};
+  double inv_spacing_length_{0.0}; // 事前計算用: 1.0 / spacing_length_
 };
 
 }  // namespace mpm

@@ -111,6 +111,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assign_displacement_constraints(
   try {
     // Resize displacement constraints vector
     displacement_constraints_.resize(active_dof_ * Tdim);
+    displacement_constraints_.setZero();
     displacement_constraints_.reserve(int(0.5 * active_dof_ * Tdim));
 
     // Nodes container
@@ -125,7 +126,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assign_displacement_constraints(
         // Check if there is a displacement constraint
         if (displacement_constraint != std::numeric_limits<double>::max()) {
           // Insert the displacement constraints
-          displacement_constraints_.insert(
+          displacement_constraints_.coeffRef(
               active_dof_ * i + (*node)->active_id()) = displacement_constraint;
         }
       }
@@ -138,26 +139,143 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assign_displacement_constraints(
 }
 
 //! Apply displacement constraints vector
+// template <unsigned Tdim>
+// void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
+//   try {
+//     // Modify residual_force_rhs_vector_
+//     residual_force_rhs_vector_ +=
+//         -stiffness_matrix_ * displacement_constraints_;
+
+//     // Apply displacement constraints
+//     for (Eigen::SparseVector<double>::InnerIterator it(
+//              displacement_constraints_);
+//          it; ++it) {
+//       // Modify residual force_rhs_vector
+//       residual_force_rhs_vector_(it.index()) = it.value();
+//       // Modify stiffness_matrix
+//       stiffness_matrix_.row(it.index()) *= 0;
+//       stiffness_matrix_.col(it.index()) *= 0;
+//       stiffness_matrix_.coeffRef(it.index(), it.index()) = 1;
+//     }
+
+//   } catch (std::exception& exception) {
+//     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+//   }
+// }
+
+//! Apply displacement constraints vector
 template <unsigned Tdim>
 void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
   try {
     // Modify residual_force_rhs_vector_
     residual_force_rhs_vector_ +=
         -stiffness_matrix_ * displacement_constraints_;
-
+    std::unordered_set<int> constrained_dofs;
     // Apply displacement constraints
     for (Eigen::SparseVector<double>::InnerIterator it(
              displacement_constraints_);
          it; ++it) {
       // Modify residual force_rhs_vector
       residual_force_rhs_vector_(it.index()) = it.value();
+      constrained_dofs.insert(it.index());
       // Modify stiffness_matrix
-      stiffness_matrix_.row(it.index()) *= 0;
-      stiffness_matrix_.col(it.index()) *= 0;
-      stiffness_matrix_.coeffRef(it.index(), it.index()) = 1;
     }
 
+    stiffness_matrix_.prune([&constrained_dofs](int row, int col, double value) {
+      if(constrained_dofs.count(row) || constrained_dofs.count(col)) {
+        return(row==col);
+      }
+      return true;
+    });
+    // stiffness_matrix_.uncompress();
+    // 4. 拘束DOFの対角成分に 1.0 を挿入
+    for (int dof : constrained_dofs) {
+        stiffness_matrix_.coeffRef(dof, dof) = 1.0;
+    }
+
+    // 5. 挿入後に再度圧縮して、行列を最終化する
+    stiffness_matrix_.prune(0.0);  // 値が 0 の係数を構造から除去
+    stiffness_matrix_.makeCompressed();
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
   }
 }
+
+
+//! Apply displacement constraints vector
+// template <unsigned Tdim>
+// void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
+//   try {
+//     // Modify residual_force_rhs_vector_
+//     residual_force_rhs_vector_ +=
+//         -stiffness_matrix_ * displacement_constraints_;
+//     std::unordered_set<int> constrained_dofs;
+//     Eigen::SparseMatrix<double> stiffness_matrix_copy(stiffness_matrix_);
+//     // Apply displacement constraints
+//     for (Eigen::SparseVector<double>::InnerIterator it(
+//              displacement_constraints_);
+//          it; ++it) {
+//       // Modify residual force_rhs_vector
+//       residual_force_rhs_vector_(it.index()) = it.value();
+//       stiffness_matrix_copy.row(it.index()) *= 0;
+//       stiffness_matrix_copy.col(it.index()) *= 0;
+//       stiffness_matrix_copy.coeffRef(it.index(), it.index()) = 1;
+//       constrained_dofs.insert(it.index());
+//       // Modify stiffness_matrix
+//     }
+//     stiffness_matrix_copy.prune(0.0);  // Remove zero coefficients
+//     stiffness_matrix_copy.makeCompressed();
+
+//     stiffness_matrix_.prune([&constrained_dofs](int row, int col, double value) {
+//       if(constrained_dofs.count(row) || constrained_dofs.count(col)) {
+//         return(row==col);
+//       }
+//       return true;
+//     });
+//     // stiffness_matrix_.uncompress();
+//     // 4. 拘束DOFの対角成分に 1.0 を挿入
+//     for (int dof : constrained_dofs) {
+//         stiffness_matrix_.coeffRef(dof, dof) = 1.0;
+//     }
+
+//     // 5. 挿入後に再度圧縮して、行列を最終化する
+//     stiffness_matrix_.prune(0.0);  // 値が 0 の係数を構造から除去
+//     stiffness_matrix_.makeCompressed();
+
+//     if (stiffness_matrix_.rows() != stiffness_matrix_copy.rows() ||
+//         stiffness_matrix_.cols() != stiffness_matrix_copy.cols()) {
+// throw std::runtime_error("K size mismatch: (" +
+//     std::to_string(stiffness_matrix_.rows()) + "," + std::to_string(stiffness_matrix_.cols()) +
+//     ") vs (" + std::to_string(stiffness_matrix_copy.rows()) + "," + std::to_string(stiffness_matrix_copy.cols()) + ")");
+//     }
+//   const double atol = 1e-12;
+//   const double rtol = 1e-10;
+// for (int k = 0; k < stiffness_matrix_.outerSize(); ++k) {
+//   Eigen::SparseMatrix<double>::InnerIterator ia(stiffness_matrix_, k);
+//   Eigen::SparseMatrix<double>::InnerIterator ib(stiffness_matrix_copy, k);
+//   while (ia || ib) {
+//     if (!ia || !ib)
+//       throw std::runtime_error("K pattern mismatch: one column has extra entries at outer=" + std::to_string(k));
+//     if (ia.row() != ib.row())
+//       throw std::runtime_error("K pattern mismatch at col=" + std::to_string(k) +
+//                                ": rowA=" + std::to_string(ia.row()) +
+//                                " rowB=" + std::to_string(ib.row()));
+
+//     const double a = ia.value();
+//     const double b = ib.value();
+//     const double thr = atol ;
+//     const double diff = std::abs(a - b);
+//     if (diff > thr) {
+//       throw std::runtime_error("K value mismatch at (row=" + std::to_string(ia.row()) +
+//                                ", col=" + std::to_string(k) + "): A=" + std::to_string(a) +
+//                                " B=" + std::to_string(b) + " diff=" + std::to_string(diff) +
+//                                " thr=" + std::to_string(thr));
+//     }
+//     ++ia; ++ib;
+//   }
+// }
+
+//   } catch (std::exception& exception) {
+//     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+//   }
+// }

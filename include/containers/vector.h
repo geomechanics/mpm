@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <vector>
-
+#include <unordered_set>
 #include "data_types.h"
 
 namespace mpm {
@@ -33,7 +33,9 @@ class Vector {
   void reserve(const mpm::Index size) { elements_.reserve(size); }
 
   //! Clear
-  void clear() { elements_.clear(); }
+  void clear() { elements_.clear();
+    existing_ids_.clear();
+  }
 
   //! Return begin iterator of nodes
   typename std::vector<std::shared_ptr<T>>::const_iterator cbegin() const {
@@ -58,6 +60,7 @@ class Vector {
  private:
   // Unordered map of index and pointer
   std::vector<std::shared_ptr<T>> elements_;
+  std::unordered_set<int> existing_ids_;
 };  // Vector class
 
 #include "vector.tcc"

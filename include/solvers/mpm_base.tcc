@@ -32,6 +32,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       // Vector variables
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
+      {"pic_velocities", VariableType::Vector},
+      {"accelerations", VariableType::Vector},
       {"normals", VariableType::Vector},
       // Tensor variables
       {"strains", VariableType::Tensor},

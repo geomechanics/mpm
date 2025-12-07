@@ -89,9 +89,6 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::update_volume, std::placeholders::_1));
 
-  // Pressure smoothing
-  if (pressure_smoothing) this->pressure_smoothing(phase);
-
   // Iterate over each particle to compute stress
   mesh_->iterate_over_particles(std::bind(
       &mpm::ParticleBase<Tdim>::compute_stress, std::placeholders::_1, dt_));
@@ -100,6 +97,9 @@ inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::update_deformation_gradient,
                 std::placeholders::_1));
+
+  // Pressure smoothing
+  if (pressure_smoothing) this->pressure_smoothing(phase);
 }
 
 //! Pressure smoothing
@@ -112,12 +112,18 @@ inline void mpm::MPMScheme<Tdim>::pressure_smoothing(unsigned phase) {
 
 #ifdef USE_MPI
   // Run if there is more than a single MPI task
-  if (mpi_size_ > 1)
+  if (mpi_size_ > 1) {
     // MPI all reduce nodal pressure
     mesh_->template nodal_halo_exchange<double, 1>(
         std::bind(&mpm::NodeBase<Tdim>::pressure, std::placeholders::_1, phase),
         std::bind(&mpm::NodeBase<Tdim>::assign_pressure, std::placeholders::_1,
                   phase, std::placeholders::_2));
+    // MPI all reduce nodal pressure
+    mesh_->template nodal_halo_exchange<double, 1>(
+        std::bind(&mpm::NodeBase<Tdim>::tau, std::placeholders::_1, phase),
+        std::bind(&mpm::NodeBase<Tdim>::assign_tau, std::placeholders::_1,
+                  phase, std::placeholders::_2));
+  }
 #endif
 
   // Smooth pressure over particles

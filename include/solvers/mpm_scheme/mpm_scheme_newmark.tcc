@@ -111,13 +111,13 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
       std::bind(&mpm::ParticleBase<Tdim>::compute_strain_volume_newmark,
                 std::placeholders::_1));
 
-  // Pressure smoothing
-  if (pressure_smoothing) this->pressure_smoothing(phase);
-
   // Iterate over each particle to compute stress
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_stress_newmark,
                 std::placeholders::_1, dt_));
+
+  // Pressure smoothing
+  if (pressure_smoothing) this->pressure_smoothing(phase);
 }
 
 //! Precompute stresses and strains

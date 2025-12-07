@@ -99,10 +99,10 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
                      ? tension_cutoff_
                      : cohesion_peak_ / std::tan(phi_peak_))},
       // Stress invariants
-      // Epsilon
-      {"epsilon", 0.},
-      // Rho
-      {"rho", 0.},
+      // Pressure
+      {"pressure", 0.},
+      // Tau
+      {"tau", 0.},
       // Theta
       {"theta", 0.},
       // Plastic deviatoric strain
@@ -117,7 +117,7 @@ template <unsigned Tdim>
 std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
       "yield_state", "phi", "psi",   "cohesion", "tension_cutoff",
-      "epsilon",     "rho", "theta", "pdstrain", "dpdstrain"};
+      "pressure",    "tau", "theta", "pdstrain", "dpdstrain"};
   return state_vars;
 }
 
@@ -126,11 +126,11 @@ template <unsigned Tdim>
 bool mpm::MohrCoulomb<Tdim>::compute_stress_invariants(
     const Vector6d& stress, mpm::dense_map* state_vars) {
   // Compute the mean pressure
-  (*state_vars).at("epsilon") = mpm::materials::p(stress) * std::sqrt(3.);
+  (*state_vars).at("pressure") = mpm::materials::p(stress);
   // Compute theta value
   (*state_vars).at("theta") = mpm::materials::lode_angle(stress);
   // Compute rho
-  (*state_vars).at("rho") = std::sqrt(2. * mpm::materials::j2(stress));
+  (*state_vars).at("tau") = std::sqrt(mpm::materials::j2(stress));
 
   return true;
 }
@@ -144,8 +144,8 @@ typename mpm::mohrcoulomb::FailureState
   // Tolerance for yield function
   const double Tolerance = -1E-1;
   // Get stress invariants
-  const double epsilon = state_vars.at("epsilon");
-  const double rho = state_vars.at("rho");
+  const double epsilon = state_vars.at("pressure") * std::sqrt(3.);
+  const double rho = std::sqrt(2) * state_vars.at("tau");
   const double theta = state_vars.at("theta");
   // Get MC parameters
   const double phi = state_vars.at("phi");
@@ -199,7 +199,7 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
     const Vector6d& stress, Vector6d* df_dsigma, Vector6d* dp_dsigma,
     double* dp_dq, double* softening) {
   // Get stress invariants
-  const double rho = (*state_vars).at("rho");
+  const double rho = std::sqrt(2.0) * (*state_vars).at("tau");
   const double theta = (*state_vars).at("theta");
   // Get MC parameters
   const double phi = (*state_vars).at("phi");

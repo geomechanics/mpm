@@ -148,6 +148,11 @@ class NodeBase {
   virtual void update_mass_pressure(unsigned phase,
                                     double mass_pressure) noexcept = 0;
 
+  //! Update pressure at the nodes from particle
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] mass_pressure Product of mass x pressure of a particle
+  virtual void update_mass_tau(unsigned phase, double mass_tau) noexcept = 0;
+
   //! Apply pressure constraint
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] dt Timestep in analysis
@@ -161,9 +166,19 @@ class NodeBase {
   //! \param[in] mass_pressure Product of mass x pressure of a particle
   virtual void assign_pressure(unsigned phase, double mass_pressure) = 0;
 
+  //! Assign pressure at the nodes from particle
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] mass_pressure Product of mass x pressure of a particle
+  virtual void assign_tau(unsigned phase, double mass_tau) = 0;
+
   //! Return pressure at a given node for a given phase
   //! \param[in] phase Index corresponding to the phase
   virtual double pressure(unsigned phase) const = 0;
+
+  //! Return pressure at a given node for a given phase
+  //! \param[in] phase Index corresponding to the phase
+  virtual double tau(unsigned phase) const = 0;
 
   //! Update nodal momentum
   //! \param[in] update A boolean to update (true) or assign (false)

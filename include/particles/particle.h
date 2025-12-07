@@ -248,6 +248,9 @@ class Particle : public ParticleBase<Tdim> {
   //! Return velocity of the particle
   VectorDim velocity() const override { return velocity_; }
 
+  //! Return velocity of the particle following PIC
+  VectorDim pic_velocity() const override { return pic_velocity_; }
+
   //! Return displacement of the particle
   VectorDim displacement() const override { return displacement_; }
 
@@ -645,6 +648,8 @@ class Particle : public ParticleBase<Tdim> {
   Eigen::Matrix<double, 6, 1> dstrain_;
   //! Velocity
   Eigen::Matrix<double, Tdim, 1> velocity_;
+  //! PIC Velocity
+  Eigen::Matrix<double, Tdim, 1> pic_velocity_;
   //! Displacement
   Eigen::Matrix<double, Tdim, 1> displacement_;
   //! Particle velocity constraints

@@ -302,6 +302,9 @@ class ParticleBase {
   //! Return velocity
   virtual VectorDim velocity() const = 0;
 
+  //! Return smooth velocity
+  virtual VectorDim pic_velocity() const = 0;
+
   //! Return displacement of the particle
   virtual VectorDim displacement() const = 0;
 

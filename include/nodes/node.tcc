@@ -29,6 +29,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   external_force_.setZero();
   internal_force_.setZero();
   pressure_.setZero();
+  tau_.setZero();
   contact_displacement_.setZero();
   velocity_.setZero();
   momentum_.setZero();
@@ -177,6 +178,22 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_mass_pressure(
   }
 }
 
+//! Update pressure at the nodes from particle
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::update_mass_tau(
+    unsigned phase, double mass_tau) noexcept {
+  // Assert
+  assert(phase < Tnphases);
+
+  const double tolerance = 1.E-16;
+  // Compute pressure from mass*pressure
+  if (mass_(phase) > tolerance) {
+    node_mutex_.lock();
+    tau_(phase) += mass_tau / mass_(phase);
+    node_mutex_.unlock();
+  }
+}
+
 //! Assign pressure constraint
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 bool mpm::Node<Tdim, Tdof, Tnphases>::assign_pressure_constraint(
@@ -227,6 +244,15 @@ void mpm::Node<Tdim, Tdof, Tnphases>::assign_pressure(unsigned phase,
   // Compute pressure from mass*pressure
   node_mutex_.lock();
   pressure_(phase) = pressure;
+  node_mutex_.unlock();
+}
+
+//! Assign pressure at the nodes from particle
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::assign_tau(unsigned phase, double tau) {
+  // Compute pressure from mass*pressure
+  node_mutex_.lock();
+  tau_(phase) = tau;
   node_mutex_.unlock();
 }
 

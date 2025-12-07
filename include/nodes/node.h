@@ -140,6 +140,11 @@ class Node : public NodeBase<Tdim> {
   void update_mass_pressure(unsigned phase,
                             double mass_pressure) noexcept override;
 
+  //! Update pressure at the nodes from particle
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] mass_pressure Product of mass x pressure of a particle
+  void update_mass_tau(unsigned phase, double mass_tau) noexcept override;
+
   //! Assign pressure constraint
   //! \param[in] phase Index corresponding to the phase
   //! \param[in] pressure Applied pressure constraint
@@ -161,9 +166,19 @@ class Node : public NodeBase<Tdim> {
   //! \param[in] mass_pressure Product of mass x pressure of a particle
   void assign_pressure(unsigned phase, double mass_pressure) override;
 
+  //! Assign pressure at the nodes from particle
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] mass_pressure Product of mass x pressure of a particle
+  void assign_tau(unsigned phase, double mass_tau) override;
+
   //! Return pressure at a given node for a given phase
   //! \param[in] phase Index corresponding to the phase
   double pressure(unsigned phase) const override { return pressure_(phase); }
+
+  //! Return pressure at a given node for a given phase
+  //! \param[in] phase Index corresponding to the phase
+  double tau(unsigned phase) const override { return tau_(phase); }
 
   //! Update momentum at the nodes
   //! \param[in] update A boolean to update (true) or assign (false)
@@ -623,6 +638,8 @@ class Node : public NodeBase<Tdim> {
   Eigen::Matrix<double, Tdim, Tnphases> internal_force_;
   //! Pressure
   Eigen::Matrix<double, 1, Tnphases> pressure_;
+  //! Pressure
+  Eigen::Matrix<double, 1, Tnphases> tau_;
   //! Displacement
   VectorDim contact_displacement_;
   //! Velocity

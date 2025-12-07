@@ -336,6 +336,7 @@ void mpm::Particle<Tdim>::initialise() {
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
   this->vector_properties_["displacements"] = [&]() { return displacement(); };
   this->vector_properties_["velocities"] = [&]() { return velocity(); };
+  this->vector_properties_["pic_velocities"] = [&]() { return pic_velocity(); };
   this->vector_properties_["accelerations"] = [&]() { return acceleration(); };
   this->vector_properties_["normals"] = [&]() { return normal(); };
   this->tensor_properties_["stresses"] = [&]() { return stress(); };
@@ -1033,6 +1034,8 @@ void mpm::Particle<Tdim>::compute_updated_position_flip(
         shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
   }
 
+  pic_velocity_ = nodal_velocity;
+
   // Update particle velocity from interpolated nodal acceleration
   this->velocity_.noalias() += nodal_acceleration * dt;
   // If intermediate scheme is considered
@@ -1150,9 +1153,12 @@ bool mpm::Particle<Tdim>::map_pressure_to_nodes(unsigned phase) noexcept {
       (state_variables_[phase].find("pressure") !=
        state_variables_[phase].end())) {
     // Map particle pressure to nodes
-    for (unsigned i = 0; i < nodes_.size(); ++i)
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
       nodes_[i]->update_mass_pressure(
           phase, shapefn_[i] * mass_ * state_variables_[phase]["pressure"]);
+      nodes_[i]->update_mass_tau(
+          phase, shapefn_[i] * mass_ * state_variables_[phase]["tau"]);
+    }
 
     status = true;
   }
@@ -1171,11 +1177,15 @@ bool mpm::Particle<Tdim>::compute_pressure_smoothing(unsigned phase) noexcept {
                            state_variables_[phase].end())) {
 
     double pressure = 0.;
+    double tau = 0.;
     // Update particle pressure to interpolated nodal pressure
-    for (unsigned i = 0; i < this->nodes_.size(); ++i)
+    for (unsigned i = 0; i < this->nodes_.size(); ++i) {
       pressure += shapefn_[i] * nodes_[i]->pressure(phase);
+      tau += shapefn_[i] * nodes_[i]->tau(phase);
+    }
 
     state_variables_[phase]["pressure"] = pressure;
+    state_variables_[phase]["tau"] = tau;
 
     // If free_surface particle, overwrite pressure to zero
     if (free_surface_) state_variables_[phase]["pressure"] = 0.0;

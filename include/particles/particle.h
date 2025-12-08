@@ -237,6 +237,11 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] pgravity Gravity of a particle
   void map_body_force(const VectorDim& pgravity) noexcept override;
 
+  //! Map rotation forces (centrifugal and coriolis)
+  void map_rotation_force(const VectorDim& rotation_origin,
+                          double rotation_omega,
+                          bool rotation_clockwise) noexcept override;
+
   //! Map internal force
   inline void map_internal_force() noexcept override;
 

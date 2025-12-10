@@ -190,7 +190,6 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
-
     // Compute forces
     // Added dummy rotation arguments
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(
@@ -244,7 +243,6 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
-
 
     // Compute forces
     // Added dummy rotation arguments
@@ -300,7 +298,6 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     // Update stress first
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, false));
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
-
 
     // Compute forces
     // UPDATED: Added dummy rotation arguments

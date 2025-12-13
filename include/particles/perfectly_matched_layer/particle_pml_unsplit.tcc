@@ -664,9 +664,20 @@ void mpm::ParticleUPML<Tdim>::update_pml_properties(double dt) noexcept {
   state_variables_[phase]["stress_2int_yz"] = new_stress_2int[4];
   state_variables_[phase]["stress_2int_xz"] = new_stress_2int[5];
 
-  state_variables_[phase]["disp_int_x"] = displacement_[0] * dt;
-  state_variables_[phase]["disp_int_y"] = displacement_[1] * dt;
-  state_variables_[phase]["disp_int_z"] = displacement_[2] * dt;
+  switch (Tdim) {
+    case 1:
+      state_variables_[phase]["disp_int_x"] = displacement_[0] * dt;
+      break;
+    case 2:
+      state_variables_[phase]["disp_int_x"] = displacement_[0] * dt;
+      state_variables_[phase]["disp_int_y"] = displacement_[1] * dt;
+      break;
+    case 3:
+      state_variables_[phase]["disp_int_x"] = displacement_[0] * dt;
+      state_variables_[phase]["disp_int_y"] = displacement_[1] * dt;
+      state_variables_[phase]["disp_int_z"] = displacement_[2] * dt;
+      break;
+  }
 }
 
 //! Initialise damping functions

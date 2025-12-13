@@ -1649,7 +1649,8 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
                                           const std::string& type_name,
                                           const std::string& particle_type) {
   bool status = false;
-  if (type_name == "particles" || type_name == "fluid_particles")
+  if (type_name == "particles" || type_name == "fluid_particles" ||
+      type_name == "bbar_particles" || type_name == "fs_particles")
     status = this->read_particles_hdf5(filename, particle_type);
   else if (type_name == "twophase_particles")
     status = this->read_particles_hdf5_twophase(filename, particle_type);

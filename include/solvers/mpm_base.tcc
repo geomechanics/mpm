@@ -338,7 +338,10 @@ void mpm::MPMBase<Tdim>::initialise_particle_types() {
     // Gather particle types
     auto particle_type =
         json_particle["generator"]["particle_type"].template get<std::string>();
-    particle_types_.insert(particle_type);
+    // Insert only unique particle types
+    if (particle_types_.find(particle_type) ==
+        particle_types_.end())
+      particle_types_.insert(particle_type);
   }
 }
 
@@ -572,7 +575,8 @@ void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
 
     // Load particle information from file
-    if (attribute == "particles" || attribute == "fluid_particles")
+    if (attribute == "particles" || attribute == "fluid_particles" ||
+        attribute == "bbar_particles" || attribute == "fs_particles")
       mesh_->write_particles_hdf5(particles_file);
     else if (attribute == "twophase_particles")
       mesh_->write_particles_hdf5_twophase(particles_file);

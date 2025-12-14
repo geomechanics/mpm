@@ -339,8 +339,7 @@ void mpm::MPMBase<Tdim>::initialise_particle_types() {
     auto particle_type =
         json_particle["generator"]["particle_type"].template get<std::string>();
     // Insert only unique particle types
-    if (particle_types_.find(particle_type) ==
-        particle_types_.end())
+    if (particle_types_.find(particle_type) == particle_types_.end())
       particle_types_.insert(particle_type);
   }
 }

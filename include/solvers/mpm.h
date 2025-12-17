@@ -76,6 +76,9 @@ class MPM {
   virtual void write_outputs(mpm::Index step) = 0;
 
  protected:
+  //! Read HDF5 files
+  virtual void read_hdf5() = 0;
+
   //! Write HDF5 files
   virtual void write_hdf5(mpm::Index step, mpm::Index max_steps) = 0;
 

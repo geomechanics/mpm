@@ -114,6 +114,9 @@ class MPMBase : public MPM {
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 
+  //! Return mesh for testing
+  std::shared_ptr<mpm::Mesh<Tdim>> mesh() { return mesh_; }
+
  protected:
   //! Initialise implicit solver
   //! \param[in] lin_solver_props Linear solver properties
@@ -124,6 +127,9 @@ class MPMBase : public MPM {
           std::string,
           std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>&
           linear_solver);
+
+  //! Read HDF5 files
+  void read_hdf5() override;
 
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;

@@ -72,6 +72,12 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
                          const std::string& linear_solver_type = "none",
                          const std::string& vel_update = "flip");
 
+bool write_json_implicit_multi_particle_type(
+    unsigned dim, bool resume, const std::string& analysis,
+    const std::string& mpm_scheme, bool nonlinear, bool quasi_static,
+    const std::string& file_name,
+    const std::string& linear_solver_type = "none");
+
 // Write JSON Entity Set
 bool write_entity_set();
 
@@ -79,11 +85,15 @@ bool write_entity_set();
 bool write_mesh_2d();
 // Write particles file in 2D
 bool write_particles_2d();
+// Write Mesh file in 2D for multi particle type
+bool write_particles_2d_multi_particle_type();
 
 // Write mesh file in 3D
 bool write_mesh_3d();
 // Write particles file in 3D
 bool write_particles_3d();
+// Write particles file in 2D for multi particle type
+bool write_particles_3d_multi_particle_type();
 
 // Write math function csv
 bool write_math_function();

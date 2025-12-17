@@ -103,6 +103,9 @@ class MPMBase : public MPM {
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 
+  //! Return mesh for testing
+  std::shared_ptr<mpm::Mesh<Tdim>> mesh() { return mesh_; }
+
  protected:
   //! Initialise implicit solver
   //! \param[in] lin_solver_props Linear solver properties
@@ -272,7 +275,7 @@ class MPMBase : public MPM {
   //! Constraints object
   std::shared_ptr<mpm::Constraints<Tdim>> constraints_;
   //! Particle types
-  std::set<std::string> particle_types_;
+  std::map<std::string, std::set<unsigned>> particle_types_;
   //! Materials
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Mathematical functions

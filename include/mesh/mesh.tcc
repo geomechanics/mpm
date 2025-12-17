@@ -1569,36 +1569,55 @@ std::vector<std::array<mpm::Index, 2>> mpm::Mesh<Tdim>::particles_cells()
 
 //! Write particles to HDF5
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename) {
-  const unsigned nparticles = this->nparticles();
+bool mpm::Mesh<Tdim>::write_particles_hdf5(
+    const std::string& filename, const std::string& particle_type,
+    const std::set<unsigned int>& pset_ids) {
 
-  std::vector<PODParticle> particle_data;
-  particle_data.reserve(nparticles);
+  // Open existing file using default properties
+  hid_t file_id =
+      H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-    auto pod = std::static_pointer_cast<mpm::PODParticle>((*pitr)->pod());
-    particle_data.emplace_back(*pod);
-  }
+  // Open or create group
+  hid_t group_id = H5Gcreate2(file_id, particle_type.c_str(), H5P_DEFAULT,
+                              H5P_DEFAULT, H5P_DEFAULT);
 
-  // Calculate the size and the offsets of our struct members in memory
-  const hsize_t NRECORDS = nparticles;
+  // Consistent HDF5 parameters
   const hsize_t NFIELDS = mpm::pod::particle::NFIELDS;
-
-  hid_t file_id;
   hsize_t chunk_size = 10000;
   int* fill_data = NULL;
   int compress = 0;
 
-  // Create a new file using default properties.
-  file_id =
-      H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  // Loop through particle sets and add as tables
+  for (auto set_id : pset_ids) {
+    const auto& set = particle_sets_.at(set_id);
+    const unsigned nparticles = set.size();
 
-  // make a table
-  H5TBmake_table("Table Title", file_id, "table", NFIELDS, NRECORDS,
-                 mpm::pod::particle::dst_size, mpm::pod::particle::field_names,
-                 mpm::pod::particle::dst_offset, mpm::pod::particle::field_type,
-                 chunk_size, fill_data, compress, particle_data.data());
+    // Create a vector to hold the particle data
+    std::vector<PODParticle> particle_data;
+    particle_data.reserve(nparticles);
 
+    // Iterate over the particle set
+    for (auto sitr = set.begin(); sitr != set.cend(); ++sitr) {
+      unsigned pid = (*sitr);
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        auto pod =
+            std::static_pointer_cast<PODParticle>(map_particles_[pid]->pod());
+        particle_data.emplace_back(*pod);
+      }
+    }
+
+    // Calculate the size of our struct members in memory
+    const hsize_t NRECORDS = nparticles;
+
+    // Make a table for the particle set
+    std::string table_name = std::to_string(set_id);
+    H5TBmake_table(
+        "Table Title", group_id, table_name.c_str(), NFIELDS, NRECORDS,
+        mpm::pod::particle::dst_size, mpm::pod::particle::field_names,
+        mpm::pod::particle::dst_offset, mpm::pod::particle::field_type,
+        chunk_size, fill_data, compress, particle_data.data());
+  }
+  H5Gclose(group_id);
   H5Fclose(file_id);
   return true;
 }
@@ -1646,13 +1665,13 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_twophase(
 //! Read HDF5 particles with type name
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
-                                          const std::string& type_name,
-                                          const std::string& particle_type) {
+                                          const std::string& particle_type,
+                                          const std::string& attribute) {
   bool status = false;
-  if (type_name == "particles" || type_name == "fluid_particles" ||
-      type_name == "bbar_particles" || type_name == "fs_particles")
+  if (attribute == "particles" || attribute == "fluid_particles" ||
+      attribute == "bbar_particles" || attribute == "fs_particles")
     status = this->read_particles_hdf5(filename, particle_type);
-  else if (type_name == "twophase_particles")
+  else if (attribute == "twophase_particles")
     status = this->read_particles_hdf5_twophase(filename, particle_type);
   return status;
 }
@@ -1667,51 +1686,74 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
   // Throw an error if file can't be found
   if (file_id < 0) throw std::runtime_error("HDF5 particle file is not found");
 
-  // Calculate the size and the offsets of our struct members in memory
-  hsize_t nrecords = 0;
-  hsize_t nfields = 0;
-  H5TBget_table_info(file_id, "table", &nfields, &nrecords);
+  // Open the group for particle type
+  hid_t group_id = H5Gopen2(file_id, particle_type.c_str(), H5P_DEFAULT);
+  // Throw an error if group can't be found
+  if (group_id < 0) throw std::runtime_error("HDF5 particle type is not found");
 
-  if (nfields != mpm::pod::particle::NFIELDS)
-    throw std::runtime_error("HDF5 table has incorrect number of fields");
+  // Load the number of objects in the group
+  hsize_t num_objs;
+  H5Gget_num_objs(group_id, &num_objs);
 
-  std::vector<PODParticle> dst_buf;
-  dst_buf.reserve(nrecords);
-  // Read the table
-  H5TBread_table(file_id, "table", mpm::pod::particle::dst_size,
-                 mpm::pod::particle::dst_offset, mpm::pod::particle::dst_sizes,
-                 dst_buf.data());
+  // Iterate over all objects in the group
+  for (hsize_t i = 0; i < num_objs; ++i) {
+    // Get table name
+    char table_name[1024];
+    H5Gget_objname_by_idx(group_id, i, table_name, sizeof(table_name));
 
-  // Iterate over all HDF5 particles
-  for (unsigned i = 0; i < nrecords; ++i) {
-    PODParticle pod_particle = dst_buf[i];
-    // Get particle's material from list of materials
-    std::vector<std::shared_ptr<mpm::Material<Tdim>>> materials;
-    materials.emplace_back(materials_.at(pod_particle.material_id));
+    // Get pset_id from table name
+    mpm::Index pset_id = std::stoi(table_name);
 
-    // Particle id
-    mpm::Index pid = pod_particle.id;
-    // Initialise coordinates
-    Eigen::Matrix<double, Tdim, 1> coords;
-    coords.setZero();
+    // Calculate the size and the offsets of our struct members in memory
+    hsize_t nrecords = 0;
+    hsize_t nfields = 0;
+    H5TBget_table_info(group_id, table_name, &nfields, &nrecords);
 
-    // Create particle
-    auto particle =
-        Factory<mpm::ParticleBase<Tdim>, mpm::Index,
-                const Eigen::Matrix<double, Tdim, 1>&>::instance()
-            ->create(particle_type, static_cast<mpm::Index>(pid), coords);
+    if (nfields != mpm::pod::particle::NFIELDS)
+      throw std::runtime_error("HDF5 table has incorrect number of fields");
 
-    // Initialise particle with HDF5 data
-    particle->initialise_particle(pod_particle, materials);
+    std::vector<PODParticle> dst_buf;
+    dst_buf.reserve(nrecords);
+    // Read the table
+    H5TBread_table(group_id, table_name, mpm::pod::particle::dst_size,
+                   mpm::pod::particle::dst_offset,
+                   mpm::pod::particle::dst_sizes, dst_buf.data());
+    // Iterate over all HDF5 particles
+    for (unsigned i = 0; i < nrecords; ++i) {
+      PODParticle pod_particle = dst_buf[i];
+      // Get particle's material from list of materials
+      std::vector<std::shared_ptr<mpm::Material<Tdim>>> materials;
+      materials.emplace_back(materials_.at(pod_particle.material_id));
 
-    // Add particle to mesh and check
-    bool insert_status = this->add_particle(particle, false);
+      // Particle id
+      mpm::Index pid = pod_particle.id;
+      // Initialise coordinates
+      Eigen::Matrix<double, Tdim, 1> coords;
+      coords.setZero();
 
-    // If insertion is successful
-    if (!insert_status)
-      throw std::runtime_error("Addition of particle to mesh failed!");
+      // Create particle
+      auto particle =
+          Factory<mpm::ParticleBase<Tdim>, mpm::Index,
+                  const Eigen::Matrix<double, Tdim, 1>&>::instance()
+              ->create(particle_type, static_cast<mpm::Index>(pid), coords);
+
+      // Initialise particle with HDF5 data
+      particle->initialise_particle(pod_particle, materials);
+
+      // Add particle to mesh and check
+      bool insert_status = this->add_particle(particle, false);
+
+      // If insertion is successful
+      if (insert_status) {
+        // Add particle to corresponding particle set
+        particle_sets_[pset_id].push_back(pid);
+      } else {
+        throw std::runtime_error("Addition of particle to mesh failed!");
+      }
+    }
   }
-  // close the file
+  // Close the group and file
+  H5Gclose(group_id);
   H5Fclose(file_id);
   return true;
 }

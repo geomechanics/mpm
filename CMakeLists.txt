@@ -309,6 +309,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_explicit_twophase_usl_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_finite_strain_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_finite_strain_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_multi_particle_type.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_test.cc

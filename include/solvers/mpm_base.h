@@ -117,6 +117,9 @@ class MPMBase : public MPM {
           std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>&
           linear_solver);
 
+  //! Read HDF5 files
+  void read_hdf5() override;
+
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
 
@@ -275,7 +278,7 @@ class MPMBase : public MPM {
   //! Constraints object
   std::shared_ptr<mpm::Constraints<Tdim>> constraints_;
   //! Particle types
-  std::map<std::string, std::set<unsigned>> particle_types_;
+  std::set<std::string> particle_types_;
   //! Materials
   std::map<unsigned, std::shared_ptr<mpm::Material<Tdim>>> materials_;
   //! Mathematical functions

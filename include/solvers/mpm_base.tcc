@@ -338,9 +338,7 @@ void mpm::MPMBase<Tdim>::initialise_particle_types() {
     // Gather particle types
     auto particle_type =
         json_particle["generator"]["particle_type"].template get<std::string>();
-    unsigned pset_id =
-        json_particle["generator"]["pset_id"].template get<unsigned>();
-    particle_types_[particle_type].insert(pset_id);
+    particle_types_.insert(particle_type);
   }
 }
 
@@ -528,18 +526,8 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     this->step_ = analysis_["resume"]["step"].template get<mpm::Index>();
 
     // Input particle h5 file for resume
-    for (const auto& ptype : particle_types_) {
-      std::string attribute = mpm::ParticlePODTypeName.at(ptype.first);
-      std::string extension = ".h5";
-
-      auto particles_file =
-          io_->output_file("particles", extension, uuid_, step_, this->nsteps_)
-              .string();
-
-      // Load particle information from file
-      mesh_->read_particles_hdf5(particles_file, ptype.first, attribute);
-    }
-
+    this->read_hdf5();
+    
     // Clear all particle ids
     mesh_->iterate_over_cells(
         std::bind(&mpm::Cell<Tdim>::clear_particle_ids, std::placeholders::_1));
@@ -562,28 +550,46 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
   return checkpoint;
 }
 
+//! Read HDF5 files
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::read_hdf5() {
+  // Read hdf5 file for single phase particle
+  for (const auto& ptype : particle_types_) {
+    std::string attribute = mpm::ParticlePODTypeName.at(ptype);
+    std::string extension = ".h5";
+
+    // Generate particle type file name
+    auto particles_file =
+        io_->output_file(attribute, extension, uuid_, step_, nsteps_).string();
+
+    // Load particle information from file
+    if (attribute == "particles" || attribute == "fluid_particles" ||
+        attribute == "bbar_particles" || attribute == "fs_particles") {
+      mesh_->read_particles_hdf5(particles_file, ptype);
+    } else if (attribute == "twophase_particles") {
+      mesh_->read_particles_hdf5_twophase(particles_file, ptype);
+    }
+  }
+}
+
 //! Write HDF5 files
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
   // Write hdf5 file for single phase particle
   for (const auto& ptype : particle_types_) {
-    std::string attribute = mpm::ParticlePODTypeName.at(ptype.first);
+    std::string attribute = mpm::ParticlePODTypeName.at(ptype);
     std::string extension = ".h5";
+
+    // Generate particle type file name
+    auto particles_file =
+        io_->output_file(attribute, extension, uuid_, step, max_steps).string();
 
     // Load particle information from file
     if (attribute == "particles" || attribute == "fluid_particles" ||
         attribute == "bbar_particles" || attribute == "fs_particles") {
-      // Generate particle h5 file
-      auto particles_file =
-          io_->output_file("particles", extension, uuid_, step, max_steps)
-              .string();
-      // Write particle information to file
-      mesh_->write_particles_hdf5(particles_file, ptype.first, ptype.second);
+      mesh_->write_particles_hdf5(particles_file, ptype);
     } else if (attribute == "twophase_particles") {
-      auto particles_file = io_->output_file("twophase_particles", extension,
-                                             uuid_, step, max_steps)
-                                .string();
-      mesh_->write_particles_hdf5_twophase(particles_file);
+      mesh_->write_particles_hdf5_twophase(particles_file, ptype);
     }
   }
 }

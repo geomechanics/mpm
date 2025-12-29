@@ -158,7 +158,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   // Compute meso-scale temperature
   const double tm_n = (*state_vars).at("tm");
   const double tm_nm1 = (*state_vars).at("tm_prev");
-  const bool bdf2_active = (tm_nm1 < 0.0);
+  const bool bdf2_active = (tm_nm1 > 0.0);
 
   // Start Newton-Raphson iteration for meso-scale temperature
   const double A = (alpha_ * std::pow(vol_strain_rate, 2) +

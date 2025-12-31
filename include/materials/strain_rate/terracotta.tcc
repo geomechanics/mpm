@@ -158,7 +158,7 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   // Compute meso-scale temperature
   const double tm_n = (*state_vars).at("tm");
   const double tm_nm1 = (*state_vars).at("tm_prev");
-  const bool bdf2_active = (tm_nm1 > 0.0);
+  const bool bdf2_active = !(tm_nm1 < 0.0);
 
   // Start Newton-Raphson iteration for meso-scale temperature
   const double A = (alpha_ * std::pow(vol_strain_rate, 2) +
@@ -304,53 +304,53 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
       }
 
       // Compute necessary derivatives
-      const double dp_depsv =
+      const double dpe_depsve =
           phi_6 * bulk_modulus_ * this->macaulay(new_vol_elastic_strain);
-      const Vector6d dp_dgamma = 2.0 * phi_6 * shear_modulus_ *
-                                 this->heaviside(new_vol_elastic_strain) *
-                                 new_elastic_strain_dev;
-      const Vector6d ds_depsv = dp_dgamma;
-      const Matrix6x6 ds_dgamma = 2.0 * phi_6 * shear_modulus_ *
-                                  this->macaulay(new_vol_elastic_strain) *
-                                  fourth_order_identity_mandel;
+      const Vector6d dpe_dgammae = 2.0 * phi_6 * shear_modulus_ *
+                                   this->heaviside(new_vol_elastic_strain) *
+                                   new_elastic_strain_dev;
+      const Vector6d dse_depsve = dpe_dgammae;
+      const Matrix6x6 dse_dgammae = 2.0 * phi_6 * shear_modulus_ *
+                                    this->macaulay(new_vol_elastic_strain) *
+                                    fourth_order_identity_mandel;
 
       // Compute derivatives of transport variables b with respect to stress
-      const Vector6d db_dp = 3. / 2. * a / m_ / m_ / pe_m / pe_m * se_m;
-      const Matrix6x6 db_ds =
+      const Vector6d db_dpe = 3. / 2. * a / m_ / m_ / pe_m / pe_m * se_m;
+      const Matrix6x6 db_dse =
           -3. / 2. * a / m_ / m_ / pe_m * fourth_order_identity_mandel;
 
       // Compute derivatives of transport variables b with respect to elastic
       // strain
-      const Vector6d db_depsv = db_dp * dp_depsv + db_ds * ds_depsv;
-      const Matrix6x6 db_dgamma =
-          db_dp * dp_dgamma.transpose() + db_ds * ds_dgamma;
+      const Vector6d db_depsve = db_dpe * dpe_depsve + db_dse * dse_depsve;
+      const Matrix6x6 db_dgammae =
+          db_dpe * dpe_dgammae.transpose() + db_dse * dse_dgammae;
 
       // Compute residual derivatives according to BDF1 or BDF2 scheme
-      double drv_epsv;
-      Vector6d drv_dgamma;
-      Vector6d drs_depsv;
-      Matrix6x6 drs_dgamma;
+      double j_vv;
+      Vector6d j_vs;
+      Vector6d j_sv;
+      Matrix6x6 j_ss;
       // Time scheme factor
       const double scheme_dt = (bdf2_active) ? (2.0 / 3.0) * dt : dt;
-      drv_epsv =
-          1.0 + scheme_dt * new_tm *
-                    (a * dp_depsv + db_depsv.dot(se_m) + b_m.dot(ds_depsv));
-      drv_dgamma = scheme_dt * new_tm *
-                   (a * dp_dgamma + db_dgamma * se_m +
-                    (b_m.transpose() * ds_dgamma).transpose());
-      drs_depsv = scheme_dt * new_tm *
-                  (pe_m * db_depsv + dp_depsv * b_m + c * ds_depsv);
-      drs_dgamma =
-          fourth_order_identity_mandel +
-          scheme_dt * new_tm *
-              (pe_m * db_dgamma + b_m * dp_dgamma.transpose() + c * ds_dgamma);
+      j_vv = 1.0 +
+             scheme_dt * new_tm *
+                 (a * dpe_depsve + db_depsve.dot(se_m) + b_m.dot(dse_depsve));
+      j_vs = scheme_dt * new_tm *
+             (a * dpe_dgammae + db_dgammae * se_m +
+              (b_m.transpose() * dse_dgammae).transpose());
+      j_sv = scheme_dt * new_tm *
+             (pe_m * db_depsve + dpe_depsve * b_m + c * dse_depsve);
+      j_ss = fourth_order_identity_mandel +
+             scheme_dt * new_tm *
+                 (pe_m * db_dgammae + b_m * dpe_dgammae.transpose() +
+                  c * dse_dgammae);
 
       // Construct Jacobian matrix
       jac_m.setZero();
-      jac_m(0, 0) = drv_epsv;
-      jac_m.block(0, 1, 1, 6) = drv_dgamma.transpose();
-      jac_m.block(1, 0, 6, 1) = drs_depsv;
-      jac_m.block(1, 1, 6, 6) = drs_dgamma;
+      jac_m(0, 0) = j_vv;
+      jac_m.block(0, 1, 1, 6) = j_vs.transpose();
+      jac_m.block(1, 0, 6, 1) = j_sv;
+      jac_m.block(1, 1, 6, 6) = j_ss;
 
       // Update elastic strain
       const Eigen::Matrix<double, 7, 1> delta_elastic_strain =

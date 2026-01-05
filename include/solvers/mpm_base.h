@@ -114,6 +114,9 @@ class MPMBase : public MPM {
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 
+  //! Perfectly matched layer properties for resume
+  void particles_pml_properties_resume();
+
   //! Return mesh for testing
   std::shared_ptr<mpm::Mesh<Tdim>> mesh() { return mesh_; }
 

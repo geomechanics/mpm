@@ -693,7 +693,8 @@ void mpm::MPMBase<Tdim>::read_hdf5() {
 
     // Load particle information from file
     if (attribute == "particles" || attribute == "fluid_particles" ||
-        attribute == "bbar_particles" || attribute == "fs_particles") {
+        attribute == "bbar_particles" || attribute == "fs_particles" ||
+        attribute == "pml_particles" || attribute == "upml_particles") {
       mesh_->read_particles_hdf5(particles_file, ptype);
     } else if (attribute == "twophase_particles") {
       mesh_->read_particles_hdf5_twophase(particles_file, ptype);
@@ -724,7 +725,8 @@ void mpm::MPMBase<Tdim>::write_hdf5_particles(mpm::Index step,
 
     // Load particle information from file
     if (attribute == "particles" || attribute == "fluid_particles" ||
-        attribute == "bbar_particles" || attribute == "fs_particles") {
+        attribute == "bbar_particles" || attribute == "fs_particles" ||
+        attribute == "pml_particles" || attribute == "upml_particles") {
       mesh_->write_particles_hdf5(particles_file, ptype);
     } else if (attribute == "twophase_particles") {
       mesh_->write_particles_hdf5_twophase(particles_file, ptype);
@@ -2380,6 +2382,20 @@ void mpm::MPMBase<Tdim>::particles_pml_properties(
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle PML distance function are undefined {} ",
                    __LINE__, exception.what());
+  }
+}
+
+// Initialise pml particle properties resume
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_pml_properties_resume() {
+  for (const auto& ptype : particle_types_) {
+    if (ptype == "P2DPML" || ptype == "P3DPML") {
+      this->pml_boundary_ = true;
+      this->pml_type_ = true;
+    } else if (ptype == "P2DUPML" || ptype == "P3DUPML") {
+      this->pml_boundary_ = true;
+      this->pml_type_ = false;
+    }
   }
 }
 

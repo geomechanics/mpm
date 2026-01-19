@@ -11,11 +11,6 @@ mpm::Terracotta<Tdim>::Terracotta(unsigned id, const Json& material_properties)
     initial_packing_fraction_ =
         material_properties.at("packing_fraction").template get<double>();
 
-    // Minimum packing fraction
-    minimum_packing_fraction_ =
-        material_properties.at("packing_fraction_minimum")
-            .template get<double>();
-
     // Solid grain density
     grain_density_ = density / initial_packing_fraction_;
 
@@ -147,23 +142,14 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   const double dev_strain_rate =
       std::sqrt(2.0 / 3.0 * strain_rate_dev.dot(strain_rate_dev));
 
-  // Switch for granular separation
-  bool separation_state = false;
-  double separation_multiplier = 1.0;
-  if (current_packing_fraction < minimum_packing_fraction_) {
-    separation_state = true;
-    separation_multiplier = 0.0;
-  }
-
   // Compute meso-scale temperature
   const double tm_n = (*state_vars).at("tm");
   const double tm_nm1 = (*state_vars).at("tm_prev");
   const bool bdf2_active = !(tm_nm1 < 0.0);
 
   // Start Newton-Raphson iteration for meso-scale temperature
-  const double A = (alpha_ * std::pow(vol_strain_rate, 2) +
-                    beta_ * std::pow(dev_strain_rate, 2)) *
-                   separation_multiplier;
+  const double A = alpha_ * std::pow(vol_strain_rate, 2) +
+                   beta_ * std::pow(dev_strain_rate, 2);
   double new_tm;
   if (!bdf2_active) {
     // Backward Euler update (used to initialise BDF2 history)
@@ -200,213 +186,200 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
       (*state_vars).at("elastic_strain4_prev"),
       (*state_vars).at("elastic_strain5_prev");
 
-  // Stabilization considering separation state at very low packing fraction
-  if (separation_state) {
-    const double pt = new_tm * new_tm / gamma_;
-    const double new_p = pt;
+  // Current elastic strain tensor in tensorial Voigt notation
+  Vector6d current_elastic_strain = elastic_strain_voigt_n;
+  Vector6d previous_elastic_strain = elastic_strain_voigt_nm1;
 
-    // Update stress
-    updated_stress = -new_p * m_mandel;
+  // Convert to Mandel's notation
+  current_elastic_strain.tail(3) *= std::sqrt(2.0);
+  previous_elastic_strain.tail(3) *= std::sqrt(2.0);
+  const double current_vol_elastic_strain =
+      -current_elastic_strain.head(3).sum();
+  const double previous_vol_elastic_strain =
+      -previous_elastic_strain.head(3).sum();
+  Vector6d current_elastic_strain_dev = current_elastic_strain;
+  current_elastic_strain_dev.head(3).noalias() +=
+      (1.0 / 3.0) * Eigen::Vector3d::Constant(current_vol_elastic_strain);
+  Vector6d previous_elastic_strain_dev = previous_elastic_strain;
+  previous_elastic_strain_dev.head(3).noalias() +=
+      (1.0 / 3.0) * Eigen::Vector3d::Constant(previous_vol_elastic_strain);
+  const double current_dev_elastic_strain = std::sqrt(
+      2.0 / 3.0 * current_elastic_strain_dev.dot(current_elastic_strain_dev));
 
-    (*state_vars).at("pressure") = new_p;
-    (*state_vars).at("q") = 0.0;
-    new_elastic_strain.setZero();
-  } else {
-    // Current elastic strain tensor in tensorial Voigt notation
-    Vector6d current_elastic_strain = elastic_strain_voigt_n;
-    Vector6d previous_elastic_strain = elastic_strain_voigt_nm1;
+  // Initialize new elastic strain tensor and its rate
+  double new_vol_elastic_strain = current_vol_elastic_strain;
+  double new_dev_elastic_strain = current_dev_elastic_strain;
+  Vector6d new_elastic_strain_dev = current_elastic_strain_dev;
 
-    // Convert to Mandel's notation
-    current_elastic_strain.tail(3) *= std::sqrt(2.0);
-    previous_elastic_strain.tail(3) *= std::sqrt(2.0);
-    const double current_vol_elastic_strain =
-        -current_elastic_strain.head(3).sum();
-    const double previous_vol_elastic_strain =
-        -previous_elastic_strain.head(3).sum();
-    Vector6d current_elastic_strain_dev = current_elastic_strain;
-    current_elastic_strain_dev.head(3).noalias() +=
-        (1.0 / 3.0) * Eigen::Vector3d::Constant(current_vol_elastic_strain);
-    Vector6d previous_elastic_strain_dev = previous_elastic_strain;
-    previous_elastic_strain_dev.head(3).noalias() +=
-        (1.0 / 3.0) * Eigen::Vector3d::Constant(previous_vol_elastic_strain);
-    const double current_dev_elastic_strain = std::sqrt(
-        2.0 / 3.0 * current_elastic_strain_dev.dot(current_elastic_strain_dev));
+  // Forth order identity tensor in tensorial Mandel's notation
+  Matrix6x6 fourth_order_identity_mandel = Matrix6x6::Zero();
+  for (unsigned i = 0; i < 6; ++i) fourth_order_identity_mandel(i, i) = 1.0;
 
-    // Initialize new elastic strain tensor and its rate
-    double new_vol_elastic_strain = current_vol_elastic_strain;
-    double new_dev_elastic_strain = current_dev_elastic_strain;
-    Vector6d new_elastic_strain_dev = current_elastic_strain_dev;
+  // Initialize pe and se
+  const double phi_6 = std::pow(current_packing_fraction, 6);
+  double pe_m =
+      phi_6 / 2.0 *
+      (bulk_modulus_ * std::pow(this->macaulay(new_vol_elastic_strain), 2) +
+       3.0 * shear_modulus_ * this->heaviside(new_vol_elastic_strain) *
+           std::pow(new_dev_elastic_strain, 2));
+  Vector6d se_m = 2.0 * shear_modulus_ * phi_6 *
+                  this->macaulay(new_vol_elastic_strain) *
+                  new_elastic_strain_dev;
 
-    // Forth order identity tensor in tensorial Mandel's notation
-    Matrix6x6 fourth_order_identity_mandel = Matrix6x6::Zero();
-    for (unsigned i = 0; i < 6; ++i) fourth_order_identity_mandel(i, i) = 1.0;
+  // To avoid division by zero in the next step
+  if (pe_m < tolerance_) pe_m = tolerance_;
 
-    // Initialize pe and se
-    const double phi_6 = std::pow(current_packing_fraction, 6);
-    double pe_m =
+  // Initialize transport parameters (a and c are constants, while b changing
+  // over iterations)
+  const double a = std::sqrt(eta_ / alpha_) / p1_ /
+                   std::pow(current_packing_fraction, lambda_);
+  Vector6d b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
+  Matrix6x6 c = 3. / 2. *
+                (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ /
+                     std::pow(current_packing_fraction, lambda_) +
+                 a / m_ / m_) *
+                fourth_order_identity_mandel;
+
+  // Start Newton-Raphson iteration for elastic strain
+  unsigned iter = 0;
+  double initial_res_norm;
+  Eigen::Matrix<double, 7, 1> res_m;
+  Eigen::Matrix<double, 7, 7> jac_m;
+  while (iter < max_iter_) {
+    // Compute elastic strain rate
+    const double vol_elastic_strain_rate =
+        vol_strain_rate - new_tm * (a * pe_m + b_m.dot(se_m));
+    const Vector6d elastic_strain_rate_dev =
+        strain_rate_dev - new_tm * (b_m * pe_m + c * se_m);
+
+    // Compute residuals considering BDF1 or BDF2 scheme
+    if (!bdf2_active) {
+      res_m(0) = new_vol_elastic_strain - current_vol_elastic_strain -
+                 dt * vol_elastic_strain_rate;
+      res_m.tail(6) = new_elastic_strain_dev - current_elastic_strain_dev -
+                      dt * elastic_strain_rate_dev;
+    } else {
+      res_m(0) = new_vol_elastic_strain -
+                 (4.0 / 3.0) * current_vol_elastic_strain +
+                 (1.0 / 3.0) * previous_vol_elastic_strain -
+                 2.0 / 3.0 * dt * vol_elastic_strain_rate;
+      res_m.tail(6) = new_elastic_strain_dev -
+                      (4.0 / 3.0) * current_elastic_strain_dev +
+                      (1.0 / 3.0) * previous_elastic_strain_dev -
+                      2.0 / 3.0 * dt * elastic_strain_rate_dev;
+    }
+
+    // Check convergence based on residual norm
+    if (res_m.norm() < abs_tol_) break;
+    if (iter == 0)
+      initial_res_norm = res_m.norm();
+    else {
+      if (res_m.norm() / initial_res_norm < rel_tol_) break;
+    }
+
+    // Compute necessary derivatives
+    const double dpe_depsve =
+        phi_6 * bulk_modulus_ * this->macaulay(new_vol_elastic_strain);
+    const Vector6d dpe_dgammae = 2.0 * phi_6 * shear_modulus_ *
+                                 this->heaviside(new_vol_elastic_strain) *
+                                 new_elastic_strain_dev;
+    const Vector6d dse_depsve = dpe_dgammae;
+    const Matrix6x6 dse_dgammae = 2.0 * phi_6 * shear_modulus_ *
+                                  this->macaulay(new_vol_elastic_strain) *
+                                  fourth_order_identity_mandel;
+
+    // Compute derivatives of transport variables b with respect to stress
+    const Vector6d db_dpe = 3. / 2. * a / m_ / m_ / pe_m / pe_m * se_m;
+    const Matrix6x6 db_dse =
+        -3. / 2. * a / m_ / m_ / pe_m * fourth_order_identity_mandel;
+
+    // Compute derivatives of transport variables b with respect to elastic
+    // strain
+    const Vector6d db_depsve = db_dpe * dpe_depsve + db_dse * dse_depsve;
+    const Matrix6x6 db_dgammae =
+        db_dpe * dpe_dgammae.transpose() + db_dse * dse_dgammae;
+
+    // Compute residual derivatives according to BDF1 or BDF2 scheme
+    double j_vv;
+    Vector6d j_vs;
+    Vector6d j_sv;
+    Matrix6x6 j_ss;
+    // Time scheme factor
+    const double scheme_dt = (bdf2_active) ? (2.0 / 3.0) * dt : dt;
+    j_vv =
+        1.0 + scheme_dt * new_tm *
+                  (a * dpe_depsve + db_depsve.dot(se_m) + b_m.dot(dse_depsve));
+    j_vs = scheme_dt * new_tm *
+           (a * dpe_dgammae + db_dgammae * se_m +
+            (b_m.transpose() * dse_dgammae).transpose());
+    j_sv = scheme_dt * new_tm *
+           (pe_m * db_depsve + dpe_depsve * b_m + c * dse_depsve);
+    j_ss = fourth_order_identity_mandel +
+           scheme_dt * new_tm *
+               (pe_m * db_dgammae + b_m * dpe_dgammae.transpose() +
+                c * dse_dgammae);
+
+    // Construct Jacobian matrix
+    jac_m.setZero();
+    jac_m(0, 0) = j_vv;
+    jac_m.block(0, 1, 1, 6) = j_vs.transpose();
+    jac_m.block(1, 0, 6, 1) = j_sv;
+    jac_m.block(1, 1, 6, 6) = j_ss;
+
+    // Update elastic strain
+    const Eigen::Matrix<double, 7, 1> delta_elastic_strain =
+        jac_m.inverse() * (-res_m);
+    new_vol_elastic_strain += delta_elastic_strain(0);
+    new_elastic_strain_dev.noalias() += delta_elastic_strain.tail(6);
+    new_dev_elastic_strain = std::sqrt(
+        2.0 / 3.0 * new_elastic_strain_dev.dot(new_elastic_strain_dev));
+
+    // Update pe and qe
+    pe_m =
         phi_6 / 2.0 *
         (bulk_modulus_ * std::pow(this->macaulay(new_vol_elastic_strain), 2) +
          3.0 * shear_modulus_ * this->heaviside(new_vol_elastic_strain) *
              std::pow(new_dev_elastic_strain, 2));
-    Vector6d se_m = 2.0 * shear_modulus_ * phi_6 *
-                    this->macaulay(new_vol_elastic_strain) *
-                    new_elastic_strain_dev;
+    se_m = 2.0 * shear_modulus_ * phi_6 *
+           this->macaulay(new_vol_elastic_strain) * new_elastic_strain_dev;
 
     // To avoid division by zero in the next step
     if (pe_m < tolerance_) pe_m = tolerance_;
 
-    // Initialize transport parameters (a and c are constants, while b changing
-    // over iterations)
-    const double a = std::sqrt(eta_ / alpha_) / p1_ /
-                     std::pow(current_packing_fraction, lambda_);
-    Vector6d b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
-    Matrix6x6 c = 3. / 2. *
-                  (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ /
-                       std::pow(current_packing_fraction, lambda_) +
-                   a / m_ / m_) *
-                  fourth_order_identity_mandel;
+    // Update transport parameters b (a and c are constants)
+    b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
 
-    // Start Newton-Raphson iteration for elastic strain
-    unsigned iter = 0;
-    double initial_res_norm;
-    Eigen::Matrix<double, 7, 1> res_m;
-    Eigen::Matrix<double, 7, 7> jac_m;
-    while (iter < max_iter_) {
-      // Compute elastic strain rate
-      const double vol_elastic_strain_rate =
-          vol_strain_rate - new_tm * (a * pe_m + b_m.dot(se_m));
-      const Vector6d elastic_strain_rate_dev =
-          strain_rate_dev - new_tm * (b_m * pe_m + c * se_m);
+    // Check convergence based on solution
+    if (delta_elastic_strain.norm() < abs_tol_) break;
 
-      // Compute residuals considering BDF1 or BDF2 scheme
-      if (!bdf2_active) {
-        res_m(0) = new_vol_elastic_strain - current_vol_elastic_strain -
-                   dt * vol_elastic_strain_rate;
-        res_m.tail(6) = new_elastic_strain_dev - current_elastic_strain_dev -
-                        dt * elastic_strain_rate_dev;
-      } else {
-        res_m(0) = new_vol_elastic_strain -
-                   (4.0 / 3.0) * current_vol_elastic_strain +
-                   (1.0 / 3.0) * previous_vol_elastic_strain -
-                   2.0 / 3.0 * dt * vol_elastic_strain_rate;
-        res_m.tail(6) = new_elastic_strain_dev -
-                        (4.0 / 3.0) * current_elastic_strain_dev +
-                        (1.0 / 3.0) * previous_elastic_strain_dev -
-                        2.0 / 3.0 * dt * elastic_strain_rate_dev;
-      }
-
-      // Check convergence based on residual norm
-      if (res_m.norm() < abs_tol_) break;
-      if (iter == 0)
-        initial_res_norm = res_m.norm();
-      else {
-        if (res_m.norm() / initial_res_norm < rel_tol_) break;
-      }
-
-      // Compute necessary derivatives
-      const double dpe_depsve =
-          phi_6 * bulk_modulus_ * this->macaulay(new_vol_elastic_strain);
-      const Vector6d dpe_dgammae = 2.0 * phi_6 * shear_modulus_ *
-                                   this->heaviside(new_vol_elastic_strain) *
-                                   new_elastic_strain_dev;
-      const Vector6d dse_depsve = dpe_dgammae;
-      const Matrix6x6 dse_dgammae = 2.0 * phi_6 * shear_modulus_ *
-                                    this->macaulay(new_vol_elastic_strain) *
-                                    fourth_order_identity_mandel;
-
-      // Compute derivatives of transport variables b with respect to stress
-      const Vector6d db_dpe = 3. / 2. * a / m_ / m_ / pe_m / pe_m * se_m;
-      const Matrix6x6 db_dse =
-          -3. / 2. * a / m_ / m_ / pe_m * fourth_order_identity_mandel;
-
-      // Compute derivatives of transport variables b with respect to elastic
-      // strain
-      const Vector6d db_depsve = db_dpe * dpe_depsve + db_dse * dse_depsve;
-      const Matrix6x6 db_dgammae =
-          db_dpe * dpe_dgammae.transpose() + db_dse * dse_dgammae;
-
-      // Compute residual derivatives according to BDF1 or BDF2 scheme
-      double j_vv;
-      Vector6d j_vs;
-      Vector6d j_sv;
-      Matrix6x6 j_ss;
-      // Time scheme factor
-      const double scheme_dt = (bdf2_active) ? (2.0 / 3.0) * dt : dt;
-      j_vv = 1.0 +
-             scheme_dt * new_tm *
-                 (a * dpe_depsve + db_depsve.dot(se_m) + b_m.dot(dse_depsve));
-      j_vs = scheme_dt * new_tm *
-             (a * dpe_dgammae + db_dgammae * se_m +
-              (b_m.transpose() * dse_dgammae).transpose());
-      j_sv = scheme_dt * new_tm *
-             (pe_m * db_depsve + dpe_depsve * b_m + c * dse_depsve);
-      j_ss = fourth_order_identity_mandel +
-             scheme_dt * new_tm *
-                 (pe_m * db_dgammae + b_m * dpe_dgammae.transpose() +
-                  c * dse_dgammae);
-
-      // Construct Jacobian matrix
-      jac_m.setZero();
-      jac_m(0, 0) = j_vv;
-      jac_m.block(0, 1, 1, 6) = j_vs.transpose();
-      jac_m.block(1, 0, 6, 1) = j_sv;
-      jac_m.block(1, 1, 6, 6) = j_ss;
-
-      // Update elastic strain
-      const Eigen::Matrix<double, 7, 1> delta_elastic_strain =
-          jac_m.inverse() * (-res_m);
-      new_vol_elastic_strain += delta_elastic_strain(0);
-      new_elastic_strain_dev.noalias() += delta_elastic_strain.tail(6);
-      new_dev_elastic_strain = std::sqrt(
-          2.0 / 3.0 * new_elastic_strain_dev.dot(new_elastic_strain_dev));
-
-      // Update pe and qe
-      pe_m =
-          phi_6 / 2.0 *
-          (bulk_modulus_ * std::pow(this->macaulay(new_vol_elastic_strain), 2) +
-           3.0 * shear_modulus_ * this->heaviside(new_vol_elastic_strain) *
-               std::pow(new_dev_elastic_strain, 2));
-      se_m = 2.0 * shear_modulus_ * phi_6 *
-             this->macaulay(new_vol_elastic_strain) * new_elastic_strain_dev;
-
-      // To avoid division by zero in the next step
-      if (pe_m < tolerance_) pe_m = tolerance_;
-
-      // Update transport parameters b (a and c are constants)
-      b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
-
-      // Check convergence based on solution
-      if (delta_elastic_strain.norm() < abs_tol_) break;
-
-      // Increment iteration counter
-      iter++;
-    }
-
-    // Compute new elastic strain
-    new_elastic_strain =
-        -new_vol_elastic_strain / 3.0 * m_mandel + new_elastic_strain_dev;
-
-    // Compute new stress invariants
-    const double pe = pe_m;
-    const double pd = 2.0 * alpha_ / gamma_ * new_tm * vol_strain_rate;
-    const double pt = new_tm * new_tm / gamma_;
-    const double new_p = pe + pd + pt;
-
-    const Vector6d se = se_m;
-    const Vector6d sd = 4. / 3. * beta_ / gamma_ * new_tm * strain_rate_dev;
-    const Vector6d new_s = se + sd;
-    const double new_q = std::sqrt(3.0 / 2.0 * new_s.dot(new_s));
-
-    // Update stress
-    updated_stress = -new_p * m_mandel + new_s;
-
-    // Convert Mandel's notation to tensorial Voigt notation
-    updated_stress.tail(3) /= std::sqrt(2.0);
-    new_elastic_strain.tail(3) /= std::sqrt(2.0);
-
-    (*state_vars).at("pressure") = new_p;
-    (*state_vars).at("q") = new_q;
+    // Increment iteration counter
+    iter++;
   }
+
+  // Compute new elastic strain
+  new_elastic_strain =
+      -new_vol_elastic_strain / 3.0 * m_mandel + new_elastic_strain_dev;
+
+  // Compute new stress invariants
+  const double pe = pe_m;
+  const double pd = 2.0 * alpha_ / gamma_ * new_tm * vol_strain_rate;
+  const double pt = new_tm * new_tm / gamma_;
+  const double new_p = pe + pd + pt;
+
+  const Vector6d se = se_m;
+  const Vector6d sd = 4. / 3. * beta_ / gamma_ * new_tm * strain_rate_dev;
+  const Vector6d new_s = se + sd;
+  const double new_q = std::sqrt(3.0 / 2.0 * new_s.dot(new_s));
+
+  // Update stress
+  updated_stress = -new_p * m_mandel + new_s;
+
+  // Convert Mandel's notation to tensorial Voigt notation
+  updated_stress.tail(3) /= std::sqrt(2.0);
+  new_elastic_strain.tail(3) /= std::sqrt(2.0);
+
+  (*state_vars).at("pressure") = new_p;
+  (*state_vars).at("q") = new_q;
 
   // Update previous state variables
   (*state_vars).at("tm_prev") = tm_n;

@@ -19,7 +19,10 @@ mpm::UnsplitPML<Tdim>::UnsplitPML(unsigned id, const Json& material_properties)
         material_properties.at("characteristic_length").template get<double>();
     // Damping power
     dpower_ = material_properties.at("damping_power").template get<double>();
-
+    
+    // Calculate p wave velocity
+    vp_ = std::sqrt((lambda_ + 2. * shear_modulus_) / density_);
+    
     // Check optional inputs
     if (material_properties.contains("reflection_coefficient")) {
       reflec_coeff_ =
@@ -32,8 +35,6 @@ mpm::UnsplitPML<Tdim>::UnsplitPML(unsigned id, const Json& material_properties)
       reflec_coeff_ = 1.e-4;  // Default value
     }
     
-    // Calculate p wave velocity
-    vp_ = std::sqrt((lambda_ + 2. * shear_modulus_) / density_);
 
     // Properties
     properties_ = material_properties;

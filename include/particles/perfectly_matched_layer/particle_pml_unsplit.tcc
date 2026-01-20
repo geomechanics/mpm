@@ -709,7 +709,7 @@ void mpm::ParticleUPML<Tdim>::compute_damping_functions(
     const double max_damping_ratio =
         (this->material())->template property<double>(std::string("maximum_damping_ratio"));
     // Assign base damping multiplier
-    state_vars.at("base_damping") = max_damping_ratio / c_p;
+    state_vars.at("base_damping") = max_damping_ratio / c_p / std::pow(boundary_thickness, dpower);
   }
 }
 

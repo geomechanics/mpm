@@ -15,12 +15,9 @@ Ttype mpm::Material<Tdim>::property(const std::string& key) {
 template <unsigned Tdim>
 template <typename Ttype>
 bool mpm::Material<Tdim>::contain_property(const std::string& key) {
-  bool exists = false;
-  try {
-    properties_[key].template get<Ttype>();
-    exists=true;
-  } catch (std::exception& except) {
-    exists=false;
+  bool exists = true;
+  if (!properties_.contains(key)) {
+    exists = false;
   }
   return exists;
 }

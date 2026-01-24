@@ -505,13 +505,15 @@ Eigen::Matrix<double, 6, 6>
 
   // pe and se
   const double phi_6 = std::pow(current_packing_fraction, 6);
-  const double pe =
-      phi_6 / 2.0 *
-      (bulk_modulus_ * std::pow(this->macaulay(vol_elastic_strain), 2) +
-       3.0 * shear_modulus_ * this->heaviside(vol_elastic_strain) *
-           std::pow(dev_elastic_strain, 2));
+  double pe = phi_6 / 2.0 *
+              (bulk_modulus_ * std::pow(this->macaulay(vol_elastic_strain), 2) +
+               3.0 * shear_modulus_ * this->heaviside(vol_elastic_strain) *
+                   std::pow(dev_elastic_strain, 2));
   const Vector6d se = 2.0 * shear_modulus_ * phi_6 *
                       this->macaulay(vol_elastic_strain) * elastic_strain_dev;
+
+  // To avoid division by zero
+  if (pe < tolerance_) pe = tolerance_;
 
   // Derivatives of pe and se
   const double dpe_depsve =

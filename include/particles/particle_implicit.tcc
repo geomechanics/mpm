@@ -286,6 +286,10 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
   // Updated volumetric strain increment
   this->dvolumetric_strain_ = this->dstrain_.head(Tdim).sum();
 
+  // Assign strain rate
+  this->strain_rate_ =
+      this->compute_strain_rate(dn_dx_, mpm::ParticlePhase::Solid);
+
   // Update volume using volumetric strain increment
   this->volume_ *= (1. + dvolumetric_strain_);
   this->mass_density_ /= (1. + dvolumetric_strain_);

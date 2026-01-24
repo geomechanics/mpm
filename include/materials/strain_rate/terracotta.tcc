@@ -466,9 +466,12 @@ Eigen::Matrix<double, 6, 6>
       fourth_order_identity_mandel - 1.0 / 3.0 * identity_cross_mandel;
 
   // Strain rate invariants derivatives
-  const Vector6d depsv_dot_deps = -1.0 / dt * m_mandel;
+  // FIXME: This is a hardcoded input of newmark beta ratio, before merging,
+  // need to refactor the newmark scheme to pass this parameter
+  double newmark_gamma_beta_ratio = 2.0;
+  const Vector6d depsv_dot_deps = -newmark_gamma_beta_ratio / dt * m_mandel;
   const Matrix6x6 dgamma_dot_deps =
-      1.0 / dt *
+      newmark_gamma_beta_ratio / dt *
       (fourth_order_identity_mandel - 1.0 / 3.0 * identity_cross_mandel);
 
   // Check if bdf2 is already active

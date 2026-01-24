@@ -27,7 +27,7 @@ class Terracotta : public Material<Tdim> {
   Terracotta(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~Terracotta() override {};
+  ~Terracotta() override{};
 
   //! Delete copy constructor
   Terracotta(const Terracotta&) = delete;

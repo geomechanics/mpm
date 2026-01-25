@@ -77,8 +77,13 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Function to reinitialise consitutive law to be run at the beginning of
   //! each time step
   //! \ingroup Implicit
-  //! \param[in] dt Analysis time step
-  void initialise_constitutive_law(double dt) noexcept override;
+  //! \param[in] dt Analysis time step.
+  //! \param[in] lin_v Scheme dependent kinematic linearization parameter -
+  //! velocity
+  //! \param[in] lin_a Scheme dependent kinematic linearization parameter -
+  //! acceleration
+  void initialise_constitutive_law(double dt, double lin_v = 0.0,
+                                   double lin_a = 0.0) noexcept override;
 
   //! Map mass, material and geometric stiffness matrix to cell
   //! (used in equilibrium equation LHS)
@@ -96,7 +101,12 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  void compute_stress_newmark(double dt) noexcept override;
+  //! \param[in] lin_v Scheme dependent kinematic linearization parameter -
+  //! velocity
+  //! \param[in] lin_a Scheme dependent kinematic linearization parameter -
+  //! acceleration
+  void compute_stress_newmark(double dt, double lin_v = 0.0,
+                              double lin_a = 0.0) noexcept override;
 
   //! Update stress and strain after convergence of Newton-Raphson iteration
   //! \ingroup Implicit

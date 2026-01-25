@@ -429,7 +429,12 @@ class ParticleBase {
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  virtual void compute_stress_newmark(double dt) = 0;
+  //! \param[in] lin_v Scheme dependent kinematic linearization parameter -
+  //! velocity
+  //! \param[in] lin_a Scheme dependent kinematic linearization parameter -
+  //! acceleration
+  virtual void compute_stress_newmark(double dt, double lin_v = 0.0,
+                                      double lin_a = 0.0) = 0;
 
   //! Return previous stress
   virtual Eigen::Matrix<double, 6, 1> previous_stress() const = 0;
@@ -454,7 +459,12 @@ class ParticleBase {
   //! each time step
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  virtual void initialise_constitutive_law(double dt) noexcept = 0;
+  //! \param[in] lin_v Scheme dependent kinematic linearization parameter -
+  //! velocity
+  //! \param[in] lin_a Scheme dependent kinematic linearization parameter -
+  //! acceleration
+  virtual void initialise_constitutive_law(double dt, double lin_v = 0.0,
+                                           double lin_a = 0.0) noexcept = 0;
 
   //! Return mapping matrix
   //! \ingroup AdvancedMapping

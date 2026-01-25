@@ -13,7 +13,8 @@ void mpm::Particle<Tdim>::map_mass_momentum_inertia_to_nodes() noexcept {
 
 //! Function to reinitialise material to be run at the beginning of each time
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::initialise_constitutive_law(double dt) noexcept {
+void mpm::Particle<Tdim>::initialise_constitutive_law(double dt, double lin_v,
+                                                      double lin_a) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
 
@@ -25,7 +26,7 @@ void mpm::Particle<Tdim>::initialise_constitutive_law(double dt) noexcept {
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
           stress_, previous_stress_, dstrain_, this,
-          &state_variables_[mpm::ParticlePhase::Solid], dt);
+          &state_variables_[mpm::ParticlePhase::Solid], dt, lin_v, lin_a);
 }
 
 //! Map inertial force
@@ -297,7 +298,8 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark() noexcept {
 
 // Compute stress using implicit updating scheme
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::compute_stress_newmark(double dt) noexcept {
+void mpm::Particle<Tdim>::compute_stress_newmark(double dt, double lin_v,
+                                                 double lin_a) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Clone state variables
@@ -310,7 +312,8 @@ void mpm::Particle<Tdim>::compute_stress_newmark(double dt) noexcept {
   // Compute current consititutive matrix
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
-          stress_, previous_stress_, dstrain_, this, &temp_state_variables, dt);
+          stress_, previous_stress_, dstrain_, this, &temp_state_variables, dt,
+          lin_v, lin_a);
 }
 
 // Compute updated position of the particle by Newmark scheme

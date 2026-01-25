@@ -454,7 +454,12 @@ class Particle : public ParticleBase<Tdim> {
   //! Compute stress using implicit updating scheme
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  void compute_stress_newmark(double dt) noexcept override;
+  //! \param[in] lin_v Scheme dependent kinematic linearization parameter -
+  //! velocity
+  //! \param[in] lin_a Scheme dependent kinematic linearization parameter -
+  //! acceleration
+  void compute_stress_newmark(double dt, double lin_v = 0.0,
+                              double lin_a = 0.0) noexcept override;
 
   //! Return stress at the previous time step of the particle
   //! \ingroup Implicit
@@ -476,7 +481,12 @@ class Particle : public ParticleBase<Tdim> {
   //! each time step
   //! \ingroup Implicit
   //! \param[in] dt Analysis time step
-  void initialise_constitutive_law(double dt) noexcept override;
+  //! \param[in] lin_v Scheme dependent kinematic linearization parameter -
+  //! velocity
+  //! \param[in] lin_a Scheme dependent kinematic linearization parameter -
+  //! acceleration
+  void initialise_constitutive_law(double dt, double lin_v = 0.0,
+                                   double lin_a = 0.0) noexcept override;
   /**@}*/
 
  protected:

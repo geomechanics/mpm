@@ -409,7 +409,7 @@ Eigen::Matrix<double, 6, 6>
     mpm::Terracotta<Tdim>::compute_consistent_tangent_matrix(
         const Vector6d& stress, const Vector6d& prev_stress,
         const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
-        mpm::dense_map* state_vars, double dt) {
+        mpm::dense_map* state_vars, double dt, double lin_v, double lin_a) {
 
   // Density and packing parameters
   const double current_packing_density = ptr->mass_density();
@@ -466,13 +466,9 @@ Eigen::Matrix<double, 6, 6>
       fourth_order_identity_mandel - 1.0 / 3.0 * identity_cross_mandel;
 
   // Strain rate invariants derivatives
-  // FIXME: This is a hardcoded input of newmark beta ratio, before merging,
-  // need to refactor the newmark scheme to pass this parameter
-  double newmark_gamma_beta_ratio = 2.0;
-  const Vector6d depsv_dot_deps = -newmark_gamma_beta_ratio / dt * m_mandel;
-  const Matrix6x6 dgamma_dot_deps =
-      newmark_gamma_beta_ratio / dt *
-      (fourth_order_identity_mandel - 1.0 / 3.0 * identity_cross_mandel);
+  const Vector6d depsv_dot_deps = -lin_v * m_mandel;
+  const Matrix6x6 dgamma_dot_deps = lin_v * (fourth_order_identity_mandel -
+                                             1.0 / 3.0 * identity_cross_mandel);
 
   // Check if bdf2 is already active
   const double tm_n = (*state_vars).at("tm");

@@ -59,13 +59,18 @@ class Terracotta : public Material<Tdim> {
   //! \param[in] particle Constant point to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \param[in] dt Time step increment
+  //! \param[in] lin_v Scheme dependent kinematic linearization parameter -
+  //! velocity
+  //! \param[in] lin_a Scheme dependent kinematic linearization parameter -
+  //! acceleration
   //! \retval dmatrix Constitutive relations mattrix
   Matrix6x6 compute_consistent_tangent_matrix(const Vector6d& stress,
                                               const Vector6d& prev_stress,
                                               const Vector6d& dstrain,
                                               const ParticleBase<Tdim>* ptr,
                                               mpm::dense_map* state_vars,
-                                              double dt) override;
+                                              double dt, double lin_v = 0.0,
+                                              double lin_a = 0.0) override;
 
  protected:
   //! Function that return macaulay bracket of a double input parameter

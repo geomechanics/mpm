@@ -111,12 +111,8 @@ class MPMScheme {
 
   //! Update nodal kinematics by Newmark scheme
   //! \ingroup Implicit
-  //! \param[in] newmark_beta Parameter beta of Newmark scheme
-  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
   //! \param[in] phase Phase to smooth pressure
-  virtual inline void update_nodal_kinematics_newmark(unsigned phase,
-                                                      double newmark_beta,
-                                                      double newmark_gamma) {
+  virtual inline void update_nodal_kinematics_newmark(unsigned phase) {
     throw std::runtime_error(
         "Calling the base class function (update_nodal_kinematics_newmark) in "
         "MPMScheme:: illegal operation!");

@@ -297,12 +297,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(false));
 
     // Illegal Operation
-    REQUIRE_THROWS(mpm_scheme->update_nodal_kinematics_newmark(0, 0, 0));
+    REQUIRE_THROWS(mpm_scheme->update_nodal_kinematics_newmark(0));
     REQUIRE_THROWS(mpm_scheme->update_particle_stress_strain_volume());
   }
 
   SECTION("Check Newmark") {
-    auto mpm_scheme = std::make_shared<mpm::MPMSchemeNewmark<Dim>>(mesh, 0.01);
+    auto mpm_scheme =
+        std::make_shared<mpm::MPMSchemeNewmark<Dim>>(mesh, 0.01, 0.25, 0.5);
     // Phase
     unsigned phase = 0;
     // Step
@@ -341,7 +342,7 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->locate_particles(false));
 
     // Specific Operation
-    REQUIRE_NOTHROW(mpm_scheme->update_nodal_kinematics_newmark(0, 0.25, 0.5));
+    REQUIRE_NOTHROW(mpm_scheme->update_nodal_kinematics_newmark(0));
     REQUIRE_NOTHROW(mpm_scheme->update_particle_stress_strain_volume());
   }
 }

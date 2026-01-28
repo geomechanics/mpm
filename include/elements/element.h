@@ -184,7 +184,8 @@ class Element {
   virtual void initialise_bspline_connectivity_properties(
       const Eigen::MatrixXd& nodal_coordinates,
       const std::vector<std::vector<unsigned>>& nodal_properties,
-      bool kernel_correction = false) = 0;
+      bool kernel_correction = false, unsigned kc_niteration = 1,
+      double kc_tol = 0.0) = 0;
 
   //! Assign nodal connectivity property for LME elements
   //! \param[in] beta Coldness function of the system in the range of [0,inf)

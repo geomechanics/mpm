@@ -5,6 +5,7 @@
 #include "linear_elastic.h"
 #include "modified_cam_clay.h"
 #include "mohr_coulomb.h"
+#include "mu_i.h"
 #include "newtonian.h"
 #include "norsand.h"
 
@@ -67,6 +68,14 @@ static Register<mpm::Material<2>, mpm::NorSand<2>, unsigned, const Json&>
 // Norsand 3D
 static Register<mpm::Material<3>, mpm::NorSand<3>, unsigned, const Json&>
     nor_sand_3d("NorSand3D");
+
+// Mu(I) 2D
+static Register<mpm::Material<2>, mpm::MuI<2>, unsigned, const Json&> mu_i_2d(
+    "MuI2D");
+
+// Mu(I) 3D
+static Register<mpm::Material<3>, mpm::MuI<3>, unsigned, const Json&> mu_i_3d(
+    "MuI3D");
 
 // Hencky Hyper Elastic 2D
 static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,

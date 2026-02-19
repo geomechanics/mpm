@@ -299,7 +299,7 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
-
+  //! Boolean to initialize rotation forces
   bool rotation_forces_{false};
   //! Origin of the centrifuge rotation
   Eigen::Matrix<double, Tdim, 1> rotation_origin_;

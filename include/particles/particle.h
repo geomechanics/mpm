@@ -240,7 +240,8 @@ class Particle : public ParticleBase<Tdim> {
   //! Map rotation forces (centrifugal and coriolis)
   //! \param[in] rotation_origin Origin of rotation
   //! \param[in] rotation_omega Angular velocity of centrifuge
-  //! \param[in] rotation_clockwise Boolean of rotation direction (clockwise or anticlockwise)
+  //! \param[in] rotation_clockwise Boolean of rotation direction (clockwise or
+  //! anticlockwise)
   void map_rotation_force(const VectorDim& rotation_origin,
                           double rotation_omega,
                           bool rotation_clockwise) noexcept override;

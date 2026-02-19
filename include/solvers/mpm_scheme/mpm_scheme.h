@@ -52,7 +52,7 @@ class MPMScheme {
   //! \param[in] pressure_smoothing Enable or disable pressure smoothing
   virtual inline void pressure_smoothing(unsigned phase);
 
-  ///! Compute forces
+  //! Compute forces
   //! \param[in] gravity Acceleration due to gravity
   //! \param[in] step Number of step in solver
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force

@@ -40,11 +40,22 @@ mpm::Terracotta<Tdim>::Terracotta(unsigned id, const Json& material_properties)
     // Intial meso-scale temperature
     initial_tm_ =
         material_properties.at("meso_temperature").template get<double>();
-    // fluid bulk modulus
-    if (material_properties.contains("pore_fluid_bulk_modulus")) {
+
+    // If fluid properties are provided, compute pore fluid bulk modulus and
+    // modify grain density accordingly
+    if (material_properties.contains("pore_fluid_density") ||
+        material_properties.contains("pore_fluid_bulk_modulus")) {
+      // Pore fluid density and bulk modulus
+      pore_fluid_density_ =
+          material_properties.at("pore_fluid_density").template get<double>();
       pore_fluid_bulk_modulus_ =
           material_properties.at("pore_fluid_bulk_modulus")
               .template get<double>();
+
+      // Modify grain density
+      grain_density_ =
+          (density - pore_fluid_density_ * (1.0 - initial_packing_fraction_)) /
+          initial_packing_fraction_;
     }
 
     // Parameters for return mapping algorithm

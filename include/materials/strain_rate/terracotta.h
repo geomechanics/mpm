@@ -117,6 +117,8 @@ class Terracotta : public Material<Tdim> {
   double m_{std::numeric_limits<double>::max()};
   // Initial meso-scale temperature
   double initial_tm_{std::numeric_limits<double>::max()};
+  //! Bulk modulus
+  double water_bulk_modulus_{0.0};
 
   // Parameters for return mapping algorithm
   //! Absolute tolerance

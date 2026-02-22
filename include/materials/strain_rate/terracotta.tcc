@@ -40,6 +40,11 @@ mpm::Terracotta<Tdim>::Terracotta(unsigned id, const Json& material_properties)
     // Intial meso-scale temperature
     initial_tm_ =
         material_properties.at("meso_temperature").template get<double>();
+    // Water bulk modulus
+    if (material_properties.contains("water_bulk_modulus")) {
+      water_bulk_modulus_ =
+          material_properties.at("water_bulk_modulus").template get<double>();
+    }
 
     // Parameters for return mapping algorithm
     if (material_properties.contains("rmap_absolute_tolerance")) {
@@ -90,7 +95,9 @@ mpm::dense_map mpm::Terracotta<Tdim>::initialise_state_variables() {
                                {"elastic_strain4_prev", 0.},
                                {"elastic_strain5_prev", 0.},
                                // Packing fraction
-                               {"packing_fraction", initial_packing_fraction_}};
+                               {"packing_fraction", initial_packing_fraction_},
+                               // Pore pressure
+                               {"pore_water_pressure", 0.0}};
   return state_vars;
 }
 
@@ -113,7 +120,8 @@ std::vector<std::string> mpm::Terracotta<Tdim>::state_variables() const {
                                                "elastic_strain3_prev",
                                                "elastic_strain4_prev",
                                                "elastic_strain5_prev",
-                                               "packing_fraction"};
+                                               "packing_fraction",
+                                               "pore_water_pressure"};
   return state_vars;
 }
 
@@ -364,7 +372,10 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   const double pe = pe_m;
   const double pd = 2.0 * alpha_ / gamma_ * new_tm * vol_strain_rate;
   const double pt = new_tm * new_tm / gamma_;
-  const double new_p = pe + pd + pt;
+  const double pw = (*state_vars).at("pore_water_pressure") +
+                    water_bulk_modulus_ / (1.0 - current_packing_fraction) *
+                        vol_strain_rate * dt;
+  const double new_p = pe + pd + pt + pw;
 
   const Vector6d se = se_m;
   const Vector6d sd = 4. / 3. * beta_ / gamma_ * new_tm * strain_rate_dev;
@@ -399,6 +410,9 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   (*state_vars).at("elastic_strain4") = new_elastic_strain(4);
   (*state_vars).at("elastic_strain5") = new_elastic_strain(5);
   (*state_vars).at("packing_fraction") = current_packing_fraction;
+
+  // Update pore water pressure
+  (*state_vars).at("pore_water_pressure") = pw;
 
   return updated_stress;
 }

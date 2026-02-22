@@ -633,9 +633,15 @@ Eigen::Matrix<double, 6, 6>
   const Vector6d dstress_t_dtm = -2.0 * tm_n / gamma_ * m_mandel;
   const Matrix6x6 dstress_t_dstrain = dstress_t_dtm * dtm_deps.transpose();
 
+  //! Pore water stress part of consistent tangent matrix
+  const Vector6d dstress_w_depsv_dot =
+      -water_bulk_modulus_ * dt / (1.0 - current_packing_fraction) * m_mandel;
+  const Matrix6x6 dstress_w_dstrain =
+      dstress_w_depsv_dot * depsv_dot_deps.transpose();
+
   //! Consistent tangent matrix
-  Matrix6x6 const_tangent =
-      dstress_e_dstrain + dstress_d_dstrain + dstress_t_dstrain;
+  Matrix6x6 const_tangent = dstress_e_dstrain + dstress_d_dstrain +
+                            dstress_t_dstrain + dstress_w_dstrain;
 
   // Convert Mandel's notation to tensorial Voigt notation
   Eigen::Matrix<double, 6, 1> scaling;

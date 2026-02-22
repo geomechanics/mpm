@@ -27,7 +27,7 @@ class Terracotta : public Material<Tdim> {
   Terracotta(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~Terracotta() override{};
+  ~Terracotta() override {};
 
   //! Delete copy constructor
   Terracotta(const Terracotta&) = delete;
@@ -117,8 +117,8 @@ class Terracotta : public Material<Tdim> {
   double m_{std::numeric_limits<double>::max()};
   // Initial meso-scale temperature
   double initial_tm_{std::numeric_limits<double>::max()};
-  //! Bulk modulus
-  double water_bulk_modulus_{0.0};
+  //! Bulk modulus of pore fluid (if any)
+  double pore_fluid_bulk_modulus_{0.0};
 
   // Parameters for return mapping algorithm
   //! Absolute tolerance

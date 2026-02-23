@@ -232,6 +232,21 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
     }
   }
 
+  SECTION("Check rotation JSON parsing error handling in 3D") {
+    std::string err_fname = "mpm-bad-rotation";
+    // We call it with dim=3
+    REQUIRE(mpm_test::write_json_bad_rotation(3, analysis, err_fname) == true);
+
+    int argc_err = 5;
+    char* argv_err[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
+                        (char*)"mpm-bad-rotation-3d.json"};
+
+    auto io_err = std::make_unique<mpm::IO>(argc_err, argv_err);
+    auto mpm_err = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_err));
+
+    REQUIRE_THROWS_AS(mpm_err->initialise_loads(), std::runtime_error);
+  }
+
   SECTION("Check pressure smoothing") {
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);

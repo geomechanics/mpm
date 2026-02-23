@@ -98,12 +98,11 @@ bool write_particles_3d_multi_particle_type();
 // Write math function csv
 bool write_math_function();
 
-  //! \brief Write JSON Configuration file with a bad rotation setup to test error handling
-  //! \param[in] dim Dimension
-  //! \param[in] analysis Analysis type
-  //! \param[in] file_name File name
-  //! \retval status Status of writing JSON file
-  bool write_json_bad_rotation(unsigned dim, const std::string& analysis,
-                               const std::string& file_name);
+//! \brief Write JSON Configuration file with a bad rotation setup to test error
+//! handling \param[in] dim Dimension \param[in] analysis Analysis type
+//! \param[in] file_name File name
+//! \retval status Status of writing JSON file
+bool write_json_bad_rotation(unsigned dim, const std::string& analysis,
+                             const std::string& file_name);
 
 }  // namespace mpm_test

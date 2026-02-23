@@ -121,8 +121,25 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
 
   SECTION("Check rotation JSON parsing error handling") {
     std::string err_fname = "mpm-bad-rotation";
-    REQUIRE(mpm_test::write_json_bad_rotation(2, analysis, err_fname) == true);
 
+    // We generate normal json function
+    REQUIRE(mpm_test::write_json(2, false, analysis, mpm_scheme, err_fname) ==
+            true);
+
+    // We corrupt it for the test (give a 2D simulation a 3D origin)
+    std::ifstream file_in("mpm-bad-rotation-2d.json");
+    nlohmann::json j;
+    file_in >> j;
+    file_in.close();
+
+    j["external_loading_conditions"]["rotation_forces"]["origin"] = {0.0, 0.0,
+                                                                     0.0};
+
+    std::ofstream file_out("mpm-bad-rotation-2d.json");
+    file_out << j.dump(2);
+    file_out.close();
+
+    // We run the solver and expect it to crash
     int argc_err = 5;
     char* argv_err[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
                         (char*)"mpm-bad-rotation-2d.json"};
@@ -234,9 +251,24 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
 
   SECTION("Check rotation JSON parsing error handling in 3D") {
     std::string err_fname = "mpm-bad-rotation";
-    // We call it with dim=3
-    REQUIRE(mpm_test::write_json_bad_rotation(3, analysis, err_fname) == true);
 
+    // We generate normal json function
+    REQUIRE(mpm_test::write_json(3, false, analysis, mpm_scheme, err_fname) ==
+            true);
+
+    // We corrupt it for the test (give a 3D simulation a 2D origin)
+    std::ifstream file_in("mpm-bad-rotation-3d.json");
+    nlohmann::json j;
+    file_in >> j;
+    file_in.close();
+
+    j["external_loading_conditions"]["rotation_forces"]["origin"] = {0.0, 0.0};
+
+    std::ofstream file_out("mpm-bad-rotation-3d.json");
+    file_out << j.dump(2);
+    file_out.close();
+
+    // We run the solver and expect it to crash
     int argc_err = 5;
     char* argv_err[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
                         (char*)"mpm-bad-rotation-3d.json"};

@@ -1,5 +1,7 @@
 #include "catch.hpp"
 
+#include "particle.h" // For rotation force mapping
+
 //! Alias for JSON
 #include "json.hpp"
 using Json = nlohmann::json;
@@ -96,6 +98,38 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       auto mpm_resume = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
       REQUIRE(mpm_resume->solve() == true);
     }
+  }
+
+  SECTION("Check rotation force physics execution") {
+    // We create a dummy particle at origin
+    mpm::Index id = 0;
+    Eigen::Matrix<double, Dim, 1> coords;
+    coords.setZero();
+    auto p = std::make_shared<mpm::Particle<Dim>>(id, coords);
+
+    // We give it velocity to ensure the Coriolis math line is executed
+    Eigen::Matrix<double, Dim, 1> p_vel; 
+    p_vel.fill(1.0);
+    p->assign_velocity(p_vel);
+
+    // We execute both directions
+    REQUIRE_NOTHROW(p->map_rotation_force(Eigen::Matrix<double, Dim, 1>::Zero(), 10.0, false));
+    REQUIRE_NOTHROW(p->map_rotation_force(Eigen::Matrix<double, Dim, 1>::Zero(), 10.0, true));
+  }
+
+  SECTION("Check rotation JSON parsing error handling") {
+    std::string err_fname = "mpm-bad-rotation";
+    REQUIRE(mpm_test::write_json_bad_rotation(2, analysis, err_fname) == true);
+
+    int argc_err = 5;
+    char* argv_err[] = {(char*)"./mpm", 
+                        (char*)"-f", (char*)"./", 
+                        (char*)"-i", (char*)"mpm-bad-rotation-2d.json"};
+
+    auto io_err = std::make_unique<mpm::IO>(argc_err, argv_err);
+    auto mpm_err = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_err));
+    
+    REQUIRE_THROWS_AS(mpm_err->initialise_loads(), std::runtime_error);
   }
 
   SECTION("Check pressure smoothing") {

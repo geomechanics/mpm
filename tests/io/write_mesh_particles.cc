@@ -17,6 +17,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   unsigned material_id = 0;
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  std::vector<double> rotation_origin{{0.0, 0.0}}; // 2D Origin for rotation test
 
   // 3D
   if (dim == 3) {
@@ -28,6 +29,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
     material = "LinearElastic3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
+    rotation_origin = {0.0, 0.0, 0.0}; // 3D Origin for rotation test
   }
 
   Json json_file = {
@@ -66,6 +68,10 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
        {{{"material_id", 1}, {"phase_id", 0}, {"pset_id", 2}}}},
       {"external_loading_conditions",
        {{"gravity", gravity},
+        {"rotation_forces", //Start of rotation block
+         {{"origin", rotation_origin},
+          {"omega", 10.0},
+          {"clockwise", false}}}, //End of rotation block
         {"particle_surface_traction",
          {{{"math_function_id", 0},
            {"pset_id", -1},
@@ -1790,6 +1796,74 @@ bool write_math_function() {
   }
 
   file.close();
+  return true;
+}
+
+// We write a JSON Configuration file for bad rotation
+bool write_json_bad_rotation(unsigned dim, const std::string& analysis,
+                             const std::string& file_name) {
+  std::string dimension = (dim == 3) ? "3d" : "2d";
+  auto particle_type = (dim == 3) ? "P3D" : "P2D";
+  auto node_type = (dim == 3) ? "N3D" : "N2D";
+  auto cell_type = (dim == 3) ? "ED3H8" : "ED2Q4";
+  auto io_type = (dim == 3) ? "Ascii3D" : "Ascii2D";
+  std::string material = (dim == 3) ? "LinearElastic3D" : "LinearElastic2D";
+
+  // Error: Provide a 3-element (3D) origin, even for 2D tests.
+  std::vector<double> bad_origin = {0.0, 0.0, 0.0}; 
+
+  Json json_file = {
+      {"title", "Example JSON Input for MPM"},
+      {"mesh",
+       {{"mesh", "mesh-" + dimension + ".txt"},
+        {"entity_sets", "entity_sets_0.json"},
+        {"io_type", io_type},
+        {"check_duplicates", true},
+        {"isoparametric", false},
+        {"node_type", node_type},
+        {"boundary_conditions", {}},
+        {"cell_type", cell_type}}},
+      {"particles",
+       {{{"generator",
+          {{"type", "file"},
+           {"material_id", 0},
+           {"pset_id", 0},
+           {"io_type", io_type},
+           {"particle_type", particle_type},
+           {"check_duplicates", true},
+           {"location", "particles-" + dimension + ".txt"}}}}}},
+      {"materials",
+       {{{"id", 0},
+         {"type", material},
+         {"density", 1000.},
+         {"youngs_modulus", 1.0E+8},
+         {"poisson_ratio", 0.495}}}},
+      {"external_loading_conditions",
+       {{"gravity", {0.0, -9.81}},
+        {"rotation_forces",
+         {{"origin", bad_origin},
+          {"omega", 10.0},
+          {"clockwise", false}}}}},
+      {"analysis",
+       {{"type", analysis},
+        {"locate_particles", true},
+        {"dt", 0.001},
+        {"uuid", file_name + "-" + dimension},
+        {"nsteps", 10},
+        {"resume",
+         {{"resume", false},
+          {"uuid", file_name + "-" + dimension},
+          {"step", 5}}}}},
+      {"post_processing",
+       {{"path", "results/"},
+        {"vtk", {}},
+        {"output_steps", 5}}}};
+
+  std::string fname = file_name + "-" + dimension + ".json";
+  std::ofstream file(fname);
+  file << json_file.dump(2);
+  file.close();
+
   return true;
 }
 

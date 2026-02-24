@@ -21,8 +21,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   // Empty all materials
   materials_.clear();
 
-  // Variable list
-  tsl::robin_map<std::string, VariableType> variables = {
+  // Particle variable list
+  tsl::robin_map<std::string, VariableType> particle_variables = {
       // Scalar variables
       {"id", VariableType::Scalar},
       {"material", VariableType::Scalar},
@@ -36,6 +36,15 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       // Tensor variables
       {"strains", VariableType::Tensor},
       {"stresses", VariableType::Tensor}};
+
+  // Node variable list
+  tsl::robin_map<std::string, VariableType> node_variables = {
+      // Scalar variables
+      {"mass", VariableType::Scalar},
+      // Vector variables
+      {"displacements", VariableType::Vector},
+      {"velocities", VariableType::Vector},
+      {"accelerations", VariableType::Vector}};
 
   try {
     analysis_ = io_->analysis();
@@ -160,8 +169,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
           post_process_["vtk"][i].template get<std::string>();
       if (attribute == "geometry")
         geometry_vtk_ = true;
-      else if (variables.find(attribute) != variables.end())
-        vtk_vars_[variables.at(attribute)].emplace_back(attribute);
+      else if (particle_variables.find(attribute) != particle_variables.end())
+        vtk_vars_[particle_variables.at(attribute)].emplace_back(attribute);
       else {
         console_->warn(
             "{} #{}: VTK variable \"{}\" was specified, but is not available "
@@ -175,7 +184,7 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
         __FILE__, __LINE__);
   }
 
-  // VTK state variables
+  // VTK particle state variables
   bool vtk_statevar = false;
   if ((post_process_.find("vtk_statevars") != post_process_.end()) &&
       post_process_.at("vtk_statevars").is_array() &&
@@ -203,6 +212,56 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
   if (!vtk_statevar)
     console_->warn(
         "{} #{}: No VTK statevariable were specified, none will be generated",
+        __FILE__, __LINE__);
+
+  // VTK node variables
+  // Initialise container with empty map
+  tsl::robin_map<unsigned, std::vector<std::string>> empty_map;
+  vtk_nodevars_.insert(std::make_pair(mpm::VariableType::Scalar, empty_map));
+  vtk_nodevars_.insert(std::make_pair(mpm::VariableType::Vector, empty_map));
+
+  if ((post_process_.find("vtk_nodevars") != post_process_.end()) &&
+      post_process_.at("vtk_nodevars").is_array() &&
+      post_process_.at("vtk_nodevars").size() > 0) {
+    // Iterate over node_vars
+    for (const auto& nvars : post_process_["vtk_nodevars"]) {
+      // Phase id
+      unsigned phase_id = 0;
+      if (nvars.contains("phase_id"))
+        phase_id = nvars.at("phase_id").template get<unsigned>();
+
+      // Node variables
+      if (nvars.at("nodevars").is_array() && nvars.at("nodevars").size() > 0) {
+        // Loop over nodevars and check type
+        for (unsigned i = 0; i < nvars.at("nodevars").size(); ++i) {
+          std::string attribute =
+              nvars["nodevars"][i].template get<std::string>();
+          if (node_variables.find(attribute) != node_variables.end()) {
+            // Inner map
+            auto& inner_map = vtk_nodevars_[node_variables.at(attribute)];
+
+            // Check if inner_map has phase_id
+            // If yes, emplace_back
+            if (inner_map.find(phase_id) != inner_map.end()) {
+              inner_map[phase_id].emplace_back(attribute);
+            }
+            // If not insert
+            else {
+              std::vector<std::string> v{attribute};
+              inner_map.insert(std::make_pair(phase_id, v));
+            }
+          } else {
+            console_->warn(
+                "{} #{}: VTK nodevars '{}' was specified, but is not available "
+                " in variable list ",
+                __FILE__, __LINE__, attribute);
+          }
+        }
+      }
+    }
+  } else
+    console_->warn(
+        "{} #{}: No VTK nodevariable were specified, none will be generated",
         __FILE__, __LINE__);
 }
 
@@ -766,7 +825,9 @@ void mpm::MPMBase<Tdim>::write_vtk_particles(mpm::Index step,
                                              mpm::Index max_steps) {
 
   // VTK PolyData writer
-  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates());
+  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->particle_coordinates(),
+                                                mesh_->nodal_coordinates(),
+                                                mesh_->cell_connectivity(true));
   const std::string extension = ".vtp";
 
   // Write mesh on step 0
@@ -774,7 +835,7 @@ void mpm::MPMBase<Tdim>::write_vtk_particles(mpm::Index step,
   if (step % nload_balance_steps_ == 0)
     vtk_writer->write_mesh(
         io_->output_file("mesh", extension, uuid_, step, max_steps).string(),
-        mesh_->nodal_coordinates(), mesh_->node_pairs(true));
+        mesh_->node_pairs(true));
 
   // VTK geometry
   if (geometry_vtk_) {
@@ -881,6 +942,64 @@ void mpm::MPMBase<Tdim>::write_vtk_particles(mpm::Index step,
         unsigned ncomponents = 1;
         vtk_writer->write_parallel_vtk(parallel_file, phase_attribute, mpi_size,
                                        step, max_steps, ncomponents);
+      }
+#endif
+    }
+  }
+
+  //! VTK nodal scalar variables
+  for (const auto& vtk_scalar_nodevar :
+       vtk_nodevars_.at(mpm::VariableType::Scalar)) {
+    unsigned phase_id = vtk_scalar_nodevar.first;
+    for (const auto& attribute : vtk_scalar_nodevar.second) {
+      std::string node_phase_attribute =
+          "node_phase" + std::to_string(phase_id) + attribute;
+      // Write state variables
+      auto file = io_->output_file(node_phase_attribute, extension, uuid_, step,
+                                   max_steps)
+                      .string();
+      vtk_writer->write_scalar_node_data(
+          file, mesh_->nodes_scalar_data(attribute, phase_id),
+          node_phase_attribute);
+      // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+      if (mpi_rank == 0 && mpi_size > 1) {
+        auto parallel_file =
+            io_->output_file(node_phase_attribute, ".pvtp", uuid_, step,
+                             max_steps, write_mpi_rank)
+                .string();
+        unsigned ncomponents = 1;
+        vtk_writer->write_parallel_vtk(parallel_file, node_phase_attribute,
+                                       mpi_size, step, max_steps, ncomponents);
+      }
+#endif
+    }
+  }
+
+  //! VTK nodal vector variables
+  for (const auto& vtk_vector_nodevar :
+       vtk_nodevars_.at(mpm::VariableType::Vector)) {
+    unsigned phase_id = vtk_vector_nodevar.first;
+    for (const auto& attribute : vtk_vector_nodevar.second) {
+      std::string node_phase_attribute =
+          "node_phase" + std::to_string(phase_id) + attribute;
+      // Write state variables
+      auto file = io_->output_file(node_phase_attribute, extension, uuid_, step,
+                                   max_steps)
+                      .string();
+      vtk_writer->write_vector_node_data(
+          file, mesh_->nodes_vector_data(attribute, phase_id),
+          node_phase_attribute);
+      // Write a parallel MPI VTK container file
+#ifdef USE_MPI
+      if (mpi_rank == 0 && mpi_size > 1) {
+        auto parallel_file =
+            io_->output_file(node_phase_attribute, ".pvtp", uuid_, step,
+                             max_steps, write_mpi_rank)
+                .string();
+        unsigned ncomponents = 3;
+        vtk_writer->write_parallel_vtk(parallel_file, node_phase_attribute,
+                                       mpi_size, step, max_steps, ncomponents);
       }
 #endif
     }

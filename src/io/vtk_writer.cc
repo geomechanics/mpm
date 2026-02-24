@@ -2,18 +2,33 @@
 
 #ifdef USE_VTK
 
-//! VTK Writer class Constructor with coordniates
-//! \param[in] coordinate Point coordinates
-//! \param[in] node_pairs Node ID pairs to form elements
+//! VTK Writer class Constructor
 VtkWriter::VtkWriter(
-    const std::vector<Eigen::Matrix<double, 3, 1>>& coordinates) {
+    const std::vector<Eigen::Matrix<double, 3, 1>>& point_coordinates,
+    const std::vector<Eigen::Matrix<double, 3, 1>>& nodal_coordinates,
+    const std::vector<std::vector<mpm::Index>>& cell_connectivity) {
   // Assign points
   points_ = vtkSmartPointer<vtkPoints>::New();
   unsigned long long id = 0;
-  for (const auto& coordinate : coordinates) {
+  for (const auto& coordinate : point_coordinates) {
     const double* point = coordinate.data();
     points_->InsertPoint(id, point);
     ++id;
+  }
+
+  // Assign nodes
+  nodes_ = vtkSmartPointer<vtkPoints>::New();
+  unsigned long long nid = 0;
+  for (const auto& coordinate : nodal_coordinates) {
+    const double* node = coordinate.data();
+    nodes_->InsertPoint(nid, node);
+    ++nid;
+  }
+
+  // Assign cell_connectivity
+  for (const auto& conn : cell_connectivity) {
+    std::vector<vtkIdType> vtkConn(conn.begin(), conn.end());
+    cell_connectivity_.push_back(vtkConn);
   }
 }
 
@@ -168,19 +183,105 @@ void VtkWriter::write_scalar_point_data(const std::string& filename,
   writer->Write();
 }
 
+//! Write scalar node data
+void VtkWriter::write_scalar_node_data(const std::string& filename,
+                                       const std::vector<double>& data,
+                                       const std::string& data_field) {
+
+  // Create an array to hold distance information
+  auto scalardata = vtkSmartPointer<vtkDoubleArray>::New();
+  scalardata->SetNumberOfComponents(1);
+  scalardata->SetName(data_field.c_str());
+
+  // Add value to scalarfield
+  for (auto value : data) scalardata->InsertNextValue(value);
+
+  // Create a polydata to store everything in it
+  auto pdata = vtkSmartPointer<vtkPolyData>::New();
+  // Add the points to the dataset
+  pdata->SetPoints(nodes_);
+
+  // Create cells
+  auto cells = vtkSmartPointer<vtkCellArray>::New();
+  for (const auto& connectivity : cell_connectivity_) {
+    cells->InsertNextCell(connectivity.size(), connectivity.data());
+  }
+  pdata->SetPolys(cells);
+
+  // Add the scalar data to the points
+  pdata->GetPointData()->AddArray(scalardata);
+
+  // Write file
+  auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+
+  writer->SetFileName(filename.c_str());
+
+  writer->SetDataModeToBinary();
+
+#if VTK_MAJOR_VERSION <= 5
+  writer->SetInput(pdata);
+#else
+  writer->SetInputData(pdata);
+#endif
+
+  writer->SetCompressor(vtkZLibDataCompressor::New());
+  writer->Write();
+}
+
+//! Write vector node data
+void VtkWriter::write_vector_node_data(const std::string& filename,
+                                       const std::vector<Eigen::Vector3d>& data,
+                                       const std::string& data_field) {
+
+  // Create a polydata to store everything in it
+  auto pdata = vtkSmartPointer<vtkPolyData>::New();
+
+  // Add the points to the dataset
+  pdata->SetPoints(nodes_);
+
+  // Create an array to hold distance information
+  auto vectordata = vtkSmartPointer<vtkDoubleArray>::New();
+  vectordata->SetNumberOfComponents(3);
+  vectordata->SetNumberOfTuples(pdata->GetNumberOfPoints());
+  vectordata->SetName(data_field.c_str());
+
+  // Evaluate the signed distance function at all of the grid points
+  for (vtkIdType id = 0; id < pdata->GetNumberOfPoints(); ++id) {
+    const double* vdata = data.at(id).data();
+    vectordata->SetTuple(id, vdata);
+  }
+
+  // Create cells
+  auto cells = vtkSmartPointer<vtkCellArray>::New();
+  for (const auto& connectivity : cell_connectivity_) {
+    cells->InsertNextCell(connectivity.size(), connectivity.data());
+  }
+  pdata->SetPolys(cells);
+
+  // Add the scalar data to the points
+  pdata->GetPointData()->AddArray(vectordata);
+
+  // Write file
+  auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+
+  writer->SetFileName(filename.c_str());
+
+  writer->SetDataModeToBinary();
+
+#if VTK_MAJOR_VERSION <= 5
+  writer->SetInput(pdata);
+#else
+  writer->SetInputData(pdata);
+#endif
+
+  writer->SetCompressor(vtkZLibDataCompressor::New());
+  writer->Write();
+}
+
 //! VTK Write mesh
 void VtkWriter::write_mesh(
     const std::string& filename,
-    const std::vector<Eigen::Vector3d>& coordinates,
     const std::vector<std::array<mpm::Index, 2>>& node_pairs) {
-  // Assing points
-  auto points = vtkSmartPointer<vtkPoints>::New();
-  unsigned id = 0;
-  for (const auto& coordinate : coordinates) {
-    const double* point = coordinate.data();
-    points->InsertPoint(id, point);
-    ++id;
-  }
   // Assign elements
   // Create a cell array to store the lines
   auto lines = vtkSmartPointer<vtkCellArray>::New();
@@ -201,7 +302,7 @@ void VtkWriter::write_mesh(
   auto pdata = vtkSmartPointer<vtkPolyData>::New();
 
   // Add the points to the dataset
-  pdata->SetPoints(points);
+  pdata->SetPoints(nodes_);
 
   // Add the lines to the dataset
   pdata->SetLines(lines);

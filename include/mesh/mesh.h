@@ -351,7 +351,7 @@ class Mesh {
   std::vector<double> particles_scalar_data(const std::string& attribute) const;
 
   //! Return particles vector data
-  //! \param[in] attribute Name of the tensor data attribute
+  //! \param[in] attribute Name of the vector data attribute
   //! \retval vector_data Vector containing vector properties from particles
   std::vector<Eigen::Matrix<double, 3, 1>> particles_vector_data(
       const std::string& attribute) const;
@@ -390,6 +390,20 @@ class Mesh {
   template <unsigned Tsize>
   std::vector<Eigen::Matrix<double, Tsize, 1>> points_tensor_data(
       const std::string& attribute) const;
+
+  //! Return nodes scalar data
+  //! \param[in] attribute Name of the scalar data attribute
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval scalar_data Vector containing scalar properties from nodes
+  std::vector<double> nodes_scalar_data(const std::string& attribute,
+                                        unsigned phase) const;
+
+  //! Return nodes vector data
+  //! \param[in] attribute Name of the vector data attribute
+  //! \param[in] phase Index corresponding to the phase
+  //! \retval vector_data Vector containing vector properties from nodes
+  std::vector<Eigen::Matrix<double, 3, 1>> nodes_vector_data(
+      const std::string& attribute, unsigned phase) const;
 
   //! Compute and assign rotation matrix to nodes
   //! \param[in] euler_angles Map of node number and respective euler_angles
@@ -617,6 +631,10 @@ class Mesh {
 
   //! Return nodal coordinates
   std::vector<Eigen::Matrix<double, 3, 1>> nodal_coordinates() const;
+
+  //! Return Cell connectivity
+  std::vector<std::vector<mpm::Index>> cell_connectivity(
+      bool active = false) const;
 
   //! Return node pairs
   std::vector<std::array<mpm::Index, 2>> node_pairs(bool active = false) const;

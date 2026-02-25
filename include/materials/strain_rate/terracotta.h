@@ -27,7 +27,7 @@ class Terracotta : public Material<Tdim> {
   Terracotta(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~Terracotta() override{};
+  ~Terracotta() override {};
 
   //! Delete copy constructor
   Terracotta(const Terracotta&) = delete;
@@ -91,6 +91,8 @@ class Terracotta : public Material<Tdim> {
   using Material<Tdim>::console_;
 
  private:
+  //! Bulk density
+  double density_{std::numeric_limits<double>::max()};
   //! Grain density
   double grain_density_{std::numeric_limits<double>::max()};
   //! Bulk modulus

@@ -4,15 +4,15 @@ mpm::Terracotta<Tdim>::Terracotta(unsigned id, const Json& material_properties)
     : Material<Tdim>(id, material_properties) {
   try {
     // General parameters
-    // Density
-    double density = material_properties.at("density").template get<double>();
+    // Bulk density
+    density_ = material_properties.at("density").template get<double>();
 
     // Initial Packing Fraction
     initial_packing_fraction_ =
         material_properties.at("packing_fraction").template get<double>();
 
     // Solid grain density
-    grain_density_ = density / initial_packing_fraction_;
+    grain_density_ = density_ / initial_packing_fraction_;
 
     // Bulk modulus
     bulk_modulus_ =
@@ -54,7 +54,7 @@ mpm::Terracotta<Tdim>::Terracotta(unsigned id, const Json& material_properties)
 
       // Modify grain density
       grain_density_ =
-          (density - pore_fluid_density_ * (1.0 - initial_packing_fraction_)) /
+          (density_ - pore_fluid_density_ * (1.0 - initial_packing_fraction_)) /
           initial_packing_fraction_;
     }
 
@@ -144,8 +144,14 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // Density and packing parameters
-  const double current_packing_density = ptr->mass_density();
-  double current_packing_fraction = current_packing_density / grain_density_;
+  const double current_bulk_density = ptr->mass_density();
+  double current_packing_fraction = current_bulk_density / grain_density_;
+
+  // Modify packing fraction if fluid present
+  if (pore_fluid_density_ > 0.0) {
+    current_packing_fraction =
+        initial_packing_fraction_ * current_bulk_density / density_;
+  }
 
   // Get strain rate
   auto strain_rate = ptr->strain_rate();
@@ -438,8 +444,14 @@ Eigen::Matrix<double, 6, 6>
         mpm::dense_map* state_vars, double dt, double lin_v, double lin_a) {
 
   // Density and packing parameters
-  const double current_packing_density = ptr->mass_density();
-  double current_packing_fraction = current_packing_density / grain_density_;
+  const double current_bulk_density = ptr->mass_density();
+  double current_packing_fraction = current_bulk_density / grain_density_;
+
+  // Modify packing fraction if fluid present
+  if (pore_fluid_density_ > 0.0) {
+    current_packing_fraction =
+        initial_packing_fraction_ * current_bulk_density / density_;
+  }
 
   // Prepare necessary identities
   // Second order identity tensor in Mandel's notation

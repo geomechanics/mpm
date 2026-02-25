@@ -1622,14 +1622,21 @@ template <unsigned Tdim>
 bool mpm::TwoPhaseParticle<Tdim>::compute_updated_pressure() {
   bool status = true;
   try {
-    double pressure_increment = 0;
-    for (unsigned i = 0; i < nodes_.size(); ++i) {
-      pressure_increment += shapefn_(i) * nodes_[i]->pressure_increment();
-    }
-    double pressure_dummy =
-        state_variables_[mpm::ParticlePhase::Liquid].at("pressure") *
-            projection_param_ +
-        pressure_increment;
+    // double pressure_increment = 0;
+    // for (unsigned i = 0; i < nodes_.size(); ++i) {
+    //   // pressure_increment += shapefn_(i) * nodes_[i]->pressure_increment();
+    // }
+    // double pressure_dummy =
+    //     state_variables_[mpm::ParticlePhase::Liquid].at("pressure") *
+    //         projection_param_ +
+    //     pressure_increment;
+
+    double pore_pressure = 0;
+    for (unsigned i = 0; i < nodes_.size(); ++i)
+      pore_pressure +=
+          shapefn_(i) * nodes_[i]->pressure(mpm::ParticlePhase::Liquid);
+
+    double pressure_dummy = pore_pressure;
     if (pressure_dummy < 0) pressure_dummy = 0.0;
     state_variables_[mpm::ParticlePhase::Liquid].at("pressure") =
         pressure_dummy;

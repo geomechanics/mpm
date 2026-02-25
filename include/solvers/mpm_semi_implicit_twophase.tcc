@@ -272,6 +272,25 @@ bool mpm::MPMSemiImplicitTwoPhase<Tdim>::solve() {
                   std::placeholders::_1),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 
+    // Map particle pore pressure to nodes
+    // Assign pressure to nodes
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::map_pressure_to_nodes,
+                  std::placeholders::_1, mpm::ParticlePhase::Liquid));
+
+#ifdef USE_MPI
+    // Run if there is more than a single MPI task
+    if (mpi_size > 1) {
+      // MPI all reduce nodal pressure
+      mesh_->template nodal_halo_exchange<double, 1>(
+          std::bind(&mpm::NodeBase<Tdim>::pressure, std::placeholders::_1,
+                    mpm::ParticlePhase::Liquid),
+          std::bind(&mpm::NodeBase<Tdim>::assign_pressure,
+                    std::placeholders::_1, mpm::ParticlePhase::Liquid,
+                    std::placeholders::_2));
+    }
+#endif
+
     // Update stress first
     if (this->stress_update_ == "usf") this->compute_stress_strain();
 

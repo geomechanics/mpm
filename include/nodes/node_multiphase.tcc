@@ -247,10 +247,15 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_pressure_increment(
     double current_time) {
   this->pressure_increment_ = pressure_increment(active_id_);
 
+  if (phase == mpm::NodePhase::NLiquid)
+    this->pressure_(phase) = this->pressure_(phase) + this->pressure_increment_;
+
   // If pressure boundary, increment is zero
   if (pressure_constraints_.find(phase) != pressure_constraints_.end() ||
-      this->free_surface())
+      this->free_surface()) {
     this->pressure_increment_ = 0;
+    if (phase == mpm::NodePhase::NLiquid) this->pressure_(phase) = 0.0;
+  }
 }
 
 //! Update intermediate acceleration and velocity at the node

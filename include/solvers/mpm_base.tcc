@@ -527,7 +527,7 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
 
     // Input particle h5 file for resume
     this->read_hdf5();
-    
+
     // Clear all particle ids
     mesh_->iterate_over_cells(
         std::bind(&mpm::Cell<Tdim>::clear_particle_ids, std::placeholders::_1));

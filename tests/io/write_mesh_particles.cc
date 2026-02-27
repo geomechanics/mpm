@@ -1541,11 +1541,11 @@ bool write_json_implicit_multi_particle_type(
         {"locate_particles", true},
         {"pressure_smoothing", true},
         {"dt", 0.0001},
-        {"uuid", file_name + "-" + dimension},
+        {"uuid", file_name + "-multi-ptype-" + dimension},
         {"nsteps", 10},
         {"resume",
          {{"resume", resume},
-          {"uuid", file_name + "-" + dimension},
+          {"uuid", file_name + "-multi-ptype-" + dimension},
           {"step", 5}}},
         {"linear_solver",
          {{"assembler_type", assembler_type},
@@ -1567,7 +1567,7 @@ bool write_json_implicit_multi_particle_type(
 
   // Dump JSON as an input file to be read
   std::ofstream file;
-  file.open((file_name + "-" + dimension + ".json").c_str());
+  file.open((file_name + "-multi-ptype-" + dimension + ".json").c_str());
   file << json_file.dump(2);
   file.close();
 

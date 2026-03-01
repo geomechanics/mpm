@@ -1012,7 +1012,9 @@ void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
                                           mpm::Index max_steps) {
 
   // VTK PolyData writer
-  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->point_coordinates());
+  auto vtk_writer = std::make_unique<VtkWriter>(mesh_->point_coordinates(),
+                                                mesh_->nodal_coordinates(),
+                                                mesh_->cell_connectivity(true));
 
   // Write input geometry to vtk file
   const std::string extension = ".vtp";

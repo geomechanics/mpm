@@ -287,8 +287,8 @@ class ParticleBase {
 
   //! Map rotation forces (centrifugal and coriolis)
   virtual void rotation_function(const VectorDim& rotation_origin,
-                                  double rotation_omega,
-                                  bool rotation_clockwise) noexcept = 0;
+                                 double rotation_omega,
+                                 bool rotation_clockwise) noexcept = 0;
 
   //! Map internal force
   virtual void map_internal_force() noexcept = 0;

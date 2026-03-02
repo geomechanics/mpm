@@ -286,7 +286,7 @@ class ParticleBase {
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
 
   //! Map rotation forces (centrifugal and coriolis)
-  virtual void rotation_function(const VectorDim& rotation_origin,
+  virtual void map_rotation_force(const VectorDim& rotation_origin,
                                  double rotation_omega,
                                  bool rotation_clockwise) noexcept = 0;
 

@@ -1731,7 +1731,7 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 
 //! Rotation Function
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::rotation_function(const VectorDim& rotation_origin,
+void mpm::Particle<Tdim>::map_rotation_force(const VectorDim& rotation_origin,
                                             double rotation_omega,
                                             bool rotation_clockwise) noexcept {
 
@@ -1743,16 +1743,16 @@ void mpm::Particle<Tdim>::rotation_function(const VectorDim& rotation_origin,
 
   // Relative Position (r) and Velocity (v) in 3D
   Eigen::Matrix<double, 3, 1> r_p_3d = Eigen::Matrix<double, 3, 1>::Zero();
-  r_p_3d.head<Tdim>() = this->coordinates_ - rotation_origin;
+  r_p_3d.head(Tdim) = this->coordinates_ - rotation_origin;
 
   Eigen::Matrix<double, 3, 1> vel_3d = Eigen::Matrix<double, 3, 1>::Zero();
-  vel_3d.head<Tdim>() = this->velocity_;
+  vel_3d.head(Tdim) = this->velocity_;
 
   // Compute Total Rotation Force
   const VectorDim f_total =
       (-mass_ * (omega_vec_3d.cross(omega_vec_3d.cross(r_p_3d)) +
                  2.0 * omega_vec_3d.cross(vel_3d)))
-          .head<Tdim>();
+          .head(Tdim);
 
   // Map Force to Nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {

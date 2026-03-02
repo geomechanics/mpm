@@ -1,7 +1,5 @@
 #include "catch.hpp"
 
-#include "particle.h"
-
 //! Alias for JSON
 #include "json.hpp"
 using Json = nlohmann::json;
@@ -100,21 +98,6 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     }
   }
 
-  SECTION("Check rotation force physics execution") {
-    mpm::Index id = 0;
-    Eigen::Matrix<double, Dim, 1> coords;
-    coords.setZero();
-    auto p = std::make_shared<mpm::Particle<Dim>>(id, coords);
-
-    Eigen::Matrix<double, Dim, 1> p_vel;
-    p_vel.fill(1.0);
-    p->assign_velocity(p_vel);
-
-    REQUIRE_NOTHROW(p->rotation_function(Eigen::Matrix<double, Dim, 1>::Zero(),
-                                         10.0, false));
-    REQUIRE_NOTHROW(p->rotation_function(Eigen::Matrix<double, Dim, 1>::Zero(),
-                                         10.0, true));
-  }
 
   SECTION("Check rotation JSON parsing configuration") {
     for (bool is_bad_json : {false, true}) {

@@ -146,7 +146,7 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
       // Apply Rotation Forces (Centrifugal + Coriolis)
       if (rotation_forces) {
         mesh_->iterate_over_particles(std::bind(
-            &mpm::ParticleBase<Tdim>::rotation_function, std::placeholders::_1,
+            &mpm::ParticleBase<Tdim>::map_rotation_force, std::placeholders::_1,
             rotation_origin, rotation_omega, rotation_clockwise));
       }
 

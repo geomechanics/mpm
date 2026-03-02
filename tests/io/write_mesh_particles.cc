@@ -17,8 +17,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   unsigned material_id = 0;
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
-  std::vector<double> rotation_origin{{0.0, 0.0}};  // 2D Origin for rotation
-                                                    // test
+  std::vector<double> rotation_origin{{0.0, 0.0}};  
 
   // 3D
   if (dim == 3) {
@@ -30,7 +29,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
     material = "LinearElastic3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
-    rotation_origin = {0.0, 0.0, 0.0};  // 3D Origin for rotation test
+    rotation_origin = {0.0, 0.0, 0.0}; 
   }
 
   Json json_file = {
@@ -69,10 +68,10 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
        {{{"material_id", 1}, {"phase_id", 0}, {"pset_id", 2}}}},
       {"external_loading_conditions",
        {{"gravity", gravity},
-        {"rotation_forces",  // Start of rotation block
+        {"rotation_forces",  
          {{"origin", rotation_origin},
           {"omega", 10.0},
-          {"clockwise", false}}},  // End of rotation block
+          {"clockwise", false}}}, 
         {"particle_surface_traction",
          {{{"math_function_id", 0},
            {"pset_id", -1},

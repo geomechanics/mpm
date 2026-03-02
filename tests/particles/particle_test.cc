@@ -1200,7 +1200,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     }
 
     for (unsigned i = 0; i < nodes.size(); ++i) {
-      nodes[i]->update_external_force(false, phase, -nodes[i]->external_force(phase));
+      nodes[i]->update_external_force(false, phase,
+                                      -nodes[i]->external_force(phase));
     }
 
     // Check body force
@@ -2758,7 +2759,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     }
 
     for (unsigned i = 0; i < nodes.size(); ++i) {
-      nodes[i]->update_external_force(false, phase, -nodes[i]->external_force(phase));
+      nodes[i]->update_external_force(false, phase,
+                                      -nodes[i]->external_force(phase));
     }
 
     // Check body force

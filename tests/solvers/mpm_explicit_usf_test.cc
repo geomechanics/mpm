@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "particle.h"  // For rotation force mapping
+#include "particle.h"  
 
 //! Alias for JSON
 #include "json.hpp"
@@ -101,18 +101,17 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
   }
 
   SECTION("Check rotation force physics execution") {
-    // We create a dummy particle at origin
     mpm::Index id = 0;
     Eigen::Matrix<double, Dim, 1> coords;
     coords.setZero();
     auto p = std::make_shared<mpm::Particle<Dim>>(id, coords);
 
-    // We give it velocity to ensure the Coriolis math line is executed
+
     Eigen::Matrix<double, Dim, 1> p_vel;
     p_vel.fill(1.0);
     p->assign_velocity(p_vel);
 
-    // We execute both directions
+
     REQUIRE_NOTHROW(p->map_rotation_force(Eigen::Matrix<double, Dim, 1>::Zero(),
                                           10.0, false));
     REQUIRE_NOTHROW(p->map_rotation_force(Eigen::Matrix<double, Dim, 1>::Zero(),
@@ -122,11 +121,9 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
   SECTION("Check rotation JSON parsing error handling") {
     std::string err_fname = "mpm-bad-rotation";
 
-    // We generate normal json function
     REQUIRE(mpm_test::write_json(2, false, analysis, mpm_scheme, err_fname) ==
             true);
 
-    // We corrupt it for the test (give a 2D simulation a 3D origin)
     std::ifstream file_in("mpm-bad-rotation-2d.json");
     nlohmann::json j;
     file_in >> j;
@@ -139,7 +136,6 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     file_out << j.dump(2);
     file_out.close();
 
-    // We run the solver and expect it to crash
     int argc_err = 5;
     char* argv_err[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
                         (char*)"mpm-bad-rotation-2d.json"};
@@ -252,11 +248,9 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
   SECTION("Check rotation JSON parsing error handling in 3D") {
     std::string err_fname = "mpm-bad-rotation";
 
-    // We generate normal json function
     REQUIRE(mpm_test::write_json(3, false, analysis, mpm_scheme, err_fname) ==
             true);
 
-    // We corrupt it for the test (give a 3D simulation a 2D origin)
     std::ifstream file_in("mpm-bad-rotation-3d.json");
     nlohmann::json j;
     file_in >> j;
@@ -268,7 +262,6 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
     file_out << j.dump(2);
     file_out.close();
 
-    // We run the solver and expect it to crash
     int argc_err = 5;
     char* argv_err[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
                         (char*)"mpm-bad-rotation-3d.json"};

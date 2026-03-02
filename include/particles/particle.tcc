@@ -1732,8 +1732,8 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 //! Rotation Function
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_rotation_force(const VectorDim& rotation_origin,
-                                            double rotation_omega,
-                                            bool rotation_clockwise) noexcept {
+                                             double rotation_omega,
+                                             bool rotation_clockwise) noexcept {
 
   // Define Angular Velocity Vector
   Eigen::Matrix<double, 3, 1> omega_vec_3d =

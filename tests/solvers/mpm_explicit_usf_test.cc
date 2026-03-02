@@ -98,7 +98,6 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     }
   }
 
-
   SECTION("Check rotation JSON parsing configuration") {
     for (bool is_bad_json : {false, true}) {
       std::string test_fname = "mpm-rotation-test";

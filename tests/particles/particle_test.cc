@@ -1174,6 +1174,35 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     // Put stress back to values from Lines 1129-1134
     particle->initial_stress(stress);
 
+    // Check rotation force
+    Eigen::Matrix<double, Dim, 1> rotation_origin;
+    rotation_origin.setZero();
+    double omega = 10.0;
+
+    // Map the rotation force (uses existing velocity)
+    particle->map_rotation_force(rotation_origin, omega, false);
+
+    // Expected rotation force
+    Eigen::Matrix<double, 4, Dim> expected_rotation_force;
+    // clang-format off
+    expected_rotation_force << 53437.5, 42187.5,
+                               17812.5, 14062.5,
+                                5937.5,  4687.5,
+                               17812.5, 14062.5;
+    // clang-format on
+
+    // Check nodal rotation force
+    for (unsigned i = 0; i < expected_rotation_force.rows(); ++i) {
+      for (unsigned j = 0; j < expected_rotation_force.cols(); ++j) {
+        REQUIRE(nodes[i]->external_force(phase)[j] ==
+                Approx(expected_rotation_force(i, j)).epsilon(Tolerance));
+      }
+    }
+
+    for (unsigned i = 0; i < nodes.size(); ++i) {
+      nodes[i]->update_external_force(false, phase, -nodes[i]->external_force(phase));
+    }
+
     // Check body force
     Eigen::Matrix<double, 2, 1> gravity;
     gravity << 0., -9.81;
@@ -2698,6 +2727,39 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
 
     // Put stress back to values from Lines 2651-2656
     particle->initial_stress(stress);
+
+    // Check rotation force
+    Eigen::Matrix<double, Dim, 1> rotation_origin;
+    rotation_origin.setZero();
+    double omega = 10.0;
+
+    // Map the rotation force (uses existing velocity)
+    particle->map_rotation_force(rotation_origin, omega, false);
+
+    // Expected rotation force mapped to nodes
+    Eigen::Matrix<double, 8, Dim> expected_rotation_force;
+    // clang-format off
+    expected_rotation_force <<  21250.,  18750., 0.,
+                                63750.,  56250., 0.,
+                               191250., 168750., 0.,
+                                63750.,  56250., 0.,
+                                63750.,  56250., 0.,
+                               191250., 168750., 0.,
+                               573750., 506250., 0.,
+                               191250., 168750., 0.;
+    // clang-format on
+
+    // Check nodal rotation force
+    for (unsigned i = 0; i < expected_rotation_force.rows(); ++i) {
+      for (unsigned j = 0; j < expected_rotation_force.cols(); ++j) {
+        REQUIRE(nodes[i]->external_force(phase)[j] ==
+                Approx(expected_rotation_force(i, j)).epsilon(Tolerance));
+      }
+    }
+
+    for (unsigned i = 0; i < nodes.size(); ++i) {
+      nodes[i]->update_external_force(false, phase, -nodes[i]->external_force(phase));
+    }
 
     // Check body force
     Eigen::Matrix<double, 3, 1> gravity;

@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "particle.h"  
+#include "particle.h"
 
 //! Alias for JSON
 #include "json.hpp"
@@ -106,44 +106,52 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     coords.setZero();
     auto p = std::make_shared<mpm::Particle<Dim>>(id, coords);
 
-
     Eigen::Matrix<double, Dim, 1> p_vel;
     p_vel.fill(1.0);
     p->assign_velocity(p_vel);
 
-
-    REQUIRE_NOTHROW(p->map_rotation_force(Eigen::Matrix<double, Dim, 1>::Zero(),
-                                          10.0, false));
-    REQUIRE_NOTHROW(p->map_rotation_force(Eigen::Matrix<double, Dim, 1>::Zero(),
-                                          10.0, true));
+    REQUIRE_NOTHROW(p->rotation_function(Eigen::Matrix<double, Dim, 1>::Zero(),
+                                         10.0, false));
+    REQUIRE_NOTHROW(p->rotation_function(Eigen::Matrix<double, Dim, 1>::Zero(),
+                                         10.0, true));
   }
 
-  SECTION("Check rotation JSON parsing error handling") {
-    std::string err_fname = "mpm-bad-rotation";
+  SECTION("Check rotation JSON parsing configuration") {
+    for (bool is_bad_json : {false, true}) {
+      std::string test_fname = "mpm-rotation-test";
 
-    REQUIRE(mpm_test::write_json(2, false, analysis, mpm_scheme, err_fname) ==
-            true);
+      REQUIRE(mpm_test::write_json(2, false, analysis, mpm_scheme,
+                                   test_fname) == true);
+      std::string json_file_name = test_fname + "-2d.json";
 
-    std::ifstream file_in("mpm-bad-rotation-2d.json");
-    nlohmann::json j;
-    file_in >> j;
-    file_in.close();
+      if (is_bad_json) {
+        std::ifstream file_in(json_file_name);
+        nlohmann::json j;
+        file_in >> j;
+        file_in.close();
 
-    j["external_loading_conditions"]["rotation_forces"]["origin"] = {0.0, 0.0,
-                                                                     0.0};
+        j["external_loading_conditions"]["rotation_forces"]["origin"] = {
+            0.0, 0.0, 0.0};
 
-    std::ofstream file_out("mpm-bad-rotation-2d.json");
-    file_out << j.dump(2);
-    file_out.close();
+        std::ofstream file_out(json_file_name);
+        file_out << j.dump(2);
+        file_out.close();
+      }
 
-    int argc_err = 5;
-    char* argv_err[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
-                        (char*)"mpm-bad-rotation-2d.json"};
+      int argc_test = 5;
+      char* argv_test[] = {(char*)"./mpm", (char*)"-f", (char*)"./",
+                           (char*)"-i", (char*)json_file_name.c_str()};
 
-    auto io_err = std::make_unique<mpm::IO>(argc_err, argv_err);
-    auto mpm_err = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_err));
+      auto io_test = std::make_unique<mpm::IO>(argc_test, argv_test);
+      auto mpm_test =
+          std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_test));
 
-    REQUIRE_THROWS_AS(mpm_err->initialise_loads(), std::runtime_error);
+      if (is_bad_json) {
+        REQUIRE_THROWS_AS(mpm_test->initialise_loads(), std::runtime_error);
+      } else {
+        REQUIRE_NOTHROW(mpm_test->initialise_loads());
+      }
+    }
   }
 
   SECTION("Check pressure smoothing") {
@@ -245,31 +253,42 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
     }
   }
 
-  SECTION("Check rotation JSON parsing error handling in 3D") {
-    std::string err_fname = "mpm-bad-rotation";
+  SECTION("Check rotation JSON parsing configuration in 3D") {
+    for (bool is_bad_json : {false, true}) {
+      std::string test_fname = "mpm-rotation-test";
 
-    REQUIRE(mpm_test::write_json(3, false, analysis, mpm_scheme, err_fname) ==
-            true);
+      REQUIRE(mpm_test::write_json(3, false, analysis, mpm_scheme,
+                                   test_fname) == true);
+      std::string json_file_name = test_fname + "-3d.json";
 
-    std::ifstream file_in("mpm-bad-rotation-3d.json");
-    nlohmann::json j;
-    file_in >> j;
-    file_in.close();
+      if (is_bad_json) {
+        std::ifstream file_in(json_file_name);
+        nlohmann::json j;
+        file_in >> j;
+        file_in.close();
 
-    j["external_loading_conditions"]["rotation_forces"]["origin"] = {0.0, 0.0};
+        j["external_loading_conditions"]["rotation_forces"]["origin"] = {0.0,
+                                                                         0.0};
 
-    std::ofstream file_out("mpm-bad-rotation-3d.json");
-    file_out << j.dump(2);
-    file_out.close();
+        std::ofstream file_out(json_file_name);
+        file_out << j.dump(2);
+        file_out.close();
+      }
 
-    int argc_err = 5;
-    char* argv_err[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
-                        (char*)"mpm-bad-rotation-3d.json"};
+      int argc_test = 5;
+      char* argv_test[] = {(char*)"./mpm", (char*)"-f", (char*)"./",
+                           (char*)"-i", (char*)json_file_name.c_str()};
 
-    auto io_err = std::make_unique<mpm::IO>(argc_err, argv_err);
-    auto mpm_err = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_err));
+      auto io_test = std::make_unique<mpm::IO>(argc_test, argv_test);
+      auto mpm_test =
+          std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_test));
 
-    REQUIRE_THROWS_AS(mpm_err->initialise_loads(), std::runtime_error);
+      if (is_bad_json) {
+        REQUIRE_THROWS_AS(mpm_test->initialise_loads(), std::runtime_error);
+      } else {
+        REQUIRE_NOTHROW(mpm_test->initialise_loads());
+      }
+    }
   }
 
   SECTION("Check pressure smoothing") {

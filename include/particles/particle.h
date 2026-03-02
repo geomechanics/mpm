@@ -243,8 +243,8 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] rotation_clockwise Boolean of rotation direction (clockwise or
   //! anticlockwise)
   void rotation_function(const VectorDim& rotation_origin,
-                          double rotation_omega,
-                          bool rotation_clockwise) noexcept override;
+                         double rotation_omega,
+                         bool rotation_clockwise) noexcept override;
 
   //! Map internal force
   inline void map_internal_force() noexcept override;

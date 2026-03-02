@@ -1185,10 +1185,10 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     // Expected rotation force
     Eigen::Matrix<double, 4, Dim> expected_rotation_force;
     // clang-format off
-    expected_rotation_force << -53437.5, -42187.5,
-                               -17812.5, -14062.5,
-                                -5937.5,  -4687.5,
-                               -17812.5, -14062.5;
+    expected_rotation_force << 53437.5, 42187.5,
+                               17812.5, 14062.5,
+                                5937.5,  4687.5,
+                               17812.5, 14062.5;
     // clang-format on
 
     // Check nodal rotation force
@@ -2740,14 +2740,14 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     // Expected rotation force mapped to nodes
     Eigen::Matrix<double, 8, Dim> expected_rotation_force;
     // clang-format off
-    expected_rotation_force << -21250., -18750., 0.,
-                               -63750., -56250., 0.,
-                              -191250., -168750., 0.,
-                               -63750., -56250., 0.,
-                               -63750., -56250., 0.,
-                              -191250., -168750., 0.,
-                              -573750., -506250., 0.,
-                              -191250., -168750., 0.;
+    expected_rotation_force <<  21250.,  18750., 0.,
+                                63750.,  56250., 0.,
+                               191250., 168750., 0.,
+                                63750.,  56250., 0.,
+                                63750.,  56250., 0.,
+                               191250., 168750., 0.,
+                               573750., 506250., 0.,
+                               191250., 168750., 0.;
     // clang-format on
 
     // Check nodal rotation force

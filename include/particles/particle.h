@@ -242,7 +242,7 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] rotation_omega Angular velocity of centrifuge
   //! \param[in] rotation_clockwise Boolean of rotation direction (clockwise or
   //! anticlockwise)
-  void rotation_function(const VectorDim& rotation_origin,
+  void map_rotation_force(const VectorDim& rotation_origin,
                          double rotation_omega,
                          bool rotation_clockwise) noexcept override;
 

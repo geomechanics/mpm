@@ -146,6 +146,10 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       auto mpm_test =
           std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_test));
 
+      REQUIRE_NOTHROW(mpm_test->initialise_materials());
+      REQUIRE_NOTHROW(mpm_test->initialise_mesh());
+      REQUIRE_NOTHROW(mpm_test->initialise_particles());
+
       if (is_bad_json) {
         REQUIRE_THROWS_AS(mpm_test->initialise_loads(), std::runtime_error);
       } else {
@@ -282,6 +286,10 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       auto io_test = std::make_unique<mpm::IO>(argc_test, argv_test);
       auto mpm_test =
           std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_test));
+
+      REQUIRE_NOTHROW(mpm_test->initialise_materials());
+      REQUIRE_NOTHROW(mpm_test->initialise_mesh());
+      REQUIRE_NOTHROW(mpm_test->initialise_particles());
 
       if (is_bad_json) {
         REQUIRE_THROWS_AS(mpm_test->initialise_loads(), std::runtime_error);

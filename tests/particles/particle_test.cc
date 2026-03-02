@@ -1179,10 +1179,8 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     rotation_origin.setZero();
     double omega = 10.0;
 
-    // Map the rotation force (uses existing velocity)
     particle->map_rotation_force(rotation_origin, omega, false);
 
-    // Expected rotation force mapped to nodes
     Eigen::Matrix<double, 4, Dim> expected_rotation_force;
     // clang-format off
     expected_rotation_force << 53437.5, 42187.5,
@@ -1199,7 +1197,6 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
       }
     }
 
-    // Clear the external forces so we don't break the body_force test below
     for (unsigned i = 0; i < nodes.size(); ++i) {
       nodes[i]->update_external_force(false, phase,
                                       Eigen::Matrix<double, Dim, 1>::Zero());
@@ -2735,10 +2732,8 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     rotation_origin.setZero();
     double omega = 10.0;
 
-    // Map the rotation force (uses existing velocity)
     particle->map_rotation_force(rotation_origin, omega, false);
 
-    // Expected rotation force mapped to nodes
     Eigen::Matrix<double, 8, Dim> expected_rotation_force;
     // clang-format off
     expected_rotation_force <<  21250.,  18750., 0.,
@@ -2759,7 +2754,6 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
       }
     }
 
-    // Clear the external forces so we don't break the body_force test below
     for (unsigned i = 0; i < nodes.size(); ++i) {
       nodes[i]->update_external_force(false, phase,
                                       Eigen::Matrix<double, Dim, 1>::Zero());

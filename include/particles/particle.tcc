@@ -1731,7 +1731,7 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 
 //! Rotation Function
 template <unsigned Tdim>
-void mpm::Particle<Tdim>::map_rotation_force(const VectorDim& rotation_origin,
+void mpm::Particle<Tdim>::rotation_function(const VectorDim& rotation_origin,
                                              double rotation_omega,
                                              bool rotation_clockwise) noexcept {
 

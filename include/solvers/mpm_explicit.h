@@ -75,8 +75,15 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Constraints Pointer
   using mpm::MPMBase<Tdim>::constraints_;
+  //! Rotation forces
+  using mpm::MPMBase<Tdim>::rotation_forces_;
+  //! Rotation origin
+  using mpm::MPMBase<Tdim>::rotation_origin_;
+  //! Rotation omega
+  using mpm::MPMBase<Tdim>::rotation_omega_;
+  //! Rotation clockwise
+  using mpm::MPMBase<Tdim>::rotation_clockwise_;
   //! Absorbing Boundary
-  using mpm::MPMBase<Tdim>::absorbing_boundary_;
 
  private:
   //! Pressure smoothing

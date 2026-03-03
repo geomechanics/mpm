@@ -800,12 +800,18 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
       }
     } else {
       throw std::runtime_error(
-          "'rotation_forces': 'origin' must be an array of size Tdim");
+          "mpm::base::initialise_loads(): Specified rotation origin dimension "
+          "is invalid");
     }
     rotation_omega_ = rotation_props.at("omega").template get<double>();
     rotation_clockwise_ = rotation_props.at("clockwise").template get<bool>();
     //! Enable rotation forces
     rotation_forces_ = true;
+  } else {
+    console_->error(
+        "#{}: Rotation forces are undefined; Rotation forces JSON data "
+        "not found",
+        __LINE__);
   }
 
   // Create a file reader

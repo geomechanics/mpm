@@ -808,7 +808,7 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
     //! Enable rotation forces
     rotation_forces_ = true;
   } else {
-    console_->error(
+    console_->warn(
         "#{}: Rotation forces are undefined; Rotation forces JSON data "
         "not found",
         __LINE__);

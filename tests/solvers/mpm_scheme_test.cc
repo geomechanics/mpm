@@ -191,20 +191,19 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
-    // Added dummy rotation arguments
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(
         gravity, phase, step, false,
-        false,                                  // rotation_forces (OFF)
-        Eigen::Matrix<double, Dim, 1>::Zero(),  // rotation_origin (0,0,0)
-        0.0,                                    // rotation_omega (0)
-        false));                                // rotation_clockwise (false)
+        false,                                  
+        Eigen::Matrix<double, Dim, 1>::Zero(),  
+        0.0,                                    
+        false));                                
 
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(
         gravity, phase, step, true,
-        false,                                  // rotation_forces (OFF)
-        Eigen::Matrix<double, Dim, 1>::Zero(),  // rotation_origin (0,0,0)
-        0.0,                                    // rotation_omega (0)
-        false));                                // rotation_clockwise (false)
+        false,                                 
+        Eigen::Matrix<double, Dim, 1>::Zero(),  
+        0.0,                                    
+        false));                                
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
@@ -245,21 +244,19 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
-    // Added dummy rotation arguments
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(
         gravity, phase, step, false,
-        false,                                  // rotation_forces (OFF)
-        Eigen::Matrix<double, Dim, 1>::Zero(),  // rotation_origin (0,0,0)
-        0.0,                                    // rotation_omega (0)
-        false));                                // rotation_clockwise (false)
+        false,                                
+        Eigen::Matrix<double, Dim, 1>::Zero(),  
+        0.0,                                    
+        false));                               
 
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(
         gravity, phase, step, true,
-        false,                                  // rotation_forces (OFF)
-        Eigen::Matrix<double, Dim, 1>::Zero(),  // rotation_origin (0,0,0)
-        0.0,                                    // rotation_omega (0)
-        false));                                // rotation_clockwise (false)
-                                                // END NEW UPDATED SECTION
+        false,                                  
+        Eigen::Matrix<double, Dim, 1>::Zero(),  
+        0.0,                                    
+        false));
 
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
@@ -300,22 +297,20 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
-    // UPDATED: Added dummy rotation arguments
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(
         gravity, phase, step, false,
-        false,                                  // rotation_forces (OFF)
-        Eigen::Matrix<double, Dim, 1>::Zero(),  // rotation_origin (0,0,0)
-        0.0,                                    // rotation_omega (0)
-        false));                                // rotation_clockwise (false)
+        false,                                 
+        Eigen::Matrix<double, Dim, 1>::Zero(),  
+        0.0,                                   
+        false));                                
 
     REQUIRE_NOTHROW(mpm_scheme->compute_forces(
         gravity, phase, step, true,
-        false,                                  // rotation_forces (OFF)
-        Eigen::Matrix<double, Dim, 1>::Zero(),  // rotation_origin (0,0,0)
-        0.0,                                    // rotation_omega (0)
-        false));                                // rotation_clockwise (false)
-                                                // END NEW UPDATED SECTION
-
+        false,                                 
+        Eigen::Matrix<double, Dim, 1>::Zero(),  
+        0.0,                                    
+        false));                        
+                
     // Particle kinematics
     REQUIRE_NOTHROW(mpm_scheme->compute_particle_kinematics(
         mpm::VelocityUpdate::PIC, 0.0, phase, "Cundall", 0.02, step));

@@ -141,9 +141,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Compute forces
     mpm_scheme_->compute_forces(
-        gravity_, phase, step_, set_node_concentrated_force_,
-        this->rotation_forces_, this->rotation_origin_, this->rotation_omega_,
-        this->rotation_clockwise_);
+        gravity_, phase, step_, set_node_concentrated_force_, rotation_forces_,
+        rotation_origin_, rotation_omega_, rotation_clockwise_);
 
     // Apply Absorbing Constraint
     if (absorbing_boundary_) {

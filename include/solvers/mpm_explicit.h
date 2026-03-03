@@ -85,7 +85,7 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::rotation_clockwise_;
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
-  
+
  private:
   //! Pressure smoothing
   bool pressure_smoothing_{false};

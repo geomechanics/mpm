@@ -140,6 +140,79 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     }
   }
 
+  SECTION("Check gravity and rotation ramping") {
+    const std::string fname_ramp = "mpm-explicit-ramp";
+    int argc_r = 5;
+    char* argv_r[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
+                      (char*)"mpm-explicit-ramp-2d.json"};
+
+    // Case 1: gravity ramping valid
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Case 2: gravity ramping negative - should throw
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, -1.0, true,
+                                         false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Case 3: rotation ramping valid
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, false, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Case 4: rotation ramping negative - should throw
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, -1.0, false,
+                                         true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Case 5: both defined - should throw
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Case 6: neither defined - valid, no ramping applied
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.0, false,
+                                         false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+  }
+
   SECTION("Check pressure smoothing") {
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);

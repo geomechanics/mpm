@@ -1620,6 +1620,136 @@ bool write_entity_set() {
   return true;
 }
 
+// Write JSON Configuration file for gravity/rotation ramping
+bool write_json_ramping(unsigned dim, bool resume, const std::string& analysis,
+                        const std::string& mpm_scheme,
+                        const std::string& file_name, double ramping_time,
+                        bool gravity_ramping, bool rotation_ramping) {
+  // 2D
+  std::string dimension = "2d";
+  auto particle_type = "P2D";
+  auto node_type = "N2D";
+  auto cell_type = "ED2Q4";
+  auto io_type = "Ascii2D";
+  std::string material = "LinearElastic2D";
+  std::vector<double> gravity{{0., -9.81}};
+  unsigned material_id = 0;
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  std::vector<double> rotation_origin{{0.0, 0.0}};
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    particle_type = "P3D";
+    node_type = "N3D";
+    cell_type = "ED3H8";
+    io_type = "Ascii3D";
+    material = "LinearElastic3D";
+    gravity.clear();
+    gravity = {0., 0., -9.81};
+    rotation_origin = {0.0, 0.0, 0.0};
+  }
+
+  // Build gravity JSON: object with ramping_time or plain array
+  Json gravity_json;
+  if (gravity_ramping)
+    gravity_json = {{"gravity", gravity}, {"ramping_time", ramping_time}};
+  else
+    gravity_json = gravity;
+
+  // Build rotation_forces JSON: with or without ramping_time
+  Json rotation_json;
+  if (rotation_ramping)
+    rotation_json = {{"origin", rotation_origin},
+                     {"omega", 10.0},
+                     {"clockwise", false},
+                     {"ramping_time", ramping_time}};
+  else
+    rotation_json = {
+        {"origin", rotation_origin}, {"omega", 10.0}, {"clockwise", false}};
+
+  Json json_file = {
+      {"title", "Example JSON Input for MPM"},
+      {"mesh",
+       {{"mesh", "mesh-" + dimension + ".txt"},
+        {"entity_sets", "entity_sets_0.json"},
+        {"io_type", io_type},
+        {"check_duplicates", true},
+        {"isoparametric", false},
+        {"node_type", node_type},
+        {"boundary_conditions",
+         {{"velocity_constraints", {{"file", "velocity-constraints.txt"}}}}},
+        {"cell_type", cell_type}}},
+      {"particles",
+       {{{"generator",
+          {{"type", "file"},
+           {"material_id", material_id},
+           {"pset_id", 0},
+           {"io_type", io_type},
+           {"particle_type", particle_type},
+           {"check_duplicates", true},
+           {"location", "particles-" + dimension + ".txt"}}}}}},
+      {"materials",
+       {{{"id", 0},
+         {"type", material},
+         {"density", 1000.},
+         {"youngs_modulus", 1.0E+8},
+         {"poisson_ratio", 0.495}},
+        {{"id", 1},
+         {"type", material},
+         {"density", 2300.},
+         {"youngs_modulus", 1.5E+6},
+         {"poisson_ratio", 0.25}}}},
+      {"material_sets",
+       {{{"material_id", 1}, {"phase_id", 0}, {"pset_id", 2}}}},
+      {"external_loading_conditions",
+       {{"gravity", gravity_json},
+        {"rotation_forces", rotation_json},
+        {"particle_surface_traction",
+         {{{"math_function_id", 0},
+           {"pset_id", -1},
+           {"dir", 1},
+           {"traction", 10.5}}}},
+        {"concentrated_nodal_forces",
+         {{{"math_function_id", 0},
+           {"nset_id", -1},
+           {"dir", 1},
+           {"force", 10.5}}}}}},
+      {"math_functions",
+       {{{"id", 0},
+         {"type", "Linear"},
+         {"xvalues", xvalues},
+         {"fxvalues", fxvalues}}}},
+      {"analysis",
+       {{"type", analysis},
+        {"mpm_scheme", mpm_scheme},
+        {"locate_particles", true},
+        {"velocity_update", true},
+        {"dt", 0.001},
+        {"uuid", file_name + "-" + dimension},
+        {"nsteps", 10},
+        {"resume",
+         {{"resume", resume},
+          {"uuid", file_name + "-" + dimension},
+          {"step", 5}}},
+        {"damping", {{"type", "Cundall"}, {"damping_factor", 0.02}}},
+        {"newmark", {{"beta", 0.25}, {"gamma", 0.5}}}}},
+      {"post_processing",
+       {{"path", "results/"},
+        {"vtk", {"stresses", "strains", "velocities"}},
+        {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
+        {"output_steps", 5}}}};
+
+  std::string fname = (file_name + "-" + dimension + ".json").c_str();
+  std::ofstream file;
+  file.open(fname, std::ios_base::out);
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
 // Write Mesh file in 2D
 bool write_mesh_2d() {
   // Dimension

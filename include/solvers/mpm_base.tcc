@@ -799,6 +799,19 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::assign_acceleration,
                   std::placeholders::_1, gravity_));
+  } else if (loads.at("gravity").is_object() &&
+             loads.at("gravity").at("gravity").is_array() &&
+             loads.at("gravity").at("gravity").size() == gravity_.size()) {
+    for (unsigned i = 0; i < gravity_.size(); ++i) {
+      gravity_[i] = loads.at("gravity").at("gravity").at(i);
+    }
+    if (loads.at("gravity").contains("ramping_time")) {
+      ramping_time_ =
+          loads.at("gravity").at("ramping_time").template get<double>();
+      if (ramping_time_ < 0)
+        throw std::runtime_error(
+            "mpm::base::initialise_loads(): Ramping time cannot be negative");
+    }
   } else {
     throw std::runtime_error(
         "mpm::base::initialise_loads(): Specified gravity dimension is "
@@ -820,6 +833,17 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
     }
     rotation_omega_ = rotation_props.at("omega").template get<double>();
     rotation_clockwise_ = rotation_props.at("clockwise").template get<bool>();
+    if (rotation_props.contains("ramping_time") &&
+        loads.at("gravity").contains("ramping_time"))
+      throw std::runtime_error(
+          "mpm::base::initialise_loads(): Ramping time cannot be specified for "
+          "both gravity and rotation forces");
+    if (rotation_props.contains("ramping_time")) {
+      ramping_time_ = rotation_props.at("ramping_time").template get<double>();
+      if (ramping_time_ < 0)
+        throw std::runtime_error(
+            "mpm::base::initialise_loads(): Ramping time cannot be negative");
+    }
     //! Enable rotation forces
     rotation_forces_ = true;
   } else {

@@ -77,6 +77,11 @@ bool write_json_implicit_multi_particle_type(
     const std::string& mpm_scheme, bool nonlinear, bool quasi_static,
     const std::string& file_name,
     const std::string& linear_solver_type = "none");
+// Write JSON Configuration file for ramping
+bool write_json_ramping(unsigned dim, bool resume, const std::string& analysis,
+                        const std::string& mpm_scheme,
+                        const std::string& file_name, double ramping_time,
+                        bool gravity_ramping, bool rotation_ramping);
 
 // Write JSON Entity Set
 bool write_entity_set();

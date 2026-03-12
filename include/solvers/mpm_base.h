@@ -299,6 +299,8 @@ class MPMBase : public MPM {
   Eigen::Matrix<double, Tdim, 1> rotation_origin_;
   //! Magnitude of the centrifuge angular velocity
   double rotation_omega_{0.0};
+  //! Ramping time
+  double ramping_time_{0.0};
   //! Boolean to set rotation direction
   bool rotation_clockwise_{false};
   /**

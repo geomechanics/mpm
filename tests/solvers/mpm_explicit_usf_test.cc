@@ -353,7 +353,6 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       }
     }
   }
-
   SECTION("Check gravity and rotation ramping 3D") {
     const std::string fname_ramp = "mpm-explicit-ramp";
     int argc_r = 5;
@@ -380,6 +379,15 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       REQUIRE_NOTHROW(mpm->initialise_mesh());
       REQUIRE_NOTHROW(mpm->initialise_particles());
       REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Case 3: rotation ramping valid 3D
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, false, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
     }
   }
 

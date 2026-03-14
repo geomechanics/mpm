@@ -249,6 +249,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_velocity() {
 
   // Apply velocity constraints, which also sets acceleration to 0,
   // when velocity is set.
+  this->apply_velocity_constraints();
 }
 
 //! Update nodal acceleration

@@ -75,6 +75,9 @@ template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_stress_strain(
     unsigned phase, bool pressure_smoothing) {
 
+  // Apply particle rigid velocity constraints
+  mesh_->apply_moving_rigid_boundary();
+
   // Iterate over each particle to update deformation gradient increment
   mesh_->iterate_over_particles(std::bind(
       static_cast<void (mpm::ParticleBase<Tdim>::*)(double)>(
@@ -221,6 +224,9 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
                   std::placeholders::_1, phase, dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+
+  // Apply particle rigid velocity constraints
+  mesh_->apply_moving_rigid_boundary();
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

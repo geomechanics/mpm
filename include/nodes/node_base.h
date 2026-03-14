@@ -549,6 +549,12 @@ class NodeBase {
 
   /**@}*/
 
+  //! Assign rigid velocity
+  virtual void assign_velocity_from_rigid(unsigned dir, 
+                                          double velocity) = 0;
+
+  //! Return external force
+  virtual VectorDim reaction_force() const = 0;
 };  // NodeBase class
 }  // namespace mpm
 

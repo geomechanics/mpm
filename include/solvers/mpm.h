@@ -72,6 +72,10 @@ class MPM {
   //! \param[in] step Time step
   virtual void write_outputs(mpm::Index step) = 0;
 
+  //! Write reaction force
+  virtual void write_reaction_force(bool overwrite, mpm::Index step,
+                                    mpm::Index max_steps) = 0;
+
  protected:
   //! Write HDF5 files
   virtual void write_hdf5(mpm::Index step, mpm::Index max_steps) = 0;

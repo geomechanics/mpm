@@ -1465,6 +1465,56 @@ void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
   }
 }
 
+//! Apply particle moving rigid boundary
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::apply_moving_rigid_boundary() {
+  // Iterate over all particle velocity constraints
+  for (const auto& pvelocity : particle_velocity_constraints_) {
+    // If set id is -1, use all particles
+    int set_id = pvelocity->setid();
+    unsigned dir = pvelocity->dir();
+    double velocity = pvelocity->velocity();
+
+    this->iterate_over_particle_set(
+        set_id,
+        std::bind(&mpm::ParticleBase<Tdim>::map_rigid_velocity_to_nodes,
+                  std::placeholders::_1, dir, velocity));
+  }
+}
+
+//! Get reaction force
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::get_reaction_force(
+    Eigen::Matrix<double, Tdim, 1>& disp,
+    Eigen::Matrix<double, Tdim, 1>& reaction_force) {
+  //! total displacement
+  Eigen::Matrix<double, Tdim, 1> total_disp =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+  //! total reactiton force
+  Eigen::Matrix<double, Tdim, 1> total_reaction_force =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+
+  unsigned nrigid = 0;
+
+  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
+    if ((*pitr)->material_id() == 999) {
+      total_disp += (*pitr)->displacement();
+      nrigid++;
+    }
+  }
+
+  //! get average displacement for all rigid particles
+  total_disp *= 1. / nrigid;
+
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+    //! no need to check reaction or not
+    //! no affected node is zero
+    if ((*nitr)->status()) total_reaction_force += (*nitr)->reaction_force();
+  }
+  disp = total_disp;
+  reaction_force = total_reaction_force;
+}
+
 //! Assign node tractions
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::assign_nodal_concentrated_forces(

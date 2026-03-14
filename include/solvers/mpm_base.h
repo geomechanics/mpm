@@ -89,6 +89,10 @@ class MPMBase : public MPM {
   //! \param[in] step Time step
   void write_outputs(mpm::Index step) override;
 
+  //! Write reaction force
+  void write_reaction_force(bool overwrite, mpm::Index step,
+                            mpm::Index max_steps) override;
+
   //! Pressure smoothing
   //! \param[in] phase Phase to smooth pressure
   void pressure_smoothing(unsigned phase);

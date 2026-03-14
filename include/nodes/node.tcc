@@ -39,6 +39,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   status_ = false;
   solving_status_ = false;
   material_ids_.clear();
+  rigid_node_ = false;
 }
 
 //! Initialise shared pointer to nodal properties pool
@@ -248,7 +249,6 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_velocity() {
 
   // Apply velocity constraints, which also sets acceleration to 0,
   // when velocity is set.
-  this->apply_velocity_constraints();
 }
 
 //! Update nodal acceleration
@@ -291,6 +291,15 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
     this->apply_velocity_constraints();
+
+    // Modify the nodal velocity if it is related to a rigid particle
+    if (this->rigid_node_) {
+      // Set zero total force for rigid particle influenced node
+      reaction_force_.setZero();
+      // Get reaction force
+      reaction_force_ = -(this->external_force_.col(phase) +
+                          this->internal_force_.col(phase));
+    }
 
     // Set a threshold
     for (unsigned i = 0; i < Tdim; ++i)
@@ -1085,4 +1094,33 @@ template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {
   nonlocal_node_type_.resize(Tdim);
   std::fill(nonlocal_node_type_.begin(), nonlocal_node_type_.end(), 0);
+}
+
+//! Assign rigid velocity
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::assign_velocity_from_rigid(
+    unsigned dir, double velocity) {
+  node_mutex_.lock();
+  switch (Tnphases) {
+    // One phase
+    case 1: {
+      velocity_.col(0)[dir] = velocity;
+      acceleration_.col(0)[dir] = 0.;
+      break;
+    }
+    // Two phase
+    case 2: {
+      if (dir < Tdim) {
+        velocity_.col(1)[dir] = velocity;
+        acceleration_.col(1)[dir] = 0.;
+      } 
+      else {
+        velocity_.col(1)[dir - Tdim] = velocity;
+        acceleration_.col(1)[dir - Tdim] = 0.;
+      }
+      break;
+    }
+  }
+  this->rigid_node_ = true;
+  node_mutex_.unlock();
 }

@@ -354,6 +354,13 @@ class Mesh {
   //! Apply particles velocity constraints
   void apply_particle_velocity_constraints();
 
+  //! Apply particles particle moving rigid boundary
+  void apply_moving_rigid_boundary();
+
+  //! Get total reaction force for rigid material point (material_id = 999)
+  void get_reaction_force(Eigen::Matrix<double, Tdim, 1>& disp,
+                          Eigen::Matrix<double, Tdim, 1>& reaction_force);
+
   //! Assign nodal concentrated force
   //! \param[in] nodal_forces Force at dir on nodes
   bool assign_nodal_concentrated_forces(

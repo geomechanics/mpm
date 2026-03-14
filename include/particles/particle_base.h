@@ -314,6 +314,10 @@ class ParticleBase {
   //! Map traction force
   virtual void map_traction_force() noexcept = 0;
 
+  //! Assign rigid boundary
+  virtual void map_rigid_velocity_to_nodes(unsigned dir, 
+                                            double velocity) noexcept = 0;
+
   //! Compute updated position
   virtual void compute_updated_position(
       double dt,

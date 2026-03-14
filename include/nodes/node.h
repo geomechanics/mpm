@@ -596,6 +596,13 @@ class Node : public NodeBase<Tdim> {
   }
   /**@}*/
 
+  //! Assign rigid velocity
+  void assign_velocity_from_rigid(unsigned dir, 
+                                  double velocity) override;
+
+  //! Return external force
+  VectorDim reaction_force() const override { return reaction_force_; }
+
  private:
   //! Mutex
   SpinMutex node_mutex_;
@@ -666,6 +673,18 @@ class Node : public NodeBase<Tdim> {
   Index active_id_{std::numeric_limits<Index>::max()};
   //! Global index for active node (globally)
   Index global_active_id_{std::numeric_limits<Index>::max()};
+  //! Rigid contact
+  bool rigid_node_{false};
+  //! 3D printing nozzle
+  bool three_dp_nozzle_{false};
+  //! Rigid acceleration
+  Eigen::Matrix<double, Tdim, Tnphases> rigid_acceleration_;
+  //! Rigid velocity
+  Eigen::Matrix<double, Tdim, Tnphases> rigid_velocity_;
+  //! Reaction force
+  Eigen::Matrix<double, Tdim, 1> reaction_force_;
+  // 3D printing nozzle velocity
+  Eigen::Matrix<double, Tdim, 1> three_dp_velocity_;
 
   /**
    * \defgroup ImplicitVariables Variables dealing with implicit MPM

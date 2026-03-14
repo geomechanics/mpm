@@ -107,6 +107,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
 
+  // Creat empty reaction force file
+  this->write_reaction_force(true, this->step_, this->nsteps_);
+
   auto solver_begin = std::chrono::steady_clock::now();
   // Main loop
   for (; step_ < nsteps_; ++step_) {
@@ -159,6 +162,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Update Stress Last
     mpm_scheme_->postcompute_stress_strain(phase, pressure_smoothing_);
+
+    // Write reaction force file
+    this->write_reaction_force(false, this->step_, this->nsteps_);
 
     // Locate particles
     mpm_scheme_->locate_particles(this->locate_particles_);

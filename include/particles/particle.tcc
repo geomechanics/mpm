@@ -629,30 +629,31 @@ void mpm::Particle<Tdim>::compute_mass() noexcept {
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_mass_momentum_to_nodes(
     mpm::VelocityUpdate velocity_update) noexcept {
+  if (this->material_id_[mpm::ParticlePhase::Solid] != 999) {
+    switch (velocity_update) {
+      case mpm::VelocityUpdate::APIC:
+        this->map_mass_momentum_to_nodes_affine();
+        break;
+      case mpm::VelocityUpdate::ASFLIP:
+        this->map_mass_momentum_to_nodes_affine();
+        break;
+      case mpm::VelocityUpdate::TPIC:
+        this->map_mass_momentum_to_nodes_taylor();
+        break;
+      default:
+        // Check if particle mass is set
+        assert(mass_ != std::numeric_limits<double>::max());
 
-  switch (velocity_update) {
-    case mpm::VelocityUpdate::APIC:
-      this->map_mass_momentum_to_nodes_affine();
-      break;
-    case mpm::VelocityUpdate::ASFLIP:
-      this->map_mass_momentum_to_nodes_affine();
-      break;
-    case mpm::VelocityUpdate::TPIC:
-      this->map_mass_momentum_to_nodes_taylor();
-      break;
-    default:
-      // Check if particle mass is set
-      assert(mass_ != std::numeric_limits<double>::max());
-
-      // Map mass and momentum to nodes
-      for (unsigned i = 0; i < nodes_.size(); ++i) {
-        // Map mass and momentum
-        nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
-                               mass_ * shapefn_[i]);
-        nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
-                                   mass_ * shapefn_[i] * velocity_);
-      }
-      break;
+        // Map mass and momentum to nodes
+        for (unsigned i = 0; i < nodes_.size(); ++i) {
+          // Map mass and momentum
+          nodes_[i]->update_mass(true, mpm::ParticlePhase::Solid,
+                                mass_ * shapefn_[i]);
+          nodes_[i]->update_momentum(true, mpm::ParticlePhase::Solid,
+                                    mass_ * shapefn_[i] * velocity_);
+        }
+        break;
+    }
   }
 }
 
@@ -880,71 +881,80 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_stress(double dt) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
-
+  if (this->material_id_[mpm::ParticlePhase::Solid] != 999) {
   // Compute material part of stress
   this->stress_ =
       (this->material())
           ->compute_stress(stress_, dstrain_, this,
-                           &state_variables_[mpm::ParticlePhase::Solid], dt);
+                          &state_variables_[mpm::ParticlePhase::Solid], dt);
+  } 
 }
 
 //! Map body force
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
-  // Compute nodal body forces
-  for (unsigned i = 0; i < nodes_.size(); ++i)
-    nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
-                                     (pgravity * mass_ * shapefn_(i)));
+  if (this->material_id_[mpm::ParticlePhase::Solid] != 999) {
+    // Compute nodal body forces
+    for (unsigned i = 0; i < nodes_.size(); ++i)
+      nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
+                                      (pgravity * mass_ * shapefn_(i)));
+  }
 }
 
 //! Map internal force
 template <>
 inline void mpm::Particle<1>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 1, 1> force;
-    force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
+  if (this->material_id_[mpm::ParticlePhase::Solid] != 999) {
+    // Compute nodal internal forces
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      // Compute force: -pstress * volume
+      Eigen::Matrix<double, 1, 1> force;
+      force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
 
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+      nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    }
   }
 }
 
 //! Map internal force
 template <>
 inline void mpm::Particle<2>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 2, 1> force;
-    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
-    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
+  if (this->material_id_[mpm::ParticlePhase::Solid] != 999) {
+    // Compute nodal internal forces
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      // Compute force: -pstress * volume
+      Eigen::Matrix<double, 2, 1> force;
+      force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3];
+      force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3];
 
-    force *= -1. * this->volume_;
+      force *= -1. * this->volume_;
 
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+      nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    }
   }
 }
 
 //! Map internal force
 template <>
 inline void mpm::Particle<3>::map_internal_force() noexcept {
-  // Compute nodal internal forces
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    // Compute force: -pstress * volume
-    Eigen::Matrix<double, 3, 1> force;
-    force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
-               dn_dx_(i, 2) * stress_[5];
+  if (this->material_id_[mpm::ParticlePhase::Solid] != 999) {
+    // Compute nodal internal forces
+    for (unsigned i = 0; i < nodes_.size(); ++i) {
+      // Compute force: -pstress * volume
+      Eigen::Matrix<double, 3, 1> force;
+      force[0] = dn_dx_(i, 0) * stress_[0] + dn_dx_(i, 1) * stress_[3] +
+                dn_dx_(i, 2) * stress_[5];
 
-    force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
-               dn_dx_(i, 2) * stress_[4];
+      force[1] = dn_dx_(i, 1) * stress_[1] + dn_dx_(i, 0) * stress_[3] +
+                dn_dx_(i, 2) * stress_[4];
 
-    force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
-               dn_dx_(i, 0) * stress_[5];
+      force[2] = dn_dx_(i, 2) * stress_[2] + dn_dx_(i, 1) * stress_[4] +
+                dn_dx_(i, 0) * stress_[5];
 
-    force *= -1. * this->volume_;
+      force *= -1. * this->volume_;
 
-    nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+      nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    }
   }
 }
 
@@ -989,27 +999,72 @@ void mpm::Particle<Tdim>::map_traction_force() noexcept {
   }
 }
 
+// Assign rigid particle velocity to nodes
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_rigid_velocity_to_nodes(unsigned dir,
+                                          double velocity) noexcept {
+  if (this->material_id_[mpm::ParticlePhase::Solid] == 999) {
+    for (unsigned i = 0; i < std::pow(2, Tdim); ++i) {
+      switch (dir) {
+        case 0: {
+          const bool constraint_x = (this->material())->template
+                    property<bool>(std::string("constraint_x"));
+          if (constraint_x) 
+            nodes_[i]->assign_velocity_from_rigid(0, velocity);
+          break;
+        }
+
+        case 1: {
+          const bool constraint_y = (this->material())->template
+                    property<bool>(std::string("constraint_y"));
+          if (constraint_y) 
+            nodes_[i]->assign_velocity_from_rigid(1, velocity);
+          break;
+        }
+
+        case 2: {
+          const bool constraint_z = (this->material())->template
+                    property<bool>(std::string("constraint_z"));
+          if (constraint_z) 
+            nodes_[i]->assign_velocity_from_rigid(2, velocity);
+          break;
+        }
+
+        default:
+          break;
+      } 
+    }
+  }
+}
+
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(
     double dt, mpm::VelocityUpdate velocity_update,
     double blending_ratio) noexcept {
-  switch (velocity_update) {
-    case mpm::VelocityUpdate::FLIP:
-      this->compute_updated_position_flip(dt, blending_ratio);
-      break;
-    case mpm::VelocityUpdate::PIC:
-      this->compute_updated_position_pic(dt);
-      break;
-    case mpm::VelocityUpdate::ASFLIP:
-      this->compute_updated_position_asflip(dt, blending_ratio);
-      break;
-    case mpm::VelocityUpdate::APIC:
-      this->compute_updated_position_apic(dt);
-      break;
-    case mpm::VelocityUpdate::TPIC:
-      this->compute_updated_position_tpic(dt);
-      break;
+  if (this->material_id_[mpm::ParticlePhase::Solid] != 999) {
+    switch (velocity_update) {
+      case mpm::VelocityUpdate::FLIP:
+        this->compute_updated_position_flip(dt, blending_ratio);
+        break;
+      case mpm::VelocityUpdate::PIC:
+        this->compute_updated_position_pic(dt);
+        break;
+      case mpm::VelocityUpdate::ASFLIP:
+        this->compute_updated_position_asflip(dt, blending_ratio);
+        break;
+      case mpm::VelocityUpdate::APIC:
+        this->compute_updated_position_apic(dt);
+        break;
+      case mpm::VelocityUpdate::TPIC:
+        this->compute_updated_position_tpic(dt);
+        break;
+    }
+  } else {
+    // New position
+    this->coordinates_.noalias() += this->velocity_ * dt;
+    // Update displacement
+    this->displacement_.noalias() += this->velocity_ * dt;
   }
 }
 
@@ -1661,7 +1716,7 @@ void mpm::Particle<Tdim>::update_deformation_gradient() noexcept {
 template <unsigned Tdim>
 inline Eigen::Matrix<double, Tdim, Tdim>
     mpm::Particle<Tdim>::compute_velocity_gradient(const Eigen::MatrixXd& dn_dx,
-                                                   unsigned phase) noexcept {
+                                                    unsigned phase) noexcept {
   // Define velocity gradient
   Eigen::Matrix<double, Tdim, Tdim> velocity_gradient =
       Eigen::Matrix<double, Tdim, Tdim>::Zero();

@@ -175,7 +175,7 @@ class Particle : public ParticleBase<Tdim> {
     return strain_rate_;
   };
 
-  //! Assign dvolumetric strain
+    //! Assign dvolumetric strain
   void assign_dvolumetric_strain(double dvol_strain) noexcept override {
     dvolumetric_strain_ = dvol_strain;
   }
@@ -262,6 +262,10 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Map traction force
   void map_traction_force() noexcept override;
+
+  //! Assign rigid boundary
+  void map_rigid_velocity_to_nodes(unsigned dir, 
+                                  double velocity) noexcept override;
 
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step

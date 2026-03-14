@@ -750,6 +750,43 @@ void mpm::MPMBase<Tdim>::write_outputs(mpm::Index step) {
   }
 }
 
+//! Write reaction force
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::write_reaction_force(bool overwrite, mpm::Index step,
+                                              mpm::Index max_steps) {
+
+  auto reaction_file =
+      io_->output_file("reaction-force", ".txt", uuid_, 0, 0).string();
+
+  //! total displacement
+  Eigen::Matrix<double, Tdim, 1> disp = Eigen::Matrix<double, Tdim, 1>::Zero();
+
+  //! total reactiton force
+  Eigen::Matrix<double, Tdim, 1> reaction_force =
+      Eigen::Matrix<double, Tdim, 1>::Zero();
+
+  //! store the displacement and reaction in disp and reaction_force para
+  mesh_->get_reaction_force(disp, reaction_force);
+
+  std::fstream file;
+  if (overwrite) {
+    file.open(reaction_file.c_str(), std::fstream::out);
+  } else {
+    file.open(reaction_file.c_str(), std::fstream::app);
+    if (Tdim == 1) {
+      file  << disp[0] << "\t" << reaction_force[0] << "\n";
+    } else if (Tdim == 2) {
+      file  << disp[0] << "\t" << disp[1] << "\t" << reaction_force[0] << "\t"
+            << reaction_force[1] << "\n";
+    } else if (Tdim == 3) {
+      file  << disp[0] << "\t" << disp[1] << "\t" << disp[2] << "\t"
+            << reaction_force[0] << "\t" << reaction_force[1] << "\t"
+            << reaction_force[2] << "\n";
+    } 
+  }
+  file.close();
+}
+
 //! Return if a mesh is isoparametric
 template <unsigned Tdim>
 bool mpm::MPMBase<Tdim>::is_isoparametric() {

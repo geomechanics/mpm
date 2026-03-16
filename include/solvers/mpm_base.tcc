@@ -890,69 +890,70 @@ void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
 
   //! VTK scalar variables
   for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Scalar)) {
+    auto point_attribute = attribute + "_point";
     // Write scalar
-    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
-                                 max_steps)
-                    .string();
+    auto file =
+        io_->output_file(point_attribute, extension, uuid_, step, max_steps)
+            .string();
     vtk_writer->write_scalar_point_data(
-        file, mesh_->points_scalar_data(attribute), attribute);
+        file, mesh_->points_scalar_data(attribute), point_attribute);
 
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
-      auto parallel_file =
-          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
-                           max_steps, write_mpi_rank)
-              .string();
+      auto parallel_file = io_->output_file(point_attribute, ".pvtp", uuid_,
+                                            step, max_steps, write_mpi_rank)
+                               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
-                                     mpi_size, step, max_steps, 1);
+      vtk_writer->write_parallel_vtk(parallel_file, point_attribute, mpi_size,
+                                     step, max_steps, 1);
     }
 #endif
   }
 
   //! VTK vector variables
   for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Vector)) {
+    auto point_attribute = attribute + "_point";
     // Write vector
-    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
-                                 max_steps)
-                    .string();
+    auto file =
+        io_->output_file(point_attribute, extension, uuid_, step, max_steps)
+            .string();
     vtk_writer->write_vector_point_data(
-        file, mesh_->points_vector_data(attribute), attribute);
+        file, mesh_->points_vector_data(attribute), point_attribute);
 
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
-      auto parallel_file =
-          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
-                           max_steps, write_mpi_rank)
-              .string();
+      auto parallel_file = io_->output_file(point_attribute, ".pvtp", uuid_,
+                                            step, max_steps, write_mpi_rank)
+                               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
-                                     mpi_size, step, max_steps, 3);
+      vtk_writer->write_parallel_vtk(parallel_file, point_attribute, mpi_size,
+                                     step, max_steps, 3);
     }
 #endif
   }
 
   //! VTK tensor variables
   for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Tensor)) {
+    auto point_attribute = attribute + "_point";
     // Write vector
-    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
-                                 max_steps)
-                    .string();
+    auto file =
+        io_->output_file(point_attribute, extension, uuid_, step, max_steps)
+            .string();
     vtk_writer->write_tensor_point_data(
-        file, mesh_->template points_tensor_data<6>(attribute), attribute);
+        file, mesh_->template points_tensor_data<6>(attribute),
+        point_attribute);
 
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
-      auto parallel_file =
-          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
-                           max_steps, write_mpi_rank)
-              .string();
+      auto parallel_file = io_->output_file(point_attribute, ".pvtp", uuid_,
+                                            step, max_steps, write_mpi_rank)
+                               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
-                                     mpi_size, step, max_steps, 9);
+      vtk_writer->write_parallel_vtk(parallel_file, point_attribute, mpi_size,
+                                     step, max_steps, 9);
     }
 #endif
   }

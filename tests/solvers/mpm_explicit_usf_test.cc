@@ -211,6 +211,29 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
       REQUIRE(mpm->solve() == true);
     }
+    // Case 7: rotation ramping with resume=true 2D
+    REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, false, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_NOTHROW(mpm->initialise_loads());
+    }
+
+    // Case 8: both ramping true 2D - should throw
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
   }
 
   SECTION("Check pressure smoothing") {
@@ -389,6 +412,65 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
       REQUIRE(mpm->solve() == true);
     }
+
+    // Case 4: rotation ramping negative 3D - should throw
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, -1.0, false,
+                                         true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Case 5: neither gravity nor rotation ramping 3D - valid
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.0, false,
+                                         false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Case 6: rotation ramping with resume=true 3D
+    REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, false, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_NOTHROW(mpm->initialise_loads());
+    }
+
+    // Case 7: both ramping true 3D - should throw
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Case 8: gravity ramping with resume=true 3D
+    REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_NOTHROW(mpm->initialise_loads());
+    }
   }
 
   SECTION("Check pressure smoothing") {
@@ -425,9 +507,12 @@ TEST_CASE("MPM base warnings are checked (2D Explicit)", "[MPM][2D][Base]") {
 
   // Write bad JSON file
   std::string fname = "mpm-base-warnings";
+  // Cover grav_dim==3 branch
+  REQUIRE(mpm_test::write_json_warnings(2, true, true, "Linear", 3, fname) ==
+          true);
+  // Cover material_sets=false, math_functions=false branch
   REQUIRE(mpm_test::write_json_warnings(2, false, false, "Linear", 2, fname) ==
           true);
-
   // Create an IO object and run explicit MPM
   auto io = std::make_unique<mpm::IO>(argc, argv);
   auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
@@ -466,6 +551,13 @@ TEST_CASE("MPM base warnings are checked (3D Explicit)", "[MPM][3D][Base]") {
 
   // Write bad JSON file
   std::string fname = "mpm-base-warnings";
+  // Cover grav_dim==3 branch for 3D
+  REQUIRE(mpm_test::write_json_warnings(3, false, true, "Linear", 3, fname) ==
+          true);
+  // Cover material_sets=false branch for 3D
+  REQUIRE(mpm_test::write_json_warnings(3, false, false, "Linear", 3, fname) ==
+          true);
+  // This must be last as it writes the bad JSON the MPM object will read
   REQUIRE(mpm_test::write_json_warnings(3, true, true, "Lin", 2, fname) ==
           true);
 

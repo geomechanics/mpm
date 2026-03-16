@@ -1525,7 +1525,7 @@ TEST_CASE("Hexahedron bspline elements are checked",
         // Initialise BSpline with kernel correction equal to true
         bool kernel_correction = true;
         REQUIRE_NOTHROW(hex->initialise_bspline_connectivity_properties(
-            nodal_coords, nodal_props, kernel_correction));
+            nodal_coords, nodal_props, kernel_correction, 1, 1.e-8));
 
         // Coordinates is (0,0,0) after upgrade
         SECTION(
@@ -1606,17 +1606,15 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 48, Dim> gradsf_ans;
-          gradsf_ans << -0.166667, -0.125, -0.166667, 0.166667, -0.125,
-              -0.166667, 0.0833333, 0.125, -0.0833333, -0.0833333, 0.125,
-              -0.0833333, -0.166667, -0.125, 0.166667, 0.166667, -0.125,
-              0.166667, 0.0833333, 0.125, 0.0833333, -0.0833333, 0.125,
-              0.0833333, -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, -0,
-              -0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0,
-              0, -0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, -0, -0, 0, -0, 0,
-              0, -0, 0, 0, -0, -0, 0, -0, 0, 0, -0, -0, 0, 0, 0, 0, 0, -0, 0, 0,
-              -0, 0, 0, 0, 0, 0, 0, 0, 0, -0, -0, -0, -0, -0, -0, 0, -0, -0, 0,
-              -0, -0, -0, -0, -0, 0, -0, -0, -0, -0, 0, 0, -0, 0, -0, -0, 0, -0,
-              -0, 0, 0, -0, 0, 0, -0, 0;
+          gradsf_ans << -0.125, -0.125, -0.125, 0.125, -0.125, -0.125, 0.125,
+              0.125, -0.125, -0.125, 0.125, -0.125, -0.125, -0.125, 0.125,
+              0.125, -0.125, 0.125, 0.125, 0.125, 0.125, -0.125, 0.125, 0.125,
+              0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0, -0, 0, -0, 0, 0,
+              -0, 0, 0, -0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0,
+              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+              -0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0,
+              0, 0, -0, 0, -0, -0, 0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, -0, -0,
+              0, -0, 0, 0, -0, 0, 0, -0, 0, -0, -0, 0, 0, -0, 0, 0, -0, 0;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -1724,21 +1722,22 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 48, Dim> gradsf_ans;
-          gradsf_ans << -0.108765, -0.0395508, -0.108765, 0.088623, -0.0966797,
-              -0.265869, 0.00805664, 0.0966797, -0.0241699, -0.0098877,
-              0.0395508, -0.0098877, -0.265869, -0.0966797, 0.088623, 0.216634,
-              -0.236328, 0.216634, 0.019694, 0.236328, 0.019694, -0.0241699,
-              0.0966797, 0.00805664, -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0,
-              -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, 0, -0, 0, 0, 0,
-              0, 0, 0, 0, 0, -0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, -0,
-              -0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, -0, 0.00183105, 0.00439453,
-              -0.00109863, -0, 0, 0, 0.00447591, 0.0107422, 0.000895182, -0, 0,
-              0, -0.00109863, 0.00439453, 0.00183105, 0.000895182, 0.0107422,
-              0.00447591, 0.000203451, 0.000488281, 0.000203451, -0, -0, -0, -0,
-              -0, -0, 0, -0, -0, 0, -0, -0, -0, -0, -0, 0.0201416, -0.00439453,
-              -0.012085, -0, -0, 0, 0.049235, -0.0107422, 0.00984701, -0, -0, 0,
-              -0.012085, -0.00439453, 0.0201416, 0.00984701, -0.0107422,
-              0.049235, 0.00223796, -0.000488281, 0.00223796;
+          gradsf_ans << -0.0842049, -0.0395508, -0.0842049, 0.0686114,
+              -0.0966797, -0.205834, 0.0280683, 0.0966797, -0.0842049,
+              -0.0344475, 0.0395508, -0.0344475, -0.205834, -0.0966797,
+              0.0686114, 0.167717, -0.236328, 0.167717, 0.0686114, 0.236328,
+              0.0686114, -0.0842049, 0.0966797, 0.0280683, -0, 0, -0, -0, 0, -0,
+              0, 0, -0, 0, 0, -0, -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, -0,
+              0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0, -0, 0, 0, 0, 0, 0, 0,
+              0, 0, -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, -0,
+              0.00637916, 0.00439453, -0.00382749, -0, 0, 0, 0.0155935,
+              0.0107422, 0.0031187, -0, 0, 0, -0.00382749, 0.00439453,
+              0.00637916, 0.0031187, 0.0107422, 0.0155935, 0.000708795,
+              0.000488281, 0.000708795, -0, -0, -0, -0, -0, -0, 0, -0, -0, 0,
+              -0, -0, -0, -0, -0, 0.0155935, -0.00439453, -0.0093561, -0, -0, 0,
+              0.0381174, -0.0107422, 0.00762349, -0, -0, 0, -0.0093561,
+              -0.00439453, 0.0155935, 0.00762349, -0.0107422, 0.0381174,
+              0.00173261, -0.000488281, 0.00173261;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -1990,14 +1989,14 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(hex->nfunctions_local() == 8);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-          REQUIRE(shapefn(0) == Approx(0.111111).epsilon(Tolerance));
-          REQUIRE(shapefn(1) == Approx(0.111111).epsilon(Tolerance));
-          REQUIRE(shapefn(2) == Approx(0.138889).epsilon(Tolerance));
-          REQUIRE(shapefn(3) == Approx(0.138889).epsilon(Tolerance));
-          REQUIRE(shapefn(4) == Approx(0.138889).epsilon(Tolerance));
-          REQUIRE(shapefn(5) == Approx(0.138889).epsilon(Tolerance));
-          REQUIRE(shapefn(6) == Approx(0.111111).epsilon(Tolerance));
-          REQUIRE(shapefn(7) == Approx(0.111111).epsilon(Tolerance));
+          REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(1) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(2) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(3) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(4) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(5) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(6) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(7) == Approx(0.125).epsilon(Tolerance));
           REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(9) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(10) == Approx(0).epsilon(Tolerance));
@@ -2043,15 +2042,14 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 36, Dim> gradsf_ans;
-          gradsf_ans << -0.222222, -0.166667, -0.166667, 0.222222, -0.166667,
-              -0.166667, 0.111111, 0.166667, -0.0833333, -0.111111, 0.166667,
-              -0.0833333, -0.111111, -0.0833333, 0.166667, 0.111111, -0.0833333,
-              0.166667, 0.0555556, 0.0833333, 0.0833333, -0.0555556, 0.0833333,
-              0.0833333, -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, 0, -0,
-              0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, -0,
-              0, -0, 0, 0, -0, -0, 0, 0, 0, 0, 0, -0, 0, 0, -0, 0, 0, 0, 0, 0,
-              0, 0, 0, -0, -0, -0, 0, -0, -0, -0, -0, 0, 0, -0, 0, -0, -0, 0,
-              -0, -0, 0, 0, -0, 0, 0, -0, 0;
+          gradsf_ans << -0.125, -0.125, -0.125, 0.125, -0.125, -0.125, 0.125,
+              0.125, -0.125, -0.125, 0.125, -0.125, -0.125, -0.125, 0.125,
+              0.125, -0.125, 0.125, 0.125, 0.125, 0.125, -0.125, 0.125, 0.125,
+              0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, 0, 0, 0, -0, 0, 0, 0, 0,
+              0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0,
+              -0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0,
+              -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, 0, -0, -0, 0, 0, -0, 0,
+              0, -0, 0;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -2094,14 +2092,14 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn.size() == 36);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-          REQUIRE(shapefn(0) == Approx(0.0584547).epsilon(Tolerance));
-          REQUIRE(shapefn(1) == Approx(0.142889).epsilon(Tolerance));
-          REQUIRE(shapefn(2) == Approx(0.0598649).epsilon(Tolerance));
-          REQUIRE(shapefn(3) == Approx(0.0244902).epsilon(Tolerance));
-          REQUIRE(shapefn(4) == Approx(0.142368).epsilon(Tolerance));
-          REQUIRE(shapefn(5) == Approx(0.34801).epsilon(Tolerance));
-          REQUIRE(shapefn(6) == Approx(0.105856).epsilon(Tolerance));
-          REQUIRE(shapefn(7) == Approx(0.0433048).epsilon(Tolerance));
+          REQUIRE(shapefn(0) == Approx(0.0593262).epsilon(Tolerance));
+          REQUIRE(shapefn(1) == Approx(0.14502).epsilon(Tolerance));
+          REQUIRE(shapefn(2) == Approx(0.0483398).epsilon(Tolerance));
+          REQUIRE(shapefn(3) == Approx(0.0197754).epsilon(Tolerance));
+          REQUIRE(shapefn(4) == Approx(0.14502).epsilon(Tolerance));
+          REQUIRE(shapefn(5) == Approx(0.354492).epsilon(Tolerance));
+          REQUIRE(shapefn(6) == Approx(0.118164).epsilon(Tolerance));
+          REQUIRE(shapefn(7) == Approx(0.0483398).epsilon(Tolerance));
           REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(9) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(10) == Approx(0).epsilon(Tolerance));
@@ -2115,21 +2113,21 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(18) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(19) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(20) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(21) == Approx(0.00272113).epsilon(Tolerance));
+          REQUIRE(shapefn(21) == Approx(0.00219727).epsilon(Tolerance));
           REQUIRE(shapefn(22) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(23) == Approx(0.00481164).epsilon(Tolerance));
+          REQUIRE(shapefn(23) == Approx(0.00537109).epsilon(Tolerance));
           REQUIRE(shapefn(24) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(25) == Approx(0.00251755).epsilon(Tolerance));
-          REQUIRE(shapefn(26) == Approx(0.006154).epsilon(Tolerance));
-          REQUIRE(shapefn(27) == Approx(0.000279727).epsilon(Tolerance));
+          REQUIRE(shapefn(25) == Approx(0.00219727).epsilon(Tolerance));
+          REQUIRE(shapefn(26) == Approx(0.00537109).epsilon(Tolerance));
+          REQUIRE(shapefn(27) == Approx(0.000244141).epsilon(Tolerance));
           REQUIRE(shapefn(28) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(29) == Approx(0.00649497).epsilon(Tolerance));
+          REQUIRE(shapefn(29) == Approx(0.0065918).epsilon(Tolerance));
           REQUIRE(shapefn(30) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(31) == Approx(0.0158187).epsilon(Tolerance));
+          REQUIRE(shapefn(31) == Approx(0.0161133).epsilon(Tolerance));
           REQUIRE(shapefn(32) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(33) == Approx(0.0101149).epsilon(Tolerance));
-          REQUIRE(shapefn(34) == Approx(0.0247252).epsilon(Tolerance));
-          REQUIRE(shapefn(35) == Approx(0.00112387).epsilon(Tolerance));
+          REQUIRE(shapefn(33) == Approx(0.0065918).epsilon(Tolerance));
+          REQUIRE(shapefn(34) == Approx(0.0161133).epsilon(Tolerance));
+          REQUIRE(shapefn(35) == Approx(0.000732422).epsilon(Tolerance));
 
           // Check linear reproduction property
           Eigen::Matrix<double, Dim, 1> rep_coords;
@@ -2147,20 +2145,20 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 36, Dim> gradsf_ans;
-          gradsf_ans << -0.14502, -0.0527344, -0.110117, 0.118164, -0.128906,
-              -0.269174, 0.0107422, 0.128906, -0.0244703, -0.0131836, 0.0527344,
-              -0.0100106, -0.229614, -0.0834961, 0.0913268, 0.187093, -0.204102,
-              0.223243, 0.0170085, 0.204102, 0.0202948, -0.020874, 0.0834961,
-              0.00830244, -0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, -0, -0, 0, 0,
-              -0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0,
-              -0, 0, -0, 0.00244141, 0.00585937, -0.00111229, -0, 0, 0,
-              0.00386556, 0.00927734, 0.000922493, -0, 0, 0, -0.00109863,
-              0.00439453, 0.00170816, 0.000895182, 0.0107422, 0.00417549,
-              0.000203451, 0.000488281, 0.000189795, -0, -0, -0, 0.0268555,
-              -0.00585938, -0.0122352, -0, -0, 0, 0.0425212, -0.00927734,
-              0.0101474, -0, -0, 0, -0.012085, -0.00439453, 0.0187897,
-              0.00984701, -0.0107422, 0.0459304, 0.00223796, -0.000488281,
-              0.00208775;
+          gradsf_ans << -0.0842049, -0.0395508, -0.0842049, 0.0686114,
+              -0.0966797, -0.205834, 0.0280683, 0.0966797, -0.0842049,
+              -0.0344475, 0.0395508, -0.0344475, -0.205834, -0.0966797,
+              0.0686114, 0.167717, -0.236328, 0.167717, 0.0686114, 0.236328,
+              0.0686114, -0.0842049, 0.0966797, 0.0280683, -0, 0, -0, -0, 0, -0,
+              0, 0, -0, 0, 0, -0, -0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0,
+              0, -0, 0, 0, 0, 0, 0, 0, 0, 0, -0, 0, -0, 0.00637916, 0.00439453,
+              -0.00382749, -0, 0, 0, 0.0155935, 0.0107422, 0.0031187, -0, 0, 0,
+              -0.00382749, 0.00439453, 0.00637916, 0.0031187, 0.0107422,
+              0.0155935, 0.000708795, 0.000488281, 0.000708795, -0, -0, -0,
+              0.0155935, -0.00439453, -0.0093561, -0, -0, 0, 0.0381174,
+              -0.0107422, 0.00762349, -0, -0, 0, -0.0093561, -0.00439453,
+              0.0155935, 0.00762349, -0.0107422, 0.0381174, 0.00173261,
+              -0.000488281, 0.00173261;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -2379,14 +2377,14 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(hex->nfunctions_local() == 8);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-          REQUIRE(shapefn(0) == Approx(0.148148).epsilon(Tolerance));
-          REQUIRE(shapefn(1) == Approx(0.0740741).epsilon(Tolerance));
-          REQUIRE(shapefn(2) == Approx(0.148148).epsilon(Tolerance));
-          REQUIRE(shapefn(3) == Approx(0.12963).epsilon(Tolerance));
-          REQUIRE(shapefn(4) == Approx(0.12963).epsilon(Tolerance));
-          REQUIRE(shapefn(5) == Approx(0.148148).epsilon(Tolerance));
-          REQUIRE(shapefn(6) == Approx(0.12963).epsilon(Tolerance));
-          REQUIRE(shapefn(7) == Approx(0.0925926).epsilon(Tolerance));
+          REQUIRE(shapefn(0) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(1) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(2) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(3) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(4) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(5) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(6) == Approx(0.125).epsilon(Tolerance));
+          REQUIRE(shapefn(7) == Approx(0.125).epsilon(Tolerance));
           REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(9) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(10) == Approx(0).epsilon(Tolerance));
@@ -2423,14 +2421,12 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 27, Dim> gradsf_ans;
-          gradsf_ans << -0.222222, -0.111111, -0.111111, 0.222222, -0.222222,
-              -0.222222, 0.111111, 0.222222, -0.111111, -0.111111, 0.111111,
-              -0.0555556, -0.111111, -0.0555556, 0.111111, 0.111111, -0.111111,
-              0.222222, 0.0555556, 0.111111, 0.111111, -0.0555556, 0.0555556,
-              0.0555556, -0, 0, -0, -0, 0, -0, 0, 0, -0, -0, 0, 0, -0, 0, 0, 0,
-              0, 0, -0, 0, 0, -0, 0, 0, 0, 0, 0, -0, 0, -0, -0, 0, 0, -0, 0, 0,
-              -0, 0, 0, 0, 0, 0, -0, -0, -0, -0, -0, 0, -0, -0, 0, -0, -0, 0, 0,
-              -0, 0;
+          gradsf_ans << -0.125, -0.125, -0.125, 0.125, -0.125, -0.125, 0.125,
+              0.125, -0.125, -0.125, 0.125, -0.125, -0.125, -0.125, 0.125,
+              0.125, -0.125, 0.125, 0.125, 0.125, 0.125, -0.125, 0.125, 0.125,
+              0, 0, -0, -0, 0, -0, 0, 0, -0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, 0,
+              0, -0, 0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0, 0, 0, -0, 0, 0, 0, 0,
+              0, 0, -0, -0, 0, -0, 0, 0, -0, 0, -0, -0, 0, 0, -0, 0;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)
@@ -2473,14 +2469,14 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn.size() == 27);
           REQUIRE(shapefn.sum() == Approx(1.).epsilon(Tolerance));
 
-          REQUIRE(shapefn(0) == Approx(0.0746116).epsilon(Tolerance));
-          REQUIRE(shapefn(1) == Approx(0.133227).epsilon(Tolerance));
-          REQUIRE(shapefn(2) == Approx(0.0746116).epsilon(Tolerance));
-          REQUIRE(shapefn(3) == Approx(0.0124647).epsilon(Tolerance));
-          REQUIRE(shapefn(4) == Approx(0.132895).epsilon(Tolerance));
-          REQUIRE(shapefn(5) == Approx(0.373302).epsilon(Tolerance));
-          REQUIRE(shapefn(6) == Approx(0.132895).epsilon(Tolerance));
-          REQUIRE(shapefn(7) == Approx(0.0210776).epsilon(Tolerance));
+          REQUIRE(shapefn(0) == Approx(0.0531917).epsilon(Tolerance));
+          REQUIRE(shapefn(1) == Approx(0.157746).epsilon(Tolerance));
+          REQUIRE(shapefn(2) == Approx(0.0531917).epsilon(Tolerance));
+          REQUIRE(shapefn(3) == Approx(0.0171208).epsilon(Tolerance));
+          REQUIRE(shapefn(4) == Approx(0.130024).epsilon(Tolerance));
+          REQUIRE(shapefn(5) == Approx(0.385601).epsilon(Tolerance));
+          REQUIRE(shapefn(6) == Approx(0.130024).epsilon(Tolerance));
+          REQUIRE(shapefn(7) == Approx(0.0418509).epsilon(Tolerance));
           REQUIRE(shapefn(8) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(9) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(10) == Approx(0).epsilon(Tolerance));
@@ -2493,13 +2489,13 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(shapefn(17) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(18) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(19) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(20) == Approx(0.00117997).epsilon(Tolerance));
-          REQUIRE(shapefn(21) == Approx(0.0077713).epsilon(Tolerance));
+          REQUIRE(shapefn(20) == Approx(0.00190232).epsilon(Tolerance));
+          REQUIRE(shapefn(21) == Approx(0.00591018).epsilon(Tolerance));
           REQUIRE(shapefn(22) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(23) == Approx(0).epsilon(Tolerance));
           REQUIRE(shapefn(24) == Approx(0).epsilon(Tolerance));
-          REQUIRE(shapefn(25) == Approx(0.0077713).epsilon(Tolerance));
-          REQUIRE(shapefn(26) == Approx(0.0281927).epsilon(Tolerance));
+          REQUIRE(shapefn(25) == Approx(0.00591018).epsilon(Tolerance));
+          REQUIRE(shapefn(26) == Approx(0.0175273).epsilon(Tolerance));
 
           // Check linear reproduction property
           Eigen::Matrix<double, Dim, 1> rep_coords;
@@ -2517,15 +2513,17 @@ TEST_CASE("Hexahedron bspline elements are checked",
           REQUIRE(gradsf.cols() == Dim);
 
           Eigen::Matrix<double, 27, Dim> gradsf_ans;
-          gradsf_ans << -0.171875, -0.015625, -0.0326271, 0.171875, -0.171875,
-              -0.358898, 0.015625, 0.171875, -0.0326271, -0.015625, 0.015625,
-              -0.0029661, -0.272135, -0.0247396, 0.0270598, 0.272135, -0.272135,
-              0.297658, 0.0247396, 0.272135, 0.0270598, -0.0247396, 0.0247396,
-              0.00245998, -0, 0, -0, -0, 0, -0, 0, 0, -0, -0, 0, 0, -0, 0, 0, 0,
-              0, 0, -0, 0, 0, -0, 0, 0, 0, 0, 0, -0, 0, -0, -0, 0, 0, -0, 0, 0,
-              -0.00130208, 0.00130208, 0.000506121, 0.00130208, 0.0143229,
-              0.00556733, -0, -0, -0, -0, -0, 0, -0, -0, 0, -0.0143229,
-              -0.00130208, 0.00556733, 0.0143229, -0.0143229, 0.0612406;
+          gradsf_ans << -0.0997984, -0.0408266, -0.0869212, 0.0997984,
+              -0.0997984, -0.212474, 0.0408266, 0.0997984, -0.0869212,
+              -0.0408266, 0.0408266, -0.0355587, -0.243952, -0.0997984,
+              0.0708247, 0.243952, -0.243952, 0.173127, 0.0997984, 0.243952,
+              0.0708247, -0.0997984, 0.0997984, 0.0289737, -0., 0., -0., -0.,
+              0., -0., 0., 0., -0., -0., 0., 0., -0., 0., 0., 0., 0., 0., -0.,
+              0., 0., -0., 0., 0., 0., 0., 0., -0., 0., -0., -0., 0., 0., -0.,
+              0., 0., -0.00453629, 0.00453629, 0.00658494, 0.00453629,
+              0.0110887, 0.0160965, -0., -0., -0., -0., -0., 0., -0., -0., 0.,
+              -0.0110887, -0.00453629, 0.0160965, 0.0110887, -0.0110887,
+              0.039347;
 
           for (unsigned i = 0; i < gradsf.rows(); ++i)
             for (unsigned j = 0; j < gradsf.cols(); ++j)

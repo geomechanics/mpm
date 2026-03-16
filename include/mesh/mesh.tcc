@@ -2028,6 +2028,87 @@ bool mpm::Mesh<Tdim>::generate_particles(const std::shared_ptr<mpm::IO>& io,
       particle_injections_.emplace_back(inject);
     }
 
+
+    // 3D Concrete Printing injection
+    else if (generator_type == "3dp_inject") {
+      mpm::Injection3DP<Tdim> inject;
+      
+      std::cout << "Generating 3D concrete printing injection..." << std::endl;
+      
+      // Particle type
+      inject.particle_type =
+          generator["particle_type"].template get<std::string>();
+      
+      // Material id
+      if (generator.at("material_id").is_array())
+        inject.material_ids =
+            generator["material_id"].template get<std::vector<unsigned>>();
+      else
+        inject.material_ids.emplace_back(
+            generator["material_id"].template get<unsigned>());
+
+      // Duration of injection [start, end, interval]
+      if (generator.contains("duration") && generator["duration"].is_array() &&
+          generator["duration"].size() == 3) {
+        inject.start_time = generator["duration"].at(0);
+        inject.end_time = generator["duration"].at(1);
+        inject.injection_interval = generator["duration"].at(2);
+      } else {
+        throw std::runtime_error("3DP inject requires duration array of [start, end, interval]");
+      }
+
+      // Particle volume
+      if (generator.contains("particle_volume")) {
+        inject.particle_volume = generator["particle_volume"].template get<double>();
+      } else {
+        throw std::runtime_error("3DP inject requires particle_volume");
+      }
+
+      // Particle volume
+      if (generator.contains("cell_height")) {
+        inject.h = generator["cell_height"].template get<double>();
+      } else {
+        throw std::runtime_error("3DP inject requires cell_height");
+      }
+
+      // Velocity vector
+      inject.velocity_p.resize(Tdim, 0.);
+      if (generator["velocity_p"].is_array() &&
+          generator["velocity_p"].size() == Tdim) {
+        for (unsigned i = 0; i < Tdim; ++i)
+          inject.velocity_p[i] = generator["velocity_p"].at(i);
+      } else {
+        throw std::runtime_error("3DP inject requires particle velocity vector");
+      }
+
+      // File containing particle coordinates
+      if (generator.contains("coordinate_file")) {
+        inject.coordinate_file = generator["coordinate_file"].template get<std::string>();
+      } else {
+        throw std::runtime_error("3DP inject requires coordinate_file");
+      }
+
+      // IO type for reading coordinates
+      if (generator.contains("io_type")) {
+        inject.io_type = generator["io_type"].template get<std::string>();
+      } else {
+        throw std::runtime_error("3DP inject requires io_type");
+      }
+
+      // Check duplicates flag (optional)
+      inject.check_duplicates = generator.value("check_duplicates", false);
+
+      // Read coordinates from file
+      status = this->read_3dp_reference_coordinates_file(io, inject);
+      
+      if (status) {
+        // Add to particle injections
+        particle_injections_3dp_.emplace_back(inject);
+        console_->info("Added 3DP injection with {} initial coordinates, interval={}s", 
+                      inject.initial_coordinates.size(), inject.injection_interval);
+      }
+    }
+
     else
       throw std::runtime_error(
           "Particle generator type is not properly specified");
@@ -2103,6 +2184,180 @@ void mpm::Mesh<Tdim>::inject_particles(double current_time) {
       particle->compute_volume();
       particle->compute_mass();
     }
+  }
+}
+
+// Read 3DP reference coordinates file
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::read_3dp_reference_coordinates_file(
+    const std::shared_ptr<mpm::IO>& io, mpm::Injection3DP<Tdim>& inject) {
+  
+  // Get full file path
+  auto file_loc = io->file_name(inject.coordinate_file);
+  
+  // Create a particle reader based on io_type
+  auto particle_io = Factory<mpm::IOMesh<Tdim>>::instance()->create(inject.io_type);
+  
+  if (!particle_io) {
+    throw std::runtime_error("Failed to create particle reader of type: " + inject.io_type);
+  }
+  
+  // Read coordinates from file
+  auto coordinates = particle_io->read_particles(file_loc);
+  
+  // Store initial coordinates
+  inject.initial_coordinates.clear();
+  inject.initial_coordinates.reserve(coordinates.size());
+  
+  for (const auto& coord : coordinates) {
+    // Convert std::vector<double> to Eigen::Matrix
+    Eigen::Matrix<double, Tdim, 1> eigen_coord;
+    for (unsigned i = 0; i < Tdim && i < coord.size(); ++i) {
+      eigen_coord[i] = coord[i];
+    }
+    inject.initial_coordinates.push_back(eigen_coord);
+  }
+  
+  console_->info("Read {} initial coordinates from file: {}", 
+                 inject.initial_coordinates.size(), inject.coordinate_file);
+  
+  return true;
+}
+
+// Inject particles for 3D concrete printing
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time) {
+  int mpi_rank = 0;
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+
+  // Container of new injected particles
+  std::vector<std::shared_ptr<ParticleBase<Tdim>>> injected_particles;
+  
+  // Iterate over all 3DP injection configurations
+  for (auto& injection : particle_injections_3dp_) {
+    
+    // Check if it's time to inject
+    bool time_to_inject = false;
+    
+    // First injection at start_time
+    if (std::abs(current_time - injection.start_time) < 1e-12) {
+      time_to_inject = true;
+      injection.last_injection_time = current_time;
+      console_->debug("First injection at time {}", current_time);
+    }
+    // Subsequent injections at intervals
+    else if (current_time > injection.start_time && 
+             current_time < injection.end_time) {
+      if (current_time - injection.last_injection_time >= 
+          injection.injection_interval - 1e-12) {
+        time_to_inject = true;
+        injection.last_injection_time = current_time;
+        console_->debug("Interval injection at time {}", current_time);
+      }
+    }
+    
+    if (!time_to_inject) continue;
+    
+    // Get materials
+    std::vector<std::shared_ptr<mpm::Material<Tdim>>> materials;
+    for (auto m_id : injection.material_ids) {
+      auto material_iter = materials_.find(m_id);
+      if (material_iter != materials_.end()) {
+        materials.emplace_back(material_iter->second);
+      } else {
+        console_->error("Material ID {} not found for 3DP injection", m_id);
+        continue;
+      }
+    }
+    
+    if (materials.empty()) {
+      console_->error("No valid materials found for 3DP injection");
+      continue;
+    }
+    
+    unsigned pid = this->nparticles();
+    
+    // Generate particles from initial coordinates
+    for (const auto& initial_coord : injection.initial_coordinates) {
+      
+      // Calculate current position: x(t) = x0 + v * (t - t0)
+      Eigen::Matrix<double, Tdim, 1> current_coord = initial_coord;
+      for (unsigned i = 0; i < (Tdim - 1); ++i) {
+        current_coord[i] += injection.velocity_p[i] * current_time;
+      }
+      current_coord[Tdim - 1] += injection.h * 0.5;
+
+      // Check for duplicates if required
+      bool is_duplicate = false;
+      if (injection.check_duplicates) {
+        // Simple proximity check - can be enhanced
+        double min_distance = 1e-6;
+        for (const auto& existing : map_particles_) {
+          double dist = (existing.second->coordinates() - current_coord).norm();
+          if (dist < min_distance) {
+            is_duplicate = true;
+            break;
+          }
+        }
+      }
+      
+      if (is_duplicate) {
+        console_->warn("Duplicate particle detected at [{}, {}, {}], skipping", 
+                       current_coord[0], current_coord[1], current_coord[2]);
+        continue;
+      }
+      
+      // Create particle
+      auto particle =
+          Factory<mpm::ParticleBase<Tdim>, mpm::Index,
+                  const Eigen::Matrix<double, Tdim, 1>&>::instance()
+              ->create(injection.particle_type,
+                       static_cast<mpm::Index>(pid), current_coord);
+      
+      if (particle) {
+        // Assign velocity
+        Eigen::Matrix<double, Tdim, 1> pvelocity(injection.velocity_p.data());
+        particle->assign_velocity(pvelocity);
+        
+        // // Find and assign cell
+        // auto cell = this->locate_cell(current_coord);
+        // if (cell) {
+        //   particle->assign_cell(cell);
+        // } else {
+        //   console_->warn("Particle at [{}, {}, {}] not in any cell, skipping", 
+        //                  current_coord[0], current_coord[1], current_coord[2]);
+        //   continue;
+        // }
+        
+        // Assign materials
+        for (unsigned phase = 0; phase < materials.size(); ++phase) {
+          particle->assign_material(materials[phase], phase);
+        }
+        
+        // Set particle volume (direct assignment, not compute_volume)
+        particle->assign_volume(injection.particle_volume);
+        
+        // Compute mass from volume and density
+        particle->compute_mass();
+        
+        // Add particle to mesh
+        bool checks = false;
+        unsigned status = this->add_particle(particle, checks);
+        
+        if (status) {
+          map_particles_[pid] = particle;
+          ++pid;
+          injected_particles.emplace_back(particle);
+        }
+      }
+    }
+  }
+  
+  if (!injected_particles.empty()) {
+    console_->info("Injected {} new 3DP particles at time {}", 
+                   injected_particles.size(), current_time);
   }
 }
 

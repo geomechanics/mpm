@@ -549,6 +549,13 @@ class NodeBase {
 
   /**@}*/
 
+  //! Assign 3D printing nozzle
+  virtual void assign_3D_printing_velocity(bool three_dp_nozzle,
+          Eigen::Matrix<double, Tdim, 1> velocity) = 0;
+
+  //! Apply velocity constraints for 3D printing nozzle
+  virtual void apply_3dp_velocity_constraints() = 0;
+
 };  // NodeBase class
 }  // namespace mpm
 

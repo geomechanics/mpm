@@ -596,6 +596,13 @@ class Node : public NodeBase<Tdim> {
   }
   /**@}*/
 
+  //! Assign 3D printing nozzle
+  void assign_3D_printing_velocity(bool three_dp_nozzle,
+        Eigen::Matrix<double, Tdim, 1> velocity)  override;
+
+  //! Apply 3D printing nozzlevelocity constraints
+  void apply_3dp_velocity_constraints() override;
+
  private:
   //! Mutex
   SpinMutex node_mutex_;
@@ -706,6 +713,12 @@ class Node : public NodeBase<Tdim> {
   //! Node type vector in each direction
   std::vector<unsigned> nonlocal_node_type_;
   /**@}*/
+
+  //! 3D printing nozzle
+  bool three_dp_nozzle_{false};
+  // 3D printing nozzle velocity
+  Eigen::Matrix<double, Tdim, 1> three_dp_velocity_;
+
 };  // Node class
 }  // namespace mpm
 

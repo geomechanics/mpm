@@ -32,6 +32,7 @@ using Json = nlohmann::json;
 #include "friction_constraint.h"
 #include "function_base.h"
 #include "generators/injection.h"
+#include "generators/injection_3dp.h"
 #include "geometry.h"
 #include "io.h"
 #include "io_mesh.h"
@@ -517,6 +518,13 @@ class Mesh {
   //! Inject particles
   void inject_particles(double current_time);
 
+  //! Read 3DP particle reference coordinates
+  bool read_3dp_reference_coordinates_file(const std::shared_ptr<mpm::IO>& io,
+                                  mpm::Injection3DP<Tdim>& inject);
+
+  //! Inject 3D printing particles
+  void inject_particles_3dp(double current_time);
+
   // Create the nodal properties' map
   void create_nodal_properties();
 
@@ -729,6 +737,8 @@ class Mesh {
       particle_velocity_constraints_;
   //! Vector of generators for particle injections
   std::vector<mpm::Injection> particle_injections_;
+  //! Vector of generators for particle injections
+  std::vector<mpm::Injection3DP<Tdim>> particle_injections_3dp_;
   //! Nodal property pool
   std::shared_ptr<mpm::NodalProperties> nodal_properties_{nullptr};
   //! Logger

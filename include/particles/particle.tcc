@@ -989,6 +989,17 @@ void mpm::Particle<Tdim>::map_traction_force() noexcept {
   }
 }
 
+// Assign 3D printing nozzle
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_3D_printing_velocity(double height, 
+  Eigen::Matrix<double, Tdim, 1> velocity) noexcept {
+  if (this->coordinates_(Tdim - 1) > height) {
+    for (unsigned i = 0; i < std::pow(2, Tdim); ++i) {
+      nodes_[i]->assign_3D_printing_velocity(true, velocity);
+    }
+  }
+}
+
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(

@@ -39,6 +39,8 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   status_ = false;
   solving_status_ = false;
   material_ids_.clear();
+  three_dp_nozzle_ = false;
+  three_dp_velocity_.setZero();
 }
 
 //! Initialise shared pointer to nodal properties pool
@@ -249,6 +251,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_velocity() {
   // Apply velocity constraints, which also sets acceleration to 0,
   // when velocity is set.
   this->apply_velocity_constraints();
+  this->apply_3dp_velocity_constraints();
 }
 
 //! Update nodal acceleration
@@ -291,6 +294,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
     this->apply_velocity_constraints();
+    this->apply_3dp_velocity_constraints();
 
     // Set a threshold
     for (unsigned i = 0; i < Tdim; ++i)
@@ -331,6 +335,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
     this->apply_velocity_constraints();
+    this->apply_3dp_velocity_constraints();
 
     // Set a threshold
     for (unsigned i = 0; i < Tdim; ++i)
@@ -1085,4 +1090,24 @@ template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::initialise_nonlocal_node() noexcept {
   nonlocal_node_type_.resize(Tdim);
   std::fill(nonlocal_node_type_.begin(), nonlocal_node_type_.end(), 0);
+}
+
+//! Assign rigid velocity
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::assign_3D_printing_velocity(
+    bool three_dp_nozzle, Eigen::Matrix<double, Tdim, 1> velocity) {
+  node_mutex_.lock();
+  this->three_dp_nozzle_ = three_dp_nozzle;
+  this->three_dp_velocity_ = velocity;
+  node_mutex_.unlock();
+}
+
+//! Apply 3d printing velocity constraints
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_3dp_velocity_constraints() {
+  if (this->three_dp_nozzle_) {
+    // Set velocity constraint
+    this->velocity_.col(0) = this->three_dp_velocity_;
+    this->acceleration_.col(0) = Eigen::Matrix<double, Tdim, 1>::Zero();
+  }
 }

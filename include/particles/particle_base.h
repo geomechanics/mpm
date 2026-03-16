@@ -314,6 +314,10 @@ class ParticleBase {
   //! Map traction force
   virtual void map_traction_force() noexcept = 0;
 
+  //! Assign 3D printing nozzle
+  virtual void map_3D_printing_velocity(double height, 
+                  Eigen::Matrix<double, Tdim, 1> velocity) noexcept = 0;
+
   //! Compute updated position
   virtual void compute_updated_position(
       double dt,

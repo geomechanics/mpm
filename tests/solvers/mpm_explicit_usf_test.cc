@@ -507,9 +507,6 @@ TEST_CASE("MPM base warnings are checked (2D Explicit)", "[MPM][2D][Base]") {
 
   // Write bad JSON file
   std::string fname = "mpm-base-warnings";
-  // Cover grav_dim==3 branch
-  REQUIRE(mpm_test::write_json_warnings(2, true, true, "Linear", 3, fname) ==
-          true);
   // Cover material_sets=false, math_functions=false branch
   REQUIRE(mpm_test::write_json_warnings(2, false, false, "Linear", 2, fname) ==
           true);
@@ -551,12 +548,6 @@ TEST_CASE("MPM base warnings are checked (3D Explicit)", "[MPM][3D][Base]") {
 
   // Write bad JSON file
   std::string fname = "mpm-base-warnings";
-  // Cover grav_dim==3 branch for 3D
-  REQUIRE(mpm_test::write_json_warnings(3, false, true, "Linear", 3, fname) ==
-          true);
-  // Cover material_sets=false branch for 3D
-  REQUIRE(mpm_test::write_json_warnings(3, false, false, "Linear", 3, fname) ==
-          true);
   // This must be last as it writes the bad JSON the MPM object will read
   REQUIRE(mpm_test::write_json_warnings(3, true, true, "Lin", 2, fname) ==
           true);

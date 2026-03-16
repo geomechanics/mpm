@@ -111,8 +111,8 @@ inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {
     penalty_stiffness.noalias() += shape_function.transpose() * shape_function;
 
     // Compute local penalty stiffness matrix
-    cell_->compute_local_penalty_stiffness_matrix(penalty_stiffness, area_,
-                                                  penalty_factor_);
+    cell_->compute_local_stiffness_matrix_block(0, 0, penalty_stiffness, area_,
+                                                penalty_factor_);
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

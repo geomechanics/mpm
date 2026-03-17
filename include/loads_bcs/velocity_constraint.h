@@ -13,7 +13,9 @@ class VelocityConstraint {
   //! \param[in] dir Direction of constraint load
   //! \param[in] velocity Constraint  velocity
   VelocityConstraint(int setid, unsigned dir, double velocity)
-      : setid_{setid}, dir_{dir}, velocity_{velocity} {};
+      : setid_{setid},
+        dir_{dir},
+        velocity_{velocity} {};
 
   // Set id
   int setid() const { return setid_; }

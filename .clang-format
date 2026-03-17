@@ -2,7 +2,7 @@
 # BasedOnStyle:  CUED GeoMechanics
 AccessModifierOffset: -1
 ConstructorInitializerIndentWidth: 4
-AlignEscapedNewlinesLeft: true
+AlignEscapedNewlines: Left
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortIfStatementsOnASingleLine: true
@@ -13,9 +13,9 @@ BreakBeforeBinaryOperators: false
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: false
 BinPackParameters: true
-ColumnLimit:     80
-ConstructorInitializerAllOnOneLineOrOnePerLine: true
-DerivePointerBinding: false
+ColumnLimit: 80
+PackConstructorInitializers: CurrentLine
+DerivePointerAlignment: false
 ExperimentalAutoDetectBinPacking: false
 IndentCaseLabels: true
 MaxEmptyLinesToKeep: 1
@@ -27,20 +27,20 @@ PenaltyBreakString: 1000
 PenaltyBreakFirstLessLess: 120
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 200
-PointerBindsToType: true
+PointerAlignment: Left
 SpacesBeforeTrailingComments: 2
 Cpp11BracedListStyle: true
-Standard:        Auto
-IndentWidth:     2
-TabWidth:        8
-UseTab:          Never
+Standard: Auto
+IndentWidth: 2
+TabWidth: 8
+UseTab: Never
 BreakBeforeBraces: Attach
-IndentFunctionDeclarationAfterType: true
+IndentWrappedFunctionNames: true
 SpacesInParentheses: false
-SpacesInAngles:  false
+SpacesInAngles: false
 SpaceInEmptyParentheses: false
 SpacesInCStyleCastParentheses: false
-SpaceAfterControlStatementKeyword: true
+SpaceBeforeParens: ControlStatements
 SpaceBeforeAssignmentOperators: true
 ContinuationIndentWidth: 4
 ...

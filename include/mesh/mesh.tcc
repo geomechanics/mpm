@@ -1,7 +1,8 @@
 // Constructor with id
 template <unsigned Tdim>
 mpm::Mesh<Tdim>::Mesh(unsigned id, bool isoparametric)
-    : id_{id}, isoparametric_{isoparametric} {
+    : id_{id},
+      isoparametric_{isoparametric} {
   // Check if the dimension is between 1 & 3
   static_assert((Tdim >= 1 && Tdim <= 3), "Invalid global dimension");
   //! Logger

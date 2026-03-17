@@ -3,7 +3,9 @@ template <unsigned Tdim>
 mpm::Cell<Tdim>::Cell(Index id, unsigned nnodes,
                       const std::shared_ptr<Element<Tdim>>& elementptr,
                       bool isoparametric)
-    : id_{id}, nnodes_{nnodes}, isoparametric_{isoparametric} {
+    : id_{id},
+      nnodes_{nnodes},
+      isoparametric_{isoparametric} {
   // Check if the dimension is between 1 & 3
   static_assert((Tdim >= 1 && Tdim <= 3), "Invalid global dimension");
 

@@ -21,7 +21,7 @@ class SolverBase {
   };
 
   //! Destructor
-  virtual ~SolverBase(){};
+  virtual ~SolverBase() {};
 
   //! Matrix solver with default initial guess
   virtual Eigen::VectorXd solve(const Eigen::SparseMatrix<double>& A,

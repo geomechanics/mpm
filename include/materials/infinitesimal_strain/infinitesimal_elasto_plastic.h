@@ -32,10 +32,10 @@ class InfinitesimalElastoPlastic : public LinearElastic<Tdim> {
   //! Constructor with id and material properties
   //! \param[in] material_properties Material properties
   InfinitesimalElastoPlastic(unsigned id, const Json& material_properties)
-      : LinearElastic<Tdim>(id, material_properties){};
+      : LinearElastic<Tdim>(id, material_properties) {};
 
   //! Destructor
-  ~InfinitesimalElastoPlastic() override{};
+  ~InfinitesimalElastoPlastic() override {};
 
   //! Delete copy constructor
   InfinitesimalElastoPlastic(const InfinitesimalElastoPlastic&) = delete;

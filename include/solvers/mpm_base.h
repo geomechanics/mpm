@@ -267,6 +267,8 @@ class MPMBase : public MPM {
   double blending_ratio_{1.0};
   //! Gravity
   Eigen::Matrix<double, Tdim, 1> gravity_;
+  //! Gravity ramping time
+  double gravity_ramping_time_{0.0};
   //! Mesh object
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;
   //! Constraints object
@@ -299,8 +301,8 @@ class MPMBase : public MPM {
   Eigen::Matrix<double, Tdim, 1> rotation_origin_;
   //! Magnitude of the centrifuge angular velocity
   double rotation_omega_{0.0};
-  //! Ramping time
-  double ramping_time_{0.0};
+  //! Rotation ramping time
+  double rotation_ramping_time_{0.0};
   //! Boolean to set rotation direction
   bool rotation_clockwise_{false};
   /**

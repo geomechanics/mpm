@@ -140,15 +140,20 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->precompute_stress_strain(phase, pressure_smoothing_);
 
     // Ramp body forces if necessary
-    double multiplier = 1.0;
-    if (this->ramping_time_ > 0.0)
-      multiplier = std::min(1.0, double(step_) * dt_ / this->ramping_time_);
+    double gravity_multiplier = 1.0;
+    double rotation_multiplier = 1.0;
+    if (this->gravity_ramping_time_ > 0.0)
+      gravity_multiplier =
+          std::min(1.0, double(step_) * dt_ / this->gravity_ramping_time_);
+    if (this->rotation_ramping_time_ > 0.0)
+      rotation_multiplier =
+          std::min(1.0, double(step_) * dt_ / this->rotation_ramping_time_);
 
     // Compute forces
-    mpm_scheme_->compute_forces(multiplier * gravity_, phase, step_,
-                                set_node_concentrated_force_, rotation_forces_,
-                                rotation_origin_, multiplier * rotation_omega_,
-                                rotation_clockwise_);
+    mpm_scheme_->compute_forces(
+        gravity_multiplier * gravity_, phase, step_,
+        set_node_concentrated_force_, rotation_forces_, rotation_origin_,
+        rotation_multiplier * rotation_omega_, rotation_clockwise_);
 
     // Apply Absorbing Constraint
     if (absorbing_boundary_) {

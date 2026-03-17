@@ -143,11 +143,11 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     double gravity_multiplier = 1.0;
     double rotation_multiplier = 1.0;
     if (this->gravity_ramping_time_ > 0.0)
-      gravity_multiplier =
-          std::min(1.0, double(step_) * dt_ / this->gravity_ramping_time_);
+      gravity_multiplier = std::min(
+          1.0, static_cast<double>(step_) * dt_ / this->gravity_ramping_time_);
     if (this->rotation_ramping_time_ > 0.0)
-      rotation_multiplier =
-          std::min(1.0, double(step_) * dt_ / this->rotation_ramping_time_);
+      rotation_multiplier = std::min(
+          1.0, static_cast<double>(step_) * dt_ / this->rotation_ramping_time_);
 
     // Compute forces
     mpm_scheme_->compute_forces(

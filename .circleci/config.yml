@@ -78,6 +78,7 @@ jobs:
       - run:
           name: clang-format
           command: |
+            clang-format --version
             python3 ./clang-tools/run-clang-format.py -r include/* src/* tests/*
 
   codecov_unit:

@@ -814,8 +814,8 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
     // Assign initial particle acceleration as gravity
     double gravity_multiplier = 1.0;
     if (this->gravity_ramping_time_ > 0.0)
-      gravity_multiplier =
-          std::min(1.0, double(step_) * dt_ / this->gravity_ramping_time_);
+      gravity_multiplier = std::min(
+          1.0, static_cast<double>(step_) * dt_ / this->gravity_ramping_time_);
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::assign_acceleration,
                   std::placeholders::_1, gravity_multiplier * gravity_));

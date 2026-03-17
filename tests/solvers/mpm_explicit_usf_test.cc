@@ -140,13 +140,13 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     }
   }
 
-  SECTION("Check gravity and rotation ramping") {
+  SECTION("Check gravity and rotation ramping 2D") {
     const std::string fname_ramp = "mpm-explicit-ramp";
     int argc_r = 5;
     char* argv_r[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
                       (char*)"mpm-explicit-ramp-2d.json"};
 
-    // Case 1: gravity ramping valid
+    // Case 1: gravity ramping only, positive ramping_time — valid
     REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
                                          fname_ramp, 0.5, true, false) == true);
     {
@@ -155,7 +155,7 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE(mpm->solve() == true);
     }
 
-    // Case 2: gravity ramping negative - should throw
+    // Case 2: gravity ramping only, negative ramping_time — throws
     REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
                                          fname_ramp, -1.0, true,
                                          false) == true);
@@ -168,7 +168,7 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
     }
 
-    // Case 3: rotation ramping valid
+    // Case 3: rotation ramping only, positive ramping_time — valid
     REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
                                          fname_ramp, 0.5, false, true) == true);
     {
@@ -177,7 +177,7 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE(mpm->solve() == true);
     }
 
-    // Case 4: rotation ramping negative - should throw
+    // Case 4: rotation ramping only, negative ramping_time — throws
     REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
                                          fname_ramp, -1.0, false,
                                          true) == true);
@@ -190,9 +190,20 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
     }
 
-    // Case 5: both defined - should throw
+    // Case 5: both gravity and rotation ramping, positive ramping_time — valid
+    // Both multipliers are independent; simultaneous use is permitted.
     REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
                                          fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Case 6: both gravity and rotation ramping, negative ramping_time — throws
+    // Negative ramping_time is invalid regardless of which feature uses it.
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, -1.0, true, true) == true);
     {
       auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
       auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
@@ -202,7 +213,7 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
     }
 
-    // Case 6: neither defined - valid, no ramping applied
+    // Case 7: neither gravity nor rotation ramping — valid, no ramping applied
     REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
                                          fname_ramp, 0.0, false,
                                          false) == true);
@@ -211,7 +222,20 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
       REQUIRE(mpm->solve() == true);
     }
-    // Case 7: rotation ramping with resume=true 2D
+
+    // Case 8: gravity ramping with resume=true — valid
+    REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_NOTHROW(mpm->initialise_loads());
+    }
+
+    // Case 9: rotation ramping with resume=true — valid
     REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
                                          fname_ramp, 0.5, false, true) == true);
     {
@@ -223,8 +247,8 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE_NOTHROW(mpm->initialise_loads());
     }
 
-    // Case 8: both ramping true 2D - should throw
-    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+    // Case 10: both ramping with resume=true — valid
+    REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
                                          fname_ramp, 0.5, true, true) == true);
     {
       auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
@@ -232,7 +256,7 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE_NOTHROW(mpm->initialise_materials());
       REQUIRE_NOTHROW(mpm->initialise_mesh());
       REQUIRE_NOTHROW(mpm->initialise_particles());
-      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+      REQUIRE_NOTHROW(mpm->initialise_loads());
     }
   }
 
@@ -376,13 +400,14 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       }
     }
   }
+
   SECTION("Check gravity and rotation ramping 3D") {
     const std::string fname_ramp = "mpm-explicit-ramp";
     int argc_r = 5;
     char* argv_r[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i",
                       (char*)"mpm-explicit-ramp-3d.json"};
 
-    // Case 1: gravity ramping valid
+    // Case 1: gravity ramping only, positive ramping_time — valid
     REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
                                          fname_ramp, 0.5, true, false) == true);
     {
@@ -391,7 +416,7 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       REQUIRE(mpm->solve() == true);
     }
 
-    // Case 2: gravity ramping negative - should throw
+    // Case 2: gravity ramping only, negative ramping_time — throws
     REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
                                          fname_ramp, -1.0, true,
                                          false) == true);
@@ -404,7 +429,7 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
     }
 
-    // Case 3: rotation ramping valid 3D
+    // Case 3: rotation ramping only, positive ramping_time — valid
     REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
                                          fname_ramp, 0.5, false, true) == true);
     {
@@ -413,7 +438,7 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       REQUIRE(mpm->solve() == true);
     }
 
-    // Case 4: rotation ramping negative 3D - should throw
+    // Case 4: rotation ramping only, negative ramping_time — throws
     REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
                                          fname_ramp, -1.0, false,
                                          true) == true);
@@ -426,7 +451,30 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
     }
 
-    // Case 5: neither gravity nor rotation ramping 3D - valid
+    // Case 5: both gravity and rotation ramping, positive ramping_time — valid
+    // Both multipliers are independent; simultaneous use is permitted.
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Case 6: both gravity and rotation ramping, negative ramping_time — throws
+    // Negative ramping_time is invalid regardless of which feature uses it.
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, -1.0, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Case 7: neither gravity nor rotation ramping — valid, no ramping applied
     REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
                                          fname_ramp, 0.0, false,
                                          false) == true);
@@ -436,7 +484,19 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       REQUIRE(mpm->solve() == true);
     }
 
-    // Case 6: rotation ramping with resume=true 3D
+    // Case 8: gravity ramping with resume=true — valid
+    REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_NOTHROW(mpm->initialise_loads());
+    }
+
+    // Case 9: rotation ramping with resume=true — valid
     REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
                                          fname_ramp, 0.5, false, true) == true);
     {
@@ -448,21 +508,9 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
       REQUIRE_NOTHROW(mpm->initialise_loads());
     }
 
-    // Case 7: both ramping true 3D - should throw
-    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
-                                         fname_ramp, 0.5, true, true) == true);
-    {
-      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
-      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
-      REQUIRE_NOTHROW(mpm->initialise_materials());
-      REQUIRE_NOTHROW(mpm->initialise_mesh());
-      REQUIRE_NOTHROW(mpm->initialise_particles());
-      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
-    }
-
-    // Case 8: gravity ramping with resume=true 3D
+    // Case 10: both ramping with resume=true — valid
     REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
-                                         fname_ramp, 0.5, true, false) == true);
+                                         fname_ramp, 0.5, true, true) == true);
     {
       auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
       auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));

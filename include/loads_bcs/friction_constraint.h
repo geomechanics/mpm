@@ -14,7 +14,10 @@ class FrictionConstraint {
   //! \param[in] sign_n Sign of normal direction
   //! \param[in] friction Constraint  friction
   FrictionConstraint(int setid, unsigned dir, int sign_n, double friction)
-      : setid_{setid}, dir_{dir}, sign_n_{sign_n}, friction_{friction} {};
+      : setid_{setid},
+        dir_{dir},
+        sign_n_{sign_n},
+        friction_{friction} {};
 
   // Set id
   int setid() const { return setid_; }

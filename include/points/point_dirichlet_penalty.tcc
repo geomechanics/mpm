@@ -40,14 +40,34 @@ void mpm::PointDirichletPenalty<Tdim>::initialise() {
   imposed_displacement_.setZero();
   imposed_velocity_.setZero();
   imposed_acceleration_.setZero();
-  slip_ = false;
   contact_ = false;
-  normal_.setZero();
+  constraint_flags_.setZero();
+}
+
+//! Assign point properties
+template <unsigned Tdim>
+void mpm::PointDirichletPenalty<Tdim>::assign_properties(
+    const std::map<std::string, double>& scalar_properties,
+    const std::map<std::string, std::vector<double>>& vector_properties) {
+  // Assign scalar properties
+  if (scalar_properties.count("penalty_factor"))
+    penalty_factor_ = scalar_properties.at("penalty_factor");
+
+  // Assign constraint flags
+  if (vector_properties.count("constraint_flags")) {
+    const auto& flags = vector_properties.at("constraint_flags");
+    for (unsigned i = 0; i < Tdim; ++i)
+      constraint_flags_(i) = static_cast<int>(flags[i]);
+  }
+
+  // Assign contact conditions
+  if (scalar_properties.count("contact"))
+    contact_ = static_cast<bool>(scalar_properties.at("contact"));
 }
 
 // Reinitialise point properties
 template <unsigned Tdim>
-void mpm::PointDirichletPenalty<Tdim>::initialise_property(double dt) {
+void mpm::PointDirichletPenalty<Tdim>::initialise_properties(double dt) {
   assert(area_ != std::numeric_limits<double>::max());
   // Convert imposition of velocity and acceleration to displacement
   // NOTE: This only consider translational velocity and acceleration: no
@@ -62,12 +82,10 @@ void mpm::PointDirichletPenalty<Tdim>::initialise_property(double dt) {
 
 //! Apply point velocity constraints
 template <unsigned Tdim>
-void mpm::PointDirichletPenalty<Tdim>::apply_point_velocity_constraints(
+void mpm::PointDirichletPenalty<Tdim>::apply_velocity_constraints(
     unsigned dir, double velocity) {
   // Set particle velocity constraint
   this->imposed_velocity_(dir) = velocity;
-  // Set normal vector
-  if (normal_type_ == mpm::NormalType::Cartesian) this->normal_(dir) = 1.0;
 }
 
 //! Compute updated position
@@ -89,9 +107,6 @@ inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {
     Eigen::MatrixXd penalty_stiffness(matrix_size, matrix_size);
     penalty_stiffness.setZero();
 
-    // Normal matrix
-    if (slip_) normal_.normalize();
-
     // Arrange shape function
     Eigen::MatrixXd shape_function(Tdim, matrix_size);
     shape_function.setZero();
@@ -99,7 +114,11 @@ inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {
       if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
         // Directional multiplier
         Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
-        if (slip_) dir_multiplier = normal_;
+
+        // Check if direction is constrained
+        for (unsigned j = 0; j < Tdim; ++j)
+          if (constraint_flags_(j) == 0) dir_multiplier(j) = 0.0;
+
         // Arrange shape function
         for (unsigned int j = 0; j < Tdim; j++) {
           shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
@@ -124,8 +143,6 @@ inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {
 //! Map enforcement force
 template <unsigned Tdim>
 void mpm::PointDirichletPenalty<Tdim>::map_boundary_force(unsigned phase) {
-  // Normalize vector
-  if (slip_ || contact_) normal_.normalize();
 
   // Check contact: Check contact penetration: if <0 apply constraint,
   // otherwise no
@@ -163,7 +180,11 @@ void mpm::PointDirichletPenalty<Tdim>::map_boundary_force(unsigned phase) {
       if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
         // Directional multiplier
         Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
-        if (slip_) dir_multiplier = normal_;
+
+        // Check if direction is constrained
+        for (unsigned j = 0; j < Tdim; ++j)
+          if (constraint_flags_(j) == 0) dir_multiplier(j) = 0.0;
+
         // Arrange shape function
         for (unsigned int j = 0; j < Tdim; j++) {
           shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
@@ -192,16 +213,8 @@ int mpm::PointDirichletPenalty<Tdim>::compute_pack_size() const {
   MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
-  // Slip, contact
-  MPI_Pack_size(2, MPI_C_BOOL, MPI_COMM_WORLD, &partial_size);
-  total_size += partial_size;
-
-  // Normal type
-  MPI_Pack_size(1, MPI_UNSIGNED, MPI_COMM_WORLD, &partial_size);
-  total_size += partial_size;
-
-  // Normal vector
-  MPI_Pack_size(Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  // Contact
+  MPI_Pack_size(1, MPI_C_BOOL, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 #endif
   return total_size;
@@ -237,6 +250,10 @@ std::vector<uint8_t> mpm::PointDirichletPenalty<Tdim>::serialize() {
   MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
 
+  // Normal vector
+  MPI_Pack(normal_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+
   // Cell id
   MPI_Pack(&cell_id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -249,20 +266,8 @@ std::vector<uint8_t> mpm::PointDirichletPenalty<Tdim>::serialize() {
   MPI_Pack(&penalty_factor_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
 
-  // Slip
-  MPI_Pack(&slip_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
-           MPI_COMM_WORLD);
-
   // Contact
   MPI_Pack(&contact_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
-           MPI_COMM_WORLD);
-
-  // Normal type
-  MPI_Pack(&normal_type_, 1, MPI_UNSIGNED, data_ptr, data.size(), &position,
-           MPI_COMM_WORLD);
-
-  // Normal vector
-  MPI_Pack(normal_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
 
 #endif
@@ -297,6 +302,10 @@ void mpm::PointDirichletPenalty<Tdim>::deserialize(
   MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
 
+  // Normal vector
+  MPI_Unpack(data_ptr, data.size(), &position, normal_.data(), Tdim, MPI_DOUBLE,
+             MPI_COMM_WORLD);
+
   // cell id
   MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,
              MPI_UNSIGNED_LONG_LONG, MPI_COMM_WORLD);
@@ -308,20 +317,8 @@ void mpm::PointDirichletPenalty<Tdim>::deserialize(
   MPI_Unpack(data_ptr, data.size(), &position, &penalty_factor_, 1, MPI_DOUBLE,
              MPI_COMM_WORLD);
 
-  // Slip
-  MPI_Unpack(data_ptr, data.size(), &position, &slip_, 1, MPI_C_BOOL,
-             MPI_COMM_WORLD);
-
   // Contact
   MPI_Unpack(data_ptr, data.size(), &position, &contact_, 1, MPI_C_BOOL,
-             MPI_COMM_WORLD);
-
-  // Normal type
-  MPI_Unpack(data_ptr, data.size(), &position, &normal_type_, 1, MPI_UNSIGNED,
-             MPI_COMM_WORLD);
-
-  // Normal vector
-  MPI_Unpack(data_ptr, data.size(), &position, normal_.data(), Tdim, MPI_DOUBLE,
              MPI_COMM_WORLD);
 
 #endif

@@ -2084,9 +2084,8 @@ void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {
     double velocity = pvelocity->velocity();
 
     this->iterate_over_point_set(
-        set_id,
-        std::bind(&mpm::PointBase<Tdim>::apply_point_velocity_constraints,
-                  std::placeholders::_1, dir, velocity));
+        set_id, std::bind(&mpm::PointBase<Tdim>::apply_velocity_constraints,
+                          std::placeholders::_1, dir, velocity));
   }
 }
 
@@ -2956,6 +2955,27 @@ bool mpm::Mesh<Tdim>::read_points_file(const std::shared_ptr<mpm::IO>& io,
       this->create_points(point_type, coords, pset_id, check_duplicates);
 
   if (!status) throw std::runtime_error("Addition of points to mesh failed");
+
+  // Assign point properties if provided
+  if (generator.contains("properties")) {
+    const auto& props = generator["properties"];
+
+    std::map<std::string, double> scalar_properties;
+    std::map<std::string, std::vector<double>> vector_properties;
+
+    for (auto it = props.begin(); it != props.end(); ++it) {
+      if (it.value().is_number()) {
+        scalar_properties[it.key()] = it.value().template get<double>();
+      } else if (it.value().is_array() && it.value().size() == Tdim) {
+        vector_properties[it.key()] =
+            it.value().template get<std::vector<double>>();
+      }
+    }
+
+    // Apply to all points in the set
+    for (const auto& pid : point_sets_.at(pset_id))
+      map_points_[pid]->assign_properties(scalar_properties, vector_properties);
+  }
 
   return status;
 }

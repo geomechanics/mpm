@@ -44,7 +44,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
 
       // Initialise material
       mesh_->iterate_over_points(
-          std::bind(&mpm::PointBase<Tdim>::initialise_property,
+          std::bind(&mpm::PointBase<Tdim>::initialise_properties,
                     std::placeholders::_1, dt_));
     }
 

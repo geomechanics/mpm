@@ -60,10 +60,6 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   //! Initialise properties
   void initialise() override;
 
-  //! Reinitialise point property
-  //! \param[in] dt Time step size
-  void initialise_property(double dt) override;
-
   //! Compute updated position
   //! \param[in] dt Analysis time step
   void compute_updated_position(double dt) noexcept override;
@@ -78,7 +74,7 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   //! Apply point velocity constraints
   //! \param[in] dir Direction of point velocity constraint
   //! \param[in] velocity Applied point velocity constraint
-  void apply_point_velocity_constraints(unsigned dir, double velocity) override;
+  void apply_velocity_constraints(unsigned dir, double velocity) override;
 
   //! Serialize
   //! \retval buffer Serialized buffer data
@@ -88,29 +84,16 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   //! \param[in] buffer Serialized buffer data
   void deserialize(const std::vector<uint8_t>& buffer) override;
 
-  //! Assign penalty factor
-  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
-  //! \param[in] penalty_factor Penalty factor
-  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
-  //! \param[in] normal_vector Normal vector
-  void assign_penalty_parameter(const std::string& constraint_type,
-                                double penalty_factor,
-                                const std::string& normal_type,
-                                const VectorDim& normal_vector) override {
-    penalty_factor_ = penalty_factor;
-    if ((constraint_type == "slip") || (constraint_type == "contact_slip"))
-      slip_ = true;
-    if ((constraint_type == "contact") || (constraint_type == "contact_slip"))
-      contact_ = true;
+  //! Assign point properties
+  //! \param[in] scalar_properties Map of scalar properties
+  //! \param[in] vector_properties Map of vector properties
+  void assign_properties(const std::map<std::string, double>& scalar_properties,
+                         const std::map<std::string, std::vector<double>>&
+                             vector_properties) override;
 
-    if (normal_type == "cartesian")
-      normal_type_ = mpm::NormalType::Cartesian;
-    else if (normal_type == "assign")
-      normal_type_ = mpm::NormalType::Assign;
-    else if (normal_type == "auto")
-      normal_type_ = mpm::NormalType::Automatic;
-    normal_ = normal_vector;
-  };
+  //! Reinitialise point property
+  //! \param[in] dt Time step size
+  void initialise_properties(double dt) override;
 
   //! Type of point
   std::string type() const override {
@@ -155,14 +138,10 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   VectorDim imposed_acceleration_;
   //! Penalty factor
   double penalty_factor_{0.};
-  //! Slip
-  bool slip_{false};
   //! Contact boundary
   bool contact_{false};
-  //! Way to obtain normal vector: 0 (Cartesian), 1 (Assign), 2 (Automatic)
-  mpm::NormalType normal_type_{mpm::NormalType::Cartesian};
-  //! Normal vector
-  VectorDim normal_;
+  //! Constraint flags: 1 = constrained, 0 = unconstrained, per direction
+  Eigen::Matrix<int, Tdim, 1> constraint_flags_;
 
 };  // PointDirichletPenalty class
 }  // namespace mpm

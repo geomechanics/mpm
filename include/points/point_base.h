@@ -8,6 +8,7 @@
 
 #include <array>
 #include <limits>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -143,10 +144,6 @@ class PointBase {
   //! Return normal
   virtual VectorDim normal() const { return normal_; }
 
-  //! Reinitialise point property
-  //! \param[in] dt Time step size
-  virtual void initialise_property(double dt) = 0;
-
   //! Compute updated position
   virtual void compute_updated_position(double dt) noexcept = 0;
 
@@ -161,26 +158,24 @@ class PointBase {
   //! \param[in] buffer Serialized buffer data
   virtual void deserialize(const std::vector<uint8_t>& buffer);
 
-  //! Assign penalty factor
-  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
-  //! \param[in] penalty_factor Penalty factor
-  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
-  //! \param[in] normal_vector Normal vector
-  virtual void assign_penalty_parameter(const std::string& constraint_type,
-                                        double penalty_factor,
-                                        const std::string& normal_type,
-                                        const VectorDim& normal_vector) {
-    throw std::runtime_error(
-        "Calling the base class function (assign_penalty_parameter) in "
-        "PointBase:: illegal operation!");
-  };
+  //! Assign point properties
+  //! \param[in] scalar_properties Map of scalar properties
+  //! \param[in] vector_properties Map of vector properties
+  //! (e.g. constraint_flags)
+  virtual void assign_properties(
+      const std::map<std::string, double>& scalar_properties,
+      const std::map<std::string, std::vector<double>>& vector_properties) {};
+
+  //! Reinitialise point property
+  //! \param[in] dt Time step size
+  virtual void initialise_properties(double dt) = 0;
 
   //! Apply point velocity constraints
   //! \param[in] dir Direction of point velocity constraint
   //! \param[in] velocity Applied point velocity constraint
-  virtual void apply_point_velocity_constraints(unsigned dir, double velocity) {
+  virtual void apply_velocity_constraints(unsigned dir, double velocity) {
     throw std::runtime_error(
-        "Calling the base class function (apply_point_velocity_constraints) in "
+        "Calling the base class function (apply_velocity_constraints) in "
         "PointBase:: illegal operation!");
   };
 

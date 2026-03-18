@@ -213,6 +213,10 @@ int mpm::PointDirichletPenalty<Tdim>::compute_pack_size() const {
   MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
+  // Constraint flags
+  MPI_Pack_size(1 * Tdim, MPI_INT, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+
   // Contact
   MPI_Pack_size(1, MPI_C_BOOL, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
@@ -246,6 +250,7 @@ std::vector<uint8_t> mpm::PointDirichletPenalty<Tdim>::serialize() {
   // Coordinates
   MPI_Pack(coordinates_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
+
   // Displacement
   MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -265,6 +270,10 @@ std::vector<uint8_t> mpm::PointDirichletPenalty<Tdim>::serialize() {
   // Penalty factor
   MPI_Pack(&penalty_factor_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
+
+  // Constraint flags
+  MPI_Pack(constraint_flags_.data(), Tdim, MPI_INT, data_ptr, data.size(),
+           &position, MPI_COMM_WORLD);
 
   // Contact
   MPI_Pack(&contact_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
@@ -298,6 +307,7 @@ void mpm::PointDirichletPenalty<Tdim>::deserialize(
   // Coordinates
   MPI_Unpack(data_ptr, data.size(), &position, coordinates_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
+
   // Displacement
   MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
@@ -316,6 +326,10 @@ void mpm::PointDirichletPenalty<Tdim>::deserialize(
   // Penalty factor
   MPI_Unpack(data_ptr, data.size(), &position, &penalty_factor_, 1, MPI_DOUBLE,
              MPI_COMM_WORLD);
+
+  // Constraint flags
+  MPI_Unpack(data_ptr, data.size(), &position, constraint_flags_.data(), Tdim,
+             MPI_INT, MPI_COMM_WORLD);
 
   // Contact
   MPI_Unpack(data_ptr, data.size(), &position, &contact_, 1, MPI_C_BOOL,

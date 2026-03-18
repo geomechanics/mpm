@@ -11,6 +11,9 @@ const size_t dst_offset[NFIELDS] = {
     HOFFSET(PODPoint, displacement_x),
     HOFFSET(PODPoint, displacement_y),
     HOFFSET(PODPoint, displacement_z),
+    HOFFSET(PODPoint, normal_x),
+    HOFFSET(PODPoint, normal_y),
+    HOFFSET(PODPoint, normal_z),
     HOFFSET(PODPoint, status),
     HOFFSET(PODPoint, cell_id),
 };
@@ -26,22 +29,27 @@ const size_t dst_sizes[NFIELDS] = {
     sizeof(point.displacement_x),
     sizeof(point.displacement_y),
     sizeof(point.displacement_z),
+    sizeof(point.normal_x),
+    sizeof(point.normal_y),
+    sizeof(point.normal_z),
     sizeof(point.status),
     sizeof(point.cell_id),
 };
 
 // Define point field information
 const char* field_names[NFIELDS] = {
-    "id",      "area",           "coord_x",        "coord_y",
-    "coord_z", "displacement_x", "displacement_y", "displacement_z",
-    "status",  "cell_id",
+    "id",       "area",           "coord_x",        "coord_y",
+    "coord_z",  "displacement_x", "displacement_y", "displacement_z",
+    "normal_x", "normal_y",       "normal_z",       "status",
+    "cell_id",
 };
 
 // Initialize field types
 const hid_t field_type[NFIELDS] = {
     H5T_NATIVE_LLONG,  H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
     H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE,
-    H5T_NATIVE_HBOOL,  H5T_NATIVE_LLONG};
+    H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_DOUBLE, H5T_NATIVE_HBOOL,
+    H5T_NATIVE_LLONG};
 }  // namespace point
 }  // namespace pod
 }  // namespace mpm

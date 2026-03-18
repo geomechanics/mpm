@@ -18,6 +18,8 @@ typedef struct PODPoint {
   double coord_x, coord_y, coord_z;
   // Displacement
   double displacement_x, displacement_y, displacement_z;
+  // Normal vector
+  double normal_x, normal_y, normal_z;
   // Status
   bool status;
   // Index
@@ -28,7 +30,7 @@ typedef struct PODPoint {
 
 namespace pod {
 namespace point {
-const hsize_t NFIELDS = 10;
+const hsize_t NFIELDS = 13;
 
 const size_t dst_size = sizeof(PODPoint);
 

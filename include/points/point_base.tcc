@@ -45,10 +45,12 @@ template <unsigned Tdim>
 void mpm::PointBase<Tdim>::initialise() {
   area_ = std::numeric_limits<double>::max();
   displacement_.setZero();
+  normal_.setZero();
 
   // Initialize scalar, vector, and tensor data properties
   this->scalar_properties_["area"] = [&]() { return area(); };
   this->vector_properties_["displacements"] = [&]() { return displacement(); };
+  this->vector_properties_["normals"] = [&]() { return normal(); };
 }
 
 // Assign a cell to point
@@ -174,6 +176,12 @@ bool mpm::PointBase<Tdim>::initialise_point(PODPoint& point) {
   // Initialise displacement
   for (unsigned i = 0; i < Tdim; ++i) this->displacement_(i) = displacement(i);
 
+  // Normal vector
+  Eigen::Vector3d normal;
+  normal << point.normal_x, point.normal_y, point.normal_z;
+  // Initialise normal vector
+  for (unsigned i = 0; i < Tdim; ++i) this->normal_(i) = normal(i);
+
   // Status
   this->status_ = point.status;
 
@@ -202,6 +210,10 @@ std::shared_ptr<void> mpm::PointBase<Tdim>::pod() const {
   displacement.setZero();
   for (unsigned j = 0; j < Tdim; ++j) displacement[j] = this->displacement_[j];
 
+  Eigen::Vector3d normal;
+  normal.setZero();
+  for (unsigned j = 0; j < Tdim; ++j) normal[j] = this->normal_[j];
+
   point_data->id = this->id();
   point_data->area = this->area();
 
@@ -212,6 +224,10 @@ std::shared_ptr<void> mpm::PointBase<Tdim>::pod() const {
   point_data->displacement_x = displacement[0];
   point_data->displacement_y = displacement[1];
   point_data->displacement_z = displacement[2];
+
+  point_data->normal_x = normal[0];
+  point_data->normal_y = normal[1];
+  point_data->normal_z = normal[2];
 
   point_data->status = this->status();
 
@@ -285,6 +301,21 @@ bool mpm::PointBase<Tdim>::assign_area(double area) {
   return status;
 }
 
+// Assign normal to the point
+template <unsigned Tdim>
+bool mpm::PointBase<Tdim>::assign_normal(const VectorDim& normal) {
+  bool status = true;
+  try {
+    if (normal.norm() < std::numeric_limits<double>::epsilon())
+      throw std::runtime_error("Point normal cannot be zero vector");
+    this->normal_ = normal.normalized();
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Compute size of serialized point data
 template <unsigned Tdim>
 int mpm::PointBase<Tdim>::compute_pack_size() const {
@@ -302,8 +333,8 @@ int mpm::PointBase<Tdim>::compute_pack_size() const {
   MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
-  // Coordinates, displacement
-  MPI_Pack_size(2 * Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
+  // Coordinates, displacement, normal vector
+  MPI_Pack_size(3 * Tdim, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
   // Cell id
@@ -343,9 +374,14 @@ std::vector<uint8_t> mpm::PointBase<Tdim>::serialize() {
   // Coordinates
   MPI_Pack(coordinates_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
+
   // Displacement
   MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
+
+  // Normal vector
+  MPI_Pack(normal_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
 
   // Cell id
   MPI_Pack(&cell_id_, 1, MPI_UNSIGNED_LONG_LONG, data_ptr, data.size(),
@@ -382,9 +418,14 @@ void mpm::PointBase<Tdim>::deserialize(const std::vector<uint8_t>& data) {
   // Coordinates
   MPI_Unpack(data_ptr, data.size(), &position, coordinates_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
+
   // Displacement
   MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
+
+  // Normal vector
+  MPI_Unpack(data_ptr, data.size(), &position, normal_.data(), Tdim, MPI_DOUBLE,
+             MPI_COMM_WORLD);
 
   // cell id
   MPI_Unpack(data_ptr, data.size(), &position, &cell_id_, 1,

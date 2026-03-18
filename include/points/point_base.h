@@ -228,6 +228,8 @@ class PointBase {
       tensor_properties_;
   //! Area
   double area_{0.};
+  //! Normal
+  VectorDim normal_;
   //! Pack size
   unsigned pack_size_{0};
 };  // PointBase class

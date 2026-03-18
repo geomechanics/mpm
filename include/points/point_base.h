@@ -136,6 +136,13 @@ class PointBase {
   //! Return area
   virtual double area() const { return area_; }
 
+  //! Assign normal
+  //! \param[in] normal Normal vector
+  virtual bool assign_normal(const VectorDim& normal);
+
+  //! Return normal
+  virtual VectorDim normal() const { return normal_; }
+
   //! Reinitialise point property
   //! \param[in] dt Time step size
   virtual void initialise_property(double dt) = 0;

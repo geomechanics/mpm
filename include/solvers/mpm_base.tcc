@@ -586,6 +586,9 @@ void mpm::MPMBase<Tdim>::initialise_points() {
   // Read and assign points areas
   this->points_areas(mesh_props, point_io);
 
+  // Read and assign points normals
+  this->points_normals(mesh_props, point_io);
+
   auto points_area_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Read areas: {} ms", mpi_rank,
                  std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -1923,6 +1926,55 @@ void mpm::MPMBase<Tdim>::points_areas(
       throw std::runtime_error("Points areas JSON not found");
   } catch (std::exception& exception) {
     console_->warn("#{}: Points areas are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
+// Points normal vector
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::points_normals(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& point_io) {
+  try {
+    if (mesh_props.find("points_normals") != mesh_props.end()) {
+      // Get generator type
+      const std::string type =
+          mesh_props["points_normals"]["type"].template get<std::string>();
+
+      if (type == "file") {
+        std::string fpoints_normals = mesh_props["points_normals"]["location"]
+                                          .template get<std::string>();
+        if (!io_->file_name(fpoints_normals).empty()) {
+
+          // Get normals of all points
+          const auto all_points_normals =
+              point_io->read_particles_vector_properties(
+                  io_->file_name(fpoints_normals));
+
+          // Read and assign points normals
+          if (!mesh_->assign_points_normals(all_points_normals))
+            throw std::runtime_error(
+                "Points normals are not properly assigned");
+        }
+      } else if (type == "isotropic") {
+        Eigen::Matrix<double, Tdim, 1> in_normal;
+        in_normal.setZero();
+        if (mesh_props["points_normals"]["values"].is_array() &&
+            mesh_props["points_normals"]["values"].size() == in_normal.size()) {
+          for (unsigned i = 0; i < in_normal.size(); ++i) {
+            in_normal[i] = mesh_props["points_normals"]["values"].at(i);
+          }
+          mesh_->iterate_over_points(
+              std::bind(&mpm::PointBase<Tdim>::assign_normal,
+                        std::placeholders::_1, in_normal));
+        } else {
+          throw std::runtime_error("Initial normal dimension is invalid");
+        }
+      }
+    } else
+      throw std::runtime_error("Points normals JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Points normals are undefined {} ", __LINE__,
                    exception.what());
   }
 }

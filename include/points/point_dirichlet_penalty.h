@@ -141,6 +141,8 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   using PointBase<Tdim>::displacement_;
   //! Area
   using PointBase<Tdim>::area_;
+  //! Normal vector
+  using PointBase<Tdim>::normal_;
   //! Pack size
   using PointBase<Tdim>::pack_size_;
   //! Logger

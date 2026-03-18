@@ -1869,6 +1869,35 @@ bool mpm::Mesh<Tdim>::assign_points_areas(
   return status;
 }
 
+//! Assign points normals
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_points_normals(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        points_normals) {
+  bool status = true;
+  try {
+    if (!points_.size())
+      throw std::runtime_error(
+          "No points have been assigned in mesh, cannot assign normal");
+
+    for (const auto& points_normal : points_normals) {
+      // Point id
+      mpm::Index pid = std::get<0>(points_normal);
+      // Normal
+      Eigen::Matrix<double, Tdim, 1> normal = std::get<1>(points_normal);
+      if (map_points_.find(pid) != map_points_.end())
+        status = map_points_[pid]->assign_normal(normal);
+
+      if (!status)
+        throw std::runtime_error("Cannot assign invalid point normal");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Compute and assign rotation matrix to nodes
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::compute_nodal_rotation_matrices(

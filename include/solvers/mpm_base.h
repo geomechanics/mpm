@@ -238,6 +238,12 @@ class MPMBase : public MPM {
   void points_areas(const Json& mesh_prop,
                     const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  //! Points normal vector
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void points_normals(const Json& mesh_prop,
+                      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   //! Initialise damping
   //! \param[in] damping_props Damping properties
   bool initialise_damping(const Json& damping_props);

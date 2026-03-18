@@ -404,6 +404,12 @@ class Mesh {
   bool assign_points_areas(
       const std::vector<std::tuple<mpm::Index, double>>& point_areas);
 
+  //! Assign points normals
+  //! \param[in] point_normals Normal of points
+  bool assign_points_normals(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          point_normals);
+
   //! Create particles tractions
   //! \param[in] mfunction Math function if defined
   //! \param[in] setid Particle set id

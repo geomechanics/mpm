@@ -49,7 +49,7 @@ class PointBase {
   PointBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~PointBase(){};
+  virtual ~PointBase() {};
 
   //! Delete copy constructor
   PointBase(const PointBase<Tdim>&) = delete;

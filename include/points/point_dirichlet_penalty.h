@@ -49,7 +49,7 @@ class PointDirichletPenalty : public PointBase<Tdim> {
   PointDirichletPenalty(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~PointDirichletPenalty() override{};
+  ~PointDirichletPenalty() override {};
 
   //! Delete copy constructor
   PointDirichletPenalty(const PointDirichletPenalty<Tdim>&) = delete;

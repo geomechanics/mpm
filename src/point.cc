@@ -20,4 +20,4 @@ static Register<mpm::PointBase<2>, mpm::PointDirichletPenalty<2>, mpm::Index,
 // PointDirichletPenalty3D (3 Dim)
 static Register<mpm::PointBase<3>, mpm::PointDirichletPenalty<3>, mpm::Index,
                 const Eigen::Matrix<double, 3, 1>&>
-    point3ddirichletpenalty("POINT2DDIRPEN");
+    point3ddirichletpenalty("POINT3DDIRPEN");

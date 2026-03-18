@@ -2229,6 +2229,13 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     bool status = true;
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::Particle<Dim>>(id, coords, status);
+
+    // Assign initial acceleration
+    Eigen::Matrix<double, 3, 1> acceleration =
+        Eigen::Matrix<double, 3, 1>::Constant(3.2);
+    particle->assign_acceleration(acceleration);
+
+    // Check stress initialization
     Eigen::Matrix<double, 6, 1> stress =
         Eigen::Matrix<double, 6, 1>::Constant(5.7);
 
@@ -2237,6 +2244,12 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     auto pstress = particle->stress();
     for (unsigned i = 0; i < pstress.size(); ++i)
       REQUIRE(pstress[i] == Approx(stress[i]).epsilon(Tolerance));
+
+    // Check if acceleration is not assigned after stress is assigned
+    particle->assign_acceleration(Eigen::Matrix<double, 3, 1>::Constant(5.0));
+    auto pacceleration = particle->acceleration();
+    for (unsigned i = 0; i < pacceleration.size(); ++i)
+      REQUIRE(pacceleration(i) == Approx(acceleration(i)).epsilon(Tolerance));
   }
 
   //! Test particles scalar, vector and tensor data

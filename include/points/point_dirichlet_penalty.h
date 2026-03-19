@@ -15,10 +15,6 @@
 
 namespace mpm {
 
-// Forward declaration of Material
-template <unsigned Tdim>
-class Material;
-
 //! Point class to impose nonconforming displacement BC with penalty method
 //! \tparam Tdim Dimension
 template <unsigned Tdim>

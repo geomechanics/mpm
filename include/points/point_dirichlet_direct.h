@@ -1,5 +1,5 @@
-#ifndef MPM_POINT_DIRICHLET_PENALTY_H_
-#define MPM_POINT_DIRICHLET_PENALTY_H_
+#ifndef MPM_POINT_DIRICHLET_H_
+#define MPM_POINT_DIRICHLET_H_
 
 // MPI
 #ifdef USE_MPI
@@ -15,10 +15,11 @@
 
 namespace mpm {
 
-//! Point class to impose nonconforming displacement BC with penalty method
+//! Point class to impose nonconforming displacement BC with direct imposition
+//! method
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class PointDirichletPenalty : public PointDirichletDirect<Tdim> {
+class PointDirichletDirect : public PointBase<Tdim> {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
@@ -26,25 +27,29 @@ class PointDirichletPenalty : public PointDirichletDirect<Tdim> {
   //! Constructor with id and coordinates
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
-  PointDirichletPenalty(Index id, const VectorDim& coord);
+  PointDirichletDirect(Index id, const VectorDim& coord);
 
   //! Constructor with id, coordinates and status
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
   //! \param[in] status Point status (active / inactive)
-  PointDirichletPenalty(Index id, const VectorDim& coord, bool status);
+  PointDirichletDirect(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~PointDirichletPenalty() override {};
+  ~PointDirichletDirect() override {};
 
   //! Delete copy constructor
-  PointDirichletPenalty(const PointDirichletPenalty<Tdim>&) = delete;
+  PointDirichletDirect(const PointDirichletDirect<Tdim>&) = delete;
 
   //! Delete assignement operator
-  PointDirichletPenalty& operator=(const PointDirichletPenalty<Tdim>&) = delete;
+  PointDirichletDirect& operator=(const PointDirichletDirect<Tdim>&) = delete;
 
   //! Initialise properties
   void initialise() override;
+
+  //! Compute updated position
+  //! \param[in] dt Analysis time step
+  void compute_updated_position(double dt) noexcept override;
 
   //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell() override;
@@ -52,6 +57,11 @@ class PointDirichletPenalty : public PointDirichletDirect<Tdim> {
   //! Map enforcement boundary force to node
   //! \param[in] phase Index corresponding to the phase
   void map_boundary_force(unsigned phase) override;
+
+  //! Apply point velocity constraints
+  //! \param[in] dir Direction of point velocity constraint
+  //! \param[in] velocity Applied point velocity constraint
+  void apply_velocity_constraints(unsigned dir, double velocity) override;
 
   //! Serialize
   //! \retval buffer Serialized buffer data
@@ -68,9 +78,13 @@ class PointDirichletPenalty : public PointDirichletDirect<Tdim> {
                          const std::map<std::string, std::vector<double>>&
                              vector_properties) override;
 
+  //! Reinitialise point property
+  //! \param[in] dt Time step size
+  void initialise_properties(double dt) override;
+
   //! Type of point
   std::string type() const override {
-    return (Tdim == 2) ? "POINT2DDIRPEN" : "POINT3DDIRPEN";
+    return (Tdim == 2) ? "POINT2DDIRDIRECT" : "POINT3DDIRDIRECT";
   }
 
  protected:
@@ -101,24 +115,20 @@ class PointDirichletPenalty : public PointDirichletDirect<Tdim> {
   using PointBase<Tdim>::normal_;
   //! Pack size
   using PointBase<Tdim>::pack_size_;
-  //! Imposed displacement
-  using PointDirichletDirect<Tdim>::imposed_displacement_;
-  //! Imposed velocity
-  using PointDirichletDirect<Tdim>::imposed_velocity_;
-  //! Imposed acceleration
-  using PointDirichletDirect<Tdim>::imposed_acceleration_;
-  //! Constraint flags: 1 = constrained, 0 = unconstrained, per direction
-  using PointDirichletDirect<Tdim>::constraint_flags_;
-  //! Penalty factor
-  double penalty_factor_{0.};
-  //! Contact boundary
-  bool contact_{false};
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  //! Imposed displacement
+  VectorDim imposed_displacement_;
+  //! Imposed velocity
+  VectorDim imposed_velocity_;
+  //! Imposed acceleration
+  VectorDim imposed_acceleration_;
+  //! Constraint flags: 1 = constrained, 0 = unconstrained, per direction
+  Eigen::Matrix<int, Tdim, 1> constraint_flags_;
 
-};  // PointDirichletPenalty class
+};  // PointDirichletDirect class
 }  // namespace mpm
 
-#include "point_dirichlet_penalty.tcc"
+#include "point_dirichlet_direct.tcc"
 
-#endif  // MPM_POINT_DIRICHLET_PENALTY_H_
+#endif  // MPM_POINT_DIRICHLET_H_

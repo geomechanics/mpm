@@ -2,7 +2,7 @@
 template <unsigned Tdim>
 mpm::PointDirichletPenalty<Tdim>::PointDirichletPenalty(Index id,
                                                         const VectorDim& coord)
-    : mpm::PointBase<Tdim>::PointBase(id, coord) {
+    : mpm::PointDirichletDirect<Tdim>::PointDirichletDirect(id, coord) {
   this->initialise();
   // Clear cell ptr
   cell_ = nullptr;
@@ -20,7 +20,7 @@ template <unsigned Tdim>
 mpm::PointDirichletPenalty<Tdim>::PointDirichletPenalty(Index id,
                                                         const VectorDim& coord,
                                                         bool status)
-    : mpm::PointBase<Tdim>::PointBase(id, coord, status) {
+    : mpm::PointDirichletDirect<Tdim>::PointDirichletDirect(id, coord, status) {
   this->initialise();
   // Clear cell ptr
   cell_ = nullptr;
@@ -35,13 +35,8 @@ mpm::PointDirichletPenalty<Tdim>::PointDirichletPenalty(Index id,
 // Initialise point properties
 template <unsigned Tdim>
 void mpm::PointDirichletPenalty<Tdim>::initialise() {
-  mpm::PointBase<Tdim>::initialise();
-
-  imposed_displacement_.setZero();
-  imposed_velocity_.setZero();
-  imposed_acceleration_.setZero();
+  mpm::PointDirichletDirect<Tdim>::initialise();
   contact_ = false;
-  constraint_flags_.setZero();
 }
 
 //! Assign point properties
@@ -63,38 +58,6 @@ void mpm::PointDirichletPenalty<Tdim>::assign_properties(
   // Assign contact conditions
   if (scalar_properties.count("contact"))
     contact_ = static_cast<bool>(scalar_properties.at("contact"));
-}
-
-// Reinitialise point properties
-template <unsigned Tdim>
-void mpm::PointDirichletPenalty<Tdim>::initialise_properties(double dt) {
-  assert(area_ != std::numeric_limits<double>::max());
-  // Convert imposition of velocity and acceleration to displacement
-  // NOTE: This only consider translational velocity and acceleration: no
-  // angular
-  imposed_displacement_ =
-      (imposed_velocity_ * dt) + (0.5 * imposed_acceleration_ * dt * dt);
-
-  for (unsigned i = 0; i < Tdim; ++i)
-    if (std::abs(imposed_displacement_(i)) < 1.E-15)
-      imposed_displacement_(i) = 0.;
-}
-
-//! Apply point velocity constraints
-template <unsigned Tdim>
-void mpm::PointDirichletPenalty<Tdim>::apply_velocity_constraints(
-    unsigned dir, double velocity) {
-  // Set particle velocity constraint
-  this->imposed_velocity_(dir) = velocity;
-}
-
-//! Compute updated position
-template <unsigned Tdim>
-void mpm::PointDirichletPenalty<Tdim>::compute_updated_position(
-    double dt) noexcept {
-  // Update position and displacements
-  coordinates_.noalias() += imposed_displacement_;
-  displacement_.noalias() += imposed_displacement_;
 }
 
 //! Map penalty stiffness matrix to cell
@@ -206,15 +169,11 @@ void mpm::PointDirichletPenalty<Tdim>::map_boundary_force(unsigned phase) {
 //! Compute size of serialized point data
 template <unsigned Tdim>
 int mpm::PointDirichletPenalty<Tdim>::compute_pack_size() const {
-  int total_size = mpm::PointBase<Tdim>::compute_pack_size();
+  int total_size = mpm::PointDirichletDirect<Tdim>::compute_pack_size();
   int partial_size;
 #ifdef USE_MPI
   // Penalty factor
   MPI_Pack_size(1, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
-  total_size += partial_size;
-
-  // Constraint flags
-  MPI_Pack_size(1 * Tdim, MPI_INT, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
 
   // Contact
@@ -267,13 +226,13 @@ std::vector<uint8_t> mpm::PointDirichletPenalty<Tdim>::serialize() {
   MPI_Pack(&status_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
            MPI_COMM_WORLD);
 
-  // Penalty factor
-  MPI_Pack(&penalty_factor_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
-           MPI_COMM_WORLD);
-
   // Constraint flags
   MPI_Pack(constraint_flags_.data(), Tdim, MPI_INT, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
+
+  // Penalty factor
+  MPI_Pack(&penalty_factor_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
 
   // Contact
   MPI_Pack(&contact_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
@@ -323,13 +282,13 @@ void mpm::PointDirichletPenalty<Tdim>::deserialize(
   MPI_Unpack(data_ptr, data.size(), &position, &status_, 1, MPI_C_BOOL,
              MPI_COMM_WORLD);
 
-  // Penalty factor
-  MPI_Unpack(data_ptr, data.size(), &position, &penalty_factor_, 1, MPI_DOUBLE,
-             MPI_COMM_WORLD);
-
   // Constraint flags
   MPI_Unpack(data_ptr, data.size(), &position, constraint_flags_.data(), Tdim,
              MPI_INT, MPI_COMM_WORLD);
+
+  // Penalty factor
+  MPI_Unpack(data_ptr, data.size(), &position, &penalty_factor_, 1, MPI_DOUBLE,
+             MPI_COMM_WORLD);
 
   // Contact
   MPI_Unpack(data_ptr, data.size(), &position, &contact_, 1, MPI_C_BOOL,

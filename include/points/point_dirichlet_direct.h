@@ -51,17 +51,10 @@ class PointDirichletDirect : public PointBase<Tdim> {
   //! \param[in] dt Analysis time step
   void compute_updated_position(double dt) noexcept override;
 
-  //! Map point stiffness matrix to cell
-  inline bool map_stiffness_matrix_to_cell() override;
-
-  //! Map enforcement boundary force to node
-  //! \param[in] phase Index corresponding to the phase
-  void map_boundary_force(unsigned phase) override;
-
-  //! Apply point velocity constraints
+  //! Assign point velocity constraints
   //! \param[in] dir Direction of point velocity constraint
   //! \param[in] velocity Applied point velocity constraint
-  void apply_velocity_constraints(unsigned dir, double velocity) override;
+  void assign_velocity_constraints(unsigned dir, double velocity) override;
 
   //! Serialize
   //! \retval buffer Serialized buffer data

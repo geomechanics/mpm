@@ -170,10 +170,14 @@ class PointBase {
   //! \param[in] dt Time step size
   virtual void initialise_properties(double dt) = 0;
 
-  //! Apply point velocity constraints
+  //! Assign point velocity constraints
   //! \param[in] dir Direction of point velocity constraint
   //! \param[in] velocity Applied point velocity constraint
-  virtual void apply_velocity_constraints(unsigned dir, double velocity) {
+  virtual void assign_velocity_constraints(unsigned dir, double velocity) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_velocity_constraints) in "
+        "PointBase:: illegal operation!");
+  };
     throw std::runtime_error(
         "Calling the base class function (apply_velocity_constraints) in "
         "PointBase:: illegal operation!");

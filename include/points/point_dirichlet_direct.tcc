@@ -71,9 +71,9 @@ void mpm::PointDirichletDirect<Tdim>::initialise_properties(double dt) {
       imposed_displacement_(i) = 0.;
 }
 
-//! Apply point velocity constraints
+//! Assign point velocity constraints
 template <unsigned Tdim>
-void mpm::PointDirichletDirect<Tdim>::apply_velocity_constraints(
+void mpm::PointDirichletDirect<Tdim>::assign_velocity_constraints(
     unsigned dir, double velocity) {
   // Set particle velocity constraint
   this->imposed_velocity_(dir) = velocity;
@@ -86,116 +86,6 @@ void mpm::PointDirichletDirect<Tdim>::compute_updated_position(
   // Update position and displacements
   coordinates_.noalias() += imposed_displacement_;
   displacement_.noalias() += imposed_displacement_;
-}
-
-//! Map penalty stiffness matrix to cell
-template <unsigned Tdim>
-inline bool mpm::PointDirichletDirect<Tdim>::map_stiffness_matrix_to_cell() {
-  bool status = true;
-  try {
-    // // Initialise stiffness matrix
-    // const unsigned matrix_size = nodes_.size() * Tdim;
-    // Eigen::MatrixXd penalty_stiffness(matrix_size, matrix_size);
-    // penalty_stiffness.setZero();
-
-    // // Arrange shape function
-    // Eigen::MatrixXd shape_function(Tdim, matrix_size);
-    // shape_function.setZero();
-    // for (unsigned i = 0; i < nodes_.size(); i++) {
-    //   if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
-    //     // Directional multiplier
-    //     Eigen::VectorXd dir_multiplier =
-    //     Eigen::VectorXd::Constant(Tdim, 1.0);
-
-    //     // Check if direction is constrained
-    //     for (unsigned j = 0; j < Tdim; ++j)
-    //       if (constraint_flags_(j) == 0) dir_multiplier(j) = 0.0;
-
-    //     // Arrange shape function
-    //     for (unsigned int j = 0; j < Tdim; j++) {
-    //       shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
-    //     }
-    //   }
-    // }
-
-    // // Assign stiffness matrix
-    // penalty_stiffness.noalias() += shape_function.transpose() *
-    // shape_function;
-
-    // // Compute local penalty stiffness matrix
-    // cell_->compute_local_stiffness_matrix_block(0, 0, penalty_stiffness,
-    // area_,
-    //                                             penalty_factor_);
-
-  } catch (std::exception& exception) {
-    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
-    status = false;
-  }
-  return status;
-}
-
-//! Map enforcement force
-template <unsigned Tdim>
-void mpm::PointDirichletDirect<Tdim>::map_boundary_force(unsigned phase) {
-
-  // // Check contact: Check contact penetration: if <0 apply constraint,
-  // // otherwise no
-  // bool apply_constraints = true;
-  // if (contact_) {
-  //   // NOTE: the unit_normal_vector is assumed always pointing outside the
-  //   // boundary
-  //   VectorDim field_displacement = VectorDim::Zero();
-  //   for (unsigned int i = 0; i < nodes_.size(); i++)
-  //     if (shapefn_[i] > std::numeric_limits<double>::epsilon())
-  //       field_displacement.noalias() +=
-  //           shapefn_[i] * nodes_[i]->displacement(phase);
-
-  //   const double penetration =
-  //       (field_displacement - imposed_displacement_).dot(normal_);
-
-  //   // If penetrates, apply constraint, otherwise no
-  //   if (penetration >= 0.0) apply_constraints = false;
-  // }
-
-  // if (apply_constraints) {
-  //   // Calculate gap_function: nodal_displacement - imposed_displacement
-  //   const unsigned matrix_size = nodes_.size() * Tdim;
-  //   Eigen::VectorXd gap_function(matrix_size);
-  //   gap_function.setZero();
-  //   for (unsigned i = 0; i < nodes_.size(); i++) {
-  //     const auto& n_disp = nodes_[i]->displacement(phase);
-  //     gap_function.segment(i * Tdim, Tdim) = n_disp - imposed_displacement_;
-  //   }
-
-  //   // Arrange shape function
-  //   Eigen::MatrixXd shape_function(Tdim, matrix_size);
-  //   shape_function.setZero();
-  //   for (unsigned i = 0; i < nodes_.size(); i++) {
-  //     if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
-  //       // Directional multiplier
-  //       Eigen::VectorXd dir_multiplier =
-  //       Eigen::VectorXd::Constant(Tdim, 1.0);
-
-  //       // Check if direction is constrained
-  //       for (unsigned j = 0; j < Tdim; ++j)
-  //         if (constraint_flags_(j) == 0) dir_multiplier(j) = 0.0;
-
-  //       // Arrange shape function
-  //       for (unsigned int j = 0; j < Tdim; j++) {
-  //         shape_function(j, Tdim * i + j) = shapefn_[i] * dir_multiplier[j];
-  //       }
-  //     }
-  //   }
-
-  //   // Penalty force vector
-  //   const auto& penalty_force = shape_function.transpose() * shape_function *
-  //                               gap_function * area_ * penalty_factor_;
-
-  //   // Compute nodal external forces
-  //   for (unsigned i = 0; i < nodes_.size(); ++i)
-  //     nodes_[i]->update_external_force(
-  //         true, phase, -1.0 * penalty_force.segment(i * Tdim, Tdim));
-  // }
 }
 
 //! Compute size of serialized point data

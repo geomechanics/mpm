@@ -8,7 +8,7 @@ mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
   // Apply point velocity constraints
-  mesh_->apply_point_velocity_constraints();
+  mesh_->assign_point_velocity_constraints();
 
 #pragma omp parallel sections
   {
@@ -42,7 +42,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       mesh_->iterate_over_points(std::bind(
           &mpm::PointBase<Tdim>::compute_shapefn, std::placeholders::_1));
 
-      // Initialise material
+      // Initialise point properties
       mesh_->iterate_over_points(
           std::bind(&mpm::PointBase<Tdim>::initialise_properties,
                     std::placeholders::_1, dt_));

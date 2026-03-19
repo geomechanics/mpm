@@ -2075,7 +2075,7 @@ bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
 
 //! Apply point velocity constraints
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {
+void mpm::Mesh<Tdim>::assign_point_velocity_constraints() {
   // Iterate over all point velocity constraints
   for (const auto& pvelocity : point_velocity_constraints_) {
     // If set id is -1, use all points
@@ -2084,7 +2084,7 @@ void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {
     double velocity = pvelocity->velocity();
 
     this->iterate_over_point_set(
-        set_id, std::bind(&mpm::PointBase<Tdim>::apply_velocity_constraints,
+        set_id, std::bind(&mpm::PointBase<Tdim>::assign_velocity_constraints,
                           std::placeholders::_1, dir, velocity));
   }
 }

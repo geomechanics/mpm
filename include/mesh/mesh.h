@@ -454,7 +454,7 @@ class Mesh {
       int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint);
 
   //! Apply points velocity constraints
-  void apply_point_velocity_constraints();
+  void assign_point_velocity_constraints();
 
   //! Assign nodal concentrated force
   //! \param[in] nodal_forces Force at dir on nodes

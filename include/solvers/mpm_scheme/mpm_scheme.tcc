@@ -17,6 +17,9 @@ mpm::MPMScheme<Tdim>::MPMScheme(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh,
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::initialise() {
+  // Apply point velocity constraints
+  mesh_->assign_point_velocity_constraints();
+
 #pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
@@ -35,6 +38,11 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+      // Initialise point properties
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::initialise_properties,
+                    std::placeholders::_1, dt_));
     }
   }  // Wait to complete
 }

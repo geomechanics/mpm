@@ -56,6 +56,10 @@ class PointDirichletDirect : public PointBase<Tdim> {
   //! \param[in] velocity Applied point velocity constraint
   void assign_velocity_constraints(unsigned dir, double velocity) override;
 
+  //! Apply point velocity constraints
+  //! \param[in] phase Index corresponding to the phase
+  void apply_velocity_constraints(unsigned phase) override;
+
   //! Serialize
   //! \retval buffer Serialized buffer data
   std::vector<uint8_t> serialize() override;

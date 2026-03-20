@@ -220,6 +220,13 @@ class NodeBase {
   //! \param[in] velocity Applied velocity constraint
   virtual bool assign_velocity_constraint(unsigned dir, double velocity) = 0;
 
+  //! Assign velocity from outer source (e.g. points)
+  //! \param[in] dir Direction of velocity constraint
+  //! \param[in] velocity Applied velocity constraint
+  //! \param[in] phase Index corresponding to the phase
+  virtual void apply_velocity_constraint(unsigned dir, double velocity,
+                                         unsigned phase) = 0;
+
   //! Apply velocity constraints
   virtual void apply_velocity_constraints() = 0;
 

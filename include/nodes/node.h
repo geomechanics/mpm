@@ -213,6 +213,13 @@ class Node : public NodeBase<Tdim> {
   bool compute_acceleration_velocity_cundall(
       unsigned phase, double dt, double damping_factor) noexcept override;
 
+  //! Assign velocity from outer source (e.g. points)
+  //! \param[in] dir Direction of velocity constraint
+  //! \param[in] velocity Applied velocity constraint
+  //! \param[in] phase Index corresponding to the phase
+  void apply_velocity_constraint(unsigned dir, double velocity,
+                                 unsigned phase) override;
+
   //! Assign velocity constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of velocity constraint

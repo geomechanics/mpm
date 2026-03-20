@@ -178,6 +178,9 @@ class PointBase {
         "Calling the base class function (assign_velocity_constraints) in "
         "PointBase:: illegal operation!");
   };
+
+  //! Apply point velocity constraints
+  virtual void apply_velocity_constraints(unsigned phase) {
     throw std::runtime_error(
         "Calling the base class function (apply_velocity_constraints) in "
         "PointBase:: illegal operation!");

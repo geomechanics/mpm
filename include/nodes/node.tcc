@@ -365,6 +365,17 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_velocity_constraint(
   return status;
 }
 
+//! Apply velocity constraint
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_velocity_constraint(
+    unsigned dir, double velocity, unsigned phase) {
+  // Velocity constraints are applied on Cartesian boundaries
+  node_mutex_.lock();
+  this->velocity_(dir, phase) = velocity;
+  this->acceleration_(dir, phase) = 0.;
+  node_mutex_.unlock();
+}
+
 //! Apply velocity constraints
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::apply_velocity_constraints() {

@@ -38,6 +38,14 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+    }
+
+    // Spawn a task for points
+#pragma omp section
+    {
+      // Iterate over each point to compute shapefn
+      mesh_->iterate_over_points(std::bind(
+          &mpm::PointBase<Tdim>::compute_shapefn, std::placeholders::_1));
 
       // Initialise point properties
       mesh_->iterate_over_points(
@@ -247,6 +255,11 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Apply particle velocity constraints
   mesh_->apply_particle_velocity_constraints();
+
+  // Iterate over each point to compute updated position
+  mesh_->iterate_over_points(
+      std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
+                std::placeholders::_1, dt_));
 }
 
 // Locate particles
@@ -267,4 +280,14 @@ inline void mpm::MPMScheme<Tdim>::locate_particles(bool locate_particles) {
   if (!unlocatable_particles.empty() && !locate_particles)
     for (const auto& remove_particle : unlocatable_particles)
       mesh_->remove_particle(remove_particle);
+
+  // Locate points
+  auto unlocatable_points = mesh_->locate_points_mesh();
+
+  if (!unlocatable_points.empty() && locate_particles)
+    throw std::runtime_error("Point outside the mesh domain");
+  // If unable to locate points remove points
+  if (!unlocatable_points.empty() && !locate_particles)
+    for (const auto& remove_point : unlocatable_points)
+      mesh_->remove_point(remove_point);
 }

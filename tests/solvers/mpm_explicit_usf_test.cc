@@ -617,6 +617,43 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
     }
   }
 
+  SECTION("Check ramping multiplier clamping limit 3D") {
+    const std::string fname_ramp = "mpm-explicit-ramp-clamp";
+    int argc_r = 5;
+    // clang-format off
+    char* argv_r[] = {(char*)"./mpm",
+                      (char*)"-f",  (char*)"./",
+                      (char*)"-i",  (char*)"mpm-explicit-ramp-clamp-3d.json"};
+    // clang-format on
+
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.005, true,
+                                         false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.005, true,
+                                         false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.005, false,
+                                         true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+  }
+
   SECTION("Check pressure smoothing") {
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);

@@ -260,6 +260,53 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     }
   }
 
+  SECTION("Check rotation base warnings and errors") {
+    std::string test_fname = "mpm-rotation-warnings";
+    mpm_test::write_json(2, false, analysis, mpm_scheme, test_fname);
+    std::string json_file_name = test_fname + "-2d.json";
+
+    std::ifstream file_in(json_file_name);
+    Json j;
+    file_in >> j;
+    file_in.close();
+
+    j["external_loading_conditions"].erase("rotation_forces");
+    std::string missing_fname = "mpm-rotation-missing-2d.json";
+    std::ofstream file_out1(missing_fname);
+    file_out1 << j.dump(2);
+    file_out1.close();
+
+    int argc_test = 5;
+    // clang-format off
+    char* argv_missing[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)missing_fname.c_str()};
+    // clang-format on
+
+    auto io_missing = std::make_unique<mpm::IO>(argc_test, argv_missing);
+    auto mpm_missing =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_missing));
+    mpm_missing->initialise_mesh();
+    mpm_missing->initialise_particles();
+    REQUIRE_NOTHROW(mpm_missing->initialise_loads());
+
+    j["external_loading_conditions"]["rotation_forces"] = {
+        {"origin", {0.0}}, {"omega", 10.0}, {"clockwise", false}};
+    std::string bad_dim_fname = "mpm-rotation-baddim-2d.json";
+    std::ofstream file_out2(bad_dim_fname);
+    file_out2 << j.dump(2);
+    file_out2.close();
+
+    // clang-format off
+    char* argv_baddim[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)bad_dim_fname.c_str()};
+    // clang-format on
+
+    auto io_baddim = std::make_unique<mpm::IO>(argc_test, argv_baddim);
+    auto mpm_baddim =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_baddim));
+    mpm_baddim->initialise_mesh();
+    mpm_baddim->initialise_particles();
+    REQUIRE_THROWS_AS(mpm_baddim->initialise_loads(), std::runtime_error);
+  }
+
   SECTION("Check IO bad filename error throw") {
     int argc_io = 5;
     // clang-format off

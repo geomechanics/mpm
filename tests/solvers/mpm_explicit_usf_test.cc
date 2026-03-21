@@ -290,6 +290,15 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       REQUIRE(mpm->solve() == true);
     }
 
+    REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.002, true,
+                                         false) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
     REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
                                          fname_ramp, 0.005, false,
                                          true) == true);
@@ -297,18 +306,6 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
       auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
       auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
       REQUIRE(mpm->solve() == true);
-    }
-
-    REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
-                                         fname_ramp, 0.002, true,
-                                         false) == true);
-    {
-      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
-      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
-      REQUIRE_NOTHROW(mpm->initialise_materials());
-      REQUIRE_NOTHROW(mpm->initialise_mesh());
-      REQUIRE_NOTHROW(mpm->initialise_particles());
-      REQUIRE_NOTHROW(mpm->initialise_loads());
     }
   }
 

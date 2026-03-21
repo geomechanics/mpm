@@ -68,8 +68,6 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
        {{{"material_id", 1}, {"phase_id", 0}, {"pset_id", 2}}}},
       {"external_loading_conditions",
        {{"gravity", gravity},
-        {"rotation_forces",
-         {{"origin", rotation_origin}, {"omega", 10.0}, {"clockwise", false}}},
         {"particle_surface_traction",
          {{{"math_function_id", 0},
            {"pset_id", -1},
@@ -104,6 +102,10 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
         {"vtk", {"stresses", "strains", "velocities"}},
         {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
         {"output_steps", 5}}}};
+
+  // Inject rotation forces  to bypass compiler exception branches
+  json_file["external_loading_conditions"]["rotation_forces"] = {
+      {"origin", rotation_origin}, {"omega", 10.0}, {"clockwise", false}};
 
   // Dump JSON as an input file to be read
   std::string fname = (file_name + "-" + dimension + ".json").c_str();

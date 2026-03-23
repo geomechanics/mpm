@@ -339,6 +339,15 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise_pml_boundary_properties(
                     std::placeholders::_1, false,
                     "damped_mass_displacements_j4", std::placeholders::_2, 0,
                     Tdim));
+    } else {
+      // MPI all reduce nodal damped mass displacement integral
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>, Tdim>(
+          std::bind(&mpm::NodeBase<Tdim>::property, std::placeholders::_1,
+                    "damped_mass_displacements_integral", 0, Tdim),
+          std::bind(&mpm::NodeBase<Tdim>::update_property,
+                    std::placeholders::_1, false,
+                    "damped_mass_displacements_integral", std::placeholders::_2,
+                    0, Tdim));
     }
   }
 #endif

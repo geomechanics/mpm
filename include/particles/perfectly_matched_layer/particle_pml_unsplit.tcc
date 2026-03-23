@@ -162,12 +162,24 @@ void mpm::ParticleUPML<Tdim>::map_pml_properties_to_nodes() noexcept {
   this->compute_damping_functions(
       state_variables_[mpm::ParticlePhase::SinglePhase]);
 
-  // Damping Functions
+  // Damping Function
   const auto& Fe = this->evanescent_damping_functions();
 
-  // Damping scalar
+  // Damping scalar matrix
   Eigen::Matrix<double, Tdim, 1> f_M =
       Fe.prod() * Eigen::Matrix<double, Tdim, 1>::Ones();
+
+  // Get displacement integral from state variable
+  VectorDim disp_int;
+  disp_int.setZero();
+  unsigned phase = mpm::ParticlePhase::SinglePhase;
+  disp_int(0) = this->state_variables_[phase]["disp_int_x"];
+  if (Tdim > 1) {
+    disp_int(1) = this->state_variables_[phase]["disp_int_y"];
+  }
+  if (Tdim > 2) {
+    disp_int(2) = this->state_variables_[phase]["disp_int_z"];
+  }
 
   // Map damped mass, displacement vector to nodal property
   for (unsigned i = 0; i < nodes_.size(); ++i) {
@@ -176,6 +188,8 @@ void mpm::ParticleUPML<Tdim>::map_pml_properties_to_nodes() noexcept {
     nodes_[i]->update_property(true, "damped_mass_displacements",
                                displacement_.cwiseProduct(damped_mass), 0,
                                Tdim);
+    nodes_[i]->update_property(true, "damped_mass_displacements_integral",
+                               disp_int.cwiseProduct(damped_mass), 0, Tdim);
     nodes_[i]->assign_pml(true);
   }
 }
@@ -220,20 +234,21 @@ void mpm::ParticleUPML<Tdim>::map_internal_force(double dt) noexcept {
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::map_internal_force_disp(const Eigen::VectorXd& Fp,
                                                       double dt) noexcept {
+  // PML phase
   unsigned phase = mpm::ParticlePhase::SinglePhase;
+
   // Calculate damping value
   double f_H = Fp.prod();
 
-  // Call integrated displacements
-  VectorDim disp_int;
-  disp_int(0) = this->state_variables_[phase].at("disp_int_x");
-  if (Tdim > 1) {
-    disp_int(1) = this->state_variables_[phase].at("disp_int_y");
-  }
-  if (Tdim > 2) {
-    disp_int(2) = this->state_variables_[phase].at("disp_int_z");
+  // Displacement integral from nodes
+  Eigen::VectorXd disp_int(Tdim * nodes_.size());
+  disp_int.setZero();
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    disp_int.segment(i * Tdim, Tdim) +=
+        nodes_[i]->previous_pml_displacement(5);
   }
 
+  // Calculate nodal force and map to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     VectorDim nodal_force = -1.0 * disp_int * shapefn_[i] * mass_ * f_H;
     // Apply force to nodes
@@ -638,6 +653,7 @@ inline Eigen::Matrix<double, 6, 1>
 //! Function to update pml displacement functions
 template <unsigned Tdim>
 void mpm::ParticleUPML<Tdim>::update_pml_properties(double dt) noexcept {
+  // Assign phase
   unsigned phase = mpm::ParticlePhase::SinglePhase;
 
   // Call PML state variables
@@ -664,20 +680,23 @@ void mpm::ParticleUPML<Tdim>::update_pml_properties(double dt) noexcept {
   state_variables_[phase]["stress_2int_yz"] = new_stress_2int[4];
   state_variables_[phase]["stress_2int_xz"] = new_stress_2int[5];
 
-  switch (Tdim) {
-    case 1:
-      state_variables_[phase]["disp_int_x"] = displacement_[0] * dt;
-      break;
-    case 2:
-      state_variables_[phase]["disp_int_x"] = displacement_[0] * dt;
-      state_variables_[phase]["disp_int_y"] = displacement_[1] * dt;
-      break;
-    case 3:
-      state_variables_[phase]["disp_int_x"] = displacement_[0] * dt;
-      state_variables_[phase]["disp_int_y"] = displacement_[1] * dt;
-      state_variables_[phase]["disp_int_z"] = displacement_[2] * dt;
-      break;
+  // Update integrated displacement
+  // Assemble current displacement integral
+  Eigen::Matrix<double, 3, 1> disp_int;
+  disp_int.setZero();
+  disp_int(0) = state_variables_[phase]["disp_int_x"];
+  disp_int(1) = state_variables_[phase]["disp_int_y"];
+  disp_int(2) = state_variables_[phase]["disp_int_z"];
+
+  // Update integrated displacement
+  for (unsigned i = 0; i < Tdim; ++i) {
+    disp_int(i) += displacement_(i) * dt;
   }
+
+  // Reassign updated integrated displacement to state variable
+  state_variables_[phase]["disp_int_x"] = disp_int(0);
+  state_variables_[phase]["disp_int_y"] = disp_int(1);
+  state_variables_[phase]["disp_int_z"] = disp_int(2);
 }
 
 //! Initialise damping functions

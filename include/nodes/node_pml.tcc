@@ -151,6 +151,14 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_pml_displacement_constraints(
       damped_mass_disp_j4(direction) = 0.0;
       property_handle_->assign_property("damped_mass_displacements_j4",
                                         prop_id_, 0, damped_mass_disp_j4, Tdim);
+    } else {
+      // Displacement constraints of historical boundary
+      VectorDim damped_mass_disp_int = property_handle_->property(
+          "damped_mass_displacements_integral", prop_id_, 0, Tdim);
+      damped_mass_disp_int(direction) = 0.0;
+      property_handle_->assign_property(
+          "damped_mass_displacements_integral", prop_id_, 0, damped_mass_disp_int,
+          Tdim);
     }
   }
 }
@@ -227,6 +235,10 @@ Eigen::Matrix<double, Tdim, 1>
     case 4:  // Displacement at tn - 2*dt
       damped_mass_disp = property_handle_->property(
           "damped_mass_displacements_j4", prop_id_, 0, Tdim);
+      break;
+    case 5: // Time integrated displacement
+      damped_mass_disp = property_handle_->property(
+          "damped_mass_displacements_integral", prop_id_, 0, Tdim);
       break;
     default:
       throw std::runtime_error("Invalid time index for pml displacement");

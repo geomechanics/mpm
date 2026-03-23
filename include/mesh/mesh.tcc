@@ -3195,6 +3195,9 @@ void mpm::Mesh<Tdim>::create_nodal_properties_pml(const bool& pml_type) {
                                          1);
       nodal_properties_->create_property("damped_mass_displacements_j4", nrows,
                                          1);
+    } else {
+      nodal_properties_->create_property("damped_mass_displacements_integral", nrows,
+                                         1);
     }
 
     // Iterate over all nodes to initialise the property handle in each node

@@ -518,10 +518,6 @@ class Mesh {
   //! Inject particles
   void inject_particles(double current_time);
 
-  //! Read 3DP particle reference coordinates
-  bool read_3dp_reference_coordinates_file(const std::shared_ptr<mpm::IO>& io,
-                                  mpm::Injection3DP<Tdim>& inject);
-
   //! Inject 3D printing particles
   void inject_particles_3dp(double current_time);
 

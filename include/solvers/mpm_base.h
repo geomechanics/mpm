@@ -103,6 +103,43 @@ class MPMBase : public MPM {
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 
+  /**
+   * \defgroup Implicit Functions dealing with implicit MPM
+   */
+  /**@{*/
+  //! Update 3D printing state based on current time
+  void update_printing_state(double current_time, double dt);
+  
+  //! Get current nozzle velocity
+  Eigen::Matrix<double, 3, 1> current_nozzle_velocity() const { 
+      return nozzle_velocity_; 
+  }
+
+  //! Get extrusion velocity (z-direction only)
+  double extrusion_velocity() const { return extrusion_velocity_; }
+  
+  //! Get total velocity (nozzle + extrusion)
+  Eigen::Matrix<double, Tdim, 1> total_velocity() const {
+      Eigen::Matrix<double, Tdim, 1> total = 
+                      Eigen::Matrix<double, Tdim, 1>::Zero();
+      for (unsigned i = 0; i < Tdim; ++i) {
+          total[i] = nozzle_velocity_[i];
+      }
+      // Add extrusion velocity in z-direction
+      total[Tdim - 1] += extrusion_velocity_;
+      return total;
+    }
+  
+  //! Get current segment index
+  unsigned current_printing_segment() const { 
+      return current_segment_; 
+  }
+  
+  //! Get nozzle height
+  double nozzle_height() const { return nozzle_height_; }
+  /**@}*/
+
+
  protected:
   //! Initialise implicit solver
   //! \param[in] lin_solver_props Linear solver properties
@@ -302,6 +339,28 @@ class MPMBase : public MPM {
   unsigned cell_neighbourhood_{0};
   // Node neighbourhood: default 1 for linear element
   unsigned node_neighbourhood_{1};
+  /**@}*/
+
+  /**
+   * \defgroup 3D printing related members
+   * @{
+   */
+  //! Flag for 3D printing
+  bool three_d_printing_{false};
+  //! Current nozzle height
+  double nozzle_height_{0.0};
+  //! Current segment nozzle velocity
+  Eigen::Matrix<double, 3, 1> nozzle_velocity_;
+  //! Extrusion velocity (z-direction)
+  double extrusion_velocity_{0.0};
+  //! Nozzle velocities for each segment
+  std::vector<Eigen::Matrix<double, 3, 1>> nozzle_velocities_;
+  //! End times for each segment
+  std::vector<double> segment_end_times_;
+  //! Current segment index
+  unsigned current_segment_{0}; 
+  //! Last update time for height calculation
+  double last_update_time_{0.0};
   /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING

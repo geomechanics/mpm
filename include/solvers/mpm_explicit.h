@@ -83,12 +83,12 @@ class MPMExplicit : public MPMBase<Tdim> {
   bool pressure_smoothing_{false};
   //! Interface
   bool interface_{false};
-  //! Printing speed
-  Eigen::Matrix<double, Tdim, 1> printing_speed_;
-  //! Nozzle height
-  double nozzle_height_{0.};
-  //! 3D printing
-  bool three_d_printing_{false};
+  // //! Printing speed
+  // Eigen::Matrix<double, Tdim, 1> printing_speed_;
+  // //! Nozzle height
+  // double nozzle_height_{0.};
+  // //! 3D printing
+  // bool three_d_printing_{false};
 
 };  // MPMExplicit class
 }  // namespace mpm

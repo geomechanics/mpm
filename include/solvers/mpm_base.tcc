@@ -117,6 +117,93 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
           __FILE__, __LINE__, exception.what());
     }
 
+    // 3D Printing parameters
+    try {
+        if (analysis_.find("3D_printing_settings") != analysis_.end()) {
+            three_d_printing_ = true;
+            
+            // Parse nozzle velocities for each segment
+            auto nozzle_velocities = analysis_["3D_printing_settings"]
+                                    ["nozzle_velocity"].template 
+                                    get<std::vector<std::vector<double>>>();
+            
+            // Parse segment end times
+            auto seg_times = analysis_["3D_printing_settings"]
+                            ["seg_time"].template get<std::vector<double>>();
+            
+            // Check if the number of segments matches
+            if (nozzle_velocities.size() != seg_times.size()) {
+                throw std::runtime_error("Number of nozzle velocity segments "
+                  "does not match number of segment times");
+            }
+            
+            // Clear and repopulate printing path data
+            nozzle_velocities_.clear();
+            segment_end_times_.clear();
+            
+            for (size_t i = 0; i < nozzle_velocities.size(); ++i) {
+                const auto& vel = nozzle_velocities[i];
+                
+                // Each nozzle velocity should have 3 components
+                if (vel.size() >= 3) {
+                    Eigen::Matrix<double, 3, 1> velocity;
+                    velocity[0] = vel[0];
+                    velocity[1] = vel[1];
+                    velocity[2] = vel[2];  // Nozzle z-velocity
+                    
+                    nozzle_velocities_.push_back(velocity);
+                    segment_end_times_.push_back(seg_times[i]);
+                    
+                    console_->debug("Printing segment {}: nozzle velocity=[{}, "
+                                    "{}, {}], end time={}", 
+                                  i, vel[0], vel[1], vel[2], seg_times[i]);
+                } else {
+                    throw std::runtime_error(
+                      "Nozzle velocity must have 3 components [vx, vy, vz]");
+                }
+            }
+            
+            // Parse extrusion velocity (z-direction only)
+            extrusion_velocity_ = analysis_["3D_printing_settings"]
+                                ["extrusion_velocity"].template get<double>();
+            
+            // Parse initial nozzle height
+            nozzle_height_ = analysis_["3D_printing_settings"]
+                            ["nozzle_height"].template get<double>();
+            
+            // Initialize printing state
+            current_segment_ = 0;
+            last_update_time_ = 0.0;
+            
+            // Get initial nozzle velocity of first segment
+            if (!nozzle_velocities_.empty()) {
+                nozzle_velocity_ = nozzle_velocities_[0];
+            }
+            
+            console_->info("3D printing settings: {} printing path segments", 
+                          nozzle_velocities_.size());
+            console_->info("  Extrusion velocity: {}", extrusion_velocity_);
+            console_->info("  Initial nozzle height: {}", nozzle_height_);
+            
+            // Print information for all segments
+            for (size_t i = 0; i < nozzle_velocities_.size(); ++i) {
+                console_->debug("Segment {}: nozzle velocity=[{}, {}, {}], "
+                                "end time={}", i,
+                              nozzle_velocities_[i][0],
+                              nozzle_velocities_[i][1],
+                              nozzle_velocities_[i][2],
+                              segment_end_times_[i]);
+            }
+        } else {
+            three_d_printing_ = false;
+        }
+    } catch (const std::exception& exception) {
+        console_->warn(
+            "{} #{}: 3D printing settings are not properly specified or not "
+            "found; {}", __FILE__, __LINE__, exception.what());
+        three_d_printing_ = false;
+    }
+
     // Math functions
     try {
       // Get materials properties
@@ -1989,4 +2076,37 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
     console_->warn("{} #{}: initialising nonlocal mesh failed; {}", __FILE__,
                    __LINE__, exception.what());
   }
+}
+
+// Update 3D printing state (velocity and nozzle height)
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::update_printing_state(double current_time, double dt) {
+    if (!three_d_printing_ || nozzle_velocities_.empty()) return;
+    
+    // Update nozzle height based on nozzle z-velocity
+    // nozzle_height += nozzle_velocity_z * dt
+    nozzle_height_ += nozzle_velocity_[2] * dt;
+    
+    // Update last update time
+    last_update_time_ = current_time;
+    
+    // Check if we need to switch to next segment
+    while (current_segment_ < segment_end_times_.size() && 
+            current_time >= segment_end_times_[current_segment_]) {
+        
+        // Move to next segment
+        current_segment_++;
+        
+        if (current_segment_ < nozzle_velocities_.size()) {
+            // Update nozzle velocity for new segment
+            nozzle_velocity_ = nozzle_velocities_[current_segment_];
+            
+            console_->info("Switched to printing segment {} at time {}", 
+                            current_segment_, current_time);
+        } else {
+            // Reached end of all segments
+            console_->info("All printing segments completed at time {}", 
+                            current_time);
+        }
+    }
 }

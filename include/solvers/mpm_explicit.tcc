@@ -58,22 +58,6 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Interface
   interface_ = io_->analysis_bool("interface");
 
-
-  // Printing parameters
-  if (analysis_.find("3D_printing_settings") != analysis_.end()) {
-    three_d_printing_ = true;
-    std::vector<double> printing_speed = analysis_["3D_printing_settings"]
-                    ["velocity_p"].template get<std::vector<double>>();
-    for (unsigned i = 0; i < printing_speed.size(); ++i) {
-        printing_speed_[i] = printing_speed[i];
-    }
-    
-    nozzle_height_ = analysis_["3D_printing_settings"]
-                    ["nozzle_height"].template get<double>();
-  } else {
-    three_d_printing_ = false;
-  }
-
   // Initialise material
   this->initialise_materials();
 
@@ -140,7 +124,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Inject particles
     mesh_->inject_particles(step_ * dt_);
 
-    if (three_d_printing_) {
+    if (this->three_d_printing_) {
       // Inject particles
       mesh_->inject_particles_3dp(step_ * dt_);
 
@@ -154,11 +138,15 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Initialise nodal properties and append material ids to node
     contact_->initialise();
 
-    if (three_d_printing_) {
+    if (this->three_d_printing_) {
+      // Update printing state (velocity and nozzle height)
+      this->update_printing_state(step_ * dt_, dt_);
+
       // Iterate over each particle to compute updated position
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::map_3D_printing_velocity,
-                    std::placeholders::_1, nozzle_height_, printing_speed_));
+                    std::placeholders::_1, this->nozzle_height(), 
+                      this->total_velocity()));
     }
 
     // Mass momentum and compute velocity at nodes

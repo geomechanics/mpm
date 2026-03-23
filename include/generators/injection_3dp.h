@@ -15,20 +15,18 @@ struct Injection3DP {
   double injection_interval{std::numeric_limits<double>::max()};
   // Last injection time
   double last_injection_time{std::numeric_limits<double>::max()};
-  // Particle volume
-  double particle_volume{std::numeric_limits<double>::max()};
   // Cell height for calculating particle position
-  double h{std::numeric_limits<double>::max()};
-  // Particle velocity
-  std::vector<double> velocity_p;
-  // coordinate file for initial particle coordinates
-  std::string coordinate_file;
-  // Initial coordinates for particle injection
-  std::vector<Eigen::Matrix<double, Tdim, 1>> initial_coordinates;
+  double cell_height{std::numeric_limits<double>::max()};
   // IO type for reading coordinates
   std::string io_type;
   // Check for duplicates
   bool check_duplicates{false};
+  //! Number of particles to copy at each injection
+  unsigned n_copies;
+  //! Extrusion velocity
+  double extrusion_velocity{0.0};
+  //! Number of particles per cell in height direction
+  unsigned particles_per_cell{1};
 };
 }  // namespace mpm
 

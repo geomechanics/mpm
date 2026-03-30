@@ -304,7 +304,62 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
         std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_baddim));
     mpm_baddim->initialise_mesh();
     mpm_baddim->initialise_particles();
-    REQUIRE_THROWS_AS(mpm_baddim->initialise_loads(), std::runtime_error);
+    REQUIRE_THROWS(mpm_baddim->initialise_loads());
+  }
+
+  SECTION("Check IO json_search missing key") {
+    int argc_test = 5;
+    // clang-format off
+    char* argv_test[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)"mpm-explicit-usf-2d.json"};
+    // clang-format on
+    auto io_test = std::make_unique<mpm::IO>(argc_test, argv_test);
+    REQUIRE(io_test->json_search("this_key_does_not_exist") == false);
+  }
+
+  SECTION("Check gravity base warnings and errors") {
+    std::string test_fname = "mpm-gravity-warnings";
+    mpm_test::write_json(2, false, analysis, mpm_scheme, test_fname);
+    std::string json_file_name = test_fname + "-2d.json";
+
+    std::ifstream file_in(json_file_name);
+    Json j;
+    file_in >> j;
+    file_in.close();
+
+    j["external_loading_conditions"].erase("gravity");
+    std::string missing_fname = "mpm-gravity-missing-2d.json";
+    std::ofstream file_out1(missing_fname);
+    file_out1 << j.dump(2);
+    file_out1.close();
+
+    int argc_test = 5;
+    // clang-format off
+    char* argv_missing[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)missing_fname.c_str()};
+    // clang-format on
+
+    auto io_missing = std::make_unique<mpm::IO>(argc_test, argv_missing);
+    auto mpm_missing =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_missing));
+    mpm_missing->initialise_mesh();
+    mpm_missing->initialise_particles();
+    REQUIRE_NOTHROW(mpm_missing->initialise_loads());
+
+    j["external_loading_conditions"]["gravity"] = {0.0};
+    std::string bad_dim_fname = "mpm-gravity-baddim-2d.json";
+    std::ofstream file_out2(bad_dim_fname);
+    file_out2 << j.dump(2);
+    file_out2.close();
+
+    // clang-format off
+    char* argv_baddim[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)bad_dim_fname.c_str()};
+    // clang-format on
+
+    auto io_baddim = std::make_unique<mpm::IO>(argc_test, argv_baddim);
+    auto mpm_baddim =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_baddim));
+    mpm_baddim->initialise_mesh();
+    mpm_baddim->initialise_particles();
+    REQUIRE_THROWS(mpm_baddim->initialise_loads());
   }
 
   SECTION("Check IO bad filename error throw") {

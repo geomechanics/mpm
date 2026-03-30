@@ -150,10 +150,13 @@ bool mpm::MPMExplicit<Tdim>::solve() {
           1.0, static_cast<double>(step_) * dt_ / this->rotation_ramping_time_);
 
     // Compute forces
-    mpm_scheme_->compute_forces(
-        gravity_multiplier * gravity_, phase, step_,
-        set_node_concentrated_force_, rotation_forces_, rotation_origin_,
-        rotation_multiplier * rotation_omega_, rotation_clockwise_);
+    const auto current_gravity = gravity_multiplier * gravity_;
+    const auto current_rotation = rotation_multiplier * rotation_omega_;
+
+    mpm_scheme_->compute_forces(current_gravity, phase, step_,
+                                set_node_concentrated_force_, rotation_forces_,
+                                rotation_origin_, current_rotation,
+                                rotation_clockwise_);
 
     // Apply Absorbing Constraint
     if (absorbing_boundary_) {

@@ -98,6 +98,191 @@ TEST_CASE("MPM 2D Explicit implementation is checked",
     }
   }
 
+  SECTION("Check gravity and rotation ramping 2D") {
+    const std::string fname_ramp = "mpm-explicit-ramp";
+    int argc_r = 5;
+    // clang-format off
+    char* argv_r[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)"mpm-explicit-ramp-2d.json"};
+    // clang-format on
+
+    // Combined Case 1: Valid Ramping (Both Gravity & Rotation same time)
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Combined Case 2: Invalid Ramping (Negative time throws error for both)
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, -1.0, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Combined Case 3: Resume Ramping (Both Gravity & Rotation simultaneously)
+    REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_NOTHROW(mpm->initialise_loads());
+    }
+  }
+
+  SECTION("Check rotation base warnings and errors") {
+    std::string test_fname = "mpm-rotation-warnings";
+    mpm_test::write_json(2, false, analysis, mpm_scheme, test_fname);
+    std::string json_file_name = test_fname + "-2d.json";
+
+    std::ifstream file_in(json_file_name);
+    Json j;
+    file_in >> j;
+    file_in.close();
+
+    j["external_loading_conditions"].erase("rotation_forces");
+    std::string missing_fname = "mpm-rotation-missing-2d.json";
+    std::ofstream file_out1(missing_fname);
+    file_out1 << j.dump(2);
+    file_out1.close();
+
+    int argc_test = 5;
+    // clang-format off
+    char* argv_missing[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)missing_fname.c_str()};
+    // clang-format on
+
+    auto io_missing = std::make_unique<mpm::IO>(argc_test, argv_missing);
+    auto mpm_missing =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_missing));
+    mpm_missing->initialise_mesh();
+    mpm_missing->initialise_particles();
+    REQUIRE_NOTHROW(mpm_missing->initialise_loads());
+
+    j["external_loading_conditions"]["rotation_forces"] = {
+        {"origin", {0.0}}, {"omega", 10.0}, {"clockwise", false}};
+    std::string bad_dim_fname = "mpm-rotation-baddim-2d.json";
+    std::ofstream file_out2(bad_dim_fname);
+    file_out2 << j.dump(2);
+    file_out2.close();
+
+    // clang-format off
+    char* argv_baddim[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)bad_dim_fname.c_str()};
+    // clang-format on
+
+    auto io_baddim = std::make_unique<mpm::IO>(argc_test, argv_baddim);
+    auto mpm_baddim =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_baddim));
+    mpm_baddim->initialise_mesh();
+    mpm_baddim->initialise_particles();
+    REQUIRE_THROWS(mpm_baddim->initialise_loads());
+  }
+
+  SECTION("Check IO json_search missing key") {
+    int argc_test = 5;
+    // clang-format off
+    char* argv_test[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)"mpm-explicit-usf-2d.json"};
+    // clang-format on
+    auto io_test = std::make_unique<mpm::IO>(argc_test, argv_test);
+    REQUIRE(io_test->json_search("this_key_does_not_exist") == false);
+  }
+
+  SECTION("Check gravity base warnings and errors") {
+    std::string test_fname = "mpm-gravity-warnings";
+    mpm_test::write_json(2, false, analysis, mpm_scheme, test_fname);
+    std::string json_file_name = test_fname + "-2d.json";
+
+    std::ifstream file_in(json_file_name);
+    Json j;
+    file_in >> j;
+    file_in.close();
+
+    j["external_loading_conditions"].erase("gravity");
+    std::string missing_fname = "mpm-gravity-missing-2d.json";
+    std::ofstream file_out1(missing_fname);
+    file_out1 << j.dump(2);
+    file_out1.close();
+
+    int argc_test = 5;
+    // clang-format off
+    char* argv_missing[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)missing_fname.c_str()};
+    // clang-format on
+
+    auto io_missing = std::make_unique<mpm::IO>(argc_test, argv_missing);
+    auto mpm_missing =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_missing));
+    mpm_missing->initialise_mesh();
+    mpm_missing->initialise_particles();
+    REQUIRE_NOTHROW(mpm_missing->initialise_loads());
+
+    j["external_loading_conditions"]["gravity"] = {0.0};
+    std::string bad_dim_fname = "mpm-gravity-baddim-2d.json";
+    std::ofstream file_out2(bad_dim_fname);
+    file_out2 << j.dump(2);
+    file_out2.close();
+
+    // clang-format off
+    char* argv_baddim[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)bad_dim_fname.c_str()};
+    // clang-format on
+
+    auto io_baddim = std::make_unique<mpm::IO>(argc_test, argv_baddim);
+    auto mpm_baddim =
+        std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io_baddim));
+    mpm_baddim->initialise_mesh();
+    mpm_baddim->initialise_particles();
+    REQUIRE_THROWS(mpm_baddim->initialise_loads());
+  }
+
+  SECTION("Check IO bad filename error throw") {
+    int argc_io = 5;
+    // clang-format off
+    char* argv_io[] = {(char*)"./mpm",
+                       (char*)"-f",  (char*)"./",
+                       (char*)"-i",  (char*)"does_not_exist.json"};
+    // clang-format on
+
+    REQUIRE_THROWS_AS(std::make_unique<mpm::IO>(argc_io, argv_io),
+                      std::runtime_error);
+  }
+
+  SECTION("Check ramping multiplier clamping limit") {
+    const std::string fname_ramp = "mpm-explicit-ramp-clamp";
+    int argc_r = 5;
+    // clang-format off
+    char* argv_r[] = {(char*)"./mpm",
+                      (char*)"-f",  (char*)"./",
+                      (char*)"-i",  (char*)"mpm-explicit-ramp-clamp-2d.json"};
+    // clang-format on
+
+    // Combined Case 1: Initial run to hit clamp and generate checkpoint
+    REQUIRE(mpm_test::write_json_ramping(2, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.005, true,
+                                         true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Combined Case 2: Resume run
+    REQUIRE(mpm_test::write_json_ramping(2, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.002, true,
+                                         true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+  }
+
   SECTION("Check pressure smoothing") {
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
@@ -197,6 +382,78 @@ TEST_CASE("MPM 3D Explicit implementation is checked",
     }
   }
 
+  SECTION("Check gravity and rotation ramping 3D") {
+    const std::string fname_ramp = "mpm-explicit-ramp";
+    int argc_r = 5;
+    // clang-format off
+    char* argv_r[] = {(char*)"./mpm", (char*)"-f", (char*)"./", (char*)"-i", (char*)"mpm-explicit-ramp-3d.json"};
+    // clang-format on
+
+    // Combined Case 1: Valid Ramping (Both Gravity & Rotation same time)
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Combined Case 2: Invalid Ramping (Negative time throws error for both)
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, -1.0, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_THROWS_AS(mpm->initialise_loads(), std::runtime_error);
+    }
+
+    // Consolidated Case 3: Resume Ramping (Both Gravity & Rotation
+    // simultaneously)
+    REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.5, true, true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE_NOTHROW(mpm->initialise_materials());
+      REQUIRE_NOTHROW(mpm->initialise_mesh());
+      REQUIRE_NOTHROW(mpm->initialise_particles());
+      REQUIRE_NOTHROW(mpm->initialise_loads());
+    }
+  }
+
+  SECTION("Check ramping multiplier clamping limit 3D") {
+    const std::string fname_ramp = "mpm-explicit-ramp-clamp";
+    int argc_r = 5;
+    // clang-format off
+    char* argv_r[] = {(char*)"./mpm",
+                      (char*)"-f",  (char*)"./",
+                      (char*)"-i",  (char*)"mpm-explicit-ramp-clamp-3d.json"};
+    // clang-format on
+
+    // Combined Case 1: Initial run to hit clamp and generate checkpoint
+    REQUIRE(mpm_test::write_json_ramping(3, false, analysis, mpm_scheme,
+                                         fname_ramp, 0.005, true,
+                                         true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+
+    // Combined Case 2: Resume run (both features)
+    REQUIRE(mpm_test::write_json_ramping(3, true, analysis, mpm_scheme,
+                                         fname_ramp, 0.005, true,
+                                         true) == true);
+    {
+      auto io = std::make_unique<mpm::IO>(argc_r, argv_r);
+      auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
+      REQUIRE(mpm->solve() == true);
+    }
+  }
+
   SECTION("Check pressure smoothing") {
     // Create an IO object
     auto io = std::make_unique<mpm::IO>(argc, argv);
@@ -231,9 +488,9 @@ TEST_CASE("MPM base warnings are checked (2D Explicit)", "[MPM][2D][Base]") {
 
   // Write bad JSON file
   std::string fname = "mpm-base-warnings";
+  // Cover material_sets=false, math_functions=false branch
   REQUIRE(mpm_test::write_json_warnings(2, false, false, "Linear", 2, fname) ==
           true);
-
   // Create an IO object and run explicit MPM
   auto io = std::make_unique<mpm::IO>(argc, argv);
   auto mpm = std::make_unique<mpm::MPMExplicit<Dim>>(std::move(io));
@@ -272,6 +529,7 @@ TEST_CASE("MPM base warnings are checked (3D Explicit)", "[MPM][3D][Base]") {
 
   // Write bad JSON file
   std::string fname = "mpm-base-warnings";
+  // This must be last as it writes the bad JSON the MPM object will read
   REQUIRE(mpm_test::write_json_warnings(3, true, true, "Lin", 2, fname) ==
           true);
 

@@ -57,9 +57,15 @@ class MPMScheme {
   //! \param[in] step Number of step in solver
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
   //! is applied or not
+  //! \param[in] rotation_forces Boolean to apply rotation forces
+  //! \param[in] rotation_origin Origin of rotation
+  //! \param[in] rotation_omega Angular velocity
+  //! \param[in] rotation_clockwise Direction of rotation
   virtual inline void compute_forces(
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-      unsigned step, bool concentrated_nodal_forces);
+      unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
+      const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
+      double rotation_omega, bool rotation_clockwise);
 
   //! Assign relevant properties for absorbing boundary
   virtual inline void absorbing_boundary_properties();

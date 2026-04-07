@@ -11,7 +11,7 @@
 #include <memory>
 #include <vector>
 
-#include "point_base.h"
+#include "point_dirichlet_direct.h"
 
 namespace mpm {
 

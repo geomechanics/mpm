@@ -17,6 +17,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   unsigned material_id = 0;
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  std::vector<double> rotation_origin{{0.0, 0.0}};
 
   // 3D
   if (dim == 3) {
@@ -28,6 +29,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
     material = "LinearElastic3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
+    rotation_origin = {0.0, 0.0, 0.0};
   }
 
   Json json_file = {
@@ -100,6 +102,10 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
         {"vtk", {"stresses", "strains", "velocities"}},
         {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
         {"output_steps", 5}}}};
+
+  // Inject rotation forces  to bypass compiler exception branches
+  json_file["external_loading_conditions"]["rotation_forces"] = {
+      {"origin", rotation_origin}, {"omega", 10.0}, {"clockwise", false}};
 
   // Dump JSON as an input file to be read
   std::string fname = (file_name + "-" + dimension + ".json").c_str();
@@ -1457,6 +1463,43 @@ bool write_entity_set() {
   file.open("entity_sets_2.json");
   file << json_file2.dump(2);
   file.close();
+
+  return true;
+}
+
+// Write JSON Configuration file for gravity/rotation ramping
+bool write_json_ramping(unsigned dim, bool resume, const std::string& analysis,
+                        const std::string& mpm_scheme,
+                        const std::string& file_name, double ramping_time,
+                        bool gravity_ramping, bool rotation_ramping) {
+  std::string temp_file = "temp-baseline";
+  mpm_test::write_json(dim, resume, analysis, mpm_scheme, temp_file);
+
+  std::string dimension = (dim == 3) ? "3d" : "2d";
+  std::string temp_fname = temp_file + "-" + dimension + ".json";
+  std::ifstream file_in(temp_fname);
+  Json j;
+  file_in >> j;
+  file_in.close();
+
+  if (gravity_ramping) {
+    auto current_gravity = j["external_loading_conditions"]["gravity"];
+    j["external_loading_conditions"]["gravity"] = {
+        {"gravity", current_gravity}, {"ramping_time", ramping_time}};
+  }
+
+  if (rotation_ramping) {
+    j["external_loading_conditions"]["rotation_forces"]["ramping_time"] =
+        ramping_time;
+  }
+
+  j["analysis"]["uuid"] = file_name + "-" + dimension;
+  j["analysis"]["resume"]["uuid"] = file_name + "-" + dimension;
+
+  std::string fname = file_name + "-" + dimension + ".json";
+  std::ofstream file_out(fname);
+  file_out << j.dump(2);
+  file_out.close();
 
   return true;
 }

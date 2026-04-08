@@ -7,9 +7,6 @@ mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
-  // Apply point velocity constraints
-  mesh_->assign_point_velocity_constraints();
-
 #pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
@@ -22,6 +19,13 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       mesh_->iterate_over_cells(
           std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
     }
+  }
+
+  // Apply point velocity constraints
+  mesh_->assign_point_velocity_constraints();
+
+#pragma omp parallel sections
+  {
     // Spawn a task for particles
 #pragma omp section
     {

@@ -46,6 +46,11 @@ class PointDirichletPenalty : public PointDirichletDirect<Tdim> {
   //! Initialise properties
   void initialise() override;
 
+  //! Assign point velocity constraints
+  //! \param[in] dir Direction of point velocity constraint
+  //! \param[in] velocity Applied point velocity constraint
+  void assign_velocity_constraints(unsigned dir, double velocity) override;
+
   //! Map point stiffness matrix to cell
   inline bool map_stiffness_matrix_to_cell() override;
 

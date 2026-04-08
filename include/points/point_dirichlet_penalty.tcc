@@ -60,6 +60,14 @@ void mpm::PointDirichletPenalty<Tdim>::assign_properties(
     contact_ = static_cast<bool>(scalar_properties.at("contact"));
 }
 
+//! Assign point velocity constraints
+template <unsigned Tdim>
+void mpm::PointDirichletPenalty<Tdim>::assign_velocity_constraints(
+    unsigned dir, double velocity) {
+  // Set particle velocity constraint
+  this->imposed_velocity_(dir) = velocity;
+}
+
 //! Map penalty stiffness matrix to cell
 template <unsigned Tdim>
 inline bool mpm::PointDirichletPenalty<Tdim>::map_stiffness_matrix_to_cell() {

@@ -549,6 +549,59 @@ class NodeBase {
 
   /**@}*/
 
+  /**
+   * \defgroup Levelset Functions
+   */
+  /**@{*/
+
+  // Assign levelset values to nodes
+  //! \param[in] levelset Levelset value at the particle
+  //! \param[in] levelset_mu Levelset friction coefficient
+  //! \param[in] levelset_alpha Levelset adhesion coefficient
+  //! \param[in] barrier_stiffness Barrier stiffness
+  virtual bool assign_levelset(double levelset, double levelset_mu,
+                               double levelset_alpha,
+                               double barrier_stiffness) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_levelset) in NodeBase:: "
+        "illegal operation!");
+    return false;
+  };
+
+  //! Return levelset value
+  virtual double levelset() const {
+    throw std::runtime_error(
+        "Calling the base class function (levelset) in NodeBase:: illegal "
+        "operation!");
+    return 0.;
+  }
+
+  //! Return levelset friction coefficient
+  virtual double levelset_mu() const {
+    throw std::runtime_error(
+        "Calling the base class function (levelset_mu) in NodeBase:: illegal "
+        "operation!");
+    return 0.;
+  }
+
+  //! Return levelset adhesion coefficient
+  virtual double levelset_alpha() const {
+    throw std::runtime_error(
+        "Calling the base class function (levelset_alpha) in NodeBase:: "
+        "illegal operation!");
+    return 0.;
+  }
+
+  //! Return barrier stiffness
+  virtual double barrier_stiffness() const {
+    throw std::runtime_error(
+        "Calling the base class function (barrier_stiffness) in NodeBase:: "
+        "illegal operation!");
+    return 0.;
+  }
+
+  /**@}*/
+
 };  // NodeBase class
 }  // namespace mpm
 

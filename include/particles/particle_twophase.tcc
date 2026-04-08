@@ -57,8 +57,9 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   // Particle local size
   Eigen::Vector3d nsize;
   nsize.setZero();
-  Eigen::VectorXd size = this->natural_size();
-  for (unsigned j = 0; j < Tdim; ++j) nsize[j] = size[j];
+  for (unsigned j = 0; j < Tdim; ++j) {
+    nsize[j] = natural_size_[j];
+  }
 
   Eigen::Matrix<double, 6, 1> stress = this->stress_;
 
@@ -90,6 +91,8 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   particle_data->displacement_x = displacement[0];
   particle_data->displacement_y = displacement[1];
   particle_data->displacement_z = displacement[2];
+
+  particle_data->size = this->size_;
 
   particle_data->nsize_x = nsize[0];
   particle_data->nsize_y = nsize[1];
@@ -1009,16 +1012,19 @@ bool mpm::TwoPhaseParticle<Tdim>::assign_traction(unsigned direction,
       throw std::runtime_error(
           "Particle traction property: volume / direction is invalid");
     }
+    // Updated size
+    const double updated_size =
+        std::pow(this->volume_, static_cast<double>(1. / Tdim));
     // Assign mixture traction
     if (direction < Tdim) {
       this->set_traction_ = true;
-      traction_(direction) = traction * this->volume_ / this->size_(direction);
+      traction_(direction) = traction * this->volume_ / updated_size;
     }
     // Assign liquid traction
     else {
       this->set_liquid_traction_ = true;
       liquid_traction_(direction - Tdim) =
-          traction * this->volume_ / this->size_(direction - Tdim);
+          traction * this->volume_ / updated_size;
     }
     status = true;
   } catch (std::exception& exception) {
@@ -1118,6 +1124,9 @@ std::vector<uint8_t> mpm::TwoPhaseParticle<Tdim>::serialize() {
   // Displacement
   MPI_Pack(displacement_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
+  // Size
+  MPI_Pack(&size_, 1, MPI_DOUBLE, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
   // Natural size
   MPI_Pack(natural_size_.data(), Tdim, MPI_DOUBLE, data_ptr, data.size(),
            &position, MPI_COMM_WORLD);
@@ -1267,6 +1276,9 @@ void mpm::TwoPhaseParticle<Tdim>::deserialize(
   // Displacement
   MPI_Unpack(data_ptr, data.size(), &position, displacement_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);
+  // Size
+  MPI_Unpack(data_ptr, data.size(), &position, &size_, 1, MPI_DOUBLE,
+             MPI_COMM_WORLD);
   // Natural size
   MPI_Unpack(data_ptr, data.size(), &position, natural_size_.data(), Tdim,
              MPI_DOUBLE, MPI_COMM_WORLD);

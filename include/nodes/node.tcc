@@ -39,6 +39,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   status_ = false;
   solving_status_ = false;
   material_ids_.clear();
+  moving_velocity_constraints_.clear();
 }
 
 //! Initialise shared pointer to nodal properties pool
@@ -249,6 +250,7 @@ void mpm::Node<Tdim, Tdof, Tnphases>::compute_velocity() {
   // Apply velocity constraints, which also sets acceleration to 0,
   // when velocity is set.
   this->apply_velocity_constraints();
+  this->apply_moving_velocity_constraints();
 }
 
 //! Update nodal acceleration
@@ -291,6 +293,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity(
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
     this->apply_velocity_constraints();
+    this->apply_moving_velocity_constraints();
 
     // Set a threshold
     for (unsigned i = 0; i < Tdim; ++i)
@@ -331,6 +334,7 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::compute_acceleration_velocity_cundall(
     // Apply velocity constraints, which also sets acceleration to 0,
     // when velocity is set.
     this->apply_velocity_constraints();
+    this->apply_moving_velocity_constraints();
 
     // Set a threshold
     for (unsigned i = 0; i < Tdim; ++i)
@@ -363,17 +367,6 @@ bool mpm::Node<Tdim, Tdof, Tnphases>::assign_velocity_constraint(
     status = false;
   }
   return status;
-}
-
-//! Apply velocity constraint
-template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
-void mpm::Node<Tdim, Tdof, Tnphases>::apply_velocity_constraint(
-    unsigned dir, double velocity, unsigned phase) {
-  // Velocity constraints are applied on Cartesian boundaries
-  node_mutex_.lock();
-  this->velocity_(dir, phase) = velocity;
-  this->acceleration_(dir, phase) = 0.;
-  node_mutex_.unlock();
 }
 
 //! Apply velocity constraints
@@ -410,6 +403,50 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_velocity_constraints() {
       this->velocity_ = rotation_matrix_ * local_velocity;
       this->acceleration_ = rotation_matrix_ * local_acceleration;
     }
+  }
+}
+
+//! Assign moving velocity constraint
+//! Constrain directions can take values between 0 and Dim * Nphases
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::assign_moving_velocity_constraint(
+    unsigned dir, double velocity) {
+  bool status = true;
+  try {
+    //! Constrain directions can take values between 0 and Dim * Nphases
+    if (dir < (Tdim * Tnphases)) {
+      node_mutex_.lock();
+      this->moving_velocity_constraints_.insert(
+          std::make_pair<unsigned, double>(static_cast<unsigned>(dir),
+                                           static_cast<double>(velocity)));
+      node_mutex_.unlock();
+    } else
+      throw std::runtime_error("Constraint direction is out of bounds");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply moving velocity constraints (only support cartesian aligned
+//! boundaries for now)
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_moving_velocity_constraints() {
+  // Set velocity constraint
+  for (const auto& constraint : this->moving_velocity_constraints_) {
+    // Direction value in the constraint (0, Dim * Nphases)
+    const unsigned dir = constraint.first;
+    // Direction: dir % Tdim (modulus)
+    const auto direction = static_cast<unsigned>(dir % Tdim);
+    // Phase: Integer value of division (dir / Tdim)
+    const auto phase = static_cast<unsigned>(dir / Tdim);
+
+    // Velocity constraints are applied on Cartesian boundaries
+    this->velocity_(direction, phase) = constraint.second;
+    // Set acceleration to 0 in direction of velocity constraint
+    this->acceleration_(direction, phase) = 0.;
   }
 }
 

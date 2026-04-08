@@ -179,13 +179,6 @@ class PointBase {
         "PointBase:: illegal operation!");
   };
 
-  //! Apply point velocity constraints
-  virtual void apply_velocity_constraints(unsigned phase) {
-    throw std::runtime_error(
-        "Calling the base class function (apply_velocity_constraints) in "
-        "PointBase:: illegal operation!");
-  };
-
   //! Map point stiffness matrix to cell
   virtual inline bool map_stiffness_matrix_to_cell() {
     throw std::runtime_error(

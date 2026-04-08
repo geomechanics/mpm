@@ -84,11 +84,6 @@ inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::compute_velocity, std::placeholders::_1),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-
-  // Apply velocity constraints from points
-  mesh_->iterate_over_points(
-      std::bind(&mpm::PointBase<Tdim>::apply_velocity_constraints,
-                std::placeholders::_1, phase));
 }
 
 //! Compute stress and strain
@@ -251,11 +246,6 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
         std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
                   std::placeholders::_1, phase, dt_),
         std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-
-  // Apply velocity constraints from points
-  mesh_->iterate_over_points(
-      std::bind(&mpm::PointBase<Tdim>::apply_velocity_constraints,
-                std::placeholders::_1, phase));
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

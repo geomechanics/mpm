@@ -2087,6 +2087,74 @@ void mpm::Mesh<Tdim>::assign_point_velocity_constraints() {
         set_id, std::bind(&mpm::PointBase<Tdim>::assign_velocity_constraints,
                           std::placeholders::_1, dir, velocity));
   }
+
+#ifdef USE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (!point_velocity_constraints_.empty()) {
+    const unsigned nnd = this->nnodes();
+    const unsigned buf_size = nnd * Tdim;
+
+    // Send buffers: imposed flag and velocity value per node per direction
+    bool* send_imposed = new bool[buf_size];
+    double* send_values = new double[buf_size];
+    int* send_count = new int[buf_size];
+    memset(send_imposed, 0, buf_size * sizeof(bool));
+    memset(send_values, 0, buf_size * sizeof(double));
+    memset(send_count, 0, buf_size * sizeof(int));
+
+    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+      const auto& constraints = (*nitr)->moving_velocity_constraints();
+      for (const auto& c : constraints) {
+        if (c.first < Tdim) {
+          const unsigned idx = (*nitr)->id() * Tdim + c.first;
+          send_imposed[idx] = true;
+          send_values[idx] = c.second;
+          send_count[idx] = 1;
+        }
+      }
+    }
+
+    // Receive buffers
+    bool* receive_imposed = new bool[buf_size];
+    double* receive_values_sum = new double[buf_size];
+    int* receive_count = new int[buf_size];
+
+    // Sync imposed directions — true on any rank wins
+    MPI_Allreduce(send_imposed, receive_imposed, buf_size, MPI_CXX_BOOL,
+                  MPI_LOR, MPI_COMM_WORLD);
+
+    // Sync values — sum across imposing ranks and count them
+    MPI_Allreduce(send_values, receive_values_sum, buf_size, MPI_DOUBLE,
+                  MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(send_count, receive_count, buf_size, MPI_INT, MPI_SUM,
+                  MPI_COMM_WORLD);
+
+    // Build synced map and apply to each node
+#pragma omp parallel for schedule(runtime)
+    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+      std::map<unsigned, double> synced_constraints;
+      for (unsigned dir = 0; dir < Tdim; ++dir) {
+        const unsigned idx = (*nitr)->id() * Tdim + dir;
+        if (receive_imposed[idx]) {
+          // Average value across all ranks that imposed this direction
+          synced_constraints.insert(std::make_pair<unsigned, double>(
+              static_cast<unsigned>(dir),
+              static_cast<double>(receive_values_sum[idx] /
+                                  receive_count[idx])));
+        }
+      }
+      if (!synced_constraints.empty())
+        (*nitr)->update_moving_velocity_constraints(synced_constraints);
+    }
+
+    delete[] send_imposed;
+    delete[] send_values;
+    delete[] send_count;
+    delete[] receive_imposed;
+    delete[] receive_values_sum;
+    delete[] receive_count;
+  }
+#endif
 }
 
 //! Assign node tractions

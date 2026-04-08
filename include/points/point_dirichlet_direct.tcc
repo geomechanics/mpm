@@ -77,18 +77,13 @@ void mpm::PointDirichletDirect<Tdim>::assign_velocity_constraints(
     unsigned dir, double velocity) {
   // Set particle velocity constraint
   this->imposed_velocity_(dir) = velocity;
-}
 
-//! Apply point velocity constraints
-template <unsigned Tdim>
-void mpm::PointDirichletDirect<Tdim>::apply_velocity_constraints(
-    unsigned phase) {
-  // Iterater over nodes
+  // Iterater over nodes and assign velocity constraint
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     for (unsigned dir = 0; dir < Tdim; ++dir) {
       if (constraint_flags_(dir) != 0)
-        nodes_[i]->apply_velocity_constraint(dir, imposed_velocity_(dir),
-                                             phase);
+        nodes_[i]->assign_moving_velocity_constraint(dir,
+                                                     imposed_velocity_(dir));
     }
   }
 }

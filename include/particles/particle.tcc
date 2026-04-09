@@ -1728,3 +1728,9 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
 
   return beta;
 }
+
+//! assign average B matrix as centroid matrix
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::assign_dn_dx_centroid(Eigen::MatrixXd avg_B_matrix) {
+  dn_dx_centroid_ = avg_B_matrix
+}

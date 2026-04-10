@@ -245,6 +245,9 @@ class ParticleBase {
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
 
+  //! Return dn_dx
+  virtual Eigen::MatrixXd dn_dx() const = 0;
+
   //! Assign deformation gradient increment
   virtual void assign_deformation_gradient_increment(
       Eigen::Matrix<double, 3, 3> F_inc) noexcept = 0;
@@ -384,6 +387,10 @@ class ParticleBase {
   virtual void deserialize(
       const std::vector<uint8_t>& buffer,
       std::vector<std::shared_ptr<mpm::Material<Tdim>>>& materials) = 0;
+
+  //! Assign computed averge B matrix as centroid of gradient
+  //! \param[in] avg_B_matrix Computed cell average B matrix
+  virtual void assign_dn_dx_centroid(Eigen::MatrixXd avg_B_matrix) = 0;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

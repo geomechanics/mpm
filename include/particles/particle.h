@@ -602,6 +602,10 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] dt time increment
   inline double compute_asflip_beta(double dt) noexcept;
 
+  //! Assign computed averge B matrix as centroid of gradient
+  //! \param[in] avg_B_matrix Computed cell average B matrix
+  void assign_dn_dx_centroid(Eigen::MatrixXd avg_B_matrix);
+
   /**@}*/
 
   //! particle id

@@ -32,6 +32,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
                     std::placeholders::_1, dt_));
     }
   }  // Wait to complete
+  mesh_->compute_cell_average_dn_dx_centroid();
 }
 
 //! Compute nodal kinematics - map mass, momentum and inertia to nodes

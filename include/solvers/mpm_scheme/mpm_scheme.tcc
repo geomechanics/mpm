@@ -37,6 +37,7 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
     }
   }  // Wait to complete
+  mesh_->compute_cell_average_dn_dx_centroid();
 }
 
 //! Compute nodal kinematics - map mass and momentum to nodes

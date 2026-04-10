@@ -625,6 +625,9 @@ class Mesh {
       const Eigen::SparseMatrix<double>& correction_matrix,
       const Eigen::VectorXd& pressure_increment, double dt);
 
+  //! compute the average volumetric cell gradient
+  void compute_cell_average_dn_dx_centroid();
+
   /**@}*/
 
   /**

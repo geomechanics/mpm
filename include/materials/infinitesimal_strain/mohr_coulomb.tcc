@@ -352,7 +352,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // =========================================================================
   const double Tolerance = 1E-7;  // Yield-function tolerance
   const unsigned itr_max = 50;    // Maximum return-mapping iterations
-  const double G = shear_modulus_;
 
   // Check density criterion for tensile separation.
   const double current_packing_density = ptr->mass_density();

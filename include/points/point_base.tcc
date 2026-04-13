@@ -149,6 +149,8 @@ bool mpm::PointBase<Tdim>::assign_cell_id(mpm::Index id) {
 // Remove cell for the point
 template <unsigned Tdim>
 void mpm::PointBase<Tdim>::remove_cell() {
+  // if a cell is not nullptr
+  if (cell_ != nullptr) cell_->remove_point_id(this->id_);
   cell_id_ = std::numeric_limits<Index>::max();
   // Clear all the nodes
   nodes_.clear();

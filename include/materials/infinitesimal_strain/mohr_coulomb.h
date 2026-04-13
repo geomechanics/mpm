@@ -128,14 +128,12 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   std::tuple<Vector6d, double, bool> compute_single_surface_return(
       mpm::mohrcoulomb::FailureState yield_type,
       const Eigen::Matrix<double, 2, 1>& yield_function,
-      const Vector6d& current_stress,
-      const Matrix6x6& de,
+      const Vector6d& current_stress, const Matrix6x6& de,
       mpm::dense_map* state_vars);
 
   //! Compute corner return mapping for multi-surface failure
   std::tuple<Vector6d, double, bool> compute_corner_return(
-      const Vector6d& current_stress,
-      const Matrix6x6& de,
+      const Vector6d& current_stress, const Matrix6x6& de,
       mpm::dense_map* state_vars);
 
   //! Density

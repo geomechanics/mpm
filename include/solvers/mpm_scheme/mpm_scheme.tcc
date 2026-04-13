@@ -287,8 +287,13 @@ inline void mpm::MPMScheme<Tdim>::locate_particles(bool locate_particles) {
   // Locate points
   auto unlocatable_points = mesh_->locate_points_mesh();
 
-  if (!unlocatable_points.empty() && locate_particles)
-    throw std::runtime_error("Point outside the mesh domain");
+  // Throw error with listed unlocatable points
+  if (!unlocatable_points.empty() && locate_particles) {
+    std::ostringstream unloc_pt;
+    for (const auto& point : unlocatable_points) unloc_pt << point->id() << " ";
+    throw std::runtime_error("Point(s) outside the mesh domain: " +
+                             unloc_pt.str());
+  }
   // If unable to locate points remove points
   if (!unlocatable_points.empty() && !locate_particles)
     for (const auto& remove_point : unlocatable_points)

@@ -346,7 +346,7 @@ TEST_CASE("MPI transfer particle is checked in 2D",
       auto exchange_cells =
           graph->collect_partitions(mpi_size, mpi_rank, &comm);
       // Transfer particle to the correct MPI rank
-      REQUIRE_NOTHROW(mesh->transfer_nonrank_particles(exchange_cells));
+      REQUIRE_NOTHROW(mesh->transfer_nonrank_particles(exchange_cells[0]));
     }
   }
 }
@@ -718,7 +718,7 @@ TEST_CASE("MPI Transfer Particle is checked in 3D",
       auto exchange_cells =
           graph->collect_partitions(mpi_size, mpi_rank, &comm);
       // Transfer particle to the correct MPI rank
-      REQUIRE_NOTHROW(mesh->transfer_nonrank_particles(exchange_cells));
+      REQUIRE_NOTHROW(mesh->transfer_nonrank_particles(exchange_cells[0]));
     }
   }
 }

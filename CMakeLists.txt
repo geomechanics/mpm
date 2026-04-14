@@ -180,7 +180,7 @@ include_directories(BEFORE
   ${mpm_SOURCE_DIR}/include/solvers/
   ${mpm_SOURCE_DIR}/include/solvers/mpm_scheme/
   ${mpm_SOURCE_DIR}/include/utilities/
-    ${mpm_SOURCE_DIR}/external/
+  ${mpm_SOURCE_DIR}/external/
   ${mpm_SOURCE_DIR}/tests/include/
 )
 

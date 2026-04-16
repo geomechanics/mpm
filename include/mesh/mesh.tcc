@@ -2237,14 +2237,37 @@ bool mpm::Mesh<Tdim>::assign_particles_stresses(
       throw std::runtime_error(
           "No particles have been assigned in mesh, cannot assign stresses");
 
-    if (particles_.size() != particle_stresses.size())
-      throw std::runtime_error(
-          "Number of particles in mesh and initial stresses don't match");
-
     unsigned i = 0;
     for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
       (*pitr)->initial_stress(particle_stresses.at(i));
       ++i;
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Assign particle velocities
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_particles_velocities(const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_velocities) {
+  bool status = true;
+  try {
+    if (!particles_.size())
+      throw std::runtime_error(
+          "No particles have been assigned in mesh, cannot assign velocities");
+
+    for (const auto& particle_velocity : particle_velocities) {
+      // Particle id
+      mpm::Index pid = std::get<0>(particle_velocity);
+      // Particle Velocity
+      Eigen::Matrix<double, Tdim, 1> velocity = std::get<1>(particle_velocity);
+      
+      if (map_particles_.find(pid) != map_particles_.end()) {
+        map_particles_[pid]->assign_velocity(velocity);
+      }
     }
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -2424,7 +2447,6 @@ bool mpm::Mesh<Tdim>::write_points_hdf5(const std::string& filename) {
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
                                           const std::string& particle_type) {
-
   // Create a new file using default properties.
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   // Throw an error if file can't be found
@@ -2483,7 +2505,6 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_particles_hdf5_twophase(
     const std::string& filename, const std::string& particle_type) {
-
   // Create a new file using default properties.
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   // Throw an error if file can't be found
@@ -2571,7 +2592,6 @@ bool mpm::Mesh<Tdim>::read_points_hdf5(const std::string& filename,
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_points_hdf5(const std::string& filename,
                                        const std::string& point_type) {
-
   // Create a new file using default properties.
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   // Throw an error if file can't be found
@@ -2626,7 +2646,6 @@ bool mpm::Mesh<Tdim>::read_points_hdf5(const std::string& filename,
 template <unsigned Tdim>
 std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::nodal_coordinates()
     const {
-
   // Nodal coordinates
   std::vector<Eigen::Matrix<double, 3, 1>> coordinates;
   coordinates.reserve(nodes_.size());
@@ -2657,7 +2676,6 @@ std::vector<Eigen::Matrix<double, 3, 1>> mpm::Mesh<Tdim>::nodal_coordinates()
 template <unsigned Tdim>
 std::vector<std::vector<mpm::Index>> mpm::Mesh<Tdim>::cell_connectivity(
     bool active) const {
-
   // Cell connectivity
   std::vector<std::vector<mpm::Index>> cell_connectivity;
 
@@ -3196,8 +3214,8 @@ void mpm::Mesh<Tdim>::create_nodal_properties_pml(const bool& pml_type) {
       nodal_properties_->create_property("damped_mass_displacements_j4", nrows,
                                          1);
     } else {
-      nodal_properties_->create_property("damped_mass_displacements_integral", nrows,
-                                         1);
+      nodal_properties_->create_property("damped_mass_displacements_integral",
+                                         nrows, 1);
     }
 
     // Iterate over all nodes to initialise the property handle in each node

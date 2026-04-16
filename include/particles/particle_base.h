@@ -284,6 +284,9 @@ class ParticleBase {
   //! Initial stress
   virtual void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) = 0;
 
+  //! Initial velocity
+  virtual void initial_velocity(const VectorDim& velocity) = 0;
+
   //! Compute stress
   //! \param[in] dt Analysis time step
   virtual void compute_stress(double dt) noexcept = 0;

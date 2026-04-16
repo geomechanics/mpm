@@ -237,6 +237,12 @@ class Particle : public ParticleBase<Tdim> {
     this->previous_stress_ = stress;
   }
 
+  //! Initial velocity
+  //! \param[in] velocity Initial velocity
+  void initial_velocity(const VectorDim& velocity) override {
+    this->velocity_ = velocity;
+  }
+
   //! Compute stress
   //! \param[in] dt Analysis time step
   void compute_stress(double dt) noexcept override;

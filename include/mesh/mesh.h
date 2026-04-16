@@ -511,6 +511,12 @@ class Mesh {
   bool assign_particles_stresses(
       const std::vector<Eigen::Matrix<double, 6, 1>>& particle_stresses);
 
+  //! Assign particles velocities
+  //! \param[in] particle_velocities Initial velocities of particle
+  bool assign_particles_velocities(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          particle_velocities);
+
   //! Assign pml particles distance functions
   //! \param[in] particle_distance_functions Particle distance functions
   bool assign_pml_particles_distance_functions(

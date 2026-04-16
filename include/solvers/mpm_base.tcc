@@ -501,6 +501,9 @@ void mpm::MPMBase<Tdim>::initialise_particles() {
   // Read and assign particles stresses
   this->particles_stresses(mesh_props, particle_io);
 
+  // Read and assign particles velocities
+  this->particles_velocities(mesh_props, particle_io);
+
   // Read and assign particles initial pore pressure
   this->particles_pore_pressures(mesh_props, particle_io);
 
@@ -1981,6 +1984,57 @@ void mpm::MPMBase<Tdim>::particles_stresses(
 
   } catch (std::exception& exception) {
     console_->warn("#{}: Particle stresses are undefined; {}", __LINE__,
+                   exception.what());
+  }
+}
+
+// Particles velocities
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::particles_velocities(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io) {
+  try {
+    if (mesh_props.find("particles_velocities") != mesh_props.end()) {
+      // Get generator type
+      const std::string type =
+          mesh_props["particles_velocities"]["type"].template get<std::string>();
+      if (type == "file") {
+        std::string fparticles_velocities =
+            mesh_props["particles_velocities"]["location"]
+                .template get<std::string>();
+        if (!io_->file_name(fparticles_velocities).empty()) {
+
+          // Get velocities of all particles
+          const auto all_particles_velocities =
+              particle_io->read_particles_vector_properties(
+                  io_->file_name(fparticles_velocities));
+
+          // Read and assign particles velocities
+          if (!mesh_->assign_particles_velocities(all_particles_velocities))
+            throw std::runtime_error(
+                "Particles velocities are not properly assigned");
+        }
+      } else if (type == "constant") {
+        Eigen::Matrix<double, Tdim, 1> in_velocity;
+        in_velocity.setZero();
+        if (mesh_props["particles_velocities"]["values"].is_array() &&
+            mesh_props["particles_velocities"]["values"].size() ==
+                in_velocity.size()) {
+          for (unsigned i = 0; i < in_velocity.size(); ++i) {
+            in_velocity[i] = mesh_props["particles_velocities"]["values"].at(i);
+          }
+          mesh_->iterate_over_particles(
+              std::bind(&mpm::ParticleBase<Tdim>::initial_velocity,
+                        std::placeholders::_1, in_velocity));
+        } else {
+          throw std::runtime_error("Initial velocity dimension is invalid");
+        }
+      }
+    } else
+      throw std::runtime_error("Particle velocities JSON data not found");
+
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Particle velocities are undefined; {}", __LINE__,
                    exception.what());
   }
 }

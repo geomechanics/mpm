@@ -1790,6 +1790,8 @@ void mpm::MPMBase<Tdim>::nodal_absorbing_constraints(
         constraints_->assign_absorbing_id_ptr(nset_id, absorbing_constraint);
         // Set bool for solve loop
         absorbing_boundary_ = true;
+        // Set bool for nodal absorbing constraints
+        kv_type_ = true;
       }
     } else
       throw std::runtime_error("Absorbing constraints JSON data not found");
@@ -2297,6 +2299,9 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
 
         mesh_->create_point_kelvin_voigt_constraint(
             pset_id, absorbing_constraint, normal_type, normal);
+        // Set Booleans for point Kelvin Voigt constraints
+        absorbing_boundary_ = true;
+        kv_type_ = false;
       }
     } else
       throw std::runtime_error("Point Kelvin Voigt constraints JSON not found");

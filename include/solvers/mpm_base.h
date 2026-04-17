@@ -354,6 +354,8 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
+  //! Absorbing Constraint Type
+  bool kv_type_{false};
   //! Perfectly Matched Layer Boundary
   bool pml_boundary_{false};
   //! Perfectly Matched Layer Boundary Type

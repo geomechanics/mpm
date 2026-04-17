@@ -65,7 +65,7 @@ class MPMScheme {
       unsigned step, bool concentrated_nodal_forces);
 
   //! Assign relevant properties for absorbing boundary
-  virtual inline void absorbing_boundary_properties();
+  virtual inline void absorbing_boundary_properties(const bool& kv_type);
 
   //! Assign relevant properties for perfectly matched layer boundary
   virtual inline void initialise_pml_boundary_properties(const bool& pml_type);

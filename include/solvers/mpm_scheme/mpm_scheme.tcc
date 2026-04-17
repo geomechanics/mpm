@@ -183,7 +183,8 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
 
 // Assign Absorbing Boundary Properties
 template <unsigned Tdim>
-inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
+inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties(
+    const bool& kv_type) {
   // Initialise nodal properties
   mesh_->initialise_nodal_properties();
 
@@ -191,14 +192,19 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::append_material_id_to_nodes,
                 std::placeholders::_1));
-
+  
+  // Map wave velocities to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_wave_velocities_to_nodes,
                 std::placeholders::_1));
-  // Map multimaterial displacements from particles to nodes
-  mesh_->iterate_over_particles(std::bind(
-      &mpm::ParticleBase<Tdim>::map_multimaterial_displacements_to_nodes,
-      std::placeholders::_1));
+
+  // Map displacements to nodes if for node-type Kelvin-Voigt
+  if (kv_type) {
+    // Map multimaterial displacements from particles to nodes
+    mesh_->iterate_over_particles(std::bind(
+        &mpm::ParticleBase<Tdim>::map_multimaterial_displacements_to_nodes,
+        std::placeholders::_1));
+  }
 }
 
 // Assign PML Boundary Properties

@@ -141,16 +141,55 @@ inline bool mpm::PointKelvinVoigt<Tdim>::map_stiffness_matrix_to_cell(
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(
     double newmark_beta, double newmark_gamma, double dt) {
+  // Assumed phase
+  unsigned phase = 0;  // mpm::ParticlePhase::SinglePhase;
+
   // Initialise stiffness matrix
   const unsigned matrix_size = nodes_.size() * Tdim;
   Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
   point_stiffness.setZero();
-  // TODO: Fix input parameters pathway/pull from nodes
-  double E = 2000000000.0;
-  double v = 0.25;
-  double rho = 2000;
-  double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
-  double vs = std::sqrt(E / (2 * (1 + v)) / rho);
+
+  // Initialise material properties
+  double vp = 0.0;
+  double vs = 0.0;
+  double rho = 0.0;
+  double mass = 0.0;
+
+  // Loop through nodes for wave velocities
+  for (unsigned i = 0; i < nodes_.size(); i++) {
+    // Get material ids at the node
+    std::set<unsigned> node_mat_ids = nodes_[i]->material_ids();
+
+    // Initialise nodal wave velocity and density contributions
+    double vp_n = 0.0;
+    double vs_n = 0.0;
+    double rho_n = 0.0;
+
+    // Loop through node_mat_ids set
+    for (const auto& mat_id : node_mat_ids) {
+      vp_n += nodes_[i]->property("wave_velocities", mat_id, 2)(0);
+      vs_n += nodes_[i]->property("wave_velocities", mat_id, 2)(1);
+      rho_n += nodes_[i]->property("density", mat_id, 1)(0);
+    }
+
+    // Get nodal mass
+    double mass_n = nodes_[i]->mass(phase);
+
+    // Mass averaged wave velocity and density contributions
+    if (mass_n > std::numeric_limits<double>::epsilon()) {
+      vp += vp_n;
+      vs += vs_n;
+      rho += rho_n;
+      mass += mass_n;
+    }
+  }
+
+  // Finalise mass averaged wave velocity and density contributions
+  if (mass > std::numeric_limits<double>::epsilon()) {
+    vp /= mass;
+    vs /= mass;
+    rho /= mass;
+  }
 
   // Normal and Tangent multipliers
   const double normal_mult = incidence_a_ * rho * vp;
@@ -190,17 +229,55 @@ void mpm::PointKelvinVoigt<Tdim>::map_dashpot_damping_matrix_to_cell(
 
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
+  // Assumed phase
+  unsigned phase = 0;  // mpm::ParticlePhase::SinglePhase;
+
   // Initialise stiffness matrix
   const unsigned matrix_size = nodes_.size() * Tdim;
   Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
   point_stiffness.setZero();
 
-  // TODO: Fix input parameters pathway/pull from nodes
-  double E = 2000000000.0;
-  double v = 0.25;
-  double rho = 2000;
-  double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
-  double vs = std::sqrt(E / (2 * (1 + v)) / rho);
+  // Initialise material properties
+  double vp = 0.0;
+  double vs = 0.0;
+  double rho = 0.0;
+  double mass = 0.0;
+
+  // Loop through nodes for wave velocities
+  for (unsigned i = 0; i < nodes_.size(); i++) {
+    // Get material ids at the node
+    std::set<unsigned> node_mat_ids = nodes_[i]->material_ids();
+
+    // Initialise nodal wave velocity and density contributions
+    double vp_n = 0.0;
+    double vs_n = 0.0;
+    double rho_n = 0.0;
+
+    // Loop through node_mat_ids set
+    for (const auto& mat_id : node_mat_ids) {
+      vp_n += nodes_[i]->property("wave_velocities", mat_id, 2)(0);
+      vs_n += nodes_[i]->property("wave_velocities", mat_id, 2)(1);
+      rho_n += nodes_[i]->property("density", mat_id, 1)(0);
+    }
+
+    // Get nodal mass
+    double mass_n = nodes_[i]->mass(phase);
+
+    // Mass averaged wave velocity and density contributions
+    if (mass_n > std::numeric_limits<double>::epsilon()) {
+      vp += vp_n;
+      vs += vs_n;
+      rho += rho_n;
+      mass += mass_n;
+    }
+  }
+
+  // Finalise mass averaged wave velocity and density contributions
+  if (mass > std::numeric_limits<double>::epsilon()) {
+    vp /= mass;
+    vs /= mass;
+    rho /= mass;
+  }
 
   // Normal and Tangent multipliers
   const double normal_mult = rho * vp * vp / delta_;
@@ -241,12 +318,47 @@ void mpm::PointKelvinVoigt<Tdim>::map_spring_stiffness_matrix_to_cell() {
 //! Map enforcement force
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
-  // TODO: Fix input parameters pathway/pull from nodes
-  double E = 2000000000.0;
-  double v = 0.25;
-  double rho = 2000;
-  double vp = std::sqrt(E * (1 - v) / ((1 + v) * (1 - 2 * v)) / rho);
-  double vs = std::sqrt(E / (2 * (1 + v)) / rho);
+  // Initialise material properties
+  double vp = 0.0;
+  double vs = 0.0;
+  double rho = 0.0;
+  double mass = 0.0;
+
+  // Loop through nodes for wave velocities
+  for (unsigned i = 0; i < nodes_.size(); i++) {
+    // Get material ids at the node
+    std::set<unsigned> node_mat_ids = nodes_[i]->material_ids();
+
+    // Initialise nodal wave velocity and density contributions
+    double vp_n = 0.0;
+    double vs_n = 0.0;
+    double rho_n = 0.0;
+
+    // Loop through node_mat_ids set
+    for (const auto& mat_id : node_mat_ids) {
+      vp_n += nodes_[i]->property("wave_velocities", mat_id, 2)(0);
+      vs_n += nodes_[i]->property("wave_velocities", mat_id, 2)(1);
+      rho_n += nodes_[i]->property("density", mat_id, 1)(0);
+    }
+
+    // Get nodal mass
+    double mass_n = nodes_[i]->mass(phase);
+
+    // Mass averaged wave velocity and density contributions
+    if (mass_n > std::numeric_limits<double>::epsilon()) {
+      vp += vp_n;
+      vs += vs_n;
+      rho += rho_n;
+      mass += mass_n;
+    }
+  }
+
+  // Finalise mass averaged wave velocity and density contributions
+  if (mass > std::numeric_limits<double>::epsilon()) {
+    vp /= mass;
+    vs /= mass;
+    rho /= mass;
+  }
 
   // Normal and Tangent multipliers
   const double normal_dashpot_mult = incidence_a_ * rho * vp;
@@ -300,7 +412,6 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
       (normal_dashpot_mult * normal_matrix +
        tangent_dashpot_mult * (identity - normal_matrix)) *
       shape_function * nodal_vel * area_;
-
   // Compute nodal external forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_external_force(

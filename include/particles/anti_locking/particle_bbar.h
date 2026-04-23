@@ -34,7 +34,7 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   ParticleBbar(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~ParticleBbar() override {};
+  ~ParticleBbar() override{};
 
   //! Delete copy constructor
   ParticleBbar(const ParticleBbar<Tdim>&) = delete;

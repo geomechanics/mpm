@@ -60,7 +60,7 @@ class ParticleBase {
   ParticleBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~ParticleBase() {};
+  virtual ~ParticleBase(){};
 
   //! Delete copy constructor
   ParticleBase(const ParticleBase<Tdim>&) = delete;

@@ -32,7 +32,7 @@ class ModifiedCamClay : public InfinitesimalElastoPlastic<Tdim> {
   ModifiedCamClay(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~ModifiedCamClay() override {};
+  ~ModifiedCamClay() override{};
 
   //! Delete copy constructor
   ModifiedCamClay(const ModifiedCamClay&) = delete;

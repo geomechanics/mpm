@@ -1,6 +1,6 @@
 project(mpm LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 cmake_minimum_required(VERSION 3.12)
 
@@ -16,11 +16,17 @@ ENDIF (NOT CMAKE_BUILD_TYPE)
 # GNU specific settings
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+  # GCC 13 false positive: fmt v5 (bundled in spdlog) triggers -Wstringop-overflow
+  # when its buffer grow() is inlined through std::uninitialized_copy. The warning
+  # fires inside a system header so -isystem on external/ cannot suppress it.
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "13")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow")
+  endif()
 endif()
 
 # Intel specific settings
 if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 endif()
 
 # Clang specific settings

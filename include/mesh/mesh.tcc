@@ -1664,7 +1664,7 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
 
   // Create a new file using default properties.
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-  
+
   // Throw an error if file can't be found
   if (file_id < 0) throw std::runtime_error("HDF5 particle file is not found");
 

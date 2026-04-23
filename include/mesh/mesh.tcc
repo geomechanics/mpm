@@ -1591,6 +1591,7 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename,
   const hsize_t NRECORDS = nparticles;
   const hsize_t NFIELDS = mpm::pod::particle::NFIELDS;
 
+  // Consistent HDF5 parameters
   hid_t file_id;
   hsize_t chunk_size = 10000;
   int* fill_data = NULL;
@@ -1600,12 +1601,13 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename,
   file_id =
       H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-  // make a table
+  // Make a table
   H5TBmake_table("Table Title", file_id, "table", NFIELDS, NRECORDS,
                  mpm::pod::particle::dst_size, mpm::pod::particle::field_names,
                  mpm::pod::particle::dst_offset, mpm::pod::particle::field_type,
                  chunk_size, fill_data, compress, particle_data.data());
 
+  // Close the file
   H5Fclose(file_id);
   return true;
 }
@@ -1654,20 +1656,6 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_twophase(
 
   H5Fclose(file_id);
   return true;
-}
-
-//! Read HDF5 particles with type name
-template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
-                                          const std::string& type_name,
-                                          const std::string& particle_type) {
-  bool status = false;
-  if (type_name == "particles" || type_name == "fluid_particles" ||
-      type_name == "bbar_particles" || type_name == "fs_particles")
-    status = this->read_particles_hdf5(filename, particle_type);
-  else if (type_name == "twophase_particles")
-    status = this->read_particles_hdf5_twophase(filename, particle_type);
-  return status;
 }
 
 //! Read HDF5 particles for singlephase particle

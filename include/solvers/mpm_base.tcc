@@ -525,7 +525,7 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     // Get step
     this->step_ = analysis_["resume"]["step"].template get<mpm::Index>();
 
-    // Input particle h5 file for resume
+    // Read particles from hdf5 files
     this->read_hdf5();
 
     // Clear all particle ids
@@ -553,7 +553,7 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
 //! Read HDF5 files
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::read_hdf5() {
-  // Read hdf5 file for single phase particle
+  // Read hdf5 file by particle type
   for (const auto& ptype : particle_types_) {
     std::string attribute = mpm::ParticlePODTypeName.at(ptype);
     std::string extension = ".h5";
@@ -562,7 +562,7 @@ void mpm::MPMBase<Tdim>::read_hdf5() {
     auto particles_file =
         io_->output_file(attribute, extension, uuid_, step_, nsteps_).string();
 
-    // Load particle information from file
+    // Load single or two phase particle information from file
     if (attribute == "particles" || attribute == "fluid_particles" ||
         attribute == "bbar_particles" || attribute == "fs_particles") {
       mesh_->read_particles_hdf5(particles_file, ptype);

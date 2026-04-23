@@ -431,12 +431,14 @@ class Mesh {
 
   //! Write HDF5 particles
   //! \param[in] filename Name of HDF5 file to write particles data
+  //! \param[in] particle_type Particle type to be written
   //! \retval status Status of writing HDF5 output
   bool write_particles_hdf5(const std::string& filename,
                             const std::string& particle_type);
 
   //! Write HDF5 particles for two-phase-one-point particle
   //! \param[in] filename Name of HDF5 file to write particles data
+  //! \param[in] particle_type Particle type to be written
   //! \retval status Status of writing HDF5 output
   bool write_particles_hdf5_twophase(const std::string& filename,
                                      const std::string& particle_type);

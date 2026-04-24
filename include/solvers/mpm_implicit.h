@@ -121,6 +121,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
   //! Pressure smoothing
   bool pressure_smoothing_{false};
+  //! BBar patch average
+  bool bbar_patch_average_{false};
 
   /**
    * \defgroup ImplicitVariables Variables dealing with implicit MPM

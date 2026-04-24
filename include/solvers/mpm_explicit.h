@@ -95,6 +95,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   bool pressure_smoothing_{false};
   //! Interface
   bool interface_{false};
+  //! BBar patch average
+  bool bbar_patch_average_{false};
 
 };  // MPMExplicit class
 }  // namespace mpm

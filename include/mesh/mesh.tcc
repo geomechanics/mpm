@@ -2330,3 +2330,35 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
   }
   return status;
 }
+
+//! Compute cell volume fraction
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::compute_cell_average_dn_dx_centroid() {
+  this->iterate_over_cells([&map_particles = map_particles_](
+                               std::shared_ptr<mpm::Cell<Tdim>> c_ptr) {
+    if (c_ptr->status()) {
+      // Initialize average B-matrix at cell
+      Eigen::MatrixXd avg_B_matrix;
+      const auto& dn_dx_centroid = c_ptr->dn_dx_centroid();
+
+      // Resize average B-matrix to the size of dn_dx_centroid
+      avg_B_matrix.resize(dn_dx_centroid.rows(), dn_dx_centroid.cols());
+      avg_B_matrix.setZero();
+
+      double volume_sum = 0.0;
+      for (const auto p_id : c_ptr->particles()) {
+        const double p_volume = map_particles[p_id]->volume();
+        const auto& p_dn_dx = map_particles[p_id]->dn_dx();
+        avg_B_matrix.noalias() += p_dn_dx * p_volume;
+        volume_sum += p_volume;
+      }
+
+      if (volume_sum < std::numeric_limits<double>::epsilon())
+        volume_sum = std::numeric_limits<double>::epsilon();
+      avg_B_matrix /= volume_sum;
+      for (const auto p_id : c_ptr->particles()) {
+        map_particles[p_id]->assign_dn_dx_centroid(avg_B_matrix);
+      }
+    }
+  });
+}

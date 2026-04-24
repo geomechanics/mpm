@@ -21,7 +21,7 @@ class MPMScheme {
   MPMScheme(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt);
 
   //! Intialize
-  virtual inline void initialise();
+  virtual inline void initialise(bool bbar_patch_average = false);
 
   //! Compute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity

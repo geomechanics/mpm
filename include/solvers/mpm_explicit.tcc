@@ -17,6 +17,14 @@ mpm::MPMExplicit<Tdim>::MPMExplicit(const std::shared_ptr<IO>& io)
     contact_ = std::make_shared<mpm::ContactFriction<Tdim>>(mesh_);
   else
     contact_ = std::make_shared<mpm::Contact<Tdim>>(mesh_);
+
+  if (analysis_.contains("scheme_settings")) {
+    // Read parameters on patch averaging
+    if (analysis_["scheme_settings"].contains("bbar_patch_average"))
+      bbar_patch_average_ = analysis_["scheme_settings"]
+                                .at("bbar_patch_average")
+                                .template get<bool>();
+  }
 }
 
 //! MPM Explicit solver
@@ -125,7 +133,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mesh_->inject_particles(step_ * dt_);
 
     // Initialise nodes, cells and shape functions
-    mpm_scheme_->initialise();
+    mpm_scheme_->initialise(bbar_patch_average_);
 
     // Initialise nodal properties and append material ids to node
     contact_->initialise();

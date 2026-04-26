@@ -27,7 +27,7 @@ class LinearElastic : public Material<Tdim> {
   LinearElastic(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~LinearElastic() override{};
+  ~LinearElastic() override {};
 
   //! Delete copy constructor
   LinearElastic(const LinearElastic&) = delete;

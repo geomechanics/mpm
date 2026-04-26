@@ -42,7 +42,7 @@ class NodeBase {
   NodeBase(mpm::Index id, const VectorDim& coords){};
 
   //! Destructor
-  virtual ~NodeBase(){};
+  virtual ~NodeBase() {};
 
   //! Delete copy constructor
   NodeBase(const NodeBase<Tdim>&) = delete;

@@ -119,6 +119,10 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Nonlocal node neighbourhood
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
+  //! Kelvin Voigt constraints
+  using mpm::MPMBase<Tdim>::kelvin_voigt_;
+  //! Joyner Chen constraints
+  using mpm::MPMBase<Tdim>::joyner_chen_;
   //! Pressure smoothing
   bool pressure_smoothing_{false};
 

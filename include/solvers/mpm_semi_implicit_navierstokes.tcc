@@ -305,7 +305,7 @@ bool mpm::MPMSemiImplicitNavierStokes<Tdim>::solve() {
         std::placeholders::_1, this->dt_, velocity_update_, blending_ratio_));
 
     // Apply particle velocity constraints
-    mesh_->apply_particle_velocity_constraints();
+    mesh_->apply_particle_velocity_constraints(this->step_ * this->dt_);
 
     // Pressure smoothing
     if (pressure_smoothing_) this->pressure_smoothing(fluid);

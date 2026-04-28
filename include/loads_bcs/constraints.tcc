@@ -65,7 +65,7 @@ bool mpm::Constraints<Tdim>::assign_nodal_velocity_constraint(
           "Node set is empty for assignment of velocity constraints");
 
     unsigned dir = vconstraint->dir();
-    double velocity = vconstraint->velocity();
+    double velocity = vconstraint->velocity(0);
     for (auto nitr = nset.cbegin(); nitr != nset.cend(); ++nitr) {
       if (!(*nitr)->assign_velocity_constraint(dir, velocity))
         throw std::runtime_error(

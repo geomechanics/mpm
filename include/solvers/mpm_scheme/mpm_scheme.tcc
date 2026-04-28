@@ -31,9 +31,6 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
     }
   }
 
-  // Apply point velocity constraints
-  mesh_->assign_point_velocity_constraints();
-
 #pragma omp parallel sections
   {
     // Spawn a task for particles
@@ -57,6 +54,18 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
                     std::placeholders::_1, dt_));
     }
   }  // Wait to complete
+}
+
+//! Initialize point constraints
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::initialise_point_constraints(
+    double current_time) {
+  // Apply point velocity constraints
+  mesh_->assign_point_velocity_constraints(current_time);
+  // Apply point kelvin voigt constraints
+  mesh_->assign_point_kelvin_voigt_constraints();
+  // Apply point joyner chen constraints
+  mesh_->assign_point_joyner_chen_constraints(current_time);
 }
 
 //! Compute nodal kinematics - map mass and momentum to nodes
@@ -256,13 +265,10 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
                 std::placeholders::_1, dt_, velocity_update, blending_ratio));
 
-  // Apply particle velocity constraints
-  mesh_->apply_particle_velocity_constraints();
-
   // Iterate over each point to compute updated position
-  mesh_->iterate_over_points(
-      std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
-                std::placeholders::_1, dt_));
+  mesh_->iterate_over_points(std::bind(
+      &mpm::PointBase<Tdim>::compute_updated_position, std::placeholders::_1,
+      dt_, phase, blending_ratio, velocity_update));
 }
 
 // Locate particles

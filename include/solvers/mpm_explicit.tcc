@@ -90,6 +90,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Point entity sets and velocity constraints
     this->point_entity_sets(false);
     this->point_velocity_constraints();
+    this->point_kelvin_voigt_constraints();
+    this->point_joyner_chen_constraints();
   } else {
     // Initialise particles
     this->initialise_particles();
@@ -133,6 +135,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
+
+    // Initialise point boundary constraints
+    mpm_scheme_->initialise_point_constraints(step_ * dt_);
 
     // Initialise nodal properties and append material ids to node
     contact_->initialise();

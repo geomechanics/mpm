@@ -600,6 +600,12 @@ void mpm::MPMBase<Tdim>::initialise_points() {
 
   // Read and assign points velocity constraints
   this->point_velocity_constraints();
+
+  // Read and assign points kelvin voigt constraints
+  this->point_kelvin_voigt_constraints();
+
+  // Read and assign points joyner chen constraints
+  this->point_joyner_chen_constraints();
 }
 
 //! Checkpoint resume
@@ -1374,6 +1380,7 @@ void mpm::MPMBase<Tdim>::nodal_velocity_constraints(
       // Iterate over velocity constraints
       for (const auto& constraints :
            mesh_props["boundary_conditions"]["velocity_constraints"]) {
+        // TODO: Add math function option for file based initial velocities
         // Velocity constraints are specified in a file
         if (constraints.find("file") != constraints.end()) {
           std::string velocity_constraints_file =
@@ -1393,9 +1400,14 @@ void mpm::MPMBase<Tdim>::nodal_velocity_constraints(
           unsigned dir = constraints.at("dir").template get<unsigned>();
           // Velocity
           double velocity = constraints.at("velocity").template get<double>();
+          // Get the math function
+          std::shared_ptr<FunctionBase> vfunction = nullptr;
+          if (constraints.find("math_function_id") != constraints.end())
+            vfunction = math_functions_.at(
+                constraints.at("math_function_id").template get<unsigned>());
           // Add velocity constraint to mesh
-          auto velocity_constraint =
-              std::make_shared<mpm::VelocityConstraint>(nset_id, dir, velocity);
+          auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+              nset_id, vfunction, dir, velocity);
           bool velocity_constraints =
               constraints_->assign_nodal_velocity_constraint(
                   nset_id, velocity_constraint);
@@ -1812,9 +1824,14 @@ void mpm::MPMBase<Tdim>::particle_velocity_constraints() {
         unsigned dir = constraints.at("dir").template get<unsigned>();
         // Velocity
         double velocity = constraints.at("velocity").template get<double>();
+        // Get the math function
+        std::shared_ptr<FunctionBase> vfunction = nullptr;
+        if (constraints.find("math_function_id") != constraints.end())
+          vfunction = math_functions_.at(
+              constraints.at("math_function_id").template get<unsigned>());
         // Add velocity constraint to mesh
-        auto velocity_constraint =
-            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
+        auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+            pset_id, vfunction, dir, velocity);
         mesh_->create_particle_velocity_constraint(pset_id,
                                                    velocity_constraint);
       }
@@ -2064,10 +2081,15 @@ void mpm::MPMBase<Tdim>::point_velocity_constraints() {
         unsigned dir = constraints.at("dir").template get<unsigned>();
         // Velocity
         double velocity = constraints.at("velocity").template get<double>();
+        // Get the math function
+        std::shared_ptr<FunctionBase> vfunction = nullptr;
+        if (constraints.find("math_function_id") != constraints.end())
+          vfunction = math_functions_.at(
+              constraints.at("math_function_id").template get<unsigned>());
 
         // Add velocity constraint to mesh
-        auto velocity_constraint =
-            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
+        auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+            pset_id, vfunction, dir, velocity);
 
         mesh_->create_point_velocity_constraint(pset_id, velocity_constraint);
       }
@@ -2075,6 +2097,166 @@ void mpm::MPMBase<Tdim>::point_velocity_constraints() {
       throw std::runtime_error("Point velocity constraints JSON not found");
   } catch (std::exception& exception) {
     console_->warn("#{}: Point velocity constraints are undefined {} ",
+                   __LINE__, exception.what());
+  }
+}
+
+// Point velocity constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  try {
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find(
+            "points_kelvin_voigt_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over velocity constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]
+                     ["points_kelvin_voigt_constraints"]) {
+
+        // Set id
+        int pset_id = constraints.at("pset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Delta
+        double delta = constraints.at("delta").template get<double>();
+        // Incidence
+        double incidence_a =
+            constraints.at("incidence_a").template get<double>();
+        double incidence_b =
+            constraints.at("incidence_b").template get<double>();
+        // Penalty factor
+        double h_min =
+            constraints.at("characteristic_length").template get<double>();
+        // Dummy Position
+        mpm::Position pos = mpm::Position::None;
+
+        // Normal vector
+        // Assume cartesian in which case it will be based on the dir provided
+        std::string normal_type = "cartesian";
+        if (constraints.contains("normal_type"))
+          normal_type =
+              constraints.at("normal_type").template get<std::string>();
+        Eigen::Matrix<double, Tdim, 1> normal =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        // If assigned, then prescribe the normal vector
+        if (normal_type == "assign") {
+          if (constraints.contains("normal") &&
+              constraints.at("normal").is_array() &&
+              constraints.at("normal").size() == normal.size()) {
+            for (unsigned i = 0; i < normal.size(); ++i) {
+              normal[i] = constraints.at("normal").at(i);
+            }
+          }
+        } else if (normal_type == "cartesian") {
+          normal[dir] = 1.0;
+        }
+        // If automatic, then throw error
+        if (normal_type == "auto") {
+          console_->error(
+              "#{}: Automatic normal computation has not been implemented. "
+              "Available options are \'cartesian\'(default) or \'assign\'.",
+              __LINE__);
+        }
+
+        // Add absorbing constraint to mesh
+        auto absorbing_constraint = std::make_shared<mpm::AbsorbingConstraint>(
+            pset_id, dir, delta, h_min, incidence_a, incidence_b, pos);
+
+        mesh_->create_point_kelvin_voigt_constraint(
+            pset_id, absorbing_constraint, normal);
+
+        // Set bool for solve loop
+        this->kelvin_voigt_ = true;
+      }
+    } else
+      throw std::runtime_error("Point Kelvin Voigt constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point Kelvin Voigt constraints are undefined {} ",
+                   __LINE__, exception.what());
+  }
+}
+
+// Point joyner chen constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_joyner_chen_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  try {
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find(
+            "points_joyner_chen_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over velocity constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]
+                     ["points_joyner_chen_constraints"]) {
+
+        // Set id
+        int pset_id = constraints.at("pset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Velocity
+        double velocity = constraints.at("velocity").template get<double>();
+        // Get the math function
+        std::shared_ptr<FunctionBase> vfunction = nullptr;
+        if (constraints.find("math_function_id") != constraints.end())
+          vfunction = math_functions_.at(
+              constraints.at("math_function_id").template get<unsigned>());
+
+        // Normal vector
+        // Assume cartesian in which case it will be based on the dir provided
+        std::string normal_type = "cartesian";
+        if (constraints.contains("normal_type"))
+          normal_type =
+              constraints.at("normal_type").template get<std::string>();
+        Eigen::Matrix<double, Tdim, 1> normal =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        // If assigned, then prescribe the normal vector
+        if (normal_type == "assign") {
+          if (constraints.contains("normal") &&
+              constraints.at("normal").is_array() &&
+              constraints.at("normal").size() == normal.size()) {
+            for (unsigned i = 0; i < normal.size(); ++i) {
+              normal[i] = constraints.at("normal").at(i);
+            }
+          }
+        } else if (normal_type == "cartesian") {
+          normal[dir] = 1.0;
+        }
+        // If automatic, then throw error
+        if (normal_type == "auto") {
+          console_->error(
+              "#{}: Automatic normal computation has not been implemented. "
+              "Available options are \'cartesian\'(default) or \'assign\'.",
+              __LINE__);
+        }
+
+        // Add velocity constraint to mesh
+        auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+            pset_id, vfunction, dir, velocity);
+
+        mesh_->create_point_joyner_chen_constraint(pset_id, velocity_constraint, normal);
+
+        // Set bool for solve loop
+        this->joyner_chen_ = true;
+      }
+    } else
+      throw std::runtime_error("Point joyner chen constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point joyner chen constraints are undefined {} ",
                    __LINE__, exception.what());
   }
 }

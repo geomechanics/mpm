@@ -145,7 +145,10 @@ class PointBase {
   virtual VectorDim normal() const { return normal_; }
 
   //! Compute updated position
-  virtual void compute_updated_position(double dt) noexcept = 0;
+  virtual void compute_updated_position(
+      double dt, unsigned phase, double blending_ratio = 1.0,
+      mpm::VelocityUpdate velocity_update =
+          mpm::VelocityUpdate::APIC) noexcept = 0;
 
   //! Type of point
   virtual std::string type() const = 0;
@@ -179,10 +182,45 @@ class PointBase {
         "PointBase:: illegal operation!");
   };
 
+  // Assign point kelvin voigt constraints
+  //! \param[in] dir Direction of point kelvin voigt constraint
+  //! \param[in] delta Spring vs. Dashpot Weighting Parameter
+  //! \param[in] h_min Characteristic length
+  //! \param[in] incidence_a Incidence parameter a
+  //! \param[in] incidence_b Incidence parameter b
+  virtual void assign_kelvin_voigt_constraints(unsigned dir, double delta,
+                                               double h_min, double incidence_a,
+                                               double incidence_b) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_kelvin_voigt_constraints) in "
+        "PointBase:: illegal operation!");
+  };
+
+  //! Apply point joyner chen constraints
+  //! \param[in] velocity Velocity ground motion constraint
+  virtual void assign_joyner_chen_constraints(unsigned dir, double velocity) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_joyner_chen_constraints) in "
+        "PointBase:: illegal operation!");
+  };
+
   //! Map point stiffness matrix to cell
   virtual inline bool map_stiffness_matrix_to_cell() {
     throw std::runtime_error(
         "Calling the base class function (map_stiffness_matrix_to_cell) in "
+        "PointBase:: illegal operation!");
+    return false;
+  };
+
+  //! Map point damping matrix to cell
+  // \param[in] newmark_gamma Newmark gamma parameter
+  // \param[in] newmark_beta Newmark beta parameter
+  // \param[in] dt Time step size
+  virtual inline bool map_damping_matrix_to_cell(double newmark_gamma,
+                                                 double newmark_beta,
+                                                 double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (map_damping_matrix_to_cell) in "
         "PointBase:: illegal operation!");
     return false;
   };
@@ -207,6 +245,8 @@ class PointBase {
   VectorDim coordinates_;
   //! displacement
   VectorDim displacement_;
+  //! Velocity
+  VectorDim velocity_;
   //! Cell id
   Index cell_id_{std::numeric_limits<Index>::max()};
   //! Status

@@ -2035,13 +2035,13 @@ bool mpm::Mesh<Tdim>::create_particle_velocity_constraint(
 
 //! Apply particle velocity constraints
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
+void mpm::Mesh<Tdim>::apply_particle_velocity_constraints(double current_time) {
   // Iterate over all particle velocity constraints
   for (const auto& pvelocity : particle_velocity_constraints_) {
     // If set id is -1, use all particles
     int set_id = pvelocity->setid();
     unsigned dir = pvelocity->dir();
-    double velocity = pvelocity->velocity();
+    double velocity = pvelocity->velocity(current_time);
 
     this->iterate_over_particle_set(
         set_id,
@@ -2075,13 +2075,13 @@ bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
 
 //! Apply point velocity constraints
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::assign_point_velocity_constraints() {
+void mpm::Mesh<Tdim>::assign_point_velocity_constraints(double current_time) {
   // Iterate over all point velocity constraints
   for (const auto& pvelocity : point_velocity_constraints_) {
     // If set id is -1, use all points
     int set_id = pvelocity->setid();
     unsigned dir = pvelocity->dir();
-    double velocity = pvelocity->velocity();
+    double velocity = pvelocity->velocity(current_time);
 
     this->iterate_over_point_set(
         set_id, std::bind(&mpm::PointBase<Tdim>::assign_velocity_constraints,
@@ -2161,6 +2161,105 @@ void mpm::Mesh<Tdim>::assign_point_velocity_constraints() {
     }
   }
 #endif
+}
+
+//! Create point kelvin voigt constraint
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
+    int set_id, const std::shared_ptr<mpm::AbsorbingConstraint>& constraint,
+    const VectorDim& normal_vector) {
+  bool status = true;
+  try {
+    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
+      // Create a point kelvin voigt constraint
+      if (constraint->dir() < Tdim)
+        point_kelvin_voigt_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error(
+            "Invalid direction of Kelvin Voigt constraint");
+      if (constraint->delta() <
+          constraint->h_min() /
+              (2 * std::max(constraint->a(), constraint->b()))) {
+        throw std::runtime_error("Invalid delta for Kelvin Voigt constraint");
+      }
+      // Assign normal vecotr
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_normal,
+                            std::placeholders::_1, normal_vector));
+    } else
+      throw std::runtime_error(
+          "No point set found to assign Kelvin Voigt constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply point kelvin voigt constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::assign_point_kelvin_voigt_constraints() {
+  // Iterate over all point kelvin voigt constraints
+  for (const auto& pkelvin_voigt : point_kelvin_voigt_constraints_) {
+    // If set id is -1, use all points
+    int set_id = pkelvin_voigt->setid();
+    unsigned dir = pkelvin_voigt->dir();
+    double delta = pkelvin_voigt->delta();
+    double h_min = pkelvin_voigt->h_min();
+    double a = pkelvin_voigt->a();
+    double b = pkelvin_voigt->b();
+
+    this->iterate_over_point_set(
+        set_id,
+        std::bind(&mpm::PointBase<Tdim>::assign_kelvin_voigt_constraints,
+                  std::placeholders::_1, dir, delta, h_min, a, b));
+  }
+}
+
+//! Create point joyner chen constraints
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_joyner_chen_constraint(
+    int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
+    const VectorDim& normal_vector) {
+  bool status = true;
+  try {
+    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
+      // Create a point joyner chen constraint
+      if (constraint->dir() < Tdim)
+        point_joyner_chen_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error("Invalid direction of joyner chen constraint");
+      // Assign normal vecotr
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_normal,
+                            std::placeholders::_1, normal_vector));
+    } else
+      throw std::runtime_error(
+          "No point set found to assign joyner chen constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply point joyner chen constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::assign_point_joyner_chen_constraints(
+    double current_time) {
+  // Iterate over all point joyner chen constraints
+  for (const auto& pjoyner_chen : point_joyner_chen_constraints_) {
+    // If set id is -1, use all points
+    int set_id = pjoyner_chen->setid();
+    unsigned dir = pjoyner_chen->dir();
+    double velocity = pjoyner_chen->velocity(current_time);
+
+    this->iterate_over_point_set(
+        set_id, std::bind(&mpm::PointBase<Tdim>::assign_joyner_chen_constraints,
+                          std::placeholders::_1, dir, velocity));
+  }
 }
 
 //! Assign node tractions

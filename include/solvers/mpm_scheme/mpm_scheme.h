@@ -23,6 +23,10 @@ class MPMScheme {
   //! Intialize
   virtual inline void initialise();
 
+  //! Initialize point constraints
+  //! \param[in] current_time Current time in analysis
+  virtual inline void initialise_point_constraints(double current_time);
+
   //! Compute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure

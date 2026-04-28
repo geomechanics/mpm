@@ -91,7 +91,8 @@ void mpm::PointDirichletDirect<Tdim>::assign_velocity_constraints(
 //! Compute updated position
 template <unsigned Tdim>
 void mpm::PointDirichletDirect<Tdim>::compute_updated_position(
-    double dt) noexcept {
+    double dt, unsigned phase, double blending_ratio,
+    mpm::VelocityUpdate velocity_update) noexcept {
   // Update position and displacements
   coordinates_.noalias() += imposed_displacement_;
   displacement_.noalias() += imposed_displacement_;

@@ -110,6 +110,12 @@ class MPMBase : public MPM {
   //! Point velocity constraints
   void point_velocity_constraints();
 
+  //! Point kelvin voigt constraints
+  void point_kelvin_voigt_constraints();
+
+  //! Point joyner chen constraints
+  void point_joyner_chen_constraints();
+
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 
@@ -334,6 +340,10 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
+  //! Kelvin Voigt Variable
+  bool kelvin_voigt_{false};
+  //! Joyner Chen Variable
+  bool joyner_chen_{false};
   //! Boolean to initialize rotation forces
   bool rotation_forces_{false};
   //! Origin of the centrifuge rotation

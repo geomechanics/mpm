@@ -197,7 +197,7 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
     const Vector6d& stress, Vector6d* df_dsigma, Vector6d* dp_dsigma,
     double* dp_dq, double* softening) {
   // Get stress invariants
-  const double rho = std::sqrt(2.0) * state_vars.at("tau");
+  const double rho = std::sqrt(2.0) * (*state_vars).at("tau");
   const double theta = (*state_vars).at("theta");
   // Get MC parameters
   const double phi = (*state_vars).at("phi");

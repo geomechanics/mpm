@@ -1495,6 +1495,21 @@ void mpm::MPMBase<Tdim>::particles_velocities(
             throw std::runtime_error(
                 "Particles velocities are not properly assigned");
         }
+      } else if (type == "isotropic") {
+        Eigen::Matrix<double, Tdim, 1> in_vel;
+        in_vel.setZero();
+        if (mesh_props["particles_velocities"]["values"].is_array() &&
+            mesh_props["particles_velocities"]["values"].size() ==
+                in_vel.size()) {
+          for (unsigned i = 0; i < in_vel.size(); ++i) {
+            in_vel[i] = mesh_props["particles_velocities"]["values"].at(i);
+          }
+          mesh_->iterate_over_particles(
+              std::bind(&mpm::ParticleBase<Tdim>::assign_velocity,
+                        std::placeholders::_1, in_vel));
+        } else {
+          throw std::runtime_error("Initial velocity dimension is invalid");
+        }
       }
     } else
       throw std::runtime_error("Particle velocities JSON data not found");
@@ -1531,6 +1546,21 @@ void mpm::MPMBase<Tdim>::particles_accelerations(
           if (!mesh_->assign_particles_accelerations(particles_acc))
             throw std::runtime_error(
                 "Particles accelerations are not properly assigned");
+        }
+      } else if (type == "isotropic") {
+        Eigen::Matrix<double, Tdim, 1> in_acc;
+        in_acc.setZero();
+        if (mesh_props["particles_accelerations"]["values"].is_array() &&
+            mesh_props["particles_accelerations"]["values"].size() ==
+                in_acc.size()) {
+          for (unsigned i = 0; i < in_acc.size(); ++i) {
+            in_acc[i] = mesh_props["particles_accelerations"]["values"].at(i);
+          }
+          mesh_->iterate_over_particles(
+              std::bind(&mpm::ParticleBase<Tdim>::assign_acceleration,
+                        std::placeholders::_1, in_acc));
+        } else {
+          throw std::runtime_error("Initial acceleration dimension is invalid");
         }
       }
     } else

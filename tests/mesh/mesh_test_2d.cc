@@ -1119,6 +1119,79 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                           particles_stresses) == false);
             }
 
+            // Test assign initial particles velocities
+            SECTION("Check assign initial particles velocities") {
+              // Vector of particle velocities
+              std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Dim, 1>>>
+                  particles_velocities;
+
+              // Check number of particles in mesh
+              REQUIRE(mesh->nparticles() == 8);
+
+              // Velocities
+              particles_velocities.emplace_back(std::make_tuple(
+                  0, Eigen::Matrix<double, Dim, 1>::Constant(0.0)));
+              particles_velocities.emplace_back(std::make_tuple(
+                  1, Eigen::Matrix<double, Dim, 1>::Constant(0.1)));
+              particles_velocities.emplace_back(std::make_tuple(
+                  2, Eigen::Matrix<double, Dim, 1>::Constant(-0.2)));
+              particles_velocities.emplace_back(std::make_tuple(
+                  3, Eigen::Matrix<double, Dim, 1>::Constant(0.3)));
+              particles_velocities.emplace_back(std::make_tuple(
+                  4, Eigen::Matrix<double, Dim, 1>::Constant(-0.4)));
+              particles_velocities.emplace_back(std::make_tuple(
+                  5, Eigen::Matrix<double, Dim, 1>::Constant(0.5)));
+              particles_velocities.emplace_back(std::make_tuple(
+                  6, Eigen::Matrix<double, Dim, 1>::Constant(-0.6)));
+              particles_velocities.emplace_back(std::make_tuple(
+                  7, Eigen::Matrix<double, Dim, 1>::Constant(-0.7)));
+
+              REQUIRE(mesh->assign_particles_velocities(particles_velocities) ==
+                      true);
+
+              // When velocities fail
+              particles_velocities.emplace_back(std::make_tuple(
+                  8, Eigen::Matrix<double, Dim, 1>::Constant(0.8)));
+              REQUIRE(mesh->assign_particles_velocities(particles_velocities) ==
+                      false);
+            }
+
+            // Test assign initial particles accelerations
+            SECTION("Check assign initial particles accelerations") {
+              // Vector of particle accelerations
+              std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Dim, 1>>>
+                  particles_accelerations;
+
+              // Check number of particles in mesh
+              REQUIRE(mesh->nparticles() == 8);
+              // Accelerations
+              particles_accelerations.emplace_back(std::make_tuple(
+                  0, Eigen::Matrix<double, Dim, 1>::Constant(0.0)));
+              particles_accelerations.emplace_back(std::make_tuple(
+                  1, Eigen::Matrix<double, Dim, 1>::Constant(0.1)));
+              particles_accelerations.emplace_back(std::make_tuple(
+                  2, Eigen::Matrix<double, Dim, 1>::Constant(-0.2)));
+              particles_accelerations.emplace_back(std::make_tuple(
+                  3, Eigen::Matrix<double, Dim, 1>::Constant(0.3)));
+              particles_accelerations.emplace_back(std::make_tuple(
+                  4, Eigen::Matrix<double, Dim, 1>::Constant(-0.4)));
+              particles_accelerations.emplace_back(std::make_tuple(
+                  5, Eigen::Matrix<double, Dim, 1>::Constant(0.5)));
+              particles_accelerations.emplace_back(std::make_tuple(
+                  6, Eigen::Matrix<double, Dim, 1>::Constant(-0.6)));
+              particles_accelerations.emplace_back(std::make_tuple(
+                  7, Eigen::Matrix<double, Dim, 1>::Constant(-0.7)));
+
+              REQUIRE(mesh->assign_particles_accelerations(
+                          particles_accelerations) == true);
+
+              // When accelerations fail
+              particles_accelerations.emplace_back(std::make_tuple(
+                  8, Eigen::Matrix<double, Dim, 1>::Constant(0.8)));
+              REQUIRE(mesh->assign_particles_accelerations(
+                          particles_accelerations) == false);
+            }
+
             // Test assign particles velocity constraints
             SECTION("Check assign particles velocity constraints") {
               tsl::robin_map<mpm::Index, std::vector<mpm::Index>> particle_sets;

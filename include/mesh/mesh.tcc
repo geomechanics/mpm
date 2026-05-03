@@ -1326,6 +1326,10 @@ bool mpm::Mesh<Tdim>::assign_particles_velocities(
           "No particles have been assigned in mesh, cannot assign particles "
           "velocities");
 
+    if (particles_.size() < particle_velocities.size())
+      throw std::runtime_error(
+          "Number of particles in mesh and initial velocities don't match");
+
     // Loop over particle velocities
     for (const auto& particle_vel : particle_velocities) {
       // Particle id
@@ -1358,6 +1362,10 @@ bool mpm::Mesh<Tdim>::assign_particles_accelerations(
           "No particles have been assigned in mesh, cannot assign particles "
           "accelerations");
 
+    if (particles_.size() < particle_accelerations.size())
+      throw std::runtime_error(
+          "Number of particles in mesh and initial accelerations don't match");
+          
     // Loop over particle accelerations
     for (const auto& particle_acc : particle_accelerations) {
       // Particle id

@@ -602,6 +602,8 @@ void mpm::Particle<Tdim>::update_volume() noexcept {
   // Strain rate for reduced integration
   this->volume_ *= (1. + dvolumetric_strain_);
   this->mass_density_ = this->mass_density_ / (1. + dvolumetric_strain_);
+  // this->volume_ *= std::exp(dvolumetric_strain_);
+  // this->mass_density_ = this->mass_density_ / std::exp(dvolumetric_strain_);
 }
 
 //! Return the approximate particle diameter
@@ -873,6 +875,7 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+  // dvolumetric_strain_ = this->dstrain_.head(Tdim).sum()
 }
 
 // Compute stress

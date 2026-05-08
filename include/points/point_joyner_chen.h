@@ -127,6 +127,8 @@ class PointJoynerChen : public PointBase<Tdim> {
   double density_{0.0};
   //! Poisson's ratio
   double poisson_ratio_{0.0};
+  //! Absorbing factor (0 = no absorption, 1 = full absorption)
+  double absorbing_factor_{0.0};
   //! Normal vector
   VectorDim normal_;
   //! Imposed velocity

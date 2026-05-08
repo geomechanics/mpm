@@ -65,6 +65,11 @@ void mpm::PointJoynerChen<Tdim>::assign_properties(
     for (unsigned i = 0; i < Tdim; ++i)
       constraint_flags_(i) = static_cast<int>(flags[i]);
   }
+
+  // Assign absorbing boolean
+  if (scalar_properties.count("absorbing_factor")) {
+    absorbing_factor_ = scalar_properties.at("absorbing_factor");
+  }
 }
 
 //! Reinitialise point properties
@@ -142,7 +147,7 @@ inline bool mpm::PointJoynerChen<Tdim>::map_damping_matrix_to_cell(
 
     // Compute local penalty stiffness matrix
     cell_->compute_local_stiffness_matrix_block(
-        0, 0, point_stiffness, area_, newmark_gamma / (newmark_beta * dt));
+        0, 0, point_stiffness, area_, absorbing_factor_ * newmark_gamma / (newmark_beta * dt));
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -199,7 +204,7 @@ void mpm::PointJoynerChen<Tdim>::map_boundary_force(unsigned phase) {
 
   for (unsigned i = 0; i < nodes_.size(); i++) {
     net_vel.segment(i * Tdim, Tdim) =
-        (nodes_[i]->velocity(phase) - this->imposed_velocity_)
+        (absorbing_factor_ * nodes_[i]->velocity(phase) - this->imposed_velocity_)
             .cwiseProduct(dir_multiplier);
   }
 

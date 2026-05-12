@@ -89,8 +89,6 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::rotation_ramping_time_;
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
-  //! Absorbing Constraint Type
-  using mpm::MPMBase<Tdim>::kv_type_;
   //! Perfectly Matched Layer Boundary
   using mpm::MPMBase<Tdim>::pml_boundary_;
   //! Perfectly Matched Layer Boundary Type

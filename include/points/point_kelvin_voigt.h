@@ -10,6 +10,7 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include <iostream>
 
 #include "point_base.h"
 
@@ -73,11 +74,14 @@ class PointKelvinVoigt : public PointBase<Tdim> {
                                      unsigned phase) noexcept;
 
   //! Map point stiffness matrix to cell
-  inline bool map_stiffness_matrix_to_cell() override;
+  inline bool map_stiffness_matrix_to_cell(double newmark_gamma,
+                                           double newmark_beta,
+                                           double dt) override;
 
   //! Map dashpot damping matrix to cell
-  inline bool map_damping_matrix_to_cell(double newmark_gamma, double newmark_beta,
-                                        double dt) override;
+  inline bool map_damping_matrix_to_cell(double newmark_gamma,
+                                         double newmark_beta,
+                                         double dt) override;
 
   //! Map enforcement boundary force to node
   //! \param[in] phase Index corresponding to the phase
@@ -131,6 +135,8 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   using PointBase<Tdim>::displacement_;
   //! Area
   using PointBase<Tdim>::area_;
+  //! Normal vector
+  using PointBase<Tdim>::normal_;
   //! Pack size
   using PointBase<Tdim>::pack_size_;
   //! Logger
@@ -149,8 +155,6 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   double incidence_a_{1.0};
   //! Incidence b
   double incidence_b_{1.0};
-  //! Normal vector
-  VectorDim normal_;
 
 };  // PointKelvinVoigt class
 }  // namespace mpm

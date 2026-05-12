@@ -206,7 +206,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       mpm_scheme_->initialise_pml_boundary_properties(pml_type_);
     // Apply KV Absorbing Constraints
     if (absorbing_boundary_) {
-      mpm_scheme_->absorbing_boundary_properties(kv_type_);
+      mpm_scheme_->absorbing_boundary_properties();
     }
     // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,

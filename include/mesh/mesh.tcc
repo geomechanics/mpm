@@ -2147,40 +2147,6 @@ bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
   return status;
 }
 
-//! Create point kelvin voigt constraint
-template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
-    int set_id, const std::shared_ptr<mpm::AbsorbingConstraint>& constraint,
-    const std::string& normal_type, const VectorDim& normal_vector) {
-  bool status = true;
-  try {
-    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
-      // Create a point kelvin voigt constraint
-      if (constraint->dir() < Tdim)
-        point_kelvin_voigt_constraints_.emplace_back(constraint);
-      else
-        throw std::runtime_error(
-            "Invalid direction of Kelvin Voigt constraint");
-      if (constraint->delta() <
-          constraint->h_min() /
-              (2 * std::max(constraint->a(), constraint->b()))) {
-        throw std::runtime_error("Invalid delta for Kelvin Voigt constraint");
-      }
-      // Assign normal vecotr
-      this->iterate_over_point_set(
-          set_id, std::bind(&mpm::PointBase<Tdim>::assign_boundary_normal,
-                            std::placeholders::_1, normal_type, normal_vector));
-    } else
-      throw std::runtime_error(
-          "No point set found to assign Kelvin Voigt constraint");
-
-  } catch (std::exception& exception) {
-    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
-    status = false;
-  }
-  return status;
-}
-
 //! Apply point velocity constraints
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::assign_point_velocity_constraints(double current_time) {
@@ -2367,26 +2333,6 @@ void mpm::Mesh<Tdim>::assign_point_joyner_chen_constraints(
     this->iterate_over_point_set(
         set_id, std::bind(&mpm::PointBase<Tdim>::assign_joyner_chen_constraints,
                           std::placeholders::_1, dir, velocity));
-  }
-}
-
-//! Apply point kelvin voigt constraints
-template <unsigned Tdim>
-void mpm::Mesh<Tdim>::apply_point_kelvin_voigt_constraints() {
-  // Iterate over all point kelvin voigt constraints
-  for (const auto& pkelvin_voigt : point_kelvin_voigt_constraints_) {
-    // If set id is -1, use all points
-    int set_id = pkelvin_voigt->setid();
-    unsigned dir = pkelvin_voigt->dir();
-    double delta = pkelvin_voigt->delta();
-    double h_min = pkelvin_voigt->h_min();
-    double a = pkelvin_voigt->a();
-    double b = pkelvin_voigt->b();
-
-    this->iterate_over_point_set(
-        set_id,
-        std::bind(&mpm::PointBase<Tdim>::apply_point_kelvin_voigt_constraints,
-                  std::placeholders::_1, dir, delta, h_min, a, b));
   }
 }
 

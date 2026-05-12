@@ -179,7 +179,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
     // Apply Absorbing Constraint
     if (absorbing_boundary_) {
-      mpm_scheme_->absorbing_boundary_properties(kv_type_);
+      mpm_scheme_->absorbing_boundary_properties();
       this->nodal_absorbing_constraints();
     }
 

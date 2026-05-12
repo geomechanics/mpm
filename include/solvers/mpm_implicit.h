@@ -119,8 +119,6 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
-  //! Absorbing Constraint Type
-  using mpm::MPMBase<Tdim>::kv_type_;
   //! Nonlocal node neighbourhood
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
   //! Kelvin Voigt constraints

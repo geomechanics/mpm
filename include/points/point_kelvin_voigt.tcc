@@ -34,7 +34,6 @@ mpm::PointKelvinVoigt<Tdim>::PointKelvinVoigt(Index id, const VectorDim& coord,
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::initialise() {
   mpm::PointBase<Tdim>::initialise();
-  normal_.setZero();
 }
 
 //! Assign point properties
@@ -61,7 +60,7 @@ void mpm::PointKelvinVoigt<Tdim>::assign_properties(
 //! Reinitialise point properties
 template <unsigned Tdim>
 void mpm::PointKelvinVoigt<Tdim>::initialise_properties(double dt) {
-    // Nothing to initialise for point Kelvin Voigt constraints
+  // Nothing to initialise for point Kelvin Voigt constraints
 }
 
 //! Apply point velocity constraints
@@ -118,14 +117,15 @@ void mpm::PointKelvinVoigt<Tdim>::compute_updated_position_flip(
                     (1.0 - blending_ratio) * nodal_velocity;
 
   // New position current position + velocity * dt
-  this->coordinates_.noalias() += nodal_velocity * dt;
+  // this->coordinates_.noalias() += nodal_velocity * dt;
   // Update displacement (displacement is initialized from zero)
-  this->displacement_.noalias() += nodal_velocity * dt;
+  // this->displacement_.noalias() += nodal_velocity * dt;
 }
 
 //! Map penalty stiffness matrix to cell
 template <unsigned Tdim>
-inline bool mpm::PointKelvinVoigt<Tdim>::map_stiffness_matrix_to_cell() {
+inline bool mpm::PointKelvinVoigt<Tdim>::map_stiffness_matrix_to_cell(
+    double newmark_beta, double newmark_gamma, double dt) {
   bool status = true;
   try {
     // Assumed phase

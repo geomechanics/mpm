@@ -28,7 +28,7 @@ class Node : public NodeBase<Tdim> {
   Node(Index id, const VectorDim& coord);
 
   //! Virtual destructor
-  ~Node() override{};
+  ~Node() override {};
 
   //! Delete copy constructor
   Node(const Node<Tdim, Tdof, Tnphases>&) = delete;
@@ -223,6 +223,28 @@ class Node : public NodeBase<Tdim> {
 
   //! Apply velocity constraints
   void apply_velocity_constraints() override;
+
+  //! Assign moving velocity constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of velocity constraint
+  //! \param[in] velocity Applied velocity constraint
+  bool assign_moving_velocity_constraint(unsigned dir,
+                                         double velocity) override;
+
+  //! Apply moving velocity constraints
+  void apply_moving_velocity_constraints() override;
+
+  //! Return map of moving velocity constraints
+  const std::map<unsigned, double>& moving_velocity_constraints()
+      const override {
+    return moving_velocity_constraints_;
+  }
+
+  //! Return map of moving velocity constraints
+  void update_moving_velocity_constraints(
+      const std::map<unsigned, double>& moving_velocity_constraints) override {
+    moving_velocity_constraints_ = moving_velocity_constraints;
+  }
 
   //! Assign acceleration constraint
   //! Directions can take values between 0 and Dim * Nphases
@@ -710,6 +732,8 @@ class Node : public NodeBase<Tdim> {
   Eigen::Matrix<double, Tdim, Tnphases> acceleration_;
   //! Velocity constraints
   std::map<unsigned, double> velocity_constraints_;
+  //! Moving velocity constraints
+  std::map<unsigned, double> moving_velocity_constraints_;
   //! Acceleration constraints
   std::map<unsigned, double> acceleration_constraints_;
   //! Pressure constraint

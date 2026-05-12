@@ -655,6 +655,9 @@ void mpm::MPMBase<Tdim>::initialise_points() {
   // Read and assign points areas
   this->points_areas(mesh_props, point_io);
 
+  // Read and assign points normals
+  this->points_normals(mesh_props, point_io);
+
   auto points_area_end = std::chrono::steady_clock::now();
   console_->info("Rank {} Read areas: {} ms", mpi_rank,
                  std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -667,8 +670,11 @@ void mpm::MPMBase<Tdim>::initialise_points() {
   // Read and assign points velocity constraints
   this->point_velocity_constraints();
 
-  // Read and assign points Kelvin Voigt constraints
+  // Read and assign points kelvin voigt constraints
   this->point_kelvin_voigt_constraints();
+
+  // Read and assign points joyner chen constraints
+  this->point_joyner_chen_constraints();
 }
 
 //! Checkpoint resume
@@ -1041,69 +1047,70 @@ void mpm::MPMBase<Tdim>::write_vtk_points(mpm::Index step,
 
   //! VTK scalar variables
   for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Scalar)) {
+    auto point_attribute = attribute + "_point";
     // Write scalar
-    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
-                                 max_steps)
-                    .string();
+    auto file =
+        io_->output_file(point_attribute, extension, uuid_, step, max_steps)
+            .string();
     vtk_writer->write_scalar_point_data(
-        file, mesh_->points_scalar_data(attribute), attribute);
+        file, mesh_->points_scalar_data(attribute), point_attribute);
 
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
-      auto parallel_file =
-          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
-                           max_steps, write_mpi_rank)
-              .string();
+      auto parallel_file = io_->output_file(point_attribute, ".pvtp", uuid_,
+                                            step, max_steps, write_mpi_rank)
+                               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
-                                     mpi_size, step, max_steps, 1);
+      vtk_writer->write_parallel_vtk(parallel_file, point_attribute, mpi_size,
+                                     step, max_steps, 1);
     }
 #endif
   }
 
   //! VTK vector variables
   for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Vector)) {
+    auto point_attribute = attribute + "_point";
     // Write vector
-    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
-                                 max_steps)
-                    .string();
+    auto file =
+        io_->output_file(point_attribute, extension, uuid_, step, max_steps)
+            .string();
     vtk_writer->write_vector_point_data(
-        file, mesh_->points_vector_data(attribute), attribute);
+        file, mesh_->points_vector_data(attribute), point_attribute);
 
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
-      auto parallel_file =
-          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
-                           max_steps, write_mpi_rank)
-              .string();
+      auto parallel_file = io_->output_file(point_attribute, ".pvtp", uuid_,
+                                            step, max_steps, write_mpi_rank)
+                               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
-                                     mpi_size, step, max_steps, 3);
+      vtk_writer->write_parallel_vtk(parallel_file, point_attribute, mpi_size,
+                                     step, max_steps, 3);
     }
 #endif
   }
 
   //! VTK tensor variables
   for (const auto& attribute : vtk_vars_.at(mpm::VariableType::Tensor)) {
+    auto point_attribute = attribute + "_point";
     // Write vector
-    auto file = io_->output_file(attribute + "_point", extension, uuid_, step,
-                                 max_steps)
-                    .string();
+    auto file =
+        io_->output_file(point_attribute, extension, uuid_, step, max_steps)
+            .string();
     vtk_writer->write_tensor_point_data(
-        file, mesh_->template points_tensor_data<6>(attribute), attribute);
+        file, mesh_->template points_tensor_data<6>(attribute),
+        point_attribute);
 
     // Write a parallel MPI VTK container file
 #ifdef USE_MPI
     if (mpi_rank == 0 && mpi_size > 1) {
-      auto parallel_file =
-          io_->output_file(attribute + "_point", ".pvtp", uuid_, step,
-                           max_steps, write_mpi_rank)
-              .string();
+      auto parallel_file = io_->output_file(point_attribute, ".pvtp", uuid_,
+                                            step, max_steps, write_mpi_rank)
+                               .string();
 
-      vtk_writer->write_parallel_vtk(parallel_file, attribute + "_point",
-                                     mpi_size, step, max_steps, 9);
+      vtk_writer->write_parallel_vtk(parallel_file, point_attribute, mpi_size,
+                                     step, max_steps, 9);
     }
 #endif
   }
@@ -1181,25 +1188,86 @@ void mpm::MPMBase<Tdim>::initialise_loads() {
   if (!(io_->json_search("external_loading_conditions"))) return;
 
   auto loads = io_->json_object("external_loading_conditions");
-  // Initialise gravity loading
+
+  // Assign gravity
   if (loads.contains("gravity")) {
     if (loads.at("gravity").is_array() &&
         loads.at("gravity").size() == gravity_.size()) {
       for (unsigned i = 0; i < gravity_.size(); ++i) {
         gravity_[i] = loads.at("gravity").at(i);
       }
+
     } else {
-      throw std::runtime_error("Specified gravity dimension is invalid");
+      auto grav_props = loads.at("gravity");
+      if (grav_props.at("gravity").is_array() &&
+          grav_props.at("gravity").size() == gravity_.size()) {
+        for (unsigned i = 0; i < gravity_.size(); ++i) {
+          gravity_[i] = grav_props.at("gravity").at(i);
+        }
+
+        // Check if gravity has a ramping time
+        if (grav_props.contains("ramping_time")) {
+          gravity_ramping_time_ =
+              grav_props.at("ramping_time").template get<double>();
+          if (gravity_ramping_time_ < 0)
+            throw std::runtime_error(
+                "mpm::base::initialise_loads(): Ramping time cannot be "
+                "negative");
+        }
+      } else {
+        throw std::runtime_error(
+            "mpm::base::initialise_loads(): Specified gravity dimension is "
+            "invalid");
+      }
     }
 
     // Assign initial particle acceleration as gravity
+    double gravity_multiplier = 1.0;
+    if (this->gravity_ramping_time_ > 0.0)
+      gravity_multiplier = std::min(
+          1.0, static_cast<double>(step_) * dt_ / this->gravity_ramping_time_);
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::assign_acceleration,
-                  std::placeholders::_1, gravity_));
+                  std::placeholders::_1, gravity_multiplier * gravity_));
   } else {
-    throw std::runtime_error(
-        "mpm::base::initialise_loads(): Specified gravity dimension is "
-        "invalid");
+    console_->warn(
+        "#{}: Gravity are undefined; Gravity JSON data "
+        "not found",
+        __LINE__);
+  }
+
+  // Assign rotation forces
+  if (loads.contains("rotation_forces")) {
+    auto rotation_props = loads.at("rotation_forces");
+    // Read the origin
+    if (rotation_props.at("origin").is_array() &&
+        rotation_props.at("origin").size() == Tdim) {
+      for (unsigned i = 0; i < Tdim; ++i) {
+        rotation_origin_[i] = rotation_props.at("origin").at(i);
+      }
+    } else {
+      throw std::runtime_error(
+          "mpm::base::initialise_loads(): Specified rotation origin "
+          "dimension "
+          "is invalid");
+    }
+    rotation_omega_ = rotation_props.at("omega").template get<double>();
+    rotation_clockwise_ = rotation_props.at("clockwise").template get<bool>();
+
+    if (rotation_props.contains("ramping_time")) {
+      rotation_ramping_time_ =
+          rotation_props.at("ramping_time").template get<double>();
+      if (rotation_ramping_time_ < 0)
+        throw std::runtime_error(
+            "mpm::base::initialise_loads(): Ramping time cannot be negative");
+    }
+    //! Enable rotation forces
+    rotation_forces_ = true;
+  } else {
+    console_->warn(
+        "#{}: Rotation forces are undefined; Rotation forces JSON data "
+        "not found",
+        __LINE__);
   }
 
   // Create a file reader
@@ -1484,6 +1552,7 @@ void mpm::MPMBase<Tdim>::nodal_velocity_constraints(
       // Iterate over velocity constraints
       for (const auto& constraints :
            mesh_props["boundary_conditions"]["velocity_constraints"]) {
+        // TODO: Add math function option for file based initial velocities
         // Velocity constraints are specified in a file
         if (constraints.find("file") != constraints.end()) {
           std::string velocity_constraints_file =
@@ -1503,9 +1572,14 @@ void mpm::MPMBase<Tdim>::nodal_velocity_constraints(
           unsigned dir = constraints.at("dir").template get<unsigned>();
           // Velocity
           double velocity = constraints.at("velocity").template get<double>();
+          // Get the math function
+          std::shared_ptr<FunctionBase> vfunction = nullptr;
+          if (constraints.find("math_function_id") != constraints.end())
+            vfunction = math_functions_.at(
+                constraints.at("math_function_id").template get<unsigned>());
           // Add velocity constraint to mesh
-          auto velocity_constraint =
-              std::make_shared<mpm::VelocityConstraint>(nset_id, dir, velocity);
+          auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+              nset_id, vfunction, dir, velocity);
           bool velocity_constraints =
               constraints_->assign_nodal_velocity_constraint(
                   nset_id, velocity_constraint);
@@ -1924,9 +1998,14 @@ void mpm::MPMBase<Tdim>::particle_velocity_constraints() {
         unsigned dir = constraints.at("dir").template get<unsigned>();
         // Velocity
         double velocity = constraints.at("velocity").template get<double>();
+        // Get the math function
+        std::shared_ptr<FunctionBase> vfunction = nullptr;
+        if (constraints.find("math_function_id") != constraints.end())
+          vfunction = math_functions_.at(
+              constraints.at("math_function_id").template get<unsigned>());
         // Add velocity constraint to mesh
-        auto velocity_constraint =
-            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
+        auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+            pset_id, vfunction, dir, velocity);
         mesh_->create_particle_velocity_constraint(pset_id,
                                                    velocity_constraint);
       }
@@ -2154,6 +2233,55 @@ void mpm::MPMBase<Tdim>::points_areas(
   }
 }
 
+// Points normal vector
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::points_normals(
+    const Json& mesh_props,
+    const std::shared_ptr<mpm::IOMesh<Tdim>>& point_io) {
+  try {
+    if (mesh_props.find("points_normals") != mesh_props.end()) {
+      // Get generator type
+      const std::string type =
+          mesh_props["points_normals"]["type"].template get<std::string>();
+
+      if (type == "file") {
+        std::string fpoints_normals = mesh_props["points_normals"]["location"]
+                                          .template get<std::string>();
+        if (!io_->file_name(fpoints_normals).empty()) {
+
+          // Get normals of all points
+          const auto all_points_normals =
+              point_io->read_particles_vector_properties(
+                  io_->file_name(fpoints_normals));
+
+          // Read and assign points normals
+          if (!mesh_->assign_points_normals(all_points_normals))
+            throw std::runtime_error(
+                "Points normals are not properly assigned");
+        }
+      } else if (type == "isotropic") {
+        Eigen::Matrix<double, Tdim, 1> in_normal;
+        in_normal.setZero();
+        if (mesh_props["points_normals"]["values"].is_array() &&
+            mesh_props["points_normals"]["values"].size() == in_normal.size()) {
+          for (unsigned i = 0; i < in_normal.size(); ++i) {
+            in_normal[i] = mesh_props["points_normals"]["values"].at(i);
+          }
+          mesh_->iterate_over_points(
+              std::bind(&mpm::PointBase<Tdim>::assign_normal,
+                        std::placeholders::_1, in_normal));
+        } else {
+          throw std::runtime_error("Initial normal dimension is invalid");
+        }
+      }
+    } else
+      throw std::runtime_error("Points normals JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Points normals are undefined {} ", __LINE__,
+                   exception.what());
+  }
+}
+
 // Point velocity constraints
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::point_velocity_constraints() {
@@ -2178,49 +2306,17 @@ void mpm::MPMBase<Tdim>::point_velocity_constraints() {
         unsigned dir = constraints.at("dir").template get<unsigned>();
         // Velocity
         double velocity = constraints.at("velocity").template get<double>();
-
-        // Penalty factor
-        double penalty_factor =
-            constraints.at("penalty_factor").template get<double>();
-
-        // Constraint type
-        std::string constraint_type = "fixed";
-        if (constraints.contains("constraint_type"))
-          constraint_type =
-              constraints.at("constraint_type").template get<std::string>();
-
-        // Normal vector
-        std::string normal_type = "cartesian";
-        if (constraints.contains("normal_type"))
-          normal_type =
-              constraints.at("normal_type").template get<std::string>();
-        Eigen::Matrix<double, Tdim, 1> normal =
-            Eigen::Matrix<double, Tdim, 1>::Zero();
-        if (constraint_type != "fixed") {
-          if (constraints.contains("normal") &&
-              constraints.at("normal").is_array() &&
-              constraints.at("normal").size() == normal.size()) {
-            for (unsigned i = 0; i < normal.size(); ++i) {
-              normal[i] = constraints.at("normal").at(i);
-            }
-            normal_type = "assign";
-          }
-
-          if (normal_type == "auto") {
-            console_->error(
-                "#{}: Automatic normal computation has not been implemented. "
-                "Available options are \'cartesian\'(default) or \'assign\'.",
-                __LINE__);
-          }
-        }
+        // Get the math function
+        std::shared_ptr<FunctionBase> vfunction = nullptr;
+        if (constraints.find("math_function_id") != constraints.end())
+          vfunction = math_functions_.at(
+              constraints.at("math_function_id").template get<unsigned>());
 
         // Add velocity constraint to mesh
-        auto velocity_constraint =
-            std::make_shared<mpm::VelocityConstraint>(pset_id, dir, velocity);
+        auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+            pset_id, vfunction, dir, velocity);
 
-        mesh_->create_point_velocity_constraint(pset_id, velocity_constraint,
-                                                constraint_type, penalty_factor,
-                                                normal_type, normal);
+        mesh_->create_point_velocity_constraint(pset_id, velocity_constraint);
       }
     } else
       throw std::runtime_error("Point velocity constraints JSON not found");
@@ -2284,6 +2380,8 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
               normal[i] = constraints.at("normal").at(i);
             }
           }
+        } else if (normal_type == "cartesian") {
+          normal[dir] = 1.0;
         }
         // If automatic, then throw error
         if (normal_type == "auto") {
@@ -2298,15 +2396,92 @@ void mpm::MPMBase<Tdim>::point_kelvin_voigt_constraints() {
             pset_id, dir, delta, h_min, incidence_a, incidence_b, pos);
 
         mesh_->create_point_kelvin_voigt_constraint(
-            pset_id, absorbing_constraint, normal_type, normal);
-        // Set Booleans for point Kelvin Voigt constraints
-        absorbing_boundary_ = true;
-        kv_type_ = false;
+            pset_id, absorbing_constraint, normal);
+
+        // Set bool for solve loop
+        this->kelvin_voigt_ = true;
       }
     } else
       throw std::runtime_error("Point Kelvin Voigt constraints JSON not found");
   } catch (std::exception& exception) {
     console_->warn("#{}: Point Kelvin Voigt constraints are undefined {} ",
+                   __LINE__, exception.what());
+  }
+}
+
+// Point joyner chen constraints
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::point_joyner_chen_constraints() {
+  auto mesh_props = io_->json_object("mesh");
+  // Create a file reader
+  const std::string io_type =
+      io_->json_object("mesh")["io_type"].template get<std::string>();
+  auto reader = Factory<mpm::IOMesh<Tdim>>::instance()->create(io_type);
+
+  try {
+    if (mesh_props.find("boundary_conditions") != mesh_props.end() &&
+        mesh_props["boundary_conditions"].find(
+            "points_joyner_chen_constraints") !=
+            mesh_props["boundary_conditions"].end()) {
+
+      // Iterate over velocity constraints
+      for (const auto& constraints :
+           mesh_props["boundary_conditions"]
+                     ["points_joyner_chen_constraints"]) {
+
+        // Set id
+        int pset_id = constraints.at("pset_id").template get<int>();
+        // Direction
+        unsigned dir = constraints.at("dir").template get<unsigned>();
+        // Velocity
+        double velocity = constraints.at("velocity").template get<double>();
+        // Get the math function
+        std::shared_ptr<FunctionBase> vfunction = nullptr;
+        if (constraints.find("math_function_id") != constraints.end())
+          vfunction = math_functions_.at(
+              constraints.at("math_function_id").template get<unsigned>());
+
+        // Normal vector
+        // Assume cartesian in which case it will be based on the dir provided
+        std::string normal_type = "cartesian";
+        if (constraints.contains("normal_type"))
+          normal_type =
+              constraints.at("normal_type").template get<std::string>();
+        Eigen::Matrix<double, Tdim, 1> normal =
+            Eigen::Matrix<double, Tdim, 1>::Zero();
+        // If assigned, then prescribe the normal vector
+        if (normal_type == "assign") {
+          if (constraints.contains("normal") &&
+              constraints.at("normal").is_array() &&
+              constraints.at("normal").size() == normal.size()) {
+            for (unsigned i = 0; i < normal.size(); ++i) {
+              normal[i] = constraints.at("normal").at(i);
+            }
+          }
+        } else if (normal_type == "cartesian") {
+          normal[dir] = 1.0;
+        }
+        // If automatic, then throw error
+        if (normal_type == "auto") {
+          console_->error(
+              "#{}: Automatic normal computation has not been implemented. "
+              "Available options are \'cartesian\'(default) or \'assign\'.",
+              __LINE__);
+        }
+
+        // Add velocity constraint to mesh
+        auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
+            pset_id, vfunction, dir, velocity);
+
+        mesh_->create_point_joyner_chen_constraint(pset_id, velocity_constraint, normal);
+
+        // Set bool for solve loop
+        this->joyner_chen_ = true;
+      }
+    } else
+      throw std::runtime_error("Point joyner chen constraints JSON not found");
+  } catch (std::exception& exception) {
+    console_->warn("#{}: Point joyner chen constraints are undefined {} ",
                    __LINE__, exception.what());
   }
 }

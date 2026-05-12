@@ -50,7 +50,7 @@ class Material {
   }
 
   //! Destructor
-  virtual ~Material(){};
+  virtual ~Material() {};
 
   //! Delete copy constructor
   Material(const Material&) = delete;

@@ -33,7 +33,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   MohrCoulomb(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~MohrCoulomb() override{};
+  ~MohrCoulomb() override {};
 
   //! Delete copy constructor
   MohrCoulomb(const MohrCoulomb&) = delete;

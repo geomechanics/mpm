@@ -111,6 +111,9 @@ class MPMBase : public MPM {
   //! Point kelvin voigt constraints
   void point_kelvin_voigt_constraints();
 
+  //! Point joyner chen constraints
+  void point_joyner_chen_constraints();
+
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 
@@ -255,6 +258,12 @@ class MPMBase : public MPM {
   void points_areas(const Json& mesh_prop,
                     const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
 
+  //! Points normal vector
+  //! \param[in] mesh_prop Mesh properties
+  //! \param[in] particle_io Particle IO handle
+  void points_normals(const Json& mesh_prop,
+                      const std::shared_ptr<mpm::IOMesh<Tdim>>& particle_io);
+
   // Read and assign perfectly matched layer properties
   //! \param[in] mesh_prop Mesh properties
   //! \param[in] particle_io Particle IO handle
@@ -322,6 +331,8 @@ class MPMBase : public MPM {
   double blending_ratio_{1.0};
   //! Gravity
   Eigen::Matrix<double, Tdim, 1> gravity_;
+  //! Gravity ramping time
+  double gravity_ramping_time_{0.0};
   //! Mesh object
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;
   //! Constraints object
@@ -354,8 +365,20 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
-  //! Absorbing Constraint Type
-  bool kv_type_{false};
+  //! Kelvin Voigt Variable
+  bool kelvin_voigt_{false};
+  //! Joyner Chen Variable
+  bool joyner_chen_{false};
+  //! Boolean to initialize rotation forces
+  bool rotation_forces_{false};
+  //! Origin of the centrifuge rotation
+  Eigen::Matrix<double, Tdim, 1> rotation_origin_;
+  //! Magnitude of the centrifuge angular velocity
+  double rotation_omega_{0.0};
+  //! Rotation ramping time
+  double rotation_ramping_time_{0.0};
+  //! Boolean to set rotation direction
+  bool rotation_clockwise_{false};
   //! Perfectly Matched Layer Boundary
   bool pml_boundary_{false};
   //! Perfectly Matched Layer Boundary Type

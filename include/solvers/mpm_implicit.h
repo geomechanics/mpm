@@ -123,6 +123,10 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::kv_type_;
   //! Nonlocal node neighbourhood
   using mpm::MPMBase<Tdim>::node_neighbourhood_;
+  //! Kelvin Voigt constraints
+  using mpm::MPMBase<Tdim>::kelvin_voigt_;
+  //! Joyner Chen constraints
+  using mpm::MPMBase<Tdim>::joyner_chen_;
   //! Update deformation gradient
   using mpm::MPMBase<Tdim>::update_defgrad_;
   //! Perfectly Matched Layer Boundary

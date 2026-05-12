@@ -602,6 +602,8 @@ void mpm::Particle<Tdim>::update_volume() noexcept {
   // Strain rate for reduced integration
   this->volume_ *= (1. + dvolumetric_strain_);
   this->mass_density_ = this->mass_density_ / (1. + dvolumetric_strain_);
+  // this->volume_ *= std::exp(dvolumetric_strain_);
+  // this->mass_density_ = this->mass_density_ / std::exp(dvolumetric_strain_);
 }
 
 //! Return the approximate particle diameter
@@ -873,6 +875,7 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
 
   // Assign volumetric strain at centroid
   dvolumetric_strain_ = dt * strain_rate_centroid.head(Tdim).sum();
+  // dvolumetric_strain_ = this->dstrain_.head(Tdim).sum()
 }
 
 // Compute stress
@@ -1765,6 +1768,38 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
   if (new_J < 1.0) beta = 0.0;
 
   return beta;
+}
+
+//! Rotation Function
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_rotation_force(const VectorDim& rotation_origin,
+                                             double rotation_omega,
+                                             bool rotation_clockwise) noexcept {
+
+  // Define Angular Velocity Vector
+  Eigen::Matrix<double, 3, 1> omega_vec_3d =
+      Eigen::Matrix<double, 3, 1>::Zero();
+  // Set Z-component: Clockwise = negative Z (Right-hand rule)
+  omega_vec_3d[2] = rotation_clockwise ? -rotation_omega : rotation_omega;
+
+  // Relative Position (r) and Velocity (v) in 3D
+  Eigen::Matrix<double, 3, 1> r_p_3d = Eigen::Matrix<double, 3, 1>::Zero();
+  r_p_3d.head(Tdim) = this->coordinates_ - rotation_origin;
+
+  Eigen::Matrix<double, 3, 1> vel_3d = Eigen::Matrix<double, 3, 1>::Zero();
+  vel_3d.head(Tdim) = this->velocity_;
+
+  // Compute Total Rotation Force
+  const VectorDim f_total =
+      (-mass_ * (omega_vec_3d.cross(omega_vec_3d.cross(r_p_3d)) +
+                 2.0 * omega_vec_3d.cross(vel_3d)))
+          .head(Tdim);
+
+  // Map Force to Nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
+                                     f_total * shapefn_[i]);
+  }
 }
 
 //! Map damped mass vector to nodes

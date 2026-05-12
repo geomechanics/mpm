@@ -191,8 +191,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(
+        gravity, phase, step, false, false,
+        Eigen::Matrix<double, Dim, 1>::Zero(), 0.0, false));
+
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(
+        gravity, phase, step, true, false,
+        Eigen::Matrix<double, Dim, 1>::Zero(), 0.0, false));
 
     // Particle kinematics
     mpm::Damping damping_type = mpm::Damping::Cundall;
@@ -240,8 +245,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(
+        gravity, phase, step, false, false,
+        Eigen::Matrix<double, Dim, 1>::Zero(), 0.0, false));
+
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(
+        gravity, phase, step, true, false,
+        Eigen::Matrix<double, Dim, 1>::Zero(), 0.0, false));
 
     // Particle kinematics
     mpm::Damping damping_type = mpm::Damping::Cundall;
@@ -288,8 +298,13 @@ TEST_CASE("Stress update is checked for USF, USL and MUSL",
     REQUIRE_NOTHROW(mpm_scheme->precompute_stress_strain(phase, true));
 
     // Compute forces
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, false));
-    REQUIRE_NOTHROW(mpm_scheme->compute_forces(gravity, phase, step, true));
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(
+        gravity, phase, step, false, false,
+        Eigen::Matrix<double, Dim, 1>::Zero(), 0.0, false));
+
+    REQUIRE_NOTHROW(mpm_scheme->compute_forces(
+        gravity, phase, step, true, false,
+        Eigen::Matrix<double, Dim, 1>::Zero(), 0.0, false));
 
     // Particle kinematics
     mpm::Damping damping_type = mpm::Damping::Cundall;

@@ -145,6 +145,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     this->point_entity_sets(false);
     this->point_velocity_constraints();
     this->point_kelvin_voigt_constraints();
+    this->point_joyner_chen_constraints();
   } else {
     // Initialise particles
     this->initialise_particles();
@@ -194,6 +195,10 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mesh_->inject_particles(step_ * dt_);
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
+
+    // Initialise point boundary constraints
+    mpm_scheme_->initialise_point_constraints(step_ * dt_);
+
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_, step_);
     // Apply PML specific routines
@@ -425,6 +430,16 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
             std::placeholders::_1, newmark_beta_, newmark_gamma_, dt_));
       }
     }
+
+    // Compute local damping matrix
+    if (kelvin_voigt_ || joyner_chen_) {
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::map_damping_matrix_to_cell,
+                    std::placeholders::_1, newmark_gamma_, newmark_beta_, dt_));
+    }
+
+    // Assemble global stiffness matrix
+    assembler_->assemble_stiffness_matrix();
 
     // Compute local residual force
     mpm_scheme_->compute_forces(gravity_, phase_, step_,

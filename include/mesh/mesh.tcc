@@ -1,7 +1,8 @@
 // Constructor with id
 template <unsigned Tdim>
 mpm::Mesh<Tdim>::Mesh(unsigned id, bool isoparametric)
-    : id_{id}, isoparametric_{isoparametric} {
+    : id_{id},
+      isoparametric_{isoparametric} {
   // Check if the dimension is between 1 & 3
   static_assert((Tdim >= 1 && Tdim <= 3), "Invalid global dimension");
   //! Logger
@@ -1905,6 +1906,35 @@ bool mpm::Mesh<Tdim>::assign_points_areas(
   return status;
 }
 
+//! Assign points normals
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::assign_points_normals(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        points_normals) {
+  bool status = true;
+  try {
+    if (!points_.size())
+      throw std::runtime_error(
+          "No points have been assigned in mesh, cannot assign normal");
+
+    for (const auto& points_normal : points_normals) {
+      // Point id
+      mpm::Index pid = std::get<0>(points_normal);
+      // Normal
+      Eigen::Matrix<double, Tdim, 1> normal = std::get<1>(points_normal);
+      if (map_points_.find(pid) != map_points_.end())
+        status = map_points_[pid]->assign_normal(normal);
+
+      if (!status)
+        throw std::runtime_error("Cannot assign invalid point normal");
+    }
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
 //! Compute and assign rotation matrix to nodes
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::compute_nodal_rotation_matrices(
@@ -2079,13 +2109,13 @@ bool mpm::Mesh<Tdim>::create_particle_velocity_constraint(
 
 //! Apply particle velocity constraints
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
+void mpm::Mesh<Tdim>::apply_particle_velocity_constraints(double current_time) {
   // Iterate over all particle velocity constraints
   for (const auto& pvelocity : particle_velocity_constraints_) {
     // If set id is -1, use all particles
     int set_id = pvelocity->setid();
     unsigned dir = pvelocity->dir();
-    double velocity = pvelocity->velocity();
+    double velocity = pvelocity->velocity(current_time);
 
     this->iterate_over_particle_set(
         set_id,
@@ -2097,9 +2127,7 @@ void mpm::Mesh<Tdim>::apply_particle_velocity_constraints() {
 //! Create point velocity constraints
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
-    int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
-    const std::string& constraint_type, double penalty_factor,
-    const std::string& normal_type, const VectorDim& normal_vector) {
+    int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint) {
   bool status = true;
   try {
     if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
@@ -2108,12 +2136,6 @@ bool mpm::Mesh<Tdim>::create_point_velocity_constraint(
         point_velocity_constraints_.emplace_back(constraint);
       else
         throw std::runtime_error("Invalid direction of velocity constraint");
-
-      // Assign penalty factor
-      this->iterate_over_point_set(
-          set_id, std::bind(&mpm::PointBase<Tdim>::assign_penalty_parameter,
-                            std::placeholders::_1, constraint_type,
-                            penalty_factor, normal_type, normal_vector));
     } else
       throw std::runtime_error(
           "No point set found to assign velocity constraint");
@@ -2161,18 +2183,190 @@ bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
 
 //! Apply point velocity constraints
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::apply_point_velocity_constraints() {
+void mpm::Mesh<Tdim>::assign_point_velocity_constraints(double current_time) {
   // Iterate over all point velocity constraints
   for (const auto& pvelocity : point_velocity_constraints_) {
     // If set id is -1, use all points
     int set_id = pvelocity->setid();
     unsigned dir = pvelocity->dir();
-    double velocity = pvelocity->velocity();
+    double velocity = pvelocity->velocity(current_time);
+
+    this->iterate_over_point_set(
+        set_id, std::bind(&mpm::PointBase<Tdim>::assign_velocity_constraints,
+                          std::placeholders::_1, dir, velocity));
+  }
+
+#ifdef USE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  int mpi_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+
+  if (mpi_size > 1) {
+    if (!point_velocity_constraints_.empty()) {
+      const unsigned nnd = this->nnodes();
+      const unsigned buf_size = nnd * Tdim;
+
+      // Send buffers: imposed flag and velocity value per node per direction
+      bool* send_imposed = new bool[buf_size];
+      double* send_values = new double[buf_size];
+      int* send_count = new int[buf_size];
+      memset(send_imposed, 0, buf_size * sizeof(bool));
+      memset(send_values, 0, buf_size * sizeof(double));
+      memset(send_count, 0, buf_size * sizeof(int));
+
+      for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+        const auto& constraints = (*nitr)->moving_velocity_constraints();
+        for (const auto& c : constraints) {
+          if (c.first < Tdim) {
+            const unsigned idx = (*nitr)->id() * Tdim + c.first;
+            send_imposed[idx] = true;
+            send_values[idx] = c.second;
+            send_count[idx] = 1;
+          }
+        }
+      }
+
+      // Receive buffers
+      bool* receive_imposed = new bool[buf_size];
+      double* receive_values_sum = new double[buf_size];
+      int* receive_count = new int[buf_size];
+
+      // Sync imposed directions — true on any rank wins
+      MPI_Allreduce(send_imposed, receive_imposed, buf_size, MPI_CXX_BOOL,
+                    MPI_LOR, MPI_COMM_WORLD);
+
+      // Sync values — sum across imposing ranks and count them
+      MPI_Allreduce(send_values, receive_values_sum, buf_size, MPI_DOUBLE,
+                    MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(send_count, receive_count, buf_size, MPI_INT, MPI_SUM,
+                    MPI_COMM_WORLD);
+
+      // Build synced map and apply to each node
+#pragma omp parallel for schedule(runtime)
+      for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr) {
+        std::map<unsigned, double> synced_constraints;
+        for (unsigned dir = 0; dir < Tdim; ++dir) {
+          const unsigned idx = (*nitr)->id() * Tdim + dir;
+          if (receive_imposed[idx]) {
+            // Average value across all ranks that imposed this direction
+            synced_constraints.insert(std::make_pair<unsigned, double>(
+                static_cast<unsigned>(dir),
+                static_cast<double>(receive_values_sum[idx] /
+                                    receive_count[idx])));
+          }
+        }
+        if (!synced_constraints.empty())
+          (*nitr)->update_moving_velocity_constraints(synced_constraints);
+      }
+
+      delete[] send_imposed;
+      delete[] send_values;
+      delete[] send_count;
+      delete[] receive_imposed;
+      delete[] receive_values_sum;
+      delete[] receive_count;
+    }
+  }
+#endif
+}
+
+//! Create point kelvin voigt constraint
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_kelvin_voigt_constraint(
+    int set_id, const std::shared_ptr<mpm::AbsorbingConstraint>& constraint,
+    const VectorDim& normal_vector) {
+  bool status = true;
+  try {
+    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
+      // Create a point kelvin voigt constraint
+      if (constraint->dir() < Tdim)
+        point_kelvin_voigt_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error(
+            "Invalid direction of Kelvin Voigt constraint");
+      if (constraint->delta() <
+          constraint->h_min() /
+              (2 * std::max(constraint->a(), constraint->b()))) {
+        throw std::runtime_error("Invalid delta for Kelvin Voigt constraint");
+      }
+      // Assign normal vecotr
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_normal,
+                            std::placeholders::_1, normal_vector));
+    } else
+      throw std::runtime_error(
+          "No point set found to assign Kelvin Voigt constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply point kelvin voigt constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::assign_point_kelvin_voigt_constraints() {
+  // Iterate over all point kelvin voigt constraints
+  for (const auto& pkelvin_voigt : point_kelvin_voigt_constraints_) {
+    // If set id is -1, use all points
+    int set_id = pkelvin_voigt->setid();
+    unsigned dir = pkelvin_voigt->dir();
+    double delta = pkelvin_voigt->delta();
+    double h_min = pkelvin_voigt->h_min();
+    double a = pkelvin_voigt->a();
+    double b = pkelvin_voigt->b();
 
     this->iterate_over_point_set(
         set_id,
-        std::bind(&mpm::PointBase<Tdim>::apply_point_velocity_constraints,
-                  std::placeholders::_1, dir, velocity));
+        std::bind(&mpm::PointBase<Tdim>::assign_kelvin_voigt_constraints,
+                  std::placeholders::_1, dir, delta, h_min, a, b));
+  }
+}
+
+//! Create point joyner chen constraints
+template <unsigned Tdim>
+bool mpm::Mesh<Tdim>::create_point_joyner_chen_constraint(
+    int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
+    const VectorDim& normal_vector) {
+  bool status = true;
+  try {
+    if (set_id == -1 || point_sets_.find(set_id) != point_sets_.end()) {
+      // Create a point joyner chen constraint
+      if (constraint->dir() < Tdim)
+        point_joyner_chen_constraints_.emplace_back(constraint);
+      else
+        throw std::runtime_error("Invalid direction of joyner chen constraint");
+      // Assign normal vecotr
+      this->iterate_over_point_set(
+          set_id, std::bind(&mpm::PointBase<Tdim>::assign_normal,
+                            std::placeholders::_1, normal_vector));
+    } else
+      throw std::runtime_error(
+          "No point set found to assign joyner chen constraint");
+
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+    status = false;
+  }
+  return status;
+}
+
+//! Apply point joyner chen constraints
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::assign_point_joyner_chen_constraints(
+    double current_time) {
+  // Iterate over all point joyner chen constraints
+  for (const auto& pjoyner_chen : point_joyner_chen_constraints_) {
+    // If set id is -1, use all points
+    int set_id = pjoyner_chen->setid();
+    unsigned dir = pjoyner_chen->dir();
+    double velocity = pjoyner_chen->velocity(current_time);
+
+    this->iterate_over_point_set(
+        set_id, std::bind(&mpm::PointBase<Tdim>::assign_joyner_chen_constraints,
+                          std::placeholders::_1, dir, velocity));
   }
 }
 
@@ -3111,6 +3305,27 @@ bool mpm::Mesh<Tdim>::read_points_file(const std::shared_ptr<mpm::IO>& io,
       this->create_points(point_type, coords, pset_id, check_duplicates);
 
   if (!status) throw std::runtime_error("Addition of points to mesh failed");
+
+  // Assign point properties if provided
+  if (generator.contains("properties")) {
+    const auto& props = generator["properties"];
+
+    std::map<std::string, double> scalar_properties;
+    std::map<std::string, std::vector<double>> vector_properties;
+
+    for (auto it = props.begin(); it != props.end(); ++it) {
+      if (it.value().is_number()) {
+        scalar_properties[it.key()] = it.value().template get<double>();
+      } else if (it.value().is_array() && it.value().size() == Tdim) {
+        vector_properties[it.key()] =
+            it.value().template get<std::vector<double>>();
+      }
+    }
+
+    // Apply to all points in the set
+    for (const auto& pid : point_sets_.at(pset_id))
+      map_points_[pid]->assign_properties(scalar_properties, vector_properties);
+  }
 
   return status;
 }

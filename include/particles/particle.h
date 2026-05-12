@@ -40,7 +40,7 @@ class Particle : public ParticleBase<Tdim> {
   Particle(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~Particle() override{};
+  ~Particle() override {};
 
   //! Delete copy constructor
   Particle(const Particle<Tdim>&) = delete;
@@ -231,7 +231,7 @@ class Particle : public ParticleBase<Tdim> {
   void update_deformation_gradient() noexcept override;
 
   //! Initial stress
-  //! \param[in] stress Initial sress
+  //! \param[in] stress Initial stress
   void initial_stress(const Eigen::Matrix<double, 6, 1>& stress) override {
     this->stress_ = stress;
     this->previous_stress_ = stress;
@@ -255,6 +255,16 @@ class Particle : public ParticleBase<Tdim> {
   void map_body_force(const VectorDim& pgravity) noexcept override;
   //! Map body force not gravity
   void map_body_force_not_gravity() noexcept override;
+  
+  //! Map rotation forces (centrifugal and coriolis)
+  //! \param[in] rotation_origin Origin of rotation
+  //! \param[in] rotation_omega Angular velocity of centrifuge
+  //! \param[in] rotation_clockwise Boolean of rotation direction (clockwise or
+  //! anticlockwise)
+  void map_rotation_force(const VectorDim& rotation_origin,
+                          double rotation_omega,
+                          bool rotation_clockwise) noexcept override;
+
   //! Map internal force
   inline void map_internal_force(double dt) noexcept override;
 

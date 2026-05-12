@@ -10,10 +10,16 @@ class VelocityConstraint {
  public:
   // Constructor
   //! \param[in] setid  set id
+  //! \param[in] velocity_fn Math function if defined
   //! \param[in] dir Direction of constraint load
   //! \param[in] velocity Constraint  velocity
-  VelocityConstraint(int setid, unsigned dir, double velocity)
-      : setid_{setid}, dir_{dir}, velocity_{velocity} {};
+  VelocityConstraint(int setid,
+                     const std::shared_ptr<mpm::FunctionBase>& velocity_fn,
+                     unsigned dir, double velocity)
+      : setid_{setid},
+        velocity_fn_{velocity_fn},
+        dir_{dir},
+        velocity_{velocity} {};
 
   // Set id
   int setid() const { return setid_; }
@@ -22,11 +28,19 @@ class VelocityConstraint {
   unsigned dir() const { return dir_; }
 
   // Return velocity
-  double velocity() const { return velocity_; }
+  double velocity(double current_time) const {
+    // Static load when no math function is defined
+    double scalar = (this->velocity_fn_ != nullptr)
+                        ? (this->velocity_fn_)->value(current_time)
+                        : 1.0;
+    return velocity_ * scalar;
+  }
 
  private:
   // ID
   int setid_;
+  // Math function
+  std::shared_ptr<mpm::FunctionBase> velocity_fn_;
   // Direction
   unsigned dir_;
   // Velocity

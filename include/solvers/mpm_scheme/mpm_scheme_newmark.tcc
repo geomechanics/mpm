@@ -11,10 +11,6 @@ mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
-  // Apply point velocity constraints
-  mesh_->apply_point_velocity_constraints();
-  mesh_->apply_point_kelvin_voigt_constraints();
-
 #pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
@@ -27,6 +23,10 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       mesh_->iterate_over_cells(
           std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
     }
+  }
+
+#pragma omp parallel sections
+  {
     // Spawn a task for particles
 #pragma omp section
     {
@@ -47,13 +47,25 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       mesh_->iterate_over_points(std::bind(
           &mpm::PointBase<Tdim>::compute_shapefn, std::placeholders::_1));
 
-      // Initialise material
+      // Initialise point properties
       mesh_->iterate_over_points(
-          std::bind(&mpm::PointBase<Tdim>::initialise_property,
+          std::bind(&mpm::PointBase<Tdim>::initialise_properties,
                     std::placeholders::_1, dt_));
     }
 
   }  // Wait to complete
+}
+
+//! Initialize point constraints
+template <unsigned Tdim>
+inline void mpm::MPMSchemeNewmark<Tdim>::initialise_point_constraints(
+    double current_time) {
+  // Apply point velocity constraints
+  mesh_->assign_point_velocity_constraints(current_time);
+  // Apply point kelvin voigt constraints
+  mesh_->assign_point_kelvin_voigt_constraints();
+  // Apply point joyner chen constraints
+  mesh_->assign_point_joyner_chen_constraints(current_time);
 }
 
 //! Compute nodal kinematics - map mass, momentum and inertia to nodes
@@ -229,9 +241,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
                   std::placeholders::_1));  // , "displacement", dt_
 
   // Iterate over each point to compute updated position
-  mesh_->iterate_over_points(
-      std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
-                std::placeholders::_1, dt_, phase, velocity_update));
+  mesh_->iterate_over_points(std::bind(
+      &mpm::PointBase<Tdim>::compute_updated_position, std::placeholders::_1,
+      dt_, phase, blending_ratio, velocity_update));
 }
 
 // Update particle stress, strain and volume

@@ -26,7 +26,7 @@ class FluidParticle : public mpm::Particle<Tdim> {
   //! \param[in] coord Coordinates of the particles
   FluidParticle(Index id, const VectorDim& coord);
   //! Destructor
-  ~FluidParticle() override{};
+  ~FluidParticle() override {};
 
   //! Delete copy constructor
   FluidParticle(const FluidParticle<Tdim>&) = delete;

@@ -8,6 +8,7 @@
 
 #include <array>
 #include <limits>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -49,7 +50,7 @@ class PointBase {
   PointBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~PointBase(){};
+  virtual ~PointBase() {};
 
   //! Delete copy constructor
   PointBase(const PointBase<Tdim>&) = delete;
@@ -136,13 +137,16 @@ class PointBase {
   //! Return area
   virtual double area() const { return area_; }
 
-  //! Reinitialise point property
-  //! \param[in] dt Time step size
-  virtual void initialise_property(double dt) = 0;
+  //! Assign normal
+  //! \param[in] normal Normal vector
+  virtual bool assign_normal(const VectorDim& normal);
+
+  //! Return normal
+  virtual VectorDim normal() const { return normal_; }
 
   //! Compute updated position
   virtual void compute_updated_position(
-      double dt, unsigned phase,
+      double dt, unsigned phase, double blending_ratio = 1.0,
       mpm::VelocityUpdate velocity_update =
           mpm::VelocityUpdate::APIC) noexcept = 0;
 
@@ -157,38 +161,48 @@ class PointBase {
   //! \param[in] buffer Serialized buffer data
   virtual void deserialize(const std::vector<uint8_t>& buffer);
 
-  //! Assign penalty factor
-  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
-  //! \param[in] penalty_factor Penalty factor
-  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
-  //! \param[in] normal_vector Normal vector
-  virtual void assign_penalty_parameter(const std::string& constraint_type,
-                                        double penalty_factor,
-                                        const std::string& normal_type,
-                                        const VectorDim& normal_vector) {};
+  //! Assign point properties
+  //! \param[in] scalar_properties Map of scalar properties
+  //! \param[in] vector_properties Map of vector properties
+  //! (e.g. constraint_flags)
+  virtual void assign_properties(
+      const std::map<std::string, double>& scalar_properties,
+      const std::map<std::string, std::vector<double>>& vector_properties) {};
 
-  //! Assign boundary normal
-  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
-  //! \param[in] normal_vector Normal vector
-  virtual void assign_boundary_normal(const std::string& normal_type,
-                                      const VectorDim& normal_vector) {};
+  //! Reinitialise point property
+  //! \param[in] dt Time step size
+  virtual void initialise_properties(double dt) = 0;
 
-  //! Apply point velocity constraints
+  //! Assign point velocity constraints
   //! \param[in] dir Direction of point velocity constraint
   //! \param[in] velocity Applied point velocity constraint
-  virtual void apply_point_velocity_constraints(unsigned dir, double velocity) {
+  virtual void assign_velocity_constraints(unsigned dir, double velocity) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_velocity_constraints) in "
+        "PointBase:: illegal operation!");
   };
 
-  //! Apply point kelvin voigt constraints
-  //! \param[in] dir Direction of kelvin voigt constraint
+  // Assign point kelvin voigt constraints
+  //! \param[in] dir Direction of point kelvin voigt constraint
   //! \param[in] delta Spring vs. Dashpot Weighting Parameter
   //! \param[in] h_min Characteristic length
   //! \param[in] incidence_a Incidence parameter a
   //! \param[in] incidence_b Incidence parameter b
-  virtual void apply_point_kelvin_voigt_constraints(unsigned dir, double delta,
-                                                    double h_min,
-                                                    double incidence_a,
-                                                    double incidence_b) {};
+  virtual void assign_kelvin_voigt_constraints(unsigned dir, double delta,
+                                               double h_min, double incidence_a,
+                                               double incidence_b) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_kelvin_voigt_constraints) in "
+        "PointBase:: illegal operation!");
+  };
+
+  //! Apply point joyner chen constraints
+  //! \param[in] velocity Velocity ground motion constraint
+  virtual void assign_joyner_chen_constraints(unsigned dir, double velocity) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_joyner_chen_constraints) in "
+        "PointBase:: illegal operation!");
+  };
 
   //! Map point stiffness matrix to cell
   virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
@@ -196,6 +210,19 @@ class PointBase {
                                                    double dt) {
     throw std::runtime_error(
         "Calling the base class function (map_stiffness_matrix_to_cell) in "
+        "PointBase:: illegal operation!");
+    return false;
+  };
+
+  //! Map point damping matrix to cell
+  // \param[in] newmark_gamma Newmark gamma parameter
+  // \param[in] newmark_beta Newmark beta parameter
+  // \param[in] dt Time step size
+  virtual inline bool map_damping_matrix_to_cell(double newmark_gamma,
+                                                 double newmark_beta,
+                                                 double dt) {
+    throw std::runtime_error(
+        "Calling the base class function (map_damping_matrix_to_cell) in "
         "PointBase:: illegal operation!");
     return false;
   };
@@ -220,6 +247,8 @@ class PointBase {
   VectorDim coordinates_;
   //! displacement
   VectorDim displacement_;
+  //! Velocity
+  VectorDim velocity_;
   //! Cell id
   Index cell_id_{std::numeric_limits<Index>::max()};
   //! Status
@@ -243,6 +272,8 @@ class PointBase {
       tensor_properties_;
   //! Area
   double area_{0.};
+  //! Normal
+  VectorDim normal_;
   //! Pack size
   unsigned pack_size_{0};
 };  // PointBase class

@@ -12,7 +12,9 @@ class PressureConstraint {
   //! \param[in] setid  set id
   //! \param[in] pressure Constraint pressure
   PressureConstraint(int setid, unsigned phase, double pressure)
-      : setid_{setid}, phase_{phase}, pressure_{pressure} {};
+      : setid_{setid},
+        phase_{phase},
+        pressure_{pressure} {};
 
   // Set id
   int setid() const { return setid_; }

@@ -22,6 +22,10 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! Intialize
   inline void initialise() override;
 
+  //! Initialize point constraints
+  //! \param[in] current_time Current time in analysis
+  inline void initialise_point_constraints(double current_time) override;
+
   //! Compute nodal kinematics - map mass, momentum and inertia to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
@@ -69,11 +73,6 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! Stress update scheme
   //! \retval scheme Stress update scheme
   inline std::string scheme() const override;
-
-  //! Compute particle and point location
-  //! \param[in] locate_particles Flag to enable locate particles, if set to
-  //! false, unlocated particles will be removed
-  inline void locate_particles(bool locate_particles) override;
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

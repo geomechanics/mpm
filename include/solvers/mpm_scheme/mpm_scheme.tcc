@@ -29,6 +29,10 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
       mesh_->iterate_over_cells(
           std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
     }
+  }
+
+#pragma omp parallel sections
+  {
     // Spawn a task for particles
 #pragma omp section
     {
@@ -36,7 +40,32 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
     }
+
+    // Spawn a task for points
+#pragma omp section
+    {
+      // Iterate over each point to compute shapefn
+      mesh_->iterate_over_points(std::bind(
+          &mpm::PointBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+      // Initialise point properties
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::initialise_properties,
+                    std::placeholders::_1, dt_));
+    }
   }  // Wait to complete
+}
+
+//! Initialize point constraints
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::initialise_point_constraints(
+    double current_time) {
+  // Apply point velocity constraints
+  mesh_->assign_point_velocity_constraints(current_time);
+  // Apply point kelvin voigt constraints
+  mesh_->assign_point_kelvin_voigt_constraints();
+  // Apply point joyner chen constraints
+  mesh_->assign_point_joyner_chen_constraints(current_time);
 }
 
 //! Compute nodal kinematics - map mass and momentum to nodes
@@ -130,21 +159,30 @@ inline void mpm::MPMScheme<Tdim>::pressure_smoothing(unsigned phase) {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-    unsigned step, bool concentrated_nodal_forces) {
+    unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
+    const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
+    double rotation_omega, bool rotation_clockwise) {
   // Spawn a task for external force
 #pragma omp parallel sections
   {
 #pragma omp section
     {
-      // Iterate over each particle to compute nodal body force
+      // Iterate over each particle to compute nodal body force (Gravity)
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::map_body_force,
                     std::placeholders::_1, gravity));
 
+      // Apply Rotation Forces (Centrifugal + Coriolis)
+      if (rotation_forces) {
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::map_rotation_force, std::placeholders::_1,
+            rotation_origin, rotation_omega, rotation_clockwise));
+      }
+
       // Apply particle traction and map to nodes
       mesh_->apply_traction_on_particles(step * dt_);
 
-      // Iterate over each node to add concentrated node force to external
+      // Iterate over each node to add concentrated node force to external force
       // force
       if (concentrated_nodal_forces)
         mesh_->iterate_over_nodes(
@@ -271,8 +309,10 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,
                 std::placeholders::_1, dt_, velocity_update, blending_ratio));
 
-  // Apply particle velocity constraints
-  mesh_->apply_particle_velocity_constraints();
+  // Iterate over each point to compute updated position
+  mesh_->iterate_over_points(std::bind(
+      &mpm::PointBase<Tdim>::compute_updated_position, std::placeholders::_1,
+      dt_, phase, blending_ratio, velocity_update));
 }
 
 // Locate particles
@@ -293,4 +333,19 @@ inline void mpm::MPMScheme<Tdim>::locate_particles(bool locate_particles) {
   if (!unlocatable_particles.empty() && !locate_particles)
     for (const auto& remove_particle : unlocatable_particles)
       mesh_->remove_particle(remove_particle);
+
+  // Locate points
+  auto unlocatable_points = mesh_->locate_points_mesh();
+
+  // Throw error with listed unlocatable points
+  if (!unlocatable_points.empty() && locate_particles) {
+    std::ostringstream unloc_pt;
+    for (const auto& point : unlocatable_points) unloc_pt << point->id() << " ";
+    throw std::runtime_error("Point(s) outside the mesh domain: " +
+                             unloc_pt.str());
+  }
+  // If unable to locate points remove points
+  if (!unlocatable_points.empty() && !locate_particles)
+    for (const auto& remove_point : unlocatable_points)
+      mesh_->remove_point(remove_point);
 }

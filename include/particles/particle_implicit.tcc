@@ -364,6 +364,8 @@ void mpm::Particle<Tdim>::compute_strain_volume_newmark(double dt) noexcept {
   // Update volume using volumetric strain increment
   this->volume_ *= (1. + dvolumetric_strain_);
   this->mass_density_ /= (1. + dvolumetric_strain_);
+  // this->volume_ *= std::exp(dvolumetric_strain_);
+  // this->mass_density_ = this->mass_density_ / std::exp(dvolumetric_strain_);
 }
 
 // Compute stress using implicit updating scheme

@@ -26,6 +26,10 @@ class MPMScheme {
   //! Intialize
   virtual inline void initialise();
 
+  //! Initialize point constraints
+  //! \param[in] current_time Current time in analysis
+  virtual inline void initialise_point_constraints(double current_time);
+
   //! Compute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
@@ -60,9 +64,15 @@ class MPMScheme {
   //! \param[in] step Number of step in solver
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
   //! is applied or not
+  //! \param[in] rotation_forces Boolean to apply rotation forces
+  //! \param[in] rotation_origin Origin of rotation
+  //! \param[in] rotation_omega Angular velocity
+  //! \param[in] rotation_clockwise Direction of rotation
   virtual inline void compute_forces(
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-      unsigned step, bool concentrated_nodal_forces);
+      unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
+      const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
+      double rotation_omega, bool rotation_clockwise);
 
   //! Assign relevant properties for absorbing boundary
   virtual inline void absorbing_boundary_properties(const bool& kv_type);

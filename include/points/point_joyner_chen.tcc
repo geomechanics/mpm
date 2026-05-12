@@ -1,6 +1,6 @@
 //! Constructor with id and coordinates
 template <unsigned Tdim>
-mpm::PointKelvinVoigt<Tdim>::PointKelvinVoigt(Index id, const VectorDim& coord)
+mpm::PointJoynerChen<Tdim>::PointJoynerChen(Index id, const VectorDim& coord)
     : mpm::PointBase<Tdim>::PointBase(id, coord) {
   this->initialise();
   // Clear cell ptr
@@ -10,14 +10,14 @@ mpm::PointKelvinVoigt<Tdim>::PointKelvinVoigt(Index id, const VectorDim& coord)
 
   // Logger
   std::string logger =
-      "PointKelvinVoigt" + std::to_string(Tdim) + "d::" + std::to_string(id);
+      "PointJoynerChen" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
 //! Constructor with id, coordinates and status
 template <unsigned Tdim>
-mpm::PointKelvinVoigt<Tdim>::PointKelvinVoigt(Index id, const VectorDim& coord,
-                                              bool status)
+mpm::PointJoynerChen<Tdim>::PointJoynerChen(Index id, const VectorDim& coord,
+                                            bool status)
     : mpm::PointBase<Tdim>::PointBase(id, coord, status) {
   this->initialise();
   // Clear cell ptr
@@ -26,20 +26,22 @@ mpm::PointKelvinVoigt<Tdim>::PointKelvinVoigt(Index id, const VectorDim& coord,
   nodes_.clear();
   // Logger
   std::string logger =
-      "PointKelvinVoigt" + std::to_string(Tdim) + "d::" + std::to_string(id);
+      "PointJoynerChen" + std::to_string(Tdim) + "d::" + std::to_string(id);
   console_ = std::make_unique<spdlog::logger>(logger, mpm::stdout_sink);
 }
 
 // Initialise point properties
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::initialise() {
+void mpm::PointJoynerChen<Tdim>::initialise() {
   mpm::PointBase<Tdim>::initialise();
+  imposed_velocity_.setZero();
   normal_.setZero();
+  constraint_flags_.setZero();
 }
 
 //! Assign point properties
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::assign_properties(
+void mpm::PointJoynerChen<Tdim>::assign_properties(
     const std::map<std::string, double>& scalar_properties,
     const std::map<std::string, std::vector<double>>& vector_properties) {
   assert(area_ != std::numeric_limits<double>::max());
@@ -56,136 +58,44 @@ void mpm::PointKelvinVoigt<Tdim>::assign_properties(
         "point kelvin voigt. Default values of 0.0 will be assigned.",
         __LINE__);
   }
+
+  // Assign constraint flags
+  if (vector_properties.count("constraint_flags")) {
+    const auto& flags = vector_properties.at("constraint_flags");
+    for (unsigned i = 0; i < Tdim; ++i)
+      constraint_flags_(i) = static_cast<int>(flags[i]);
+  }
+
+  // Assign absorbing boolean
+  if (scalar_properties.count("absorbing_factor")) {
+    absorbing_factor_ = scalar_properties.at("absorbing_factor");
+  }
 }
 
 //! Reinitialise point properties
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::initialise_properties(double dt) {
-    // Nothing to initialise for point Kelvin Voigt constraints
+void mpm::PointJoynerChen<Tdim>::initialise_properties(double dt) {
+  // Nothing to initialise for point Kelvin Voigt constraints
 }
 
 //! Apply point velocity constraints
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::assign_kelvin_voigt_constraints(
-    unsigned dir, double delta, double h_min, double incidence_a,
-    double incidence_b) {
-  // Assign point properties
-  this->delta_ = delta;
-  this->h_min_ = h_min;
-  this->incidence_a_ = incidence_a;
-  this->incidence_b_ = incidence_b;
+void mpm::PointJoynerChen<Tdim>::assign_joyner_chen_constraints(
+    unsigned dir, double velocity) {
+  // Update imposed velocity
+  this->imposed_velocity_(dir) = velocity;
 }
 
 // Compute updated position
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::compute_updated_position(
+void mpm::PointJoynerChen<Tdim>::compute_updated_position(
     double dt, unsigned phase, double blending_ratio,
     mpm::VelocityUpdate velocity_update) noexcept {
-  // Define default velocity update scheme
-  switch (velocity_update) {
-    case mpm::VelocityUpdate::FLIP:
-      this->compute_updated_position_flip(dt, blending_ratio, phase);
-      break;
-    default:
-      // Default to no position update scheme
-      break;
-  }
-}
-
-// Compute updated position of the point assuming FLIP scheme
-template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::compute_updated_position_flip(
-    double dt, double blending_ratio, unsigned phase) noexcept {
-  // Check if point has a valid cell ptr
-  assert(cell_ != nullptr);
-
-  // Get interpolated nodal velocity and acceleration
-  Eigen::Matrix<double, Tdim, 1> nodal_velocity =
-      Eigen::Matrix<double, Tdim, 1>::Zero();
-  Eigen::Matrix<double, Tdim, 1> nodal_acceleration =
-      Eigen::Matrix<double, Tdim, 1>::Zero();
-
-  for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodal_velocity.noalias() += shapefn_[i] * nodes_[i]->velocity(phase);
-    nodal_acceleration.noalias() +=
-        shapefn_[i] * nodes_[i]->acceleration(phase);
-  }
-
-  // Update particle velocity from interpolated nodal acceleration
-  this->velocity_.noalias() += nodal_acceleration * dt;
-  // If intermediate scheme is considered
-  this->velocity_ = blending_ratio * this->velocity_ +
-                    (1.0 - blending_ratio) * nodal_velocity;
-
-  // New position current position + velocity * dt
-  this->coordinates_.noalias() += nodal_velocity * dt;
-  // Update displacement (displacement is initialized from zero)
-  this->displacement_.noalias() += nodal_velocity * dt;
-}
-
-//! Map penalty stiffness matrix to cell
-template <unsigned Tdim>
-inline bool mpm::PointKelvinVoigt<Tdim>::map_stiffness_matrix_to_cell() {
-  bool status = true;
-  try {
-    // Assumed phase
-    unsigned phase = 0;  // mpm::ParticlePhase::SinglePhase;
-
-    // Initialise stiffness matrix
-    const unsigned matrix_size = nodes_.size() * Tdim;
-    Eigen::MatrixXd point_stiffness(matrix_size, matrix_size);
-    point_stiffness.setZero();
-
-    // Initialise material properties
-    double vp =
-        std::sqrt((youngs_modulus_ * (1 - poisson_ratio_)) /
-                  ((1 + poisson_ratio_) * (1 - 2 * poisson_ratio_) * density_));
-    double vs =
-        std::sqrt(youngs_modulus_ / (2 * (1 + poisson_ratio_) * density_));
-
-    // Normal and Tangent multipliers
-    const double normal_mult = density_ * vp * vp / delta_;
-    const double tangent_mult = density_ * vs * vs / delta_;
-
-    // Normal matrix
-    normal_.normalize();
-    Eigen::Matrix<double, Tdim, Tdim> normal_matrix =
-        normal_ * normal_.transpose();
-
-    // Identity matrix
-    const Eigen::Matrix<double, Tdim, Tdim> identity =
-        Eigen::Matrix<double, Tdim, Tdim>::Identity();
-
-    // Arrange shape function
-    Eigen::MatrixXd shape_function(Tdim, matrix_size);
-    shape_function.setZero();
-    for (unsigned i = 0; i < nodes_.size(); i++) {
-      if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
-        // Arrange shape function
-        for (unsigned int j = 0; j < Tdim; j++) {
-          shape_function(j, Tdim * i + j) = shapefn_[i];
-        }
-      }
-    }
-
-    // Assign stiffness matrix
-    point_stiffness.noalias() += shape_function.transpose() *
-                                 (normal_mult * normal_matrix +
-                                  tangent_mult * (identity - normal_matrix)) *
-                                 shape_function;
-
-    // Compute local penalty stiffness matrix
-    cell_->compute_local_stiffness_matrix_block(0, 0, point_stiffness, area_,
-                                                1.0);
-  } catch (std::exception& exception) {
-    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
-    status = false;
-  }
-  return status;
+  // Joyner Chen points are fixed in space
 }
 
 template <unsigned Tdim>
-inline bool mpm::PointKelvinVoigt<Tdim>::map_damping_matrix_to_cell(
+inline bool mpm::PointJoynerChen<Tdim>::map_damping_matrix_to_cell(
     double newmark_beta, double newmark_gamma, double dt) {
   bool status = true;
   try {
@@ -205,8 +115,8 @@ inline bool mpm::PointKelvinVoigt<Tdim>::map_damping_matrix_to_cell(
         std::sqrt(youngs_modulus_ / (2 * (1 + poisson_ratio_) * density_));
 
     // Normal and Tangent multipliers
-    const double normal_mult = incidence_a_ * density_ * vp;
-    const double tangent_mult = incidence_b_ * density_ * vs;
+    const double normal_mult = density_ * vp;
+    const double tangent_mult = density_ * vs;
 
     // Normal matrix
     normal_.normalize();
@@ -237,7 +147,7 @@ inline bool mpm::PointKelvinVoigt<Tdim>::map_damping_matrix_to_cell(
 
     // Compute local penalty stiffness matrix
     cell_->compute_local_stiffness_matrix_block(
-        0, 0, point_stiffness, area_, newmark_gamma / (newmark_beta * dt));
+        0, 0, point_stiffness, area_, absorbing_factor_ * newmark_gamma / (newmark_beta * dt));
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -247,7 +157,7 @@ inline bool mpm::PointKelvinVoigt<Tdim>::map_damping_matrix_to_cell(
 
 //! Map enforcement force
 template <unsigned Tdim>
-void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
+void mpm::PointJoynerChen<Tdim>::map_boundary_force(unsigned phase) {
   // Initialise material properties
   double vp =
       std::sqrt((youngs_modulus_ * (1 - poisson_ratio_)) /
@@ -256,12 +166,8 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
       std::sqrt(youngs_modulus_ / (2 * (1 + poisson_ratio_) * density_));
 
   // Normal and Tangent multipliers
-  const double normal_dashpot_mult = incidence_a_ * density_ * vp;
-  const double tangent_dashpot_mult = incidence_b_ * density_ * vs;
-
-  // Normal and Tangent multipliers
-  const double normal_spring_mult = density_ * vp * vp / delta_;
-  const double tangent_spring_mult = density_ * vs * vs / delta_;
+  const double normal_dashpot_mult = density_ * vp;
+  const double tangent_dashpot_mult = density_ * vs;
 
   // Normal matrix
   normal_.normalize();
@@ -272,19 +178,8 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
   const Eigen::Matrix<double, Tdim, Tdim> identity =
       Eigen::Matrix<double, Tdim, Tdim>::Identity();
 
-  // Get nodal displacement and nodal velocity
-  const unsigned matrix_size = nodes_.size() * Tdim;
-  Eigen::VectorXd nodal_disp(matrix_size);
-  nodal_disp.setZero();
-  Eigen::VectorXd nodal_vel(matrix_size);
-  nodal_vel.setZero();
-
-  for (unsigned i = 0; i < nodes_.size(); i++) {
-    nodal_disp.segment(i * Tdim, Tdim) = nodes_[i]->displacement(phase);
-    nodal_vel.segment(i * Tdim, Tdim) = nodes_[i]->velocity(phase);
-  }
-
   // Arrange shape function
+  const unsigned matrix_size = nodes_.size() * Tdim;
   Eigen::MatrixXd shape_function(Tdim, matrix_size);
   shape_function.setZero();
   for (unsigned i = 0; i < nodes_.size(); i++) {
@@ -296,23 +191,32 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
     }
   }
 
-  // Spring force contribution
-  const auto& spring_force =
-      shape_function.transpose() *
-      (normal_spring_mult * normal_matrix +
-       tangent_spring_mult * (identity - normal_matrix)) *
-      shape_function * nodal_disp * area_;
+  // Directional multiplier for constrained directions
+  Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
+
+  // Check if direction is constrained
+  for (unsigned j = 0; j < Tdim; ++j)
+    if (constraint_flags_(j) == 0) dir_multiplier(j) = 0.0;
+
+  // Get net velocity (nodal velocity - imposed velocity)
+  Eigen::VectorXd net_vel(matrix_size);
+  net_vel.setZero();
+
+  for (unsigned i = 0; i < nodes_.size(); i++) {
+    net_vel.segment(i * Tdim, Tdim) =
+        (absorbing_factor_ * nodes_[i]->velocity(phase) - this->imposed_velocity_)
+            .cwiseProduct(dir_multiplier);
+  }
+
   // Dashpot force contribution
   const auto& dashpot_force =
       shape_function.transpose() *
       (normal_dashpot_mult * normal_matrix +
        tangent_dashpot_mult * (identity - normal_matrix)) *
-      shape_function * nodal_vel * area_;
+      shape_function * net_vel * area_;
 
   // Compute nodal external forces
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->update_external_force(
-        true, phase, -1.0 * spring_force.segment(i * Tdim, Tdim));
     nodes_[i]->update_external_force(
         true, phase, -1.0 * dashpot_force.segment(i * Tdim, Tdim));
   }
@@ -320,7 +224,7 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 
 // //! Compute size of serialized point data
 // template <unsigned Tdim>
-// int mpm::PointKelvinVoigt<Tdim>::compute_pack_size() const {
+// int mpm::PointJoynerChen<Tdim>::compute_pack_size() const {
 //   int total_size = mpm::PointBase<Tdim>::compute_pack_size();
 //   int partial_size;
 // #ifdef USE_MPI
@@ -345,7 +249,7 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 
 // //! Serialize point data
 // template <unsigned Tdim>
-// std::vector<uint8_t> mpm::PointKelvinVoigt<Tdim>::serialize() {
+// std::vector<uint8_t> mpm::PointJoynerChen<Tdim>::serialize() {
 //   // Compute pack size
 //   if (pack_size_ == 0) pack_size_ = compute_pack_size();
 //   // Initialize data buffer
@@ -412,7 +316,7 @@ void mpm::PointKelvinVoigt<Tdim>::map_boundary_force(unsigned phase) {
 
 // //! Deserialize point data
 // template <unsigned Tdim>
-// void mpm::PointKelvinVoigt<Tdim>::deserialize(
+// void mpm::PointJoynerChen<Tdim>::deserialize(
 //     const std::vector<uint8_t>& data) {
 //   uint8_t* data_ptr = const_cast<uint8_t*>(&data[0]);
 //   int position = 0;

@@ -219,7 +219,7 @@ class Mesh {
   //! Add a particle to the mesh
   //! \param[in] particle A shared pointer to particle
   //! \param[in] checks Parameter to check duplicates and addition
-  //! \retval insertion_status Return the successful deletion of a particle
+  //! \retval insertion_status Return the successful addition of a particle
   bool add_particle(const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle,
                     bool checks = true);
 
@@ -420,6 +420,12 @@ class Mesh {
   bool assign_points_areas(
       const std::vector<std::tuple<mpm::Index, double>>& point_areas);
 
+  //! Assign points normals
+  //! \param[in] point_normals Normal of points
+  bool assign_points_normals(
+      const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+          point_normals);
+
   //! Create particles tractions
   //! \param[in] mfunction Math function if defined
   //! \param[in] setid Particle set id
@@ -461,35 +467,40 @@ class Mesh {
       int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint);
 
   //! Apply particles velocity constraints
-  void apply_particle_velocity_constraints();
+  void apply_particle_velocity_constraints(double current_time);
 
   //! Create point velocity constraints
   //! \param[in] setid Node set id
   //! \param[in] constraint Velocity constraint
-  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
-  //! \param[in] penalty_factor Penalty factor
-  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
-  //! \param[in] normal_vector Normal vector
   bool create_point_velocity_constraint(
-      int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
-      const std::string& constraint_type, double penalty_factor,
-      const std::string& normal_type, const VectorDim& normal_vector);
+      int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint);
+
+  //! Apply points velocity constraints
+  //! \param[in] current_time Current time
+  void assign_point_velocity_constraints(double current_time);
 
   //! Create point kelvin voigt constraints
   //! \param[in] setid Node set id
   //! \param[in] constraint Kelvin voigt constraint
-  //! \param[in] constraint_type Constraint type, e.g. "fixed", "slip"
-  //! \param[in] normal_type Normal type, e.g. "cartesian", "assign", "auto"
   //! \param[in] normal_vector Normal vector
   bool create_point_kelvin_voigt_constraint(
       int set_id, const std::shared_ptr<mpm::AbsorbingConstraint>& constraint,
-      const std::string& normal_type, const VectorDim& normal_vector);
-
-  //! Apply points velocity constraints
-  void apply_point_velocity_constraints();
+      const VectorDim& normal_vector);
 
   //! Apply points kelvin voigt constraints
-  void apply_point_kelvin_voigt_constraints();
+  void assign_point_kelvin_voigt_constraints();
+
+  //! Create point joyner chen constraints
+  //! \param[in] setid Node set id
+  //! \param[in] constraint Joyner Chen constraint
+  //! \param[in] normal_vector Normal vector
+  bool create_point_joyner_chen_constraint(
+      int set_id, const std::shared_ptr<mpm::VelocityConstraint>& constraint,
+      const VectorDim& normal_vector);
+
+  //! Apply points joyner chen constraints
+  //! \param[in] current_time Current time
+  void assign_point_joyner_chen_constraints(double current_time);
 
   //! Assign nodal concentrated force
   //! \param[in] nodal_forces Force at dir on nodes
@@ -950,6 +961,9 @@ class Mesh {
   //! Point kelvin voigt constraints
   std::vector<std::shared_ptr<mpm::AbsorbingConstraint>>
       point_kelvin_voigt_constraints_;
+  //! Point joyner chen constraints
+  std::vector<std::shared_ptr<mpm::VelocityConstraint>>
+      point_joyner_chen_constraints_;
   //! Vector of generators for particle injections
   std::vector<mpm::Injection> particle_injections_;
   //! Nodal property pool

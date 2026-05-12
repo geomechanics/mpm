@@ -1,5 +1,5 @@
-#ifndef MPM_POINT_KELVIN_VOIGT_H_
-#define MPM_POINT_KELVIN_VOIGT_H_
+#ifndef MPM_POINT_JOYNER_CHEN_H_
+#define MPM_POINT_JOYNER_CHEN_H_
 
 // MPI
 #ifdef USE_MPI
@@ -22,7 +22,7 @@ class Material;
 //! Point class to impose nonconforming Kelvin Voigt BC
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
-class PointKelvinVoigt : public PointBase<Tdim> {
+class PointJoynerChen : public PointBase<Tdim> {
  public:
   //! Define a vector of size dimension
   using VectorDim = Eigen::Matrix<double, Tdim, 1>;
@@ -30,35 +30,29 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   //! Constructor with id and coordinates
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
-  PointKelvinVoigt(Index id, const VectorDim& coord);
+  PointJoynerChen(Index id, const VectorDim& coord);
 
   //! Constructor with id, coordinates and status
   //! \param[in] id Point id
   //! \param[in] coord coordinates of the point
   //! \param[in] status Point status (active / inactive)
-  PointKelvinVoigt(Index id, const VectorDim& coord, bool status);
+  PointJoynerChen(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~PointKelvinVoigt() override {};
+  ~PointJoynerChen() override {};
 
   //! Delete copy constructor
-  PointKelvinVoigt(const PointKelvinVoigt<Tdim>&) = delete;
+  PointJoynerChen(const PointJoynerChen<Tdim>&) = delete;
 
   //! Delete assignement opera+tor
-  PointKelvinVoigt& operator=(const PointKelvinVoigt<Tdim>&) = delete;
+  PointJoynerChen& operator=(const PointJoynerChen<Tdim>&) = delete;
 
   //! Initialise properties
   void initialise() override;
 
-  //! Apply point kelvin voigt constraints
-  //! \param[in] dir Direction of kelvin voigt constraint
-  //! \param[in] delta Spring vs. Dashpot Weighting Parameter
-  //! \param[in] h_min Characteristic length
-  //! \param[in] incidence_a Incidence parameter a
-  //! \param[in] incidence_b Incidence parameter b
-  void assign_kelvin_voigt_constraints(unsigned dir, double delta, double h_min,
-                                       double incidence_a,
-                                       double incidence_b) override;
+  //! Apply point joyner chen constraints
+  //! \param[in] velocity Velocity ground motion constraint
+  void assign_joyner_chen_constraints(unsigned dir, double velocity) override;
 
   //! Compute updated position
   //! \param[in] dt Analysis time step
@@ -66,14 +60,6 @@ class PointKelvinVoigt : public PointBase<Tdim> {
       double dt, unsigned phase, double blending_ratio = 1.0,
       mpm::VelocityUpdate velocity_update =
           mpm::VelocityUpdate::APIC) noexcept override;
-
-  //! Compute updated position: FLIP
-  //! \param[in] dt Analysis time step
-  void compute_updated_position_flip(double dt, double blending_ratio,
-                                     unsigned phase) noexcept;
-
-  //! Map point stiffness matrix to cell
-  inline bool map_stiffness_matrix_to_cell() override;
 
   //! Map dashpot damping matrix to cell
   inline bool map_damping_matrix_to_cell(double newmark_gamma, double newmark_beta,
@@ -104,7 +90,7 @@ class PointKelvinVoigt : public PointBase<Tdim> {
 
   //! Type of point
   std::string type() const override {
-    return (Tdim == 2) ? "POINT2DKV" : "POINT3DKV";
+    return (Tdim == 2) ? "POINT2DJC" : "POINT3DJC";
   }
 
   //  protected:
@@ -141,20 +127,18 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   double density_{0.0};
   //! Poisson's ratio
   double poisson_ratio_{0.0};
-  //! Delta
-  double delta_{std::numeric_limits<double>::epsilon()};
-  //! Characteristic length
-  double h_min_{1.0};
-  //! Incidence a
-  double incidence_a_{1.0};
-  //! Incidence b
-  double incidence_b_{1.0};
+  //! Absorbing factor (0 = no absorption, 1 = full absorption)
+  double absorbing_factor_{0.0};
   //! Normal vector
   VectorDim normal_;
+  //! Imposed velocity
+  VectorDim imposed_velocity_;
+  //! Constraint flags: 1 = constrained, 0 = unconstrained, per direction
+  Eigen::Matrix<int, Tdim, 1> constraint_flags_;
 
-};  // PointKelvinVoigt class
+};  // PointJoynerChen class
 }  // namespace mpm
 
-#include "point_kelvin_voigt.tcc"
+#include "point_joyner_chen.tcc"
 
-#endif  // MPM_POINT_KELVIN_VOIGT_H_
+#endif  // MPM_POINT_JOYNER_CHEN_H_

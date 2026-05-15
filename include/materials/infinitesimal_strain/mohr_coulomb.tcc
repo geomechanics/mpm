@@ -124,7 +124,7 @@ template <unsigned Tdim>
 bool mpm::MohrCoulomb<Tdim>::compute_stress_invariants(
     const Vector6d& stress, mpm::dense_map* state_vars) {
   // Compute the mean pressure
-  (*state_vars).at("pressure") = -mpm::materials::p(stress);
+  (*state_vars).at("pressure") = mpm::materials::p(stress);
   // Compute theta value
   (*state_vars).at("theta") = mpm::materials::lode_angle(stress);
   // Compute tau
@@ -142,7 +142,7 @@ typename mpm::mohrcoulomb::FailureState
   // Tolerance for yield function
   const double Tolerance = 1E-7;
   // Get stress invariants
-  const double epsilon = -state_vars.at("pressure") * std::sqrt(3.);
+  const double epsilon = state_vars.at("pressure") * std::sqrt(3.);
   const double rho = std::sqrt(2.0) * state_vars.at("tau");
   const double theta = state_vars.at("theta");
   // Get MC parameters

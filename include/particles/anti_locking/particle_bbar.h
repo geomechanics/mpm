@@ -50,6 +50,12 @@ class ParticleBbar : public mpm::Particle<Tdim> {
     return (Tdim == 2) ? "P2DBBAR" : "P3DBBAR";
   }
 
+  //! Assign computed averge B matrix as centroid of gradient
+  //! \param[in] avg_B_matrix Computed cell average B matrix
+  void assign_dn_dx_centroid(const Eigen::MatrixXd& avg_B_matrix) override {
+    dn_dx_centroid_ = avg_B_matrix;
+  };
+
   /**
    * \defgroup Implicit Functions dealing with implicit MPM
    */

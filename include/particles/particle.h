@@ -184,6 +184,9 @@ class Particle : public ParticleBase<Tdim> {
   //! \retval dvolumetric strain
   double dvolumetric_strain() const override { return dvolumetric_strain_; }
 
+  //! Return dn_dx
+  Eigen::MatrixXd dn_dx() const override { return dn_dx_; }
+
   //! Assign deformation gradient increment
   void assign_deformation_gradient_increment(
       Eigen::Matrix<double, 3, 3> F_inc) noexcept override {
@@ -607,7 +610,6 @@ class Particle : public ParticleBase<Tdim> {
   //! \ingroup AdvancedMapping
   //! \param[in] dt time increment
   inline double compute_asflip_beta(double dt) noexcept;
-
   /**@}*/
 
   //! particle id

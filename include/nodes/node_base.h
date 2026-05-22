@@ -92,6 +92,13 @@ class NodeBase {
   virtual void update_mass(bool update, unsigned phase,
                            double mass) noexcept = 0;
 
+  //! Update mass at the nodes from particle (shared)
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] mass Mass from the particles in a cell
+  virtual void shared_update_mass(bool update, unsigned phase,
+                                  double mass) noexcept = 0;
+
   //! Return mass at a given node for a given phase
   virtual double mass(unsigned phase) const = 0;
 
@@ -171,6 +178,23 @@ class NodeBase {
   //! \param[in] momentum Momentum from the particles in a cell
   virtual void update_momentum(bool update, unsigned phase,
                                const VectorDim& momentum) noexcept = 0;
+
+  //! Update nodal momentum (shared)
+  //! \param[in] update A boolean to update (true) or assign (false)
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] momentum Momentum from the particles in a cell
+  virtual void shared_update_momentum(bool update, unsigned phase,
+                                      const VectorDim& momentum) noexcept = 0;
+
+  //! Update mass and momentum together at nodes from particle
+  //! \param[in] update_mass A boolean to update (true) or assign (false)
+  //! \param[in] update_momentum A boolean to update (true) or assign (false)
+  //! \param[in] phase Index corresponding to the phase
+  //! \param[in] mass Mass from the particles in a cell
+  //! \param[in] momentum Momentum from the particles in a cell
+  virtual void update_mass_momentum(bool update_mass, bool update_momentum,
+                                    unsigned phase, double mass,
+                                    const VectorDim& momentum) noexcept = 0;
 
   //! Return momentum
   //! \param[in] phase Index corresponding to the phase

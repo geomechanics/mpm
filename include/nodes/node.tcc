@@ -64,6 +64,33 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_mass(bool update, unsigned phase,
   node_mutex_.unlock();
 }
 
+//! Update mass at the nodes from particle (shared)
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::shared_update_mass(bool update,
+                                                         unsigned phase,
+                                                         double mass) noexcept {
+  // Decide to update or assign
+  const double factor = (update == true) ? 1. : 0.;
+
+  // Update/assign mass
+  mass_(phase) = (mass_(phase) * factor) + mass;
+}
+
+//! Update mass and momentum together at nodes from particle
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::update_mass_momentum(
+    bool update_mass, bool update_momentum, unsigned phase, double mass,
+    const Eigen::Matrix<double, Tdim, 1>& momentum) noexcept {
+  // Assert
+  assert(phase < Tnphases);
+
+  // Update/assign mass and momentum
+  node_mutex_.lock();
+  shared_update_mass(update_mass, phase, mass);
+  shared_update_momentum(update_momentum, phase, momentum);
+  node_mutex_.unlock();
+}
+
 //! Update volume at the nodes from particle
 template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
 void mpm::Node<Tdim, Tdof, Tnphases>::update_volume(bool update, unsigned phase,
@@ -159,6 +186,18 @@ void mpm::Node<Tdim, Tdof, Tnphases>::update_momentum(
   node_mutex_.lock();
   momentum_.col(phase) = momentum_.col(phase) * factor + momentum;
   node_mutex_.unlock();
+}
+
+//! Assign nodal momentum (shared)
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::shared_update_momentum(
+    bool update, unsigned phase,
+    const Eigen::Matrix<double, Tdim, 1>& momentum) noexcept {
+  // Decide to update or assign
+  const double factor = (update == true) ? 1. : 0.;
+
+  // Update/assign momentum
+  momentum_.col(phase) = momentum_.col(phase) * factor + momentum;
 }
 
 //! Update pressure at the nodes from particle

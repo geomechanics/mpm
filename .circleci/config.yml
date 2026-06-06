@@ -78,7 +78,9 @@ jobs:
       - run:
           name: clang-format
           command: |
-            python3 ./clang-tools/run-clang-format.py -r include/* src/* tests/*
+            pip3 install --user clang-format==18.1.8
+            export PATH=$HOME/.local/bin:$PATH
+            python3 ./clang-tools/run-clang-format.py --clang-format-executable clang-format -r include/* src/* tests/*
 
   codecov_unit:
     docker:

@@ -213,6 +213,15 @@ Json mpm::IO::json_object(const std::string& key) const {
   }
 }
 
+//! Search json key
+bool mpm::IO::json_search(const std::string& key) const {
+  bool status = true;
+  if (json_.find(key) == json_.end()) {
+    status = false;
+  }
+  return status;
+}
+
 //! Return post processing object
 Json mpm::IO::post_processing() const { return json_["post_processing"]; }
 

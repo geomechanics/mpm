@@ -27,7 +27,7 @@ class Newtonian : public Material<Tdim> {
   Newtonian(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~Newtonian() override{};
+  ~Newtonian() override {};
 
   //! Delete copy constructor
   Newtonian(const Newtonian&) = delete;

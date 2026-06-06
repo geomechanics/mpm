@@ -39,10 +39,10 @@ class NodeBase {
   // Constructor with id and coordinates
   //! \param[in] id assign as the id_ of the node
   //! \param[in] coords coordinates of the node
-  NodeBase(mpm::Index id, const VectorDim& coords){};
+  NodeBase(mpm::Index id, const VectorDim& coords) {};
 
   //! Destructor
-  virtual ~NodeBase(){};
+  virtual ~NodeBase() {};
 
   //! Delete copy constructor
   NodeBase(const NodeBase<Tdim>&) = delete;

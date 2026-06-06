@@ -525,18 +525,8 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     // Get step
     this->step_ = analysis_["resume"]["step"].template get<mpm::Index>();
 
-    // Input particle h5 file for resume
-    for (const auto ptype : particle_types_) {
-      std::string attribute = mpm::ParticlePODTypeName.at(ptype);
-      std::string extension = ".h5";
-
-      auto particles_file =
-          io_->output_file(attribute, extension, uuid_, step_, this->nsteps_)
-              .string();
-
-      // Load particle information from file
-      mesh_->read_particles_hdf5(particles_file, attribute, ptype);
-    }
+    // Read particles from hdf5 files
+    this->read_hdf5();
 
     // Clear all particle ids
     mesh_->iterate_over_cells(
@@ -560,22 +550,47 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
   return checkpoint;
 }
 
+//! Read HDF5 files
+template <unsigned Tdim>
+void mpm::MPMBase<Tdim>::read_hdf5() {
+  // Read hdf5 file by particle type
+  for (const auto& ptype : particle_types_) {
+    std::string attribute = mpm::ParticlePODTypeName.at(ptype);
+    std::string extension = ".h5";
+
+    // Generate particle type file name
+    auto particles_file =
+        io_->output_file(attribute, extension, uuid_, step_, nsteps_).string();
+
+    // Load single or two phase particle information from file
+    if (attribute == "particles" || attribute == "fluid_particles" ||
+        attribute == "bbar_particles" || attribute == "fs_particles") {
+      mesh_->read_particles_hdf5(particles_file, ptype);
+    } else if (attribute == "twophase_particles") {
+      mesh_->read_particles_hdf5_twophase(particles_file, ptype);
+    }
+  }
+}
+
 //! Write HDF5 files
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::write_hdf5(mpm::Index step, mpm::Index max_steps) {
   // Write hdf5 file for single phase particle
-  for (const auto ptype : particle_types_) {
+  for (const auto& ptype : particle_types_) {
     std::string attribute = mpm::ParticlePODTypeName.at(ptype);
     std::string extension = ".h5";
 
+    // Generate particle type file name
     auto particles_file =
         io_->output_file(attribute, extension, uuid_, step, max_steps).string();
 
     // Load particle information from file
-    if (attribute == "particles" || attribute == "fluid_particles")
-      mesh_->write_particles_hdf5(particles_file);
-    else if (attribute == "twophase_particles")
-      mesh_->write_particles_hdf5_twophase(particles_file);
+    if (attribute == "particles" || attribute == "fluid_particles" ||
+        attribute == "bbar_particles" || attribute == "fs_particles") {
+      mesh_->write_particles_hdf5(particles_file, ptype);
+    } else if (attribute == "twophase_particles") {
+      mesh_->write_particles_hdf5_twophase(particles_file, ptype);
+    }
   }
 }
 
@@ -771,23 +786,93 @@ bool mpm::MPMBase<Tdim>::is_isoparametric() {
 //! Initialise loads
 template <unsigned Tdim>
 void mpm::MPMBase<Tdim>::initialise_loads() {
-  auto loads = io_->json_object("external_loading_conditions");
-  // Initialise gravity loading
+  //! Set gravity as zero
   gravity_.setZero();
-  if (loads.at("gravity").is_array() &&
-      loads.at("gravity").size() == gravity_.size()) {
-    for (unsigned i = 0; i < gravity_.size(); ++i) {
-      gravity_[i] = loads.at("gravity").at(i);
+
+  // Check if "external_loading_conditions" are specified
+  if (!(io_->json_search("external_loading_conditions"))) return;
+
+  auto loads = io_->json_object("external_loading_conditions");
+
+  // Assign gravity
+  if (loads.contains("gravity")) {
+    if (loads.at("gravity").is_array() &&
+        loads.at("gravity").size() == gravity_.size()) {
+      for (unsigned i = 0; i < gravity_.size(); ++i) {
+        gravity_[i] = loads.at("gravity").at(i);
+      }
+
+    } else {
+      auto grav_props = loads.at("gravity");
+      if (grav_props.at("gravity").is_array() &&
+          grav_props.at("gravity").size() == gravity_.size()) {
+        for (unsigned i = 0; i < gravity_.size(); ++i) {
+          gravity_[i] = grav_props.at("gravity").at(i);
+        }
+
+        // Check if gravity has a ramping time
+        if (grav_props.contains("ramping_time")) {
+          gravity_ramping_time_ =
+              grav_props.at("ramping_time").template get<double>();
+          if (gravity_ramping_time_ < 0)
+            throw std::runtime_error(
+                "mpm::base::initialise_loads(): Ramping time cannot be "
+                "negative");
+        }
+      } else {
+        throw std::runtime_error(
+            "mpm::base::initialise_loads(): Specified gravity dimension is "
+            "invalid");
+      }
     }
 
     // Assign initial particle acceleration as gravity
+    double gravity_multiplier = 1.0;
+    if (this->gravity_ramping_time_ > 0.0)
+      gravity_multiplier = std::min(
+          1.0, static_cast<double>(step_) * dt_ / this->gravity_ramping_time_);
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::assign_acceleration,
-                  std::placeholders::_1, gravity_));
+                  std::placeholders::_1, gravity_multiplier * gravity_));
   } else {
-    throw std::runtime_error(
-        "mpm::base::initialise_loads(): Specified gravity dimension is "
-        "invalid");
+    console_->warn(
+        "#{}: Gravity are undefined; Gravity JSON data "
+        "not found",
+        __LINE__);
+  }
+
+  // Assign rotation forces
+  if (loads.contains("rotation_forces")) {
+    auto rotation_props = loads.at("rotation_forces");
+    // Read the origin
+    if (rotation_props.at("origin").is_array() &&
+        rotation_props.at("origin").size() == Tdim) {
+      for (unsigned i = 0; i < Tdim; ++i) {
+        rotation_origin_[i] = rotation_props.at("origin").at(i);
+      }
+    } else {
+      throw std::runtime_error(
+          "mpm::base::initialise_loads(): Specified rotation origin "
+          "dimension "
+          "is invalid");
+    }
+    rotation_omega_ = rotation_props.at("omega").template get<double>();
+    rotation_clockwise_ = rotation_props.at("clockwise").template get<bool>();
+
+    if (rotation_props.contains("ramping_time")) {
+      rotation_ramping_time_ =
+          rotation_props.at("ramping_time").template get<double>();
+      if (rotation_ramping_time_ < 0)
+        throw std::runtime_error(
+            "mpm::base::initialise_loads(): Ramping time cannot be negative");
+    }
+    //! Enable rotation forces
+    rotation_forces_ = true;
+  } else {
+    console_->warn(
+        "#{}: Rotation forces are undefined; Rotation forces JSON data "
+        "not found",
+        __LINE__);
   }
 
   // Create a file reader

@@ -17,6 +17,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   unsigned material_id = 0;
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+  std::vector<double> rotation_origin{{0.0, 0.0}};
 
   // 3D
   if (dim == 3) {
@@ -28,6 +29,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
     material = "LinearElastic3D";
     gravity.clear();
     gravity = {0., 0., -9.81};
+    rotation_origin = {0.0, 0.0, 0.0};
   }
 
   Json json_file = {
@@ -100,6 +102,10 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
         {"vtk", {"stresses", "strains", "velocities"}},
         {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
         {"output_steps", 5}}}};
+
+  // Inject rotation forces  to bypass compiler exception branches
+  json_file["external_loading_conditions"]["rotation_forces"] = {
+      {"origin", rotation_origin}, {"omega", 10.0}, {"clockwise", false}};
 
   // Dump JSON as an input file to be read
   std::string fname = (file_name + "-" + dimension + ".json").c_str();
@@ -1419,6 +1425,161 @@ bool write_json_twophase(unsigned dim, bool resume, const std::string& analysis,
   return true;
 }
 
+// Write JSON configuration file for implicit with multiple particle types: P2D
+// and P2DFS
+bool write_json_implicit_multi_particle_type(
+    unsigned dim, bool resume, const std::string& analysis,
+    const std::string& mpm_scheme, bool nonlinear, bool quasi_static,
+    const std::string& file_name, const std::string& linear_solver_type) {
+  // Make json object with input files
+  // 2D
+  std::string dimension = "2d";
+  auto node_type = "N2D";
+  auto cell_type = "ED2Q4P2B";
+  auto io_type = "Ascii2D";
+  auto assembler_type = "EigenImplicit2D";
+  std::string entity_set_name = "entity_sets_0";
+  std::vector<double> gravity{{0., -9.81}};
+  std::vector<double> xvalues{{0.0, 0.5, 1.0}};
+  std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
+
+  std::vector<unsigned> fs_material_id{{0}};
+  auto fs_particle_type = "P2DFS";
+  std::string fs_material = "HenckyHyperElastic2D";
+  std::vector<unsigned> is_material_id{{1}};
+  auto is_particle_type = "P2D";
+  std::string is_material = "LinearElastic2D";
+
+  // 3D
+  if (dim == 3) {
+    dimension = "3d";
+    node_type = "N3D";
+    cell_type = "ED3H8";
+    assembler_type = "EigenImplicit3D";
+    io_type = "Ascii3D";
+    gravity.clear();
+    gravity = {0., 0., -9.81};
+    entity_set_name = "entity_sets_1";
+    fs_particle_type = "P3DFS";
+    fs_material = "HenckyHyperElastic3D";
+    is_particle_type = "P3D";
+    is_material = "LinearElastic3D";
+  }
+
+  Json json_file = {
+      {"title", "Example JSON Input for MPM"},
+      {"mesh",
+       {{"mesh", "mesh-" + dimension + ".txt"},
+        {"entity_sets", entity_set_name + ".json"},
+        {"io_type", io_type},
+        {"check_duplicates", true},
+        {"isoparametric", false},
+        {"node_type", node_type},
+        {"boundary_conditions",
+         {{"displacement_constraints",
+           {{"file", "displacement-constraints.txt"}}}}},
+        {"cell_type", cell_type},
+        {"nonlocal_mesh_properties",
+         {{"type", "BSPLINE"},
+          {"kernel_correction", false},
+          {"node_types", {{{"nset_id", 1}, {"dir", 0}, {"type", 1}}}}}}}},
+      {"particles",
+       {{{"generator",
+          {{"type", "file"},
+           {"material_id", fs_material_id},
+           {"pset_id", 0},
+           {"io_type", io_type},
+           {"particle_type", fs_particle_type},
+           {"check_duplicates", true},
+           {"location", "particles-" + dimension + "-cell0.txt"}}}},
+        {{"generator",
+          {{"type", "file"},
+           {"material_id", is_material_id},
+           {"pset_id", 1},
+           {"io_type", io_type},
+           {"particle_type", is_particle_type},
+           {"check_duplicates", true},
+           {"location", "particles-" + dimension + "-cell1.txt"}}}}}},
+      {"materials",
+       {{{"id", 0},
+         {"type", fs_material},
+         {"density", 1000.},
+         {"youngs_modulus", 1.0E+8},
+         {"poisson_ratio", 0.495}},
+        {{"id", 1},
+         {"type", is_material},
+         {"density", 2300.},
+         {"youngs_modulus", 1.5E+6},
+         {"poisson_ratio", 0.25}}}},
+      {"material_sets",
+       {{{"material_id", 0}, {"phase_id", 0}, {"pset_id", 0}},
+        {{"material_id", 1}, {"phase_id", 0}, {"pset_id", 1}}}},
+      {"external_loading_conditions",
+       {{"gravity", gravity},
+        {"particle_surface_traction",
+         {{{"math_function_id", 0},
+           {"pset_id", -1},
+           {"dir", 1},
+           {"traction", 10.5}}}},
+        {"concentrated_nodal_forces",
+         {{{"math_function_id", 0},
+           {"nset_id", -1},
+           {"dir", 1},
+           {"force", 10.5}}}}}},
+      {"math_functions",
+       {{{"id", 0},
+         {"type", "Linear"},
+         {"xvalues", xvalues},
+         {"fxvalues", fxvalues}}}},
+      {"analysis",
+       {{"type", analysis},
+        {"mpm_scheme", mpm_scheme},
+        {"scheme_settings",
+         {{"nonlinear", nonlinear},
+          {"quasi_static", quasi_static},
+          {"beta", 0.25},
+          {"gamma", 0.50},
+          {"max_iteration", 20},
+          {"displacement_tolerance", 1.0e-10},
+          {"residual_tolerance", 1.0e-10},
+          {"relative_residual_tolerance", 1.0e-6},
+          {"verbosity", 0}}},
+        {"locate_particles", true},
+        {"pressure_smoothing", true},
+        {"dt", 0.0001},
+        {"uuid", file_name + "-multi-ptype-" + dimension},
+        {"nsteps", 10},
+        {"resume",
+         {{"resume", resume},
+          {"uuid", file_name + "-multi-ptype-" + dimension},
+          {"step", 5}}},
+        {"linear_solver",
+         {{"assembler_type", assembler_type},
+          {"solver_settings",
+           {{{"dof", "displacement"},
+             {"solver_type", linear_solver_type},
+             {"sub_solver_type", "cg"},
+             {"preconditioner_type", "none"},
+             {"max_iter", 100},
+             {"tolerance", 1E-5},
+             {"verbosity", 0}}}}}},
+        {"damping", {{"type", "Cundall"}, {"damping_factor", 0.0}}},
+        {"newmark", {{"beta", 0.25}, {"gamma", 0.5}}}}},
+      {"post_processing",
+       {{"path", "results/"},
+        {"vtk", {"stresses", "strains", "velocity"}},
+        {"vtk_statevars", {{{"phase_id", 0}, {"statevars", {"pdstrain"}}}}},
+        {"output_steps", 5}}}};
+
+  // Dump JSON as an input file to be read
+  std::ofstream file;
+  file.open((file_name + "-multi-ptype-" + dimension + ".json").c_str());
+  file << json_file.dump(2);
+  file.close();
+
+  return true;
+}
+
 // Write JSON Entity Set
 bool write_entity_set() {
   // JSON Entity Sets
@@ -1457,6 +1618,43 @@ bool write_entity_set() {
   file.open("entity_sets_2.json");
   file << json_file2.dump(2);
   file.close();
+
+  return true;
+}
+
+// Write JSON Configuration file for gravity/rotation ramping
+bool write_json_ramping(unsigned dim, bool resume, const std::string& analysis,
+                        const std::string& mpm_scheme,
+                        const std::string& file_name, double ramping_time,
+                        bool gravity_ramping, bool rotation_ramping) {
+  std::string temp_file = "temp-baseline";
+  mpm_test::write_json(dim, resume, analysis, mpm_scheme, temp_file);
+
+  std::string dimension = (dim == 3) ? "3d" : "2d";
+  std::string temp_fname = temp_file + "-" + dimension + ".json";
+  std::ifstream file_in(temp_fname);
+  Json j;
+  file_in >> j;
+  file_in.close();
+
+  if (gravity_ramping) {
+    auto current_gravity = j["external_loading_conditions"]["gravity"];
+    j["external_loading_conditions"]["gravity"] = {
+        {"gravity", current_gravity}, {"ramping_time", ramping_time}};
+  }
+
+  if (rotation_ramping) {
+    j["external_loading_conditions"]["rotation_forces"]["ramping_time"] =
+        ramping_time;
+  }
+
+  j["analysis"]["uuid"] = file_name + "-" + dimension;
+  j["analysis"]["resume"]["uuid"] = file_name + "-" + dimension;
+
+  std::string fname = file_name + "-" + dimension + ".json";
+  std::ofstream file_out(fname);
+  file_out << j.dump(2);
+  file_out.close();
 
   return true;
 }
@@ -1579,6 +1777,71 @@ bool write_particles_2d() {
   // Dump particles coordinates as an input file to be read
   std::ofstream file;
   file.open("particles-2d.txt");
+  file << coordinates.size() << "\n";
+  // Write particle coordinates
+  for (const auto& coord : coordinates) {
+    for (unsigned i = 0; i < coord.size(); ++i) {
+      file << coord[i] << "\t";
+    }
+    file << "\n";
+  }
+
+  file.close();
+  return true;
+}
+
+bool write_particles_2d_multi_particle_type() {
+  const unsigned dim = 2;
+  // Vector of particle coordinates
+  std::vector<Eigen::Matrix<double, dim, 1>> coordinates;
+  coordinates.clear();
+
+  // Particle coordinates
+  Eigen::Matrix<double, dim, 1> particle;
+
+  // Cell 0
+  // Particle 0
+  particle << 0.125, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 1
+  particle << 0.375, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 2
+  particle << 0.375, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 3
+  particle << 0.125, 0.375;
+  coordinates.emplace_back(particle);
+
+  // Dump particles coordinates as an input file to be read
+  std::ofstream file;
+  file.open("particles-2d-cell0.txt");
+  file << coordinates.size() << "\n";
+  // Write particle coordinates
+  for (const auto& coord : coordinates) {
+    for (unsigned i = 0; i < coord.size(); ++i) {
+      file << coord[i] << "\t";
+    }
+    file << "\n";
+  }
+  file.close();
+  coordinates.clear();
+  // Cell 1
+  // Particle 4
+  particle << 0.625, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 5
+  particle << 0.875, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 6
+  particle << 0.875, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 7
+  particle << 0.625, 0.375;
+  coordinates.emplace_back(particle);
+
+  // Dump particles coordinates as an input file to be read
+  file.open("particles-2d-cell1.txt");
   file << coordinates.size() << "\n";
   // Write particle coordinates
   for (const auto& coord : coordinates) {
@@ -1759,6 +2022,97 @@ bool write_particles_3d() {
   // Dump particles coordinates as an input file to be read
   std::ofstream file;
   file.open("particles-3d.txt");
+  file << coordinates.size() << "\n";
+  // Write particle coordinates
+  for (const auto& coord : coordinates) {
+    for (unsigned i = 0; i < coord.size(); ++i) {
+      file << coord[i] << "\t";
+    }
+    file << "\n";
+  }
+
+  file.close();
+  return true;
+}
+
+// Write particles file in 3D
+bool write_particles_3d_multi_particle_type() {
+  const unsigned dim = 3;
+  // Vector of particle coordinates
+  std::vector<Eigen::Matrix<double, dim, 1>> coordinates;
+
+  // Particle coordinates
+  Eigen::Matrix<double, dim, 1> particle;
+
+  // Cell 0
+  // Particle 0
+  particle << 0.125, 0.125, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 1
+  particle << 0.375, 0.125, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 2
+  particle << 0.375, 0.375, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 3
+  particle << 0.125, 0.375, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 4
+  particle << 0.125, 0.125, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 5
+  particle << 0.375, 0.125, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 6
+  particle << 0.375, 0.375, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 7
+  particle << 0.125, 0.375, 0.375;
+  coordinates.emplace_back(particle);
+
+  // Dump particles coordinates as an input file to be read
+  std::ofstream file;
+  file.open("particles-3d-cell0.txt");
+  file << coordinates.size() << "\n";
+  // Write particle coordinates
+  for (const auto& coord : coordinates) {
+    for (unsigned i = 0; i < coord.size(); ++i) {
+      file << coord[i] << "\t";
+    }
+    file << "\n";
+  }
+
+  file.close();
+  coordinates.clear();
+
+  // Cell 1
+  // Particle 8
+  particle << 0.625, 0.125, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 9
+  particle << 0.875, 0.125, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 10
+  particle << 0.875, 0.375, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 11
+  particle << 0.625, 0.375, 0.125;
+  coordinates.emplace_back(particle);
+  // Particle 12
+  particle << 0.675, 0.125, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 13
+  particle << 0.875, 0.125, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 14
+  particle << 0.875, 0.375, 0.375;
+  coordinates.emplace_back(particle);
+  // Particle 15
+  particle << 0.675, 0.375, 0.375;
+  coordinates.emplace_back(particle);
+
+  // Dump particles coordinates as an input file to be read
+  file.open("particles-3d-cell1.txt");
   file << coordinates.size() << "\n";
   // Write particle coordinates
   for (const auto& coord : coordinates) {

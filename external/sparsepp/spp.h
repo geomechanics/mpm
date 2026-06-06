@@ -700,16 +700,16 @@ public:
     const_iterator& operator-=(size_type t) { pos -= t; check(); return *this; }
     const_iterator& operator++()            { ++pos; check(); return *this; }
     const_iterator& operator--()            { --pos; check(); return *this; }
-    const_iterator operator++(int)          
+    const_iterator operator++(int)
     {
         const_iterator tmp(*this); // for x++
-        ++pos; check(); 
-        return tmp; 
+        ++pos; check();
+        return tmp;
     }
-    const_iterator operator--(int)          
+    const_iterator operator--(int)
     {
         const_iterator tmp(*this); // for x--
-        --pos; check(); 
+        --pos; check();
         return tmp;
     }
     const_iterator operator+(difference_type i) const
@@ -778,11 +778,15 @@ public:
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 template <class T, class row_it, class col_it, class iter_type>
-class Two_d_iterator : public std::iterator<iter_type, T>
+class Two_d_iterator
 {
 public:
-    typedef Two_d_iterator iterator;
-    typedef T              value_type;
+    typedef Two_d_iterator  iterator;
+    typedef iter_type       iterator_category;
+    typedef T               value_type;
+    typedef std::ptrdiff_t  difference_type;
+    typedef T*              pointer;
+    typedef T&              reference;
 
     explicit Two_d_iterator(row_it curr) : row_current(curr), col_current(0)
     {
@@ -1313,7 +1317,7 @@ private:
     typedef typename if_<spp_::is_same<allocator_type, spp_allocator<value_type> >::value,
                          typename if_<spp_::is_relocatable<value_type>::value, spp_reloc_type, spp_not_reloc_type>::type,
                          typename if_<(spp_::is_same<allocator_type, libc_allocator<value_type> >::value &&
-                                       spp_::is_relocatable<value_type>::value), libc_reloc_type, generic_alloc_type>::type >::type 
+                                       spp_::is_relocatable<value_type>::value), libc_reloc_type, generic_alloc_type>::type >::type
         check_alloc_type;
 #endif
 
@@ -1362,7 +1366,7 @@ private:
         *(mutable_pointer)p = *(const_mutable_pointer)&val;
     }
 
-    // Create space at _group[offset], assuming value_type is relocatable, and the 
+    // Create space at _group[offset], assuming value_type is relocatable, and the
     // allocator_type is the spp allocator.
     // return true if the slot was constructed (i.e. contains a valid value_type
     // ---------------------------------------------------------------------------------
@@ -1387,7 +1391,7 @@ private:
         _init_val((mutable_pointer)(_group + offset), val);
     }
 
-    // Create space at _group[offset], assuming value_type is *not* relocatable, and the 
+    // Create space at _group[offset], assuming value_type is *not* relocatable, and the
     // allocator_type is the spp allocator.
     // return true if the slot was constructed (i.e. contains a valid value_type
     // ---------------------------------------------------------------------------------
@@ -1466,7 +1470,7 @@ public:
     }
 
 private:
-    // Shrink the array, assuming value_type is relocatable, and the 
+    // Shrink the array, assuming value_type is relocatable, and the
     // allocator_type is the libc allocator (supporting reallocate).
     // -------------------------------------------------------------
     void _group_erase_aux(allocator_type &alloc, size_type offset, realloc_ok_type)
@@ -1714,7 +1718,7 @@ private:
         pointer realloc_or_die(pointer ptr, size_type n)
         {
             pointer retval = this->reallocate(ptr, n);
-            if (retval == NULL) 
+            if (retval == NULL)
             {
                 fprintf(stderr, "sparsehash: FATAL ERROR: failed to reallocate "
                         "%lu elements for ptr %p", static_cast<unsigned long>(n), ptr);
@@ -1741,7 +1745,7 @@ private:
         pointer realloc_or_die(pointer ptr, size_type n)
         {
             pointer retval = this->reallocate(ptr, n);
-            if (retval == NULL) 
+            if (retval == NULL)
             {
                 fprintf(stderr, "sparsehash: FATAL ERROR: failed to reallocate "
                         "%lu elements for ptr %p", static_cast<unsigned long>(n), ptr);
@@ -2862,7 +2866,7 @@ public:
     float get_shrink_factor() const  { return settings.shrink_factor(); }
     float get_enlarge_factor() const { return settings.enlarge_factor(); }
 
-    void set_resizing_parameters(float shrink, float grow) 
+    void set_resizing_parameters(float shrink, float grow)
     {
         settings.set_resizing_parameters(shrink, grow);
         settings.reset_thresholds(bucket_count());

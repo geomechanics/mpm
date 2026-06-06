@@ -111,11 +111,10 @@ Eigen::Matrix<double, 6, 1> mpm::Bingham<Tdim>::compute_stress(
   double lambda_new = lambda;
 
   // Compute lambda
-  if (lambda > 0)
-    lambda_new += dt * (athix_ / tau0_ - alpha_ * lambda * shear_rate);
+  lambda_new += dt * (athix_ / tau0_ - alpha_ * lambda * shear_rate);
+
   // Lambda cannot be negative
-  else
-    lambda_new = 0;
+  if (lambda_new < 0) lambda_new = 0.0;
 
   // Compute apparent viscosity
   double apparent_viscosity = 0.;

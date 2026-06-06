@@ -1,8 +1,8 @@
+cmake_minimum_required(VERSION 3.12)
+
 project(mpm LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-
-cmake_minimum_required(VERSION 3.12)
 
 SET(CMAKE_COLOR_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -53,7 +53,10 @@ option(USE_PETSC "Use PETSC solver library" OFF)
 # CMake Modules
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-# Boost Archive
+# Boost Archive — use Boost's own CMake config files (CMP0167 removes FindBoost)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
 find_package(Boost REQUIRED COMPONENTS filesystem)
 if(Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 69)
   find_package(Boost REQUIRED COMPONENTS filesystem system)

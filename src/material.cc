@@ -2,6 +2,7 @@
 #include "bingham.h"
 #include "bingham_viscoplastic.h"
 #include "hencky_hyper_elastic.h"
+#include "herschel_bulkley_viscoplastic.h"
 #include "linear_elastic.h"
 #include "modified_cam_clay.h"
 #include "mohr_coulomb.h"
@@ -78,6 +79,16 @@ static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,
 static Register<mpm::Material<3>, mpm::HenckyHyperElastic<3>, unsigned,
                 const Json&>
     hencky_hyper_elastic_3d("HenckyHyperElastic3D");
+
+// Herschel-Bulkley Visco-plastic 2D (solid model)
+static Register<mpm::Material<2>, mpm::HerschelBulkleyViscoPlastic<2>, unsigned,
+                const Json&>
+    herschel_bulkley_viscoplastic_2d("HerschelBulkleyViscoPlastic2D");
+
+// Herschel-Bulkley Visco-plastic 3D (solid model)
+static Register<mpm::Material<3>, mpm::HerschelBulkleyViscoPlastic<3>, unsigned,
+                const Json&>
+    herschel_bulkley_viscoplastic_3d("HerschelBulkleyViscoPlastic3D");
 
 // Terracotta 2D
 static Register<mpm::Material<2>, mpm::Terracotta<2>, unsigned, const Json&>

@@ -88,6 +88,8 @@ mpm::dense_map
       {"shear_stress_ratio", 0.},
       // Yield stress
       {"tau_yield", tau_peak_},
+      // Remolded stress
+      {"tau_residual", tau_residual_},
       // Plastic deviatoric strain rate
       {"pgamma_dot", 0.},
       // Plastic deviatoric strain (following p-q stress framework)
@@ -100,8 +102,8 @@ template <unsigned Tdim>
 std::vector<std::string>
     mpm::HerschelBulkleyViscoPlastic<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
-      "yield_state", "pressure",   "volumetric_strain", "shear_stress_ratio",
-      "tau_yield",   "pgamma_dot", "pdstrain"};
+      "yield_state", "pressure",     "volumetric_strain", "shear_stress_ratio",
+      "tau_yield",   "tau_residual", "pgamma_dot",        "pdstrain"};
   return state_vars;
 }
 
@@ -137,6 +139,7 @@ Eigen::Matrix<double, 6, 1>
 
   // Compute static yield stress
   const double tau_yield_n = (*state_vars).at("tau_yield");
+  const double tau_residual = (*state_vars).at("tau_residual");
 
   // Compute new stress
   Vector6d updated_stress = Vector6d::Zero();
@@ -158,8 +161,8 @@ Eigen::Matrix<double, 6, 1>
     gamma_dot = std::max(tolerance_, f_tr / dt / shear_modulus_);
     double tau_m = tau_tr - shear_modulus_ * dt * gamma_dot;
     double tau_yield_m =
-        tau_residual_ + (tau_yield_n - tau_residual_) *
-                            std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0));
+        tau_residual + (tau_yield_n - tau_residual) *
+                           std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0));
 
     // Start Newton-Raphson iteration
     unsigned iter = 0;
@@ -170,7 +173,7 @@ Eigen::Matrix<double, 6, 1>
       // Compute residual and jacobian
       residual = tau_m - tau_yield_m - k_ * std::pow(gamma_dot, n_);
       jacobian = -(shear_modulus_ * dt -
-                   beta_ * dt / std::sqrt(3.0) * (tau_yield_n - tau_residual_) *
+                   beta_ * dt / std::sqrt(3.0) * (tau_yield_n - tau_residual) *
                        std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0)) +
                    k_ * n_ * std::pow(gamma_dot, n_ - 1.0));
 
@@ -187,9 +190,9 @@ Eigen::Matrix<double, 6, 1>
 
       // Update tau_m and tau_yield_m
       tau_m = tau_tr - shear_modulus_ * dt * gamma_dot;
-      tau_yield_m = tau_residual_ +
-                    (tau_yield_n - tau_residual_) *
-                        std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0));
+      tau_yield_m =
+          tau_residual + (tau_yield_n - tau_residual) *
+                             std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0));
 
       // If delta_gamma_dot is too small, break to avoid numerical issues
       if (std::abs(delta_gamma_dot) < abs_tol_) break;
@@ -295,10 +298,11 @@ Eigen::Matrix<double, 6, 6>
   const double vol_strain = (*state_vars).at("volumetric_strain");
   const double K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
   const double tau_yield = (*state_vars).at("tau_yield");
+  const double tau_residual = (*state_vars).at("tau_residual");
   const double gamma_dot = (*state_vars).at("pgamma_dot");
   const double den =
       -(shear_modulus_ * dt -
-        beta_ * dt / std::sqrt(3.0) * (tau_yield - tau_residual_) *
+        beta_ * dt / std::sqrt(3.0) * (tau_yield - tau_residual) *
             std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0)) +
         k_ * n_ * std::pow(gamma_dot, n_ - 1.0));
   const double d_1 = 2.0 * shear_modulus_ * tau_ratio;

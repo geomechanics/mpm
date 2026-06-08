@@ -158,7 +158,9 @@ Eigen::Matrix<double, 6, 1>
   // Plastic state: stress point is outside yield surface
   else {
     // Return mapping for Herschel-Bulkley viscoplastic model
-    gamma_dot = std::max(tolerance_, f_tr / dt / shear_modulus_);
+    double lambda_m =
+        std::log(std::max(tolerance_, f_tr / dt / shear_modulus_));
+    gamma_dot = std::exp(lambda_m);
     double tau_m = tau_tr - shear_modulus_ * dt * gamma_dot;
     double tau_yield_m =
         tau_residual + (tau_yield_n - tau_residual) *
@@ -166,7 +168,7 @@ Eigen::Matrix<double, 6, 1>
 
     // Start Newton-Raphson iteration
     unsigned iter = 0;
-    double initial_res_norm;
+    double initial_res_norm = 0.0;
     double residual = 0.0;
     double jacobian = 0.0;
     while (iter < max_iter_) {
@@ -176,6 +178,7 @@ Eigen::Matrix<double, 6, 1>
                    beta_ * dt / std::sqrt(3.0) * (tau_yield_n - tau_residual) *
                        std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0)) +
                    k_ * n_ * std::pow(gamma_dot, n_ - 1.0));
+      jacobian *= gamma_dot;
 
       // Check residual convergence
       if (iter == 0) initial_res_norm = std::abs(residual);
@@ -185,8 +188,10 @@ Eigen::Matrix<double, 6, 1>
       }
 
       // Update gamma_dot
-      const double delta_gamma_dot = residual / jacobian;
-      gamma_dot -= delta_gamma_dot;
+      if (std::abs(jacobian) < std::numeric_limits<double>::epsilon()) break;
+      const double delta_lambda = std::clamp(-residual / jacobian, -2.0, 2.0);
+      lambda_m += delta_lambda;
+      gamma_dot = std::exp(lambda_m);
 
       // Update tau_m and tau_yield_m
       tau_m = tau_tr - shear_modulus_ * dt * gamma_dot;
@@ -194,8 +199,8 @@ Eigen::Matrix<double, 6, 1>
           tau_residual + (tau_yield_n - tau_residual) *
                              std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0));
 
-      // If delta_gamma_dot is too small, break to avoid numerical issues
-      if (std::abs(delta_gamma_dot) < abs_tol_) break;
+      // If delta_lambda is too small, break
+      if (std::abs(delta_lambda) < abs_tol_) break;
 
       // Increment iteration counter
       iter++;
@@ -300,11 +305,11 @@ Eigen::Matrix<double, 6, 6>
   const double tau_yield = (*state_vars).at("tau_yield");
   const double tau_residual = (*state_vars).at("tau_residual");
   const double gamma_dot = (*state_vars).at("pgamma_dot");
-  const double den =
-      -(shear_modulus_ * dt -
-        beta_ * dt / std::sqrt(3.0) * (tau_yield - tau_residual) *
-            std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0)) +
-        k_ * n_ * std::pow(gamma_dot, n_ - 1.0));
+  double den = -(shear_modulus_ * dt -
+                 beta_ * dt / std::sqrt(3.0) * (tau_yield - tau_residual) *
+                     std::exp(-beta_ * dt * gamma_dot / std::sqrt(3.0)) +
+                 k_ * n_ * std::pow(gamma_dot, n_ - 1.0));
+  if (std::abs(den) < tolerance_) den = tolerance_;
   const double d_1 = 2.0 * shear_modulus_ * tau_ratio;
   const double d_2 = K - 2.0 / 3.0 * shear_modulus_ * tau_ratio;
   const double d_3 =

@@ -155,6 +155,17 @@ class ParticleBase {
       mpm::VelocityUpdate velocity_update =
           mpm::VelocityUpdate::FLIP) noexcept = 0;
 
+  //! Return nodes linked to this particle
+  const std::vector<std::shared_ptr<NodeBase<Tdim>>>& nodes() const {
+    return nodes_;
+  }
+
+  //! Return particle shape functions at linked nodes
+  virtual const Eigen::VectorXd& shapefn() const = 0;
+
+  //! Return particle shape-function gradients at linked nodes
+  virtual const Eigen::MatrixXd& dn_dx() const = 0;
+
   //! Map multimaterial properties to nodes
   virtual void map_multimaterial_mass_momentum_to_nodes() noexcept = 0;
 

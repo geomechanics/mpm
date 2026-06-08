@@ -1188,6 +1188,320 @@ void mpm::Mesh<Tdim>::iterate_over_particle_set(int set_id, Toper oper) {
   }
 }
 
+//! Reset a reusable thread-local scalar nodal buffer
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::reset_threadlocal_scalar_buffer(
+    std::vector<std::vector<double>>* buffer, unsigned nthreads,
+    std::size_t buffer_size) {
+  if (buffer->size() != nthreads)
+    buffer->assign(nthreads, std::vector<double>(buffer_size, 0.0));
+
+  for (auto& thread_buffer : *buffer) {
+    if (thread_buffer.size() < buffer_size)
+      thread_buffer.assign(buffer_size, 0.0);
+    else
+      std::fill(thread_buffer.begin(), thread_buffer.begin() + buffer_size,
+                0.0);
+  }
+}
+
+//! Reset a reusable thread-local vector nodal buffer
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::reset_threadlocal_vector_buffer(
+    std::vector<std::vector<VectorDim>>* buffer, unsigned nthreads,
+    std::size_t buffer_size) {
+  if (buffer->size() != nthreads)
+    buffer->assign(nthreads,
+                   std::vector<VectorDim>(buffer_size, VectorDim::Zero()));
+
+  for (auto& thread_buffer : *buffer) {
+    if (thread_buffer.size() < buffer_size) {
+      thread_buffer.assign(buffer_size, VectorDim::Zero());
+    } else {
+      for (auto itr = thread_buffer.begin();
+           itr != thread_buffer.begin() + buffer_size; ++itr)
+        itr->setZero();
+    }
+  }
+}
+
+namespace mpm {
+namespace detail {
+
+template <unsigned Tdim>
+inline Eigen::Matrix<double, Tdim, 1> particle_internal_force(
+    const Eigen::Matrix<double, 6, 1>& stress, const Eigen::MatrixXd& dn_dx,
+    unsigned node_index, double volume);
+
+template <>
+inline Eigen::Matrix<double, 1, 1> particle_internal_force<1>(
+    const Eigen::Matrix<double, 6, 1>& stress, const Eigen::MatrixXd& dn_dx,
+    unsigned node_index, double volume) {
+  Eigen::Matrix<double, 1, 1> force;
+  force[0] = -dn_dx(node_index, 0) * volume * stress[0];
+  return force;
+}
+
+template <>
+inline Eigen::Matrix<double, 2, 1> particle_internal_force<2>(
+    const Eigen::Matrix<double, 6, 1>& stress, const Eigen::MatrixXd& dn_dx,
+    unsigned node_index, double volume) {
+  Eigen::Matrix<double, 2, 1> force;
+  force[0] = dn_dx(node_index, 0) * stress[0] +
+             dn_dx(node_index, 1) * stress[3];
+  force[1] = dn_dx(node_index, 1) * stress[1] +
+             dn_dx(node_index, 0) * stress[3];
+  force *= -volume;
+  return force;
+}
+
+template <>
+inline Eigen::Matrix<double, 3, 1> particle_internal_force<3>(
+    const Eigen::Matrix<double, 6, 1>& stress, const Eigen::MatrixXd& dn_dx,
+    unsigned node_index, double volume) {
+  Eigen::Matrix<double, 3, 1> force;
+  force[0] = dn_dx(node_index, 0) * stress[0] +
+             dn_dx(node_index, 1) * stress[3] +
+             dn_dx(node_index, 2) * stress[5];
+  force[1] = dn_dx(node_index, 1) * stress[1] +
+             dn_dx(node_index, 0) * stress[3] +
+             dn_dx(node_index, 2) * stress[4];
+  force[2] = dn_dx(node_index, 2) * stress[2] +
+             dn_dx(node_index, 1) * stress[4] +
+             dn_dx(node_index, 0) * stress[5];
+  force *= -volume;
+  return force;
+}
+
+}  // namespace detail
+}  // namespace mpm
+
+//! Map particle mass and momentum to nodes with thread-local buffers
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::map_mass_momentum_to_nodes_thread_local(unsigned phase) {
+  if (nodes_.size() == 0 || particles_.size() == 0) return;
+
+  mpm::Index max_node_id = 0;
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+    max_node_id = std::max(max_node_id, (*nitr)->id());
+  const std::size_t buffer_size = static_cast<std::size_t>(max_node_id) + 1;
+
+  unsigned nthreads = 1;
+#ifdef _OPENMP
+  nthreads = static_cast<unsigned>(omp_get_max_threads());
+#endif
+
+  this->reset_threadlocal_scalar_buffer(&tl_nodal_mass_, nthreads,
+                                        buffer_size);
+  this->reset_threadlocal_vector_buffer(&tl_nodal_momentum_, nthreads,
+                                        buffer_size);
+
+  const long long nparticles = static_cast<long long>(particles_.size());
+#pragma omp parallel
+  {
+    unsigned tid = 0;
+#ifdef _OPENMP
+    tid = static_cast<unsigned>(omp_get_thread_num());
+#endif
+#pragma omp for schedule(runtime)
+    for (long long p = 0; p < nparticles; ++p) {
+      const auto& particle = particles_[static_cast<mpm::Index>(p)];
+      const double mass = particle->mass();
+      const auto velocity = particle->velocity();
+      const auto& shapefn = particle->shapefn();
+      const auto& pnodes = particle->nodes();
+      for (unsigned i = 0; i < pnodes.size(); ++i) {
+        const auto nid = static_cast<std::size_t>(pnodes[i]->id());
+        const double nodal_mass = mass * shapefn(i);
+        tl_nodal_mass_[tid][nid] += nodal_mass;
+        tl_nodal_momentum_[tid][nid] += nodal_mass * velocity;
+      }
+    }
+  }
+
+  const long long nnodes = static_cast<long long>(nodes_.size());
+#pragma omp parallel for schedule(runtime)
+  for (long long n = 0; n < nnodes; ++n) {
+    const auto& node = nodes_[static_cast<mpm::Index>(n)];
+    const auto nid = static_cast<std::size_t>(node->id());
+    double mass = 0.0;
+    VectorDim momentum = VectorDim::Zero();
+    for (unsigned tid = 0; tid < nthreads; ++tid) {
+      mass += tl_nodal_mass_[tid][nid];
+      momentum += tl_nodal_momentum_[tid][nid];
+    }
+    node->update_mass(false, phase, mass);
+    node->update_momentum(false, phase, momentum);
+  }
+}
+
+//! Map particle body force to nodes with thread-local buffers
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::map_body_force_thread_local(const VectorDim& gravity,
+                                                  unsigned phase) {
+  if (nodes_.size() == 0 || particles_.size() == 0) return;
+
+  mpm::Index max_node_id = 0;
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+    max_node_id = std::max(max_node_id, (*nitr)->id());
+  const std::size_t buffer_size = static_cast<std::size_t>(max_node_id) + 1;
+
+  unsigned nthreads = 1;
+#ifdef _OPENMP
+  nthreads = static_cast<unsigned>(omp_get_max_threads());
+#endif
+
+  this->reset_threadlocal_vector_buffer(&tl_nodal_external_force_, nthreads,
+                                        buffer_size);
+
+  const long long nparticles = static_cast<long long>(particles_.size());
+#pragma omp parallel
+  {
+    unsigned tid = 0;
+#ifdef _OPENMP
+    tid = static_cast<unsigned>(omp_get_thread_num());
+#endif
+#pragma omp for schedule(runtime)
+    for (long long p = 0; p < nparticles; ++p) {
+      const auto& particle = particles_[static_cast<mpm::Index>(p)];
+      const double mass = particle->mass();
+      const auto& shapefn = particle->shapefn();
+      const auto& pnodes = particle->nodes();
+      for (unsigned i = 0; i < pnodes.size(); ++i) {
+        const auto nid = static_cast<std::size_t>(pnodes[i]->id());
+        tl_nodal_external_force_[tid][nid] += gravity * mass * shapefn(i);
+      }
+    }
+  }
+
+  const long long nnodes = static_cast<long long>(nodes_.size());
+#pragma omp parallel for schedule(runtime)
+  for (long long n = 0; n < nnodes; ++n) {
+    const auto& node = nodes_[static_cast<mpm::Index>(n)];
+    const auto nid = static_cast<std::size_t>(node->id());
+    VectorDim force = VectorDim::Zero();
+    for (unsigned tid = 0; tid < nthreads; ++tid)
+      force += tl_nodal_external_force_[tid][nid];
+    node->update_external_force(false, phase, force);
+  }
+}
+
+//! Map particle internal force to nodes with thread-local buffers
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::map_internal_force_thread_local(unsigned phase) {
+  if (nodes_.size() == 0 || particles_.size() == 0) return;
+
+  mpm::Index max_node_id = 0;
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+    max_node_id = std::max(max_node_id, (*nitr)->id());
+  const std::size_t buffer_size = static_cast<std::size_t>(max_node_id) + 1;
+
+  unsigned nthreads = 1;
+#ifdef _OPENMP
+  nthreads = static_cast<unsigned>(omp_get_max_threads());
+#endif
+
+  this->reset_threadlocal_vector_buffer(&tl_nodal_internal_force_, nthreads,
+                                        buffer_size);
+
+  const long long nparticles = static_cast<long long>(particles_.size());
+#pragma omp parallel
+  {
+    unsigned tid = 0;
+#ifdef _OPENMP
+    tid = static_cast<unsigned>(omp_get_thread_num());
+#endif
+#pragma omp for schedule(runtime)
+    for (long long p = 0; p < nparticles; ++p) {
+      const auto& particle = particles_[static_cast<mpm::Index>(p)];
+      const double volume = particle->volume();
+      const auto stress = particle->stress();
+      const auto& dn_dx = particle->dn_dx();
+      const auto& pnodes = particle->nodes();
+      for (unsigned i = 0; i < pnodes.size(); ++i) {
+        const auto nid = static_cast<std::size_t>(pnodes[i]->id());
+        tl_nodal_internal_force_[tid][nid] +=
+            mpm::detail::particle_internal_force<Tdim>(stress, dn_dx, i,
+                                                       volume);
+      }
+    }
+  }
+
+  const long long nnodes = static_cast<long long>(nodes_.size());
+#pragma omp parallel for schedule(runtime)
+  for (long long n = 0; n < nnodes; ++n) {
+    const auto& node = nodes_[static_cast<mpm::Index>(n)];
+    const auto nid = static_cast<std::size_t>(node->id());
+    VectorDim force = VectorDim::Zero();
+    for (unsigned tid = 0; tid < nthreads; ++tid)
+      force += tl_nodal_internal_force_[tid][nid];
+    node->update_internal_force(false, phase, force);
+  }
+}
+
+//! Map body force and internal force with one thread-local particle traversal
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::map_body_internal_force_thread_local(
+    const VectorDim& gravity, unsigned phase) {
+  if (nodes_.size() == 0 || particles_.size() == 0) return;
+
+  mpm::Index max_node_id = 0;
+  for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+    max_node_id = std::max(max_node_id, (*nitr)->id());
+  const std::size_t buffer_size = static_cast<std::size_t>(max_node_id) + 1;
+
+  unsigned nthreads = 1;
+#ifdef _OPENMP
+  nthreads = static_cast<unsigned>(omp_get_max_threads());
+#endif
+
+  this->reset_threadlocal_vector_buffer(&tl_nodal_external_force_, nthreads,
+                                        buffer_size);
+  this->reset_threadlocal_vector_buffer(&tl_nodal_internal_force_, nthreads,
+                                        buffer_size);
+
+  const long long nparticles = static_cast<long long>(particles_.size());
+#pragma omp parallel
+  {
+    unsigned tid = 0;
+#ifdef _OPENMP
+    tid = static_cast<unsigned>(omp_get_thread_num());
+#endif
+#pragma omp for schedule(runtime)
+    for (long long p = 0; p < nparticles; ++p) {
+      const auto& particle = particles_[static_cast<mpm::Index>(p)];
+      const double mass = particle->mass();
+      const double volume = particle->volume();
+      const auto stress = particle->stress();
+      const auto& shapefn = particle->shapefn();
+      const auto& dn_dx = particle->dn_dx();
+      const auto& pnodes = particle->nodes();
+      for (unsigned i = 0; i < pnodes.size(); ++i) {
+        const auto nid = static_cast<std::size_t>(pnodes[i]->id());
+        tl_nodal_external_force_[tid][nid] += gravity * mass * shapefn(i);
+        tl_nodal_internal_force_[tid][nid] +=
+            mpm::detail::particle_internal_force<Tdim>(stress, dn_dx, i,
+                                                       volume);
+      }
+    }
+  }
+
+  const long long nnodes = static_cast<long long>(nodes_.size());
+#pragma omp parallel for schedule(runtime)
+  for (long long n = 0; n < nnodes; ++n) {
+    const auto& node = nodes_[static_cast<mpm::Index>(n)];
+    const auto nid = static_cast<std::size_t>(node->id());
+    VectorDim external_force = VectorDim::Zero();
+    VectorDim internal_force = VectorDim::Zero();
+    for (unsigned tid = 0; tid < nthreads; ++tid) {
+      external_force += tl_nodal_external_force_[tid][nid];
+      internal_force += tl_nodal_internal_force_[tid][nid];
+    }
+    node->update_external_force(false, phase, external_force);
+    node->update_internal_force(false, phase, internal_force);
+  }
+}
+
 //! Add a neighbour mesh, using the local id of the mesh and a mesh pointer
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::add_neighbour(

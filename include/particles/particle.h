@@ -137,6 +137,12 @@ class Particle : public ParticleBase<Tdim> {
       mpm::VelocityUpdate velocity_update =
           mpm::VelocityUpdate::FLIP) noexcept override;
 
+  //! Return particle shape functions at linked nodes
+  const Eigen::VectorXd& shapefn() const override { return shapefn_; }
+
+  //! Return particle shape-function gradients at linked nodes
+  const Eigen::MatrixXd& dn_dx() const override { return dn_dx_; }
+
   //! Map multimaterial properties to nodes
   void map_multimaterial_mass_momentum_to_nodes() noexcept override;
 

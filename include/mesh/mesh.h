@@ -283,6 +283,25 @@ class Mesh {
   template <typename Toper>
   void iterate_over_particle_set(int set_id, Toper oper);
 
+  //! Map particle mass and momentum to nodes with thread-local buffers
+  //! \param[in] phase Index corresponding to the phase
+  void map_mass_momentum_to_nodes_thread_local(unsigned phase);
+
+  //! Map particle body force to nodes with thread-local buffers
+  //! \param[in] gravity Body acceleration
+  //! \param[in] phase Index corresponding to the phase
+  void map_body_force_thread_local(const VectorDim& gravity, unsigned phase);
+
+  //! Map particle internal force to nodes with thread-local buffers
+  //! \param[in] phase Index corresponding to the phase
+  void map_internal_force_thread_local(unsigned phase);
+
+  //! Map body force and internal force with one thread-local particle traversal
+  //! \param[in] gravity Body acceleration
+  //! \param[in] phase Index corresponding to the phase
+  void map_body_internal_force_thread_local(const VectorDim& gravity,
+                                            unsigned phase);
+
   //! Return coordinates of particles
   std::vector<Eigen::Matrix<double, 3, 1>> particle_coordinates();
 
@@ -671,6 +690,16 @@ class Mesh {
   bool locate_particle_cells(
       const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle);
 
+  //! Reset a reusable thread-local scalar nodal buffer
+  void reset_threadlocal_scalar_buffer(std::vector<std::vector<double>>* buffer,
+                                       unsigned nthreads,
+                                       std::size_t buffer_size);
+
+  //! Reset a reusable thread-local vector nodal buffer
+  void reset_threadlocal_vector_buffer(
+      std::vector<std::vector<VectorDim>>* buffer, unsigned nthreads,
+      std::size_t buffer_size);
+
  private:
   //! mesh id
   unsigned id_{std::numeric_limits<unsigned>::max()};
@@ -726,6 +755,14 @@ class Mesh {
   std::vector<mpm::Injection> particle_injections_;
   //! Nodal property pool
   std::shared_ptr<mpm::NodalProperties> nodal_properties_{nullptr};
+  //! Thread-local nodal mass buffer
+  std::vector<std::vector<double>> tl_nodal_mass_;
+  //! Thread-local nodal momentum buffer
+  std::vector<std::vector<VectorDim>> tl_nodal_momentum_;
+  //! Thread-local nodal external force buffer
+  std::vector<std::vector<VectorDim>> tl_nodal_external_force_;
+  //! Thread-local nodal internal force buffer
+  std::vector<std::vector<VectorDim>> tl_nodal_internal_force_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
   //! Maximum number of halo nodes

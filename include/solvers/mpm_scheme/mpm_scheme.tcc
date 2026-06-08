@@ -44,9 +44,14 @@ template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
     mpm::VelocityUpdate velocity_update, unsigned phase) {
   // Assign mass and momentum to nodes
-  mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
-                std::placeholders::_1, velocity_update));
+  if (velocity_update == mpm::VelocityUpdate::FLIP ||
+      velocity_update == mpm::VelocityUpdate::PIC) {
+    mesh_->map_mass_momentum_to_nodes_thread_local(phase);
+  } else {
+    mesh_->iterate_over_particles(
+        std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
+                  std::placeholders::_1, velocity_update));
+  }
 
 #ifdef USE_MPI
   // Run if there is more than a single MPI task
@@ -133,42 +138,39 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
     unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
     const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
     double rotation_omega, bool rotation_clockwise) {
-  // Spawn a task for external force
-#pragma omp parallel sections
-  {
-#pragma omp section
-    {
-      // Iterate over each particle to compute nodal body force (Gravity)
-      mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::map_body_force,
-                    std::placeholders::_1, gravity));
+  if (!rotation_forces) {
+    // Map gravity and internal force with one lock-free particle traversal.
+    mesh_->map_body_internal_force_thread_local(gravity, phase);
 
-      // Apply Rotation Forces (Centrifugal + Coriolis)
-      if (rotation_forces) {
+    // Apply particle traction and map to nodes
+    mesh_->apply_traction_on_particles(step * dt_);
+
+    // Iterate over each node to add concentrated node force to external force
+    if (concentrated_nodal_forces)
+      mesh_->iterate_over_nodes(
+          std::bind(&mpm::NodeBase<Tdim>::apply_concentrated_force,
+                    std::placeholders::_1, phase, (step * dt_)));
+  } else {
+    // Rotation forces still use the existing mapper path.
+#pragma omp parallel sections
+    {
+#pragma omp section
+      {
+        mesh_->map_body_force_thread_local(gravity, phase);
         mesh_->iterate_over_particles(std::bind(
             &mpm::ParticleBase<Tdim>::map_rotation_force, std::placeholders::_1,
             rotation_origin, rotation_omega, rotation_clockwise));
+        mesh_->apply_traction_on_particles(step * dt_);
+        if (concentrated_nodal_forces)
+          mesh_->iterate_over_nodes(
+              std::bind(&mpm::NodeBase<Tdim>::apply_concentrated_force,
+                        std::placeholders::_1, phase, (step * dt_)));
       }
 
-      // Apply particle traction and map to nodes
-      mesh_->apply_traction_on_particles(step * dt_);
-
-      // Iterate over each node to add concentrated node force to external force
-      // force
-      if (concentrated_nodal_forces)
-        mesh_->iterate_over_nodes(
-            std::bind(&mpm::NodeBase<Tdim>::apply_concentrated_force,
-                      std::placeholders::_1, phase, (step * dt_)));
-    }
-
 #pragma omp section
-    {
-      // Spawn a task for internal force
-      // Iterate over each particle to compute nodal internal force
-      mesh_->iterate_over_particles(std::bind(
-          &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
+      { mesh_->map_internal_force_thread_local(phase); }
     }
-  }  // Wait for tasks to finish
+  }
 
 #ifdef USE_MPI
   // Run if there is more than a single MPI task

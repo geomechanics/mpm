@@ -289,6 +289,8 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_fluid_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_test.cc
     ${mpm_SOURCE_DIR}/tests/particles/particle_serialize_deserialize_twophase_test.cc
+    ${mpm_SOURCE_DIR}/tests/p2g_equivalence_test.cc
+    ${mpm_SOURCE_DIR}/tests/p2g_performance_test.cc
     ${mpm_SOURCE_DIR}/tests/point_in_cell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_scheme_test.cc
   )

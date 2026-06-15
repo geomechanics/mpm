@@ -13,7 +13,13 @@ namespace mpm {
 
 namespace mohrcoulomb {
 //! Failure state
-enum FailureState { Elastic = 0, Shear = 1, Tensile = 2, Separated = 3 };
+enum FailureState {
+  Elastic = 0,
+  Shear = 1,
+  Tensile = 2,
+  ShearTensile = 3,
+  Separated = 4
+};
 }  // namespace mohrcoulomb
 
 //! MohrCoulomb class
@@ -132,9 +138,12 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
       mpm::dense_map* state_vars);
 
   //! Compute corner return mapping for multi-surface failure
-  std::tuple<Vector6d, double, bool> compute_corner_return(
+  std::tuple<Vector6d, Vector6d, Vector6d> compute_corner_return(
       const Vector6d& current_stress, const Matrix6x6& de,
-      mpm::dense_map* state_vars);
+      mpm::dense_map* state_vars,
+      const Eigen::Matrix<double, 2, 1>& yield_function,
+      Eigen::Matrix<double, 2, 1>& unknowns,
+      Eigen::Matrix<double, 2, 1>& dlambda);
 
   //! Density
   double density_{std::numeric_limits<double>::max()};
@@ -176,7 +185,19 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
       {0, mpm::mohrcoulomb::FailureState::Elastic},
       {1, mpm::mohrcoulomb::FailureState::Shear},
       {2, mpm::mohrcoulomb::FailureState::Tensile},
-      {3, mpm::mohrcoulomb::FailureState::Separated}};
+      {3, mpm::mohrcoulomb::FailureState::ShearTensile},
+      {4, mpm::mohrcoulomb::FailureState::Separated}};
+
+  // Parameters for return mapping algorithm
+  //! Absolute tolerance
+  double abs_tol_{1.e-10};
+  //! Relative tolerance
+  double rel_tol_{1.e-8};
+  //! Maximum number of iterations
+  unsigned max_iter_{15};
+
+  //! Discrete tolerance
+  double tolerance_{1.0e-7};
 };  // MohrCoulomb class
 }  // namespace mpm
 

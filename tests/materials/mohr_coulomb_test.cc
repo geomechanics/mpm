@@ -118,8 +118,8 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
               Approx(jmaterial["dilation"]).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") == Approx(0.).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") == Approx(0.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") == Approx(0.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("tension_cutoff") ==
@@ -129,7 +129,7 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
 
       const std::vector<std::string> state_vars = {
           "yield_state", "phi", "psi",   "cohesion", "tension_cutoff",
-          "epsilon",     "rho", "theta", "pdstrain"};
+          "pressure",    "tau", "theta", "pdstrain"};
       auto state_vars_test = material->state_variables();
       REQUIRE(state_vars == state_vars_test);
     }
@@ -308,9 +308,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
             Approx(jmaterial["dilation"]).epsilon(Tolerance));
     REQUIRE(state_variables.at("cohesion") ==
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-    REQUIRE(state_variables.at("epsilon") ==
-            Approx(-10392.30484541).epsilon(Tolerance));
-    REQUIRE(state_variables.at("rho") == Approx(2000.).epsilon(Tolerance));
+    REQUIRE(state_variables.at("pressure") ==
+            Approx(-6000.0).epsilon(Tolerance));
+    REQUIRE(state_variables.at("tau") == Approx(1414.21356237).epsilon(Tolerance));
     REQUIRE(state_variables.at("theta") ==
             Approx(0.13545926).epsilon(Tolerance));
     REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -369,10 +369,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
               Approx(jmaterial["dilation"]).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-24826.06157515).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(5297.46320146).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-14333.33333333).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(3745.87215284).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.89359516).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -475,10 +475,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
               Approx(jmaterial["dilation"]).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(4041.45188433).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(7670.22471249).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(2333.333333).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(5423.6679074239).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.08181078).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -619,10 +619,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
             Approx(jmaterial["dilation"]).epsilon(Tolerance));
     REQUIRE(state_variables.at("cohesion") ==
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-    REQUIRE(state_variables.at("epsilon") ==
-            Approx(-7505.55349947).epsilon(Tolerance));
-    REQUIRE(state_variables.at("rho") ==
-            Approx(2943.92028878).epsilon(Tolerance));
+    REQUIRE(state_variables.at("pressure") ==
+            Approx(-4333.33333333).epsilon(Tolerance));
+    REQUIRE(state_variables.at("tau") ==
+            Approx(2081.66599947).epsilon(Tolerance));
     REQUIRE(state_variables.at("theta") ==
             Approx(0.24256387).epsilon(Tolerance));
     REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -681,10 +681,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
               Approx(jmaterial["dilation"]).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(6928.20323028).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(9165.79698223).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(4000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(6481.19720111).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.07722297).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -859,9 +859,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
             Approx(jmaterial["dilation"]).epsilon(Tolerance));
     REQUIRE(state_variables.at("cohesion") ==
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-    REQUIRE(state_variables.at("epsilon") ==
-            Approx(-10392.30484541).epsilon(Tolerance));
-    REQUIRE(state_variables.at("rho") == Approx(2000.).epsilon(Tolerance));
+    REQUIRE(state_variables.at("pressure") ==
+            Approx(-6000.).epsilon(Tolerance));
+    REQUIRE(state_variables.at("tau") == Approx(1414.21356237).epsilon(Tolerance));
     REQUIRE(state_variables.at("theta") ==
             Approx(0.13545926).epsilon(Tolerance));
     REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -923,10 +923,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
               Approx(jmaterial["dilation"]).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8948.92917244).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(9669.89676021).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5166.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(6837.64957252).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.36378823).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1026,10 +1026,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
               Approx(jmaterial["dilation"]).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(4041.45188433).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(7670.22471249).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(2333.333333).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(5423.66790743).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.08181078).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1169,10 +1169,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
             Approx(jmaterial["dilation"]).epsilon(Tolerance));
     REQUIRE(state_variables.at("cohesion") ==
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-    REQUIRE(state_variables.at("epsilon") ==
-            Approx(-10350.85296109).epsilon(Tolerance));
-    REQUIRE(state_variables.at("rho") ==
-            Approx(6436.54117983).epsilon(Tolerance));
+    REQUIRE(state_variables.at("pressure") ==
+            Approx(-5976.06774343).epsilon(Tolerance));
+    REQUIRE(state_variables.at("tau") ==
+            Approx(4551.32191564).epsilon(Tolerance));
     REQUIRE(state_variables.at("theta") ==
             Approx(0.32751078).epsilon(Tolerance));
     REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1232,10 +1232,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
               Approx(jmaterial["dilation"]).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8907.47728811).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(8891.8404917).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5142.73441009).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(6287.48070891).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.09473338).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1410,9 +1410,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     REQUIRE(state_variables.at("psi") == Approx(0.26179939).epsilon(Tolerance));
     REQUIRE(state_variables.at("cohesion") ==
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-    REQUIRE(state_variables.at("epsilon") ==
-            Approx(-10392.30484541).epsilon(Tolerance));
-    REQUIRE(state_variables.at("rho") == Approx(2000.).epsilon(Tolerance));
+    REQUIRE(state_variables.at("pressure") ==
+            Approx(-6000.).epsilon(Tolerance));
+    REQUIRE(state_variables.at("tau") == Approx(1414.21356237).epsilon(Tolerance));
     REQUIRE(state_variables.at("theta") ==
             Approx(0.13545926).epsilon(Tolerance));
     REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1472,10 +1472,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8948.92917244).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(9669.89676021).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5166.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(6837.64957252).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.36378823).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1575,10 +1575,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(4041.45188433).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(7670.22471249).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(2333.333333).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(5423.66790743).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.08181078).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1717,10 +1717,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     REQUIRE(state_variables.at("psi") == Approx(0.26179939).epsilon(Tolerance));
     REQUIRE(state_variables.at("cohesion") ==
             Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-    REQUIRE(state_variables.at("epsilon") ==
-            Approx(-10350.85296109).epsilon(Tolerance));
-    REQUIRE(state_variables.at("rho") ==
-            Approx(6436.54117983).epsilon(Tolerance));
+    REQUIRE(state_variables.at("pressure") ==
+            Approx(-5976.06774343).epsilon(Tolerance));
+    REQUIRE(state_variables.at("tau") ==
+            Approx(4551.32191564).epsilon(Tolerance));
     REQUIRE(state_variables.at("theta") ==
             Approx(0.32751078).epsilon(Tolerance));
     REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1780,10 +1780,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8907.47728811).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(8891.8404917).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5142.73441009).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(6287.48070891).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.09473338).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -1971,9 +1971,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10392.30484541).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") == Approx(2000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-6000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") == Approx(1414.21356237).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.13545926).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -2035,10 +2035,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.24933524386179).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1952.39047714).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8948.92917244).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(9669.89676021).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5166.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(6837.64957252).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.36378823).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==
@@ -2146,9 +2146,9 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10392.30484541).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") == Approx(2000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-6000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") == Approx(1414.21356237).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.13545926).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -2199,10 +2199,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check if stress invariants is computed correctly based on trial stress
       REQUIRE(mohr_coulomb->compute_stress_invariants(
                   trial_stress, &state_variables) == true);
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8948.92917244).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(9669.89676021).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5166.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(6837.64957252).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.36378823).epsilon(Tolerance));
       // Initialise values of yield functions based on trial stress
@@ -2303,10 +2303,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10103.62971082).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(1080.12344973).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5833.33333333).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(763.76261582).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.33347317).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -2367,10 +2367,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       REQUIRE(state_variables.at("psi") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1000.).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8660.25403784).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(11008.46903673).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(7784.16310635).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.42072067).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==
@@ -2526,10 +2526,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10392.30484541).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(6087.30146452).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-6000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(4304.37214469).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.32101934).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -2591,10 +2591,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.23793236923794).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1908.83470445882).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10392.30484541).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(8257.6195444).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(6000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(5839.01877630).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.3747326).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==
@@ -2702,10 +2702,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-9439.90784136).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(6108.85587542).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5450.13333333).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(4319.61341480).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.37419232).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -2756,10 +2756,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       // Check if stress invariants is computed correctly based on trial stress
       REQUIRE(mohr_coulomb->compute_stress_invariants(
                   trial_stress, &state_variables) == true);
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-7996.53216838).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(7665.51627945).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-4616.80000000).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(5420.33854249).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.20272541).epsilon(Tolerance));
       // Initialise values of yield functions based on trial stress
@@ -2860,10 +2860,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10392.30484541).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(1414.21356237).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-6000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(1000.).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.52359878).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -2924,10 +2924,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       REQUIRE(state_variables.at("psi") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1000.).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8948.92917244).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(11057.85395646).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5166.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(7819.08351798).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.38398831).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==
@@ -3120,10 +3120,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10392.30484541).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(5477.22557505).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-6000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(3872.98334621).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.76870359).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -3188,10 +3188,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.2379483284631).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1908.89566421).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8948.92917244).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(15190.44130048).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5166.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(10741.26405279).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.33392734).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==
@@ -3306,10 +3306,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10392.30484541).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(5477.22557505).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-6000.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(3872.98334621).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.76870359).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -3362,10 +3362,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check if stress invariants is computed correctly based on trial stress
       REQUIRE(mohr_coulomb->compute_stress_invariants(
                   trial_stress, &state_variables) == true);
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8948.92917244).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(15190.44130048).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5166.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(10741.26405279).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.33392734).epsilon(Tolerance));
       // Initialise values of yield functions based on trial stress
@@ -3472,10 +3472,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-9814.95457622).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(972.96796796).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5666.666666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(687.99224802).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.33010649).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -3539,10 +3539,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       REQUIRE(state_variables.at("psi") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1000.).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8371.57890325).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(19875.34922720).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-4833.33333333).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(14053.99421700).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.30645028).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==
@@ -3703,10 +3703,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-9814.95457622).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(6137.6353074).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5666.666666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(4339.96354631).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.62535818).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -3771,10 +3771,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.23044412153714).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1880.23170517852).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-9814.95457622).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(7818.56228978).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5666.666666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(5528.55841423).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.46506728).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==
@@ -3891,10 +3891,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-9406.76793591).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(6152.44390466).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5431.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(4350.43480585).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.43146734).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -3947,10 +3947,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       // Check if stress invariants is computed correctly based on trial stress
       REQUIRE(mohr_coulomb->compute_stress_invariants(
                   trial_stress, &state_variables) == true);
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-7963.39226293).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(7963.60445905).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-4597.66666667).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(5631.11871568).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.16536572).epsilon(Tolerance));
       // Initialise values of yield functions based on trial stress
@@ -4057,10 +4057,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
               Approx(0.26179939).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(jmaterial["cohesion"]).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-10307.43435584).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(1414.35709777).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5951.).epsilon(Tolerance));
+      REQUIRE(state_variables.at("tau") ==
+              Approx(1000.10149485).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.51890420).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") == Approx(0.).epsilon(Tolerance));
@@ -4124,10 +4124,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       REQUIRE(state_variables.at("psi") == Approx(0.).epsilon(Tolerance));
       REQUIRE(state_variables.at("cohesion") ==
               Approx(1000.).epsilon(Tolerance));
-      REQUIRE(state_variables.at("epsilon") ==
-              Approx(-8864.05868287).epsilon(Tolerance));
-      REQUIRE(state_variables.at("rho") ==
-              Approx(2417.87632461).epsilon(Tolerance));
+      REQUIRE(state_variables.at("pressure") ==
+              Approx(-5117.66666667).epsilon(Tolerance)); // Check * sqrt(3)
+      REQUIRE(state_variables.at("tau") ==
+              Approx(1709.69674520).epsilon(Tolerance));
       REQUIRE(state_variables.at("theta") ==
               Approx(0.41113704).epsilon(Tolerance));
       REQUIRE(state_variables.at("pdstrain") ==

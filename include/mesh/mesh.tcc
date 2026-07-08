@@ -2331,7 +2331,7 @@ bool mpm::Mesh<Tdim>::assign_nodal_nonlocal_type(int set_id, unsigned dir,
   return status;
 }
 
-//! Compute cell volume fraction
+//! Compute centroid gradient of each cell as a volume-weighted average
 template <unsigned Tdim>
 void mpm::Mesh<Tdim>::compute_cell_average_dn_dx_centroid() {
   this->iterate_over_cells([&map_particles = map_particles_](
@@ -2345,6 +2345,7 @@ void mpm::Mesh<Tdim>::compute_cell_average_dn_dx_centroid() {
       avg_B_matrix.resize(dn_dx_centroid.rows(), dn_dx_centroid.cols());
       avg_B_matrix.setZero();
 
+      // Extract the sum of particle volume and volumed-based B-matrix
       double volume_sum = 0.0;
       for (const auto p_id : c_ptr->particles()) {
         const double p_volume = map_particles[p_id]->volume();
@@ -2353,9 +2354,12 @@ void mpm::Mesh<Tdim>::compute_cell_average_dn_dx_centroid() {
         volume_sum += p_volume;
       }
 
+      // Calculate the volume-weighted average B-matrix
       if (volume_sum < std::numeric_limits<double>::epsilon())
         volume_sum = std::numeric_limits<double>::epsilon();
       avg_B_matrix /= volume_sum;
+
+      // Assign this centroid gradient to each particle
       for (const auto p_id : c_ptr->particles()) {
         map_particles[p_id]->assign_dn_dx_centroid(avg_B_matrix);
       }

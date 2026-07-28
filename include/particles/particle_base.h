@@ -464,6 +464,13 @@ class ParticleBase {
   //! \ingroup AdvancedMapping
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
 
+  //! Return dn_dx_centroid
+  virtual Eigen::MatrixXd dn_dx_centroid() {
+    throw std::runtime_error(
+        "Calling the base class function (dn_dx_centroid) in "
+        "ParticleBase:: illegal operation!");
+  }
+
   //! Assign computed averge B matrix as centroid of gradient
   //! \param[in] avg_B_matrix Computed cell average B matrix
   virtual void assign_dn_dx_centroid(const Eigen::MatrixXd& avg_B_matrix) {

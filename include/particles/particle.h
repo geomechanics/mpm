@@ -485,6 +485,9 @@ class Particle : public ParticleBase<Tdim> {
   void initialise_constitutive_law(double dt) noexcept override;
   /**@}*/
 
+  //! Return dn_dx_centroid
+  Eigen::MatrixXd dn_dx_centroid() override { return dn_dx_centroid_; }
+
  protected:
   //! Initialise particle material container
   //! \details This function allocate memory and initialise the material related

@@ -27,7 +27,7 @@ class DirectEigen : public SolverBase<Traits> {
   };
 
   //! Destructor
-  ~DirectEigen() {};
+  ~DirectEigen(){};
 
   //! Matrix solver
   Eigen::VectorXd solve(const Eigen::SparseMatrix<double>& A,

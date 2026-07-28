@@ -1158,41 +1158,41 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
               mesh->apply_particle_velocity_constraints();
             }
 
-            //
+            // Test patch-based average gradient
             SECTION("Check compute volume-weighted average") {
-                // Check number of particles
-                REQUIRE(mesh->nparticles() == 8);
+              // Check number of particles
+              REQUIRE(mesh->nparticles() == 8);
 
-                // Keep only two particles
-                const std::vector<mpm::Index> pids = {2, 3, 4, 5, 6, 7};
-                mesh->remove_particles(pids);
-                REQUIRE(mesh->nparticles() == 2);
+              // Keep only two particles
+              const std::vector<mpm::Index> pids = {2, 3, 4, 5, 6, 7};
+              mesh->remove_particles(pids);
+              REQUIRE(mesh->nparticles() == 2);
 
-                // Particle cells
-                std::vector<std::array<mpm::Index, 2>> particles_cells;
-                particles_cells.emplace_back(std::array<mpm::Index, 2>({0, 0}));
-                particles_cells.emplace_back(std::array<mpm::Index, 2>({1, 0}));
-                REQUIRE(mesh->assign_particles_cells(particles_cells) == true);
+              // Particle cells
+              std::vector<std::array<mpm::Index, 2>> particles_cells;
+              particles_cells.emplace_back(std::array<mpm::Index, 2>({0, 0}));
+              particles_cells.emplace_back(std::array<mpm::Index, 2>({1, 0}));
+              REQUIRE(mesh->assign_particles_cells(particles_cells) == true);
 
-                std::vector<std::tuple<mpm::Index, double>> particles_volumes;
-                // Volumes
-                particles_volumes.emplace_back(std::make_tuple(0, 10.5));
-                particles_volumes.emplace_back(std::make_tuple(1, 31.5));
+              std::vector<std::tuple<mpm::Index, double>> particles_volumes;
+              // Volumes
+              particles_volumes.emplace_back(std::make_tuple(0, 10.5));
+              particles_volumes.emplace_back(std::make_tuple(1, 31.5));
 
-                REQUIRE(mesh->assign_particles_volumes(particles_volumes) ==
-                        true);
+              REQUIRE(mesh->assign_particles_volumes(particles_volumes) ==
+                      true);
 
-                mesh->iterate_over_particles(
+              mesh->iterate_over_particles(
                   std::bind(&mpm::ParticleBase<Dim>::compute_shapefn,
                             std::placeholders::_1));
 
-                mesh->compute_cell_average_dn_dx_centroid();
-                auto particle0 = (mesh->particles()[0]);
-                auto particle1 = (mesh->particles()[1]);
-                REQUIRE(particle0->dn_dx().rows() == 4);
-                Eigen::MatrixXd dn_dx_centroid0 = particle0->dn_dx_centroid();
-                REQUIRE(dn_dx_centroid0(0, 0) == -1.5);
-                REQUIRE(dn_dx_centroid0(0, 1) == -1.125);
+              mesh->compute_cell_average_dn_dx_centroid();
+              auto particle0 = (mesh->particles()[0]);
+              auto particle1 = (mesh->particles()[1]);
+              REQUIRE(particle0->dn_dx().rows() == 4);
+              Eigen::MatrixXd dn_dx_centroid0 = particle0->dn_dx_centroid();
+              REQUIRE(dn_dx_centroid0(0, 0) == -1.5);
+              REQUIRE(dn_dx_centroid0(0, 1) == -1.125);
             }
           }
         }

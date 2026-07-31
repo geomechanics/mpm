@@ -1570,21 +1570,28 @@ std::vector<std::array<mpm::Index, 2>> mpm::Mesh<Tdim>::particles_cells()
 
 //! Write particles to HDF5
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename) {
-  const unsigned nparticles = this->nparticles();
+bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename,
+                                           const std::string& particle_type) {
+  // Get number of particles for particle type
+  const unsigned nparticles = this->nparticles(particle_type);
 
+  // Create a vector to hold the particle data
   std::vector<PODParticle> particle_data;
   particle_data.reserve(nparticles);
 
+  // Iterate over particles and add relevant particle data
   for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-    auto pod = std::static_pointer_cast<mpm::PODParticle>((*pitr)->pod());
-    particle_data.emplace_back(*pod);
+    if (particle_type == (*pitr)->type()) {
+      auto pod = std::static_pointer_cast<mpm::PODParticle>((*pitr)->pod());
+      particle_data.emplace_back(*pod);
+    }
   }
 
-  // Calculate the size and the offsets of our struct members in memory
+  // Calculate the size of our struct members in memory
   const hsize_t NRECORDS = nparticles;
   const hsize_t NFIELDS = mpm::pod::particle::NFIELDS;
 
+  // Consistent HDF5 parameters
   hid_t file_id;
   hsize_t chunk_size = 10000;
   int* fill_data = NULL;
@@ -1594,12 +1601,13 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename) {
   file_id =
       H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-  // make a table
+  // Make a table
   H5TBmake_table("Table Title", file_id, "table", NFIELDS, NRECORDS,
                  mpm::pod::particle::dst_size, mpm::pod::particle::field_names,
                  mpm::pod::particle::dst_offset, mpm::pod::particle::field_type,
                  chunk_size, fill_data, compress, particle_data.data());
 
+  // Close the file
   H5Fclose(file_id);
   return true;
 }
@@ -1607,22 +1615,28 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5(const std::string& filename) {
 //! Write particles to HDF5 for two-phase particle
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::write_particles_hdf5_twophase(
-    const std::string& filename) {
-  const unsigned nparticles = this->nparticles();
+    const std::string& filename, const std::string& particle_type) {
+  // Get number of particles for particle type
+  const unsigned nparticles = this->nparticles(particle_type);
 
+  // Initialise a vector to hold the particle data
   std::vector<PODParticleTwoPhase> particle_data;
   particle_data.reserve(nparticles);
 
+  // Iterate over particles and add relevant particle data
   for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
-    auto pod =
-        std::static_pointer_cast<mpm::PODParticleTwoPhase>((*pitr)->pod());
-    particle_data.emplace_back(*pod);
+    if (particle_type == (*pitr)->type()) {
+      auto pod =
+          std::static_pointer_cast<mpm::PODParticleTwoPhase>((*pitr)->pod());
+      particle_data.emplace_back(*pod);
+    }
   }
 
   // Calculate the size and the offsets of our struct members in memory
   const hsize_t NRECORDS = nparticles;
   const hsize_t NFIELDS = mpm::pod::particletwophase::NFIELDS;
 
+  // Consistent HDF5 parameters
   hid_t file_id;
   hsize_t chunk_size = 10000;
   int* fill_data = NULL;
@@ -1632,7 +1646,7 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_twophase(
   file_id =
       H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-  // make a table
+  // Make a table
   H5TBmake_table("Table Title", file_id, "table", NFIELDS, NRECORDS,
                  mpm::pod::particletwophase::dst_size,
                  mpm::pod::particletwophase::field_names,
@@ -1644,19 +1658,6 @@ bool mpm::Mesh<Tdim>::write_particles_hdf5_twophase(
   return true;
 }
 
-//! Read HDF5 particles with type name
-template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
-                                          const std::string& type_name,
-                                          const std::string& particle_type) {
-  bool status = false;
-  if (type_name == "particles" || type_name == "fluid_particles")
-    status = this->read_particles_hdf5(filename, particle_type);
-  else if (type_name == "twophase_particles")
-    status = this->read_particles_hdf5_twophase(filename, particle_type);
-  return status;
-}
-
 //! Read HDF5 particles for singlephase particle
 template <unsigned Tdim>
 bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
@@ -1664,6 +1665,7 @@ bool mpm::Mesh<Tdim>::read_particles_hdf5(const std::string& filename,
 
   // Create a new file using default properties.
   hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+
   // Throw an error if file can't be found
   if (file_id < 0) throw std::runtime_error("HDF5 particle file is not found");
 

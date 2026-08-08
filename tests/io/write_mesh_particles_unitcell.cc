@@ -242,6 +242,8 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
   std::vector<double> xvalues{{0.0, 0.5, 1.0}};
   std::vector<double> fxvalues{{0.0, 1.0, 1.0}};
   std::vector<double> initial_stress{{-1.0, -1.0, -1.0, 0.0}};
+  std::vector<double> initial_vel{{1.0, 0.}};
+  std::vector<double> initial_acc{{0.5, 0.}};
 
   // 3D
   if (dim == 3) {
@@ -255,6 +257,8 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
     gravity.clear();
     gravity = {0., 0., -9.81};
     initial_stress = {{-1.0, -1.0, -1.0, 0.0, 0.0, 0.0}};
+    initial_vel = {{1.0, 0., 0.}};
+    initial_acc = {{0.5, 0., 0.}};
   }
 
   Json json_file = {
@@ -271,7 +275,12 @@ bool write_json_unitcell_implicit(unsigned dim, const std::string& analysis,
         {"nonlocal_mesh_properties",
          {{"type", "LME"}, {"gamma", 3}, {"anisotropy", true}}},
         {"particle_stresses",
-         {{"type", "isotropic"}, {"value", initial_stress}}}}},
+         {{"type", "isotropic"}, {"value", initial_stress}}},
+        {"particle_velocities",
+         {{"type", "isotropic"}, {"value", initial_vel}}},
+        {"particle_accelerations",
+         {{"type", "isotropic"}, {"value", initial_acc}}}
+        }},
       {"particles",
        {{{"generator",
           {{"type", "file"},

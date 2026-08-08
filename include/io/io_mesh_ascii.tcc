@@ -300,6 +300,55 @@ std::vector<std::tuple<mpm::Index, double>>
   return scalar_properties;
 }
 
+//! Return particles vector properties
+template <unsigned Tdim>
+std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>
+    mpm::IOMeshAscii<Tdim>::read_particles_vector_properties(
+        const std::string& vector_file) {
+
+  // Particles vector properties
+  std::vector<std::tuple<mpm::Index, VectorDim>> vector_properties;
+
+  // input file stream
+  std::fstream file;
+  file.open(vector_file.c_str(), std::ios::in);
+
+  try {
+    if (file.is_open() && file.good()) {
+      // Line
+      std::string line;
+      while (std::getline(file, line)) {
+        boost::algorithm::trim(line);
+        std::istringstream istream(line);
+        // ignore comment lines (# or !) or blank lines
+        if ((line.find('#') == std::string::npos) &&
+            (line.find('!') == std::string::npos) && (line != "")) {
+          // ID
+          mpm::Index id;
+          // Vector
+          Eigen::Matrix<double, Tdim, 1> vector;
+          while (istream.good()) {
+            // Read stream
+            istream >> id;
+            // Read to vector
+            for (unsigned i = 0; i < Tdim; ++i) istream >> vector[i];
+
+            vector_properties.emplace_back(std::make_tuple(id, vector));
+          }
+        }
+      }
+    } else {
+      throw std::runtime_error("File not open or not good!");
+    }
+    file.close();
+  } catch (std::exception& exception) {
+    console_->error("Read particle {} #{}: {}\n", __FILE__, __LINE__,
+                    exception.what());
+    file.close();
+  }
+  return vector_properties;
+}
+
 //! Read pressure constraints file
 template <unsigned Tdim>
 std::vector<std::tuple<mpm::Index, double>>

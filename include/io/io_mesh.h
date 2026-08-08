@@ -70,6 +70,12 @@ class IOMesh {
   virtual std::vector<std::tuple<mpm::Index, double>>
       read_particles_scalar_properties(const std::string& scalar_file) = 0;
 
+  //! Read particle vector properties
+  //! \param[in] vector_file file name with particle vector properties
+  //! \retval Vector of particles vector properties
+  virtual std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>
+      read_particles_vector_properties(const std::string& vector_file) = 0;
+
   //! Read pressure constraints file
   //! \param[in] pressure_constraints_files file name with pressure constraints
   virtual std::vector<std::tuple<mpm::Index, double>> read_pressure_constraints(

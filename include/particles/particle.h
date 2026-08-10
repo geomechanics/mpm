@@ -486,7 +486,7 @@ class Particle : public ParticleBase<Tdim> {
   /**@}*/
 
   //! Return dn_dx_centroid
-  Eigen::MatrixXd dn_dx_centroid() override { return dn_dx_centroid_; }
+  Eigen::MatrixXd dn_dx_centroid() const override { return dn_dx_centroid_; }
 
  protected:
   //! Initialise particle material container

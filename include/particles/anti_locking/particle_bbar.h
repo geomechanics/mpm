@@ -34,7 +34,7 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   ParticleBbar(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~ParticleBbar() override {};
+  ~ParticleBbar() override{};
 
   //! Delete copy constructor
   ParticleBbar(const ParticleBbar<Tdim>&) = delete;
@@ -49,6 +49,12 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   std::string type() const override {
     return (Tdim == 2) ? "P2DBBAR" : "P3DBBAR";
   }
+
+  //! Assign computed averge B matrix as centroid of gradient
+  //! \param[in] avg_B_matrix Computed cell average B matrix
+  void assign_dn_dx_centroid(const Eigen::MatrixXd& avg_B_matrix) override {
+    dn_dx_centroid_ = avg_B_matrix;
+  };
 
   /**
    * \defgroup Implicit Functions dealing with implicit MPM

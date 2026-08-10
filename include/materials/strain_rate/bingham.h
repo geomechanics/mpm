@@ -27,7 +27,7 @@ class Bingham : public Material<Tdim> {
   Bingham(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~Bingham() override {};
+  ~Bingham() override{};
 
   //! Delete copy constructor
   Bingham(const Bingham&) = delete;

@@ -256,8 +256,6 @@ class Mesh {
   //! Number of particles in the mesh
   mpm::Index nparticles() const { return particles_.size(); }
 
-  Vector<ParticleBase<Tdim>> particles() { return particles_; }
-
   //! Number of particles in the mesh with specific type
   //! \param[in] particle particle_type A string denoting particle type
   mpm::Index nparticles(const std::string& particle_type) const;

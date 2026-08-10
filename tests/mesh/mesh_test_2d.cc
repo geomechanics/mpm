@@ -20,6 +20,7 @@
 #include "node.h"
 #include "partio_writer.h"
 #include "quadrilateral_element.h"
+#include "particle_bbar.h"
 
 //! Check mesh class for 2D case
 TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
@@ -1165,9 +1166,26 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
               REQUIRE(mesh->nparticles() == 8);
 
               // Keep only two particles
-              const std::vector<mpm::Index> pids = {2, 3, 4, 5, 6, 7};
+              const std::vector<mpm::Index> pids = {0, 1, 2, 3, 4, 5, 6, 7};
               mesh->remove_particles(pids);
-              REQUIRE(mesh->nparticles() == 2);
+              REQUIRE(mesh->nparticles() == 0);
+
+              Eigen::Vector2d coords;
+
+              // Particle 1
+              mpm::Index id1 = 0;
+              coords << 0.125, 0.125;
+              std::shared_ptr<mpm::ParticleBase<Dim>> particle0 =
+                std::make_shared<mpm::ParticleBbar<Dim>>(id1, coords);
+
+              // Particle 2
+              mpm::Index id2 = 1;
+              coords << 0.25, 0.125;
+              std::shared_ptr<mpm::ParticleBase<Dim>> particle1 =
+                std::make_shared<mpm::ParticleBbar<Dim>>(id2, coords);
+
+              REQUIRE(mesh->add_particle(particle0) == true);
+              REQUIRE(mesh->add_particle(particle1) == true);
 
               // Particle cells
               std::vector<std::array<mpm::Index, 2>> particles_cells;
@@ -1188,12 +1206,14 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                             std::placeholders::_1));
 
               mesh->compute_cell_average_dn_dx_centroid();
-              auto particle0 = (mesh->particles()[0]);
-              auto particle1 = (mesh->particles()[1]);
               REQUIRE(particle0->dn_dx().rows() == 4);
               Eigen::MatrixXd dn_dx_centroid0 = particle0->dn_dx_centroid();
-              REQUIRE(dn_dx_centroid0(0, 0) == -1.5);
-              REQUIRE(dn_dx_centroid0(0, 1) == -1.125);
+              Eigen::VectorXd check(8);
+              check << -1.5, -1.125, 1.5, -0.875, 0.5, 0.875, -0.5, 1.125;
+              for (unsigned i=0; i<4; i++) {
+                for (unsigned j=0; j<2; j++)
+                  REQUIRE(dn_dx_centroid0(i, j) == Approx(check(i*2+j)).epsilon(Tolerance));
+              }
             }
           }
         }

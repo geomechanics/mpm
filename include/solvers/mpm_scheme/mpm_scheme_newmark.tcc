@@ -1,8 +1,9 @@
 //! Constructor
 template <unsigned Tdim>
 mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
-    const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt)
-    : mpm::MPMScheme<Tdim>(mesh, dt) {}
+    const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt, double beta,
+    double gamma)
+    : mpm::MPMScheme<Tdim>(mesh, dt), beta_(beta), gamma_(gamma) {}
 
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
@@ -29,7 +30,8 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       // Initialise material
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
-                    std::placeholders::_1, dt_));
+                    std::placeholders::_1, dt_, gamma_ / (beta_ * dt_),
+                    1.0 / (beta_ * dt_ * dt_)));
     }
   }  // Wait to complete
 }
@@ -74,12 +76,12 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
 //! Update nodal kinematics by Newmark scheme
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
-    unsigned phase, double newmark_beta, double newmark_gamma) {
+    unsigned phase) {
 
   // Update nodal velocity and acceleration
   mesh_->iterate_over_nodes_predicate(
       std::bind(&mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark,
-                std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
+                std::placeholders::_1, phase, beta_, gamma_, dt_),
       std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
 }
 
@@ -98,9 +100,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_stress_strain(
   if (pressure_smoothing) this->pressure_smoothing(phase);
 
   // Iterate over each particle to compute stress
-  mesh_->iterate_over_particles(
-      std::bind(&mpm::ParticleBase<Tdim>::compute_stress_newmark,
-                std::placeholders::_1, dt_));
+  mesh_->iterate_over_particles(std::bind(
+      &mpm::ParticleBase<Tdim>::compute_stress_newmark, std::placeholders::_1,
+      dt_, gamma_ / (beta_ * dt_), 1.0 / (beta_ * dt_ * dt_)));
 }
 
 //! Precompute stresses and strains

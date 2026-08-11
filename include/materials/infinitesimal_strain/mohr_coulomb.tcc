@@ -538,7 +538,7 @@ Eigen::Matrix<double, 6, 6>
     mpm::MohrCoulomb<Tdim>::compute_elasto_plastic_tensor(
         const Vector6d& stress, const Vector6d& dstrain,
         const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt,
-        bool hardening) {
+        double lin_v, double lin_a, bool hardening) {
 
   mpm::mohrcoulomb::FailureState yield_type =
       yield_type_.at(int((*state_vars).at("yield_state")));

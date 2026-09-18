@@ -86,6 +86,7 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assemble_residual_force_right() {
     // Iterate over nodes
     mpm::Index nid = 0;
     for (auto node_itr = nodes.cbegin(); node_itr != nodes.cend(); ++node_itr) {
+      // TODO: Add check for if node has mass.
       const Eigen::Matrix<double, Tdim, 1> residual_force =
           (*node_itr)->external_force(solid) +
           (*node_itr)->internal_force(solid);

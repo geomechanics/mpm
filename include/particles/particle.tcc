@@ -1030,6 +1030,7 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_body_force_not_gravity() noexcept {
   if (this->set_bodyforce_) this->map_body_force(body_force_);
 }
+
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(

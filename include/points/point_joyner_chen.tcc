@@ -34,9 +34,12 @@ mpm::PointJoynerChen<Tdim>::PointJoynerChen(Index id, const VectorDim& coord,
 template <unsigned Tdim>
 void mpm::PointJoynerChen<Tdim>::initialise() {
   mpm::PointBase<Tdim>::initialise();
+
+  imposed_displacement_.setZero();
   imposed_velocity_.setZero();
-  normal_.setZero();
+  imposed_acceleration_.setZero();
   constraint_flags_.setZero();
+  normal_.setZero();
 }
 
 //! Assign point properties
@@ -58,7 +61,7 @@ void mpm::PointJoynerChen<Tdim>::assign_properties(
         "point kelvin voigt. Default values of 0.0 will be assigned.",
         __LINE__);
   }
-
+  
   // Assign constraint flags
   if (vector_properties.count("constraint_flags")) {
     const auto& flags = vector_properties.at("constraint_flags");
@@ -75,7 +78,16 @@ void mpm::PointJoynerChen<Tdim>::assign_properties(
 //! Reinitialise point properties
 template <unsigned Tdim>
 void mpm::PointJoynerChen<Tdim>::initialise_properties(double dt) {
-  // Nothing to initialise for point Kelvin Voigt constraints
+  // Convert imposition of velocity and acceleration to displacement
+  // NOTE: This only consider translational velocity and acceleration: no
+  // angular
+  imposed_displacement_ =
+      (imposed_velocity_ * dt) + (0.5 * imposed_acceleration_ * dt * dt);
+
+  for (unsigned i = 0; i < Tdim; ++i)
+    if (std::abs(imposed_displacement_(i)) < 1.E-15)
+      imposed_displacement_(i) = 0.;
+  
 }
 
 //! Apply point velocity constraints
@@ -84,6 +96,15 @@ void mpm::PointJoynerChen<Tdim>::assign_joyner_chen_constraints(
     unsigned dir, double velocity) {
   // Update imposed velocity
   this->imposed_velocity_(dir) = velocity;
+
+  // Iterater over nodes and assign velocity constraint
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    for (unsigned dir = 0; dir < Tdim; ++dir) {
+      if (constraint_flags_(dir) != 0)
+        nodes_[i]->assign_moving_velocity_constraint(dir,
+                                                     imposed_velocity_(dir));
+    }
+  }
 }
 
 // Compute updated position
@@ -91,7 +112,9 @@ template <unsigned Tdim>
 void mpm::PointJoynerChen<Tdim>::compute_updated_position(
     double dt, unsigned phase, double blending_ratio,
     mpm::VelocityUpdate velocity_update) noexcept {
-  // Joyner Chen points are fixed in space
+  // Update position and displacements
+  coordinates_.noalias() += imposed_displacement_;
+  displacement_.noalias() += imposed_displacement_;
 }
 
 template <unsigned Tdim>
@@ -132,6 +155,13 @@ inline bool mpm::PointJoynerChen<Tdim>::map_damping_matrix_to_cell(
     shape_function.setZero();
     for (unsigned i = 0; i < nodes_.size(); i++) {
       if (shapefn_[i] > std::numeric_limits<double>::epsilon()) {
+        // Directional multiplier
+        Eigen::VectorXd dir_multiplier = Eigen::VectorXd::Constant(Tdim, 1.0);
+
+        // Check if direction is constrained
+        for (unsigned j = 0; j < Tdim; ++j)
+          if (constraint_flags_(j) == 0) dir_multiplier(j) = 0.0;
+
         // Arrange shape function
         for (unsigned int j = 0; j < Tdim; j++) {
           shape_function(j, Tdim * i + j) = shapefn_[i];

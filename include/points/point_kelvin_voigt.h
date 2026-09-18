@@ -7,10 +7,10 @@
 #endif
 
 #include <array>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <vector>
-#include <iostream>
 
 #include "point_base.h"
 
@@ -87,13 +87,13 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   //! \param[in] phase Index corresponding to the phase
   void map_boundary_force(unsigned phase) override;
 
-  // //! Serialize
-  // //! \retval buffer Serialized buffer data
-  // std::vector<uint8_t> serialize() override;
+  //! Serialize
+  //! \retval buffer Serialized buffer data
+  std::vector<uint8_t> serialize() override;
 
-  // //! Deserialize
-  // //! \param[in] buffer Serialized buffer data
-  // void deserialize(const std::vector<uint8_t>& buffer) override;
+  //! Deserialize
+  //! \param[in] buffer Serialized buffer data
+  void deserialize(const std::vector<uint8_t>& buffer) override;
 
   //! Assign point properties
   //! \param[in] scalar_properties Map of scalar properties
@@ -111,10 +111,10 @@ class PointKelvinVoigt : public PointBase<Tdim> {
     return (Tdim == 2) ? "POINT2DKV" : "POINT3DKV";
   }
 
-  //  protected:
-  //   //! Compute pack size
-  //   //! \retval pack size of serialized object
-  //   int compute_pack_size() const override;
+ protected:
+  //! Compute pack size
+  //! \retval pack size of serialized object
+  int compute_pack_size() const override;
 
  protected:
   //! point id
@@ -141,6 +141,8 @@ class PointKelvinVoigt : public PointBase<Tdim> {
   using PointBase<Tdim>::pack_size_;
   //! Logger
   std::unique_ptr<spdlog::logger> console_;
+  //! Constraint flags: 1 = constrained, 0 = unconstrained, per direction
+  Eigen::Matrix<int, Tdim, 1> constraint_flags_;
   //! Young's modulus
   double youngs_modulus_{0.0};
   //! Density

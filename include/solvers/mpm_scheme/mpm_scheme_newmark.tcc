@@ -209,15 +209,6 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
           std::bind(&mpm::PointBase<Tdim>::map_boundary_force,
                     std::placeholders::_1, phase));
     }
-
-#pragma omp section
-    {
-      // Spawn a task for boundary force
-      // Iterate over each point to compute nodal external force
-      mesh_->iterate_over_points(
-          std::bind(&mpm::PointBase<Tdim>::map_boundary_force,
-                    std::placeholders::_1, phase));
-    }
   }  // Wait for tasks to finish
 }
 

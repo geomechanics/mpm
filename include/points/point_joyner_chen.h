@@ -131,8 +131,12 @@ class PointJoynerChen : public PointBase<Tdim> {
   double absorbing_factor_{0.0};
   //! Normal vector
   VectorDim normal_;
+  //! Imposed displacement
+  VectorDim imposed_displacement_;
   //! Imposed velocity
   VectorDim imposed_velocity_;
+  //! Imposed acceleration
+  VectorDim imposed_acceleration_;
   //! Constraint flags: 1 = constrained, 0 = unconstrained, per direction
   Eigen::Matrix<int, Tdim, 1> constraint_flags_;
 

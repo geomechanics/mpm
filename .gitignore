@@ -19,7 +19,6 @@
 !docs/
 !docs/**
 include/git.cc
-docs/*
 CMakeCache.txt
 CMakeFiles/*
 CTestTestfile.cmake

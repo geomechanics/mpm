@@ -15,6 +15,9 @@
 !*/src/*
 !*/include/*
 !*/tests/*
+!mkdocs.yml
+!docs/
+!docs/**
 include/git.cc
 docs/*
 CMakeCache.txt

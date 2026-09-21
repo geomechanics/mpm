@@ -1,6 +1,7 @@
 #include "material.h"
 #include "bingham.h"
 #include "bingham_viscoplastic.h"
+#include "dpm.h"
 #include "hencky_hyper_elastic.h"
 #include "linear_elastic.h"
 #include "modified_cam_clay.h"
@@ -69,6 +70,24 @@ static Register<mpm::Material<2>, mpm::NorSand<2>, unsigned, const Json&>
 static Register<mpm::Material<3>, mpm::NorSand<3>, unsigned, const Json&>
     nor_sand_3d("NorSand3D");
 
+// DPM 2D
+static Register<mpm::Material<2>, mpm::DilatantPlasticModel<2>, unsigned,
+                const Json&>
+    dpm_2d("DPM2D");
+
+// DPM 3D
+static Register<mpm::Material<3>, mpm::DilatantPlasticModel<3>, unsigned,
+                const Json&>
+    dpm_3d("DPM3D");
+
+// Terracotta 2D
+static Register<mpm::Material<2>, mpm::Terracotta<2>, unsigned, const Json&>
+    terracotta_2d("Terracotta2D");
+
+// Terracotta 3D
+static Register<mpm::Material<3>, mpm::Terracotta<3>, unsigned, const Json&>
+    terracota_3d("Terracotta3D");
+
 // Hencky Hyper Elastic 2D
 static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,
                 const Json&>
@@ -78,11 +97,3 @@ static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,
 static Register<mpm::Material<3>, mpm::HenckyHyperElastic<3>, unsigned,
                 const Json&>
     hencky_hyper_elastic_3d("HenckyHyperElastic3D");
-
-// Terracotta 2D
-static Register<mpm::Material<2>, mpm::Terracotta<2>, unsigned, const Json&>
-    terracotta_2d("Terracotta2D");
-
-// Terracotta 3D
-static Register<mpm::Material<3>, mpm::Terracotta<3>, unsigned, const Json&>
-    terracota_3d("Terracotta3D");

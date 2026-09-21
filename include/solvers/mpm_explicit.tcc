@@ -86,6 +86,10 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     //! Particle entity sets and velocity constraints
     this->particle_entity_sets(false);
     this->particle_velocity_constraints();
+
+    // Point entity sets and velocity constraints
+    this->point_entity_sets(false);
+    this->point_velocity_constraints();
   } else {
     // Initialise particles
     this->initialise_particles();
@@ -93,6 +97,9 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Compute mass
     mesh_->iterate_over_particles(std::bind(
         &mpm::ParticleBase<Tdim>::compute_mass, std::placeholders::_1));
+
+    // Initialise points
+    this->initialise_points();
 
     // Domain decompose
     this->mpi_domain_decompose(initial_step);
@@ -181,6 +188,7 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 #ifdef USE_MPI
 #ifdef USE_GRAPH_PARTITIONING
     mesh_->transfer_halo_particles();
+    mesh_->transfer_halo_points();
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 #endif

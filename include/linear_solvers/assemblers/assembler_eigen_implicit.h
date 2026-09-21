@@ -48,7 +48,7 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
 
   //! Apply displacement constraints to equilibrium equation
   //! \ingroup Implicit
-  void apply_displacement_constraints() override;
+  void apply_displacement_constraints(unsigned iteration = 0) override;
 
   //! Return displacement increment
   //! \ingroup Implicit

@@ -1,8 +1,8 @@
+cmake_minimum_required(VERSION 3.12)
+
 project(mpm LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
-
-cmake_minimum_required(VERSION 3.12)
+set(CMAKE_CXX_STANDARD 17)
 
 SET(CMAKE_COLOR_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -16,11 +16,18 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 # GNU specific settings
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+
+  # GCC 13 false positive: fmt v5 (bundled in spdlog) triggers -Wstringop-overflow
+  # when its buffer grow() is inlined through std::uninitialized_copy. The warning
+  # fires inside a system header so -isystem on external/ cannot suppress it.
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "13")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow")
+  endif()
 endif()
 
 # Intel specific settings
 if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 endif()
 
 # Clang specific settings
@@ -48,11 +55,17 @@ option(USE_PETSC "Use PETSC solver library" OFF)
 # CMake Modules
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-# Boost Archive
+# Boost Archive — use Boost's own CMake config files (CMP0167 removes FindBoost)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS filesystem)
+
 if(Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 69)
   find_package(Boost REQUIRED COMPONENTS filesystem system)
 endif()
+
 include_directories(${BOOST_INCLUDE_DIRS})
 link_libraries(${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 
@@ -326,6 +339,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_finite_strain_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_unitcell_test.cc
+    ${mpm_SOURCE_DIR}/tests/solvers/mpm_implicit_multi_particle_type_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_navierstokes_unitcell_test.cc
     ${mpm_SOURCE_DIR}/tests/solvers/mpm_semi_implicit_twophase_test.cc

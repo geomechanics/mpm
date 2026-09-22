@@ -109,7 +109,9 @@ mpm::dense_map mpm::Terracotta<Tdim>::initialise_state_variables() {
                                // Packing fraction
                                {"packing_fraction", initial_packing_fraction_},
                                // Pore pressure
-                               {"pore_pressure", 0.0}};
+                               {"pore_pressure", 0.0},
+                               // Plastic deviatoric strain rate
+                               {"pgamma_dot", 0.}};
   return state_vars;
 }
 
@@ -133,7 +135,8 @@ std::vector<std::string> mpm::Terracotta<Tdim>::state_variables() const {
                                                "elastic_strain4_prev",
                                                "elastic_strain5_prev",
                                                "packing_fraction",
-                                               "pore_pressure"};
+                                               "pore_pressure",
+                                               "pgamma_dot"};
   return state_vars;
 }
 
@@ -266,6 +269,9 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
                  a / m_ / m_) *
                 fourth_order_identity_mandel;
 
+  // Plastic strain rate
+  Vector6d plastic_strain_rate_dev = new_tm * (b_m * pe_m + c * se_m);
+
   // Start Newton-Raphson iteration for elastic strain
   unsigned iter = 0;
   double initial_res_norm;
@@ -375,6 +381,9 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
     // Update transport parameters b (a and c are constants)
     b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
 
+    // Compute plastic strain rate
+    plastic_strain_rate_dev = new_tm * (b_m * pe_m + c * se_m);
+
     // Check convergence based on solution
     if (delta_elastic_strain.norm() < abs_tol_) break;
 
@@ -402,6 +411,10 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
 
   // Update stress
   updated_stress = -new_p * m_mandel + new_s;
+
+  // Update plastic strain rate in state variables
+  (*state_vars).at("pgamma_dot") +=
+      std::sqrt(2.0 * plastic_strain_rate_dev.dot(plastic_strain_rate_dev));
 
   // Convert Mandel's notation to tensorial Voigt notation
   updated_stress.tail(3) /= std::sqrt(2.0);

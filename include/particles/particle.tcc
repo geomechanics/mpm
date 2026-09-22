@@ -598,7 +598,6 @@ template <unsigned Tdim>
 void mpm::Particle<Tdim>::update_volume() noexcept {
   // Check if particle has a valid cell ptr and a valid volume
   assert(cell_ != nullptr && volume_ != std::numeric_limits<double>::max());
-  // Compute at centroid
   // Strain rate
   this->volume_ *= std::exp(dvolumetric_strain_);
   this->mass_density_ = this->mass_density_ / std::exp(dvolumetric_strain_);
@@ -866,7 +865,7 @@ void mpm::Particle<Tdim>::compute_strain(double dt) noexcept {
   // Update strain
   strain_.noalias() += dstrain_;
 
-  // Assign volumetric strain at centroid
+  // Assign volumetric strain
   dvolumetric_strain_ = dt * strain_rate_.head(Tdim).sum();
 }
 

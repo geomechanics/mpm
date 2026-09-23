@@ -8,8 +8,17 @@
 namespace mpm {
 namespace materials {
 
+// Calculate area or volume of grains depending on Tdim
+template <unsigned Tdim>
+inline double grain_measure(double grain_diameter) {
+  if constexpr (Tdim == 2)
+    return M_PI * grain_diameter * grain_diameter / 4.0;
+  else
+    return M_PI * grain_diameter * grain_diameter * grain_diameter / 6.0;
+}
+
 // Mean surface-to-surface gap between grains from the packing fraction, picture in notes
-//! \tparam Tdim Dimension (exponent of the lattice scaling is 1/Tdim) (still unsure if this works properly)
+//! \tparam Tdim Dimension
 //! \param[in] phi Current packing fraction, solved for in dpm.tcc
 //! \param[in] phi_ref Packing fraction at which grains touch (gap = 0), need to determine whether to use critical_packing_fraction or dialtion stuff
 //! \param[in] grain_diameter Mean grain diameter
@@ -17,10 +26,15 @@ namespace materials {
 template <unsigned Tdim>
 inline double hamaker_gap(double phi, double phi_ref, double grain_diameter) {
   // Guard against empty or negative packing fraction
-  if (phi <= std::numeric_limits<double>::epsilon())
+  if (phi <= std::numeric_limits<double>::epsilon() ||
+      phi_ref <= std::numeric_limits<double>::epsilon())
     return std::numeric_limits<double>::max();
-  const double gap =
-      grain_diameter * (std::pow(phi_ref / phi, 1.0 / Tdim) - 1.0);
+
+  const double Vg = grain_measure<Tdim>(grain_diameter);
+  const double L_now = std::pow(Vg / phi, 1.0 / Tdim);
+  const double L_jammed = std::pow(Vg / phi_ref, 1.0 / Tdim);
+
+  const double gap = L_now - L_jammed;
   return std::max(gap, 0.0);
 }
 

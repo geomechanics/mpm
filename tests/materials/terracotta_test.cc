@@ -114,7 +114,7 @@ TEST_CASE("Terracotta is checked in 2D (without pore fluid)",
       const mpm::dense_map state_variables =
           material->initialise_state_variables();
 
-      REQUIRE(state_variables.size() == 18);
+      REQUIRE(state_variables.size() == 19);
       REQUIRE(state_variables.at("pressure") == Approx(0.0).margin(Tolerance));
       REQUIRE(state_variables.at("q") == Approx(0.0).margin(Tolerance));
       REQUIRE(state_variables.at("tm") ==
@@ -476,7 +476,7 @@ TEST_CASE("Terracotta is checked in 2D (with pore fluid)",
       const mpm::dense_map state_variables =
           material->initialise_state_variables();
 
-      REQUIRE(state_variables.size() == 18);
+      REQUIRE(state_variables.size() == 19);
       REQUIRE(state_variables.at("pressure") == Approx(0.0).margin(Tolerance));
       REQUIRE(state_variables.at("q") == Approx(0.0).margin(Tolerance));
       REQUIRE(state_variables.at("tm") ==
@@ -853,7 +853,7 @@ TEST_CASE("Terracotta is checked in 3D (without pore fluid)",
       const mpm::dense_map state_variables =
           material->initialise_state_variables();
 
-      REQUIRE(state_variables.size() == 18);
+      REQUIRE(state_variables.size() == 19);
       REQUIRE(state_variables.at("pressure") == Approx(0.0).margin(Tolerance));
       REQUIRE(state_variables.at("q") == Approx(0.0).margin(Tolerance));
       REQUIRE(state_variables.at("tm") ==

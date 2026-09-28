@@ -7,6 +7,7 @@
 #include "mohr_coulomb.h"
 #include "newtonian.h"
 #include "norsand.h"
+#include "terracotta.h"
 
 // Bingham 2D (fluid model)
 static Register<mpm::Material<2>, mpm::Bingham<2>, unsigned, const Json&>
@@ -77,3 +78,11 @@ static Register<mpm::Material<2>, mpm::HenckyHyperElastic<2>, unsigned,
 static Register<mpm::Material<3>, mpm::HenckyHyperElastic<3>, unsigned,
                 const Json&>
     hencky_hyper_elastic_3d("HenckyHyperElastic3D");
+
+// Terracotta 2D
+static Register<mpm::Material<2>, mpm::Terracotta<2>, unsigned, const Json&>
+    terracotta_2d("Terracotta2D");
+
+// Terracotta 3D
+static Register<mpm::Material<3>, mpm::Terracotta<3>, unsigned, const Json&>
+    terracota_3d("Terracotta3D");

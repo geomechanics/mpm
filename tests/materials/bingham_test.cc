@@ -191,17 +191,17 @@ TEST_CASE("Bingham is checked in 2D (without thixotropy)",
 
     // Check state variables
     REQUIRE(state_vars.at("pressure") ==
-            Approx(53239.4547055938).epsilon(Tolerance));
+            Approx(39710.4365261221).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0062500000).epsilon(Tolerance));
+            Approx(-0.0046875).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(0.).epsilon(Tolerance));
     REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0054932487).epsilon(Tolerance));
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-53239.7900274234).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-53240.7959929121).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-39710.7718479517).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-39711.7778134403).epsilon(Tolerance));
     REQUIRE(updated_stress(2) == Approx(1.6766091478).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(-2.5149137217).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(0.000e+00).epsilon(Tolerance));
@@ -387,17 +387,17 @@ TEST_CASE("Bingham is checked in 2D (with thixotropy)",
 
     // Check state variables
     REQUIRE(state_vars.at("pressure") ==
-            Approx(53239.4547055938).epsilon(Tolerance));
+            Approx(39710.4365261221).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0062500000).epsilon(Tolerance));
+            Approx(-0.0046875).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(1.0199450675).epsilon(Tolerance));
     REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0054932487).epsilon(Tolerance));
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-53240.1001639861).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-53242.0365391630).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-39711.0819845144).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-39713.0183596913).epsilon(Tolerance));
     REQUIRE(updated_stress(2) == Approx(3.2272919615).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(-4.8409379422).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(0.000e+00).epsilon(Tolerance));
@@ -601,18 +601,18 @@ TEST_CASE("Bingham is checked in 3D (without thixotropy)",
 
     // Check state variables
     REQUIRE(state_vars.at("pressure") ==
-            Approx(15727.9891467669).epsilon(Tolerance));
+            Approx(20685.4707376481).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0018750000).epsilon(Tolerance));
+            Approx(-0.0024609375).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(0.).epsilon(Tolerance));
     REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0050513114).epsilon(Tolerance));
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-15728.3671338958).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-15725.9732154129).epsilon(Tolerance));
-    REQUIRE(updated_stress(2) == Approx(-15729.6270909921).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-20685.8487247769).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-20683.454806294).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-20687.1086818732).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(-0.5669806933).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(-0.1889935644).epsilon(Tolerance));
     REQUIRE(updated_stress(5) == Approx(-1.8899356444).epsilon(Tolerance));
@@ -815,18 +815,18 @@ TEST_CASE("Bingham is checked in 3D (with thixotropy)",
 
     // Check state variables
     REQUIRE(state_vars.at("pressure") ==
-            Approx(15727.9891467669).epsilon(Tolerance));
+            Approx(20685.4707376481).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0018750000).epsilon(Tolerance));
+            Approx(-0.0024609375).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(1.0199494869).epsilon(Tolerance));
     REQUIRE(state_vars.at("gamma_dot") ==
             Approx(0.0050513114).epsilon(Tolerance));
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-15728.7168040748).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-15724.1083077915).epsilon(Tolerance));
-    REQUIRE(updated_stress(2) == Approx(-15731.1423284344).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-20686.1983949559).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-20681.5898986727).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-20688.6239193156).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(-1.0914859618).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(-0.3638286539).epsilon(Tolerance));
     REQUIRE(updated_stress(5) == Approx(-3.6382865394).epsilon(Tolerance));

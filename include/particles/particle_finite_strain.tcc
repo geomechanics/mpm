@@ -53,7 +53,7 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_strain(double dt) noexcept {
 //! Function to reinitialise material to be run at the beginning of each time
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::initialise_constitutive_law(
-    double dt) noexcept {
+    double dt, double lin_v, double lin_a) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
 
@@ -66,7 +66,7 @@ void mpm::ParticleFiniteStrain<Tdim>::initialise_constitutive_law(
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
           stress_, previous_stress_, deformation_gradient_,
           deformation_gradient_increment_, this,
-          &state_variables_[mpm::ParticlePhase::Solid], dt);
+          &state_variables_[mpm::ParticlePhase::Solid], dt, lin_v, lin_a);
 }
 
 //! Map mass and material stiffness matrix to cell
@@ -130,7 +130,7 @@ inline bool
 // Compute stress using implicit updating scheme
 template <unsigned Tdim>
 void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark(
-    double dt) noexcept {
+    double dt, double lin_v, double lin_a) noexcept {
   // Check if material ptr is valid
   assert(this->material() != nullptr);
   // Clone state variables
@@ -145,7 +145,8 @@ void mpm::ParticleFiniteStrain<Tdim>::compute_stress_newmark(
   this->constitutive_matrix_ =
       material_[mpm::ParticlePhase::Solid]->compute_consistent_tangent_matrix(
           stress_, previous_stress_, deformation_gradient_,
-          deformation_gradient_increment_, this, &temp_state_variables, dt);
+          deformation_gradient_increment_, this, &temp_state_variables, dt,
+          lin_v, lin_a);
 }
 
 // Compute deformation gradient increment and volume of the particle

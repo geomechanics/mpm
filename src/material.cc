@@ -2,6 +2,7 @@
 #include "bingham.h"
 #include "bingham_viscoplastic.h"
 #include "dpm.h"
+#include "dpmhamaker.h"
 #include "hencky_hyper_elastic.h"
 #include "linear_elastic.h"
 #include "modified_cam_clay.h"
@@ -79,6 +80,16 @@ static Register<mpm::Material<2>, mpm::DilatantPlasticModel<2>, unsigned,
 static Register<mpm::Material<3>, mpm::DilatantPlasticModel<3>, unsigned,
                 const Json&>
     dpm_3d("DPM3D");
+
+// DPM Hamaker 2D
+static Register<mpm::Material<2>, mpm::DilatantPlasticHamakerModel<2>,
+                unsigned, const Json&>
+    dpm_hamaker_2d("DPMHamaker2D");
+
+// DPM Hamaker 3D
+static Register<mpm::Material<3>, mpm::DilatantPlasticHamakerModel<3>,
+                unsigned, const Json&>
+    dpm_hamaker_3d("DPMHamaker3D");
 
 // Terracotta 2D
 static Register<mpm::Material<2>, mpm::Terracotta<2>, unsigned, const Json&>

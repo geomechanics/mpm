@@ -2207,7 +2207,10 @@ void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time) {
     
     // Check if it's time to inject
     bool time_to_inject = false;
-    
+
+    // if (injection.last_injection_time > injection.end_time)
+    //   injection.last_injection_time = current_time;
+
     // First injection at start_time
     if (std::abs(current_time - injection.start_time) < 1e-12) {
       time_to_inject = true;

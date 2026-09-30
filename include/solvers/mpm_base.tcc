@@ -638,6 +638,18 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
 
+  // // Get particles properties
+  // auto json_particles = io_->json_object("particles");
+
+  // for (const auto& json_particle : json_particles) {
+  //   // Generate particles
+  //   bool gen_status =
+  //       mesh_->generate_particles(io_, json_particle["generator"]);
+  //   if (!gen_status)
+  //     std::runtime_error(
+  //         "mpm::base::initialise_particles() Generate particles failed");
+  // }
+
   } catch (std::exception& exception) {
     console_->info("{} #{}: Resume failed, restarting analysis; {}", __FILE__,
                    __LINE__, exception.what());

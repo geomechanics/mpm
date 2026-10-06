@@ -314,9 +314,16 @@ class ParticleBase {
   //! Map traction force
   virtual void map_traction_force() noexcept = 0;
 
-  //! Assign 3D printing nozzle
-  virtual void map_3D_printing_velocity(double height, 
-                  Eigen::Matrix<double, Tdim, 1> velocity) noexcept = 0;
+  //! Drive the nodes of this particle's cell with the nozzle velocity if the
+  //! particle is inside the nozzle (above the tip and, if radius > 0, within
+  //! the given horizontal distance of the nozzle axis)
+  //! \param[in] nozzle_position Nozzle tip position (vertical = tip height)
+  //! \param[in] nozzle_radius Nozzle radius (<= 0: infinite plane, legacy)
+  //! \param[in] velocity Velocity imposed on the nodes
+  virtual void map_3D_printing_velocity(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius,
+      const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept = 0;
 
   //! Compute updated position
   virtual void compute_updated_position(

@@ -27,6 +27,11 @@ struct Injection3DP {
   double extrusion_velocity{0.0};
   //! Number of particles per cell in height direction
   unsigned particles_per_cell{1};
+  //! Number of injections performed so far (-1: not yet initialised).
+  //! Injection k is due at start_time + k * injection_interval; this
+  //! counter is what keeps the injection rate exact (no drift when the
+  //! interval is not a multiple of dt) and restart-safe.
+  long n_injected{-1};
 };
 }  // namespace mpm
 

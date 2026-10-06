@@ -125,8 +125,12 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mesh_->inject_particles(step_ * dt_);
 
     if (this->three_d_printing_) {
-      // Inject particles
-      mesh_->inject_particles_3dp(step_ * dt_);
+      // Update printing state (segment, nozzle velocity and position)
+      this->update_printing_state(step_ * dt_);
+
+      // Inject particles (only while the nozzle path is running)
+      if (this->printing_active())
+        mesh_->inject_particles_3dp(step_ * dt_, dt_);
 
       // Locate particles
       mpm_scheme_->locate_particles(this->locate_particles_);
@@ -139,14 +143,16 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     contact_->initialise();
 
     if (this->three_d_printing_) {
-      // Update printing state (velocity and nozzle height)
-      this->update_printing_state(step_ * dt_, dt_);
-
-      // Iterate over each particle to compute updated position
+      // Drive the nodes of particles inside the nozzle with the nozzle
+      // velocity (nozzle travel + extrusion)
+      const Eigen::Matrix<double, Tdim, 1> nozzle_pos = this->nozzle_position();
+      const Eigen::Matrix<double, Tdim, 1> nozzle_vel = this->total_velocity();
+      const double nozzle_r = this->nozzle_radius();
       mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::map_3D_printing_velocity,
-                    std::placeholders::_1, this->nozzle_height(), 
-                      this->total_velocity()));
+          [&nozzle_pos, &nozzle_vel,
+           nozzle_r](std::shared_ptr<mpm::ParticleBase<Tdim>> ptr) {
+            ptr->map_3D_printing_velocity(nozzle_pos, nozzle_r, nozzle_vel);
+          });
     }
 
     // Mass momentum and compute velocity at nodes

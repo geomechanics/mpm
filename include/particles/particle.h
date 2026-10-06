@@ -263,9 +263,11 @@ class Particle : public ParticleBase<Tdim> {
   //! Map traction force
   void map_traction_force() noexcept override;
 
-  //! Assign 3D printing nozzle
-  void map_3D_printing_velocity(double height,
-            Eigen::Matrix<double, Tdim, 1> velocity) noexcept override;
+  //! Drive nodes with the nozzle velocity if the particle is in the nozzle
+  void map_3D_printing_velocity(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius,
+      const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept override;
 
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step

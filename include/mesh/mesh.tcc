@@ -2078,6 +2078,14 @@ bool mpm::Mesh<Tdim>::generate_particles(const std::shared_ptr<mpm::IO>& io,
       } else {
         throw std::runtime_error("3DP inject requires particles_per_cell");
       }
+      // The generator uses the extrusion speed (magnitude); the direction is
+      // set by "extrusion_velocity" in 3D_printing_settings (negative = down)
+      if (!(inject.extrusion_velocity > 0.) || !(inject.cell_height > 0.) ||
+          inject.particles_per_cell == 0)
+        throw std::runtime_error(
+            "3DP inject requires extrusion_velocity > 0 (speed), "
+            "cell_height > 0 and particles_per_cell > 0");
+
       // Calculate injection interval once during generation
       // injection_interval = cell_height / ppc / extrusion_velocity
       inject.injection_interval = inject.cell_height / 
@@ -2192,44 +2200,56 @@ void mpm::Mesh<Tdim>::inject_particles(double current_time) {
 }
 
 // Inject particles for 3D concrete printing: copy the last N particles
+//
+// Injection k (k = 0, 1, 2, ...) is due at start_time + k * injection_interval
+// and is performed at the first step whose time has reached it. Because the
+// schedule is defined by this counter (and not by the time of the previous
+// injection), the long-run injection rate is exactly extrusion_velocity /
+// (cell_height / particles_per_cell), even when the interval is not a multiple
+// of dt; the feed column therefore neither drifts nor loses volume. The
+// counter is initialised from the current time on the first call, so a run
+// resumed from a checkpoint continues the schedule without a gap.
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time) {
-  int mpi_rank = 0;
-#ifdef USE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-#endif
-
+void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time, double dt) {
   // Container for newly injected particles
   std::vector<std::shared_ptr<ParticleBase<Tdim>>> injected_particles;
-  
+
+  // Next free particle id (ids may not be contiguous after particle removal)
+  mpm::Index next_pid = 0;
+  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr)
+    next_pid = std::max(next_pid, static_cast<mpm::Index>((*pitr)->id() + 1));
+
   // Iterate over all 3DP injection configurations
   for (auto& injection : particle_injections_3dp_) {
-    
-    // Check if it's time to inject
-    bool time_to_inject = false;
 
-    // if (injection.last_injection_time > injection.end_time)
-    //   injection.last_injection_time = current_time;
+    // Number of injections that are due by time t (inclusive)
+    auto n_due = [&injection](double t) -> long {
+      if (t < injection.start_time - 1.E-12) return 0;
+      const double tt = std::min(t, injection.end_time);
+      long n = static_cast<long>(std::floor(
+                   (tt - injection.start_time) / injection.injection_interval +
+                   1.E-9)) + 1;
+      // Injections at or after end_time are not performed
+      while (n > 0 && injection.start_time + (n - 1) *
+                              injection.injection_interval >=
+                          injection.end_time - 1.E-12)
+        --n;
+      return n;
+    };
 
-    // First injection at start_time
-    if (std::abs(current_time - injection.start_time) < 1e-12) {
-      time_to_inject = true;
-      injection.last_injection_time = current_time;
-      console_->debug("First injection at time {}", current_time);
+    // First call (fresh start or resume): count what was already injected
+    if (injection.n_injected < 0) {
+      injection.n_injected = n_due(current_time - dt);
+      if (injection.n_injected > 0)
+        console_->info(
+            "3DP injection: resuming at time {} after {} injections",
+            current_time, injection.n_injected);
     }
-    // Subsequent injections at intervals
-    else if (current_time > injection.start_time && 
-             current_time < injection.end_time) {
-      if (current_time - injection.last_injection_time >= 
-          injection.injection_interval - 1e-12) {
-        time_to_inject = true;
-        injection.last_injection_time = current_time;
-        console_->debug("Interval injection at time {}", current_time);
-      }
-    }
-    
-    if (!time_to_inject) continue;
-    
+
+    // Number of slices to inject in this step (normally 0 or 1)
+    const long n_inject = n_due(current_time) - injection.n_injected;
+    if (n_inject <= 0) continue;
+
     // Get materials
     std::vector<std::shared_ptr<mpm::Material<Tdim>>> materials;
     for (auto m_id : injection.material_ids) {
@@ -2241,107 +2261,101 @@ void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time) {
         continue;
       }
     }
-    
+
     if (materials.empty()) {
       console_->error("No valid materials found for 3DP injection");
       continue;
     }
-    
-    // Get total number of particles
-    unsigned nparticles_total = this->nparticles();
-    
-    // If particle count is insufficient for copying
-    if (nparticles_total < injection.n_copies) {
-      console_->warn("Insufficient particles: currently have {} particles," 
-                    "need to copy last {} particles", 
-                    nparticles_total, injection.n_copies);
-      continue;
-    }
-    
-    // Get IDs of the last N particles
-    std::vector<mpm::Index> last_particle_ids;
-    last_particle_ids.reserve(injection.n_copies);
-    
-    // Get last N particle IDs from particles_ container
-    // Note: Assumes particles_ are stored in insertion order
-    auto pitr = particles_.cend();
-    for (unsigned i = 0; i < injection.n_copies; ++i) {
-      --pitr;
-      last_particle_ids.push_back((*pitr)->id());
-    }
-    
-    // Copy last N particles and modify coordinates
-    unsigned new_pid = nparticles_total;
-    bool checks = false;  // Don't check for duplicates
-    
-    // Calculate height increment: cell_height / particles_per_cell
-    double height_increment = injection.cell_height / 
-                              static_cast<double>(injection.particles_per_cell);
-    
-    for (const auto& source_pid : last_particle_ids) {
-      // Get source particle
-      auto source_particle = map_particles_[source_pid];
-      if (!source_particle) {
-        console_->error("Source particle ID not found: {}", source_pid);
-        continue;
+
+    // Height increment between slices: cell_height / particles_per_cell
+    const double height_increment =
+        injection.cell_height /
+        static_cast<double>(injection.particles_per_cell);
+
+    for (long slice = 0; slice < n_inject; ++slice) {
+      // Get total number of particles
+      const unsigned nparticles_total = this->nparticles();
+
+      // If particle count is insufficient for copying
+      if (nparticles_total < injection.n_copies) {
+        console_->warn(
+            "Insufficient particles: currently have {} particles, "
+            "need to copy last {} particles",
+            nparticles_total, injection.n_copies);
+        break;
       }
-      
-      // Get source particle coordinates
-      auto source_coords = source_particle->coordinates();
-      
-      // Calculate new coordinates: add height_increment
-      Eigen::Matrix<double, Tdim, 1> new_coords = source_coords;
-      // Add cell_height/particles_per_cell in the vertical direction
-      new_coords[Tdim - 1] += height_increment;
-      
-      // Create new particle (using same type as source particle)
-      auto new_particle =
-          Factory<mpm::ParticleBase<Tdim>, mpm::Index,
-                  const Eigen::Matrix<double, Tdim, 1>&>::instance()
-              ->create(injection.particle_type,
-                       static_cast<mpm::Index>(new_pid), new_coords);
-      
-      if (new_particle) {
-        // Copy all properties from source particle
-        // 1. Copy velocity
-        new_particle->assign_velocity(source_particle->velocity());
-        
-        // 2. Copy materials (possibly multi-phase)
-        for (unsigned phase = 0; phase < materials.size(); ++phase) {
-          new_particle->assign_material(materials[phase], phase);
+
+      // Get IDs of the last N particles
+      // Note: assumes particles_ are stored in insertion order, so the last
+      // n_copies particles are the top slice of the feed column
+      std::vector<mpm::Index> last_particle_ids;
+      last_particle_ids.reserve(injection.n_copies);
+      auto pitr = particles_.cend();
+      for (unsigned i = 0; i < injection.n_copies; ++i) {
+        --pitr;
+        last_particle_ids.push_back((*pitr)->id());
+      }
+      // Keep the original insertion order for the new slice
+      std::reverse(last_particle_ids.begin(), last_particle_ids.end());
+
+      const bool checks = false;  // Don't check for duplicates
+      unsigned ninjected_slice = 0;
+
+      for (const auto& source_pid : last_particle_ids) {
+        // Get source particle
+        auto source_particle = map_particles_[source_pid];
+        if (!source_particle) {
+          console_->error("Source particle ID not found: {}", source_pid);
+          continue;
         }
-        
-        // 3. Copy volume
+
+        // New coordinates: one slice above the source particle
+        Eigen::Matrix<double, Tdim, 1> new_coords =
+            source_particle->coordinates();
+        new_coords[Tdim - 1] += height_increment;
+
+        // Create new particle
+        auto new_particle =
+            Factory<mpm::ParticleBase<Tdim>, mpm::Index,
+                    const Eigen::Matrix<double, Tdim, 1>&>::instance()
+                ->create(injection.particle_type,
+                         static_cast<mpm::Index>(next_pid), new_coords);
+
+        if (!new_particle) continue;
+
+        // Copy velocity, materials, volume and mass from the source particle
+        new_particle->assign_velocity(source_particle->velocity());
+        for (unsigned phase = 0; phase < materials.size(); ++phase)
+          new_particle->assign_material(materials[phase], phase);
         new_particle->assign_volume(source_particle->volume());
-        
-        // 4. Copy mass
         new_particle->assign_mass(source_particle->mass());
-        
+
         // Add new particle to mesh
-        unsigned status = this->add_particle(new_particle, checks);
-        
-        if (status) {
-          map_particles_[new_pid] = new_particle;
-          
-          // Need to locate the cell for the new particle
-          if (!this->locate_particle_cells(new_particle)) {
-            console_->warn("New particle ID {} cannot be located in any cell", 
-                            new_pid);
-          }
-          
-          ++new_pid;
+        if (this->add_particle(new_particle, checks)) {
+          map_particles_[next_pid] = new_particle;
+
+          // Locate the cell of the new particle
+          if (!this->locate_particle_cells(new_particle))
+            console_->warn(
+                "New particle ID {} at height {} cannot be located in any "
+                "cell (outside the mesh?)",
+                next_pid, new_coords[Tdim - 1]);
+
+          ++next_pid;
+          ++ninjected_slice;
           injected_particles.emplace_back(new_particle);
         }
       }
+
+      ++injection.n_injected;
+      console_->debug("3DP injection #{}: {} particles at time {}",
+                      injection.n_injected, ninjected_slice, current_time);
     }
-    
-    console_->info("Copied {} particles at time {}", 
-                      injected_particles.size(), current_time);
   }
-  
+
   if (!injected_particles.empty()) {
-    console_->info("3DP injection completed: total {} new particles injected", 
-                    injected_particles.size());
+    console_->info("3DP injection at time {}: {} new particles injected",
+                   current_time, injected_particles.size());
   }
 }
 

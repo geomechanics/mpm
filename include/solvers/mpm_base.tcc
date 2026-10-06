@@ -167,23 +167,60 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
             extrusion_velocity_ = analysis_["3D_printing_settings"]
                                 ["extrusion_velocity"].template get<double>();
             
-            // Parse initial nozzle height
-            nozzle_height_ = analysis_["3D_printing_settings"]
-                            ["nozzle_height"].template get<double>();
-            
-            // Initialize printing state
-            current_segment_ = 0;
-            last_update_time_ = 0.0;
-            
-            // Get initial nozzle velocity of first segment
-            if (!nozzle_velocities_.empty()) {
-                nozzle_velocity_ = nozzle_velocities_[0];
+            // Segment end times must be strictly increasing
+            for (size_t i = 1; i < segment_end_times_.size(); ++i)
+                if (segment_end_times_[i] <= segment_end_times_[i - 1])
+                    throw std::runtime_error(
+                        "seg_time must be strictly increasing");
+
+            const auto& settings = analysis_["3D_printing_settings"];
+
+            // Initial nozzle tip position. "nozzle_position" gives the full
+            // tip position [x, y, z] (needed when "nozzle_radius" is used);
+            // otherwise only "nozzle_height" is required (legacy input).
+            nozzle_initial_position_.setZero();
+            if (settings.contains("nozzle_position")) {
+                const auto pos = settings["nozzle_position"]
+                                     .template get<std::vector<double>>();
+                if (pos.size() < Tdim)
+                    throw std::runtime_error(
+                        "nozzle_position must have one component per "
+                        "dimension, e.g. [x, y, z]");
+                for (unsigned i = 0; i < Tdim; ++i)
+                    nozzle_initial_position_[i] = pos[i];
+                if (settings.contains("nozzle_height") &&
+                    std::abs(settings["nozzle_height"].template get<double>() -
+                             nozzle_initial_position_[Tdim - 1]) > 1.E-12)
+                    console_->warn(
+                        "Both nozzle_height and nozzle_position given; using "
+                        "the vertical component of nozzle_position ({})",
+                        nozzle_initial_position_[Tdim - 1]);
+            } else {
+                nozzle_initial_position_[Tdim - 1] =
+                    settings["nozzle_height"].template get<double>();
             }
-            
-            console_->info("3D printing settings: {} printing path segments", 
+
+            // Nozzle radius (optional). Without it every particle above the
+            // nozzle tip, anywhere in the domain, is driven by the nozzle.
+            nozzle_radius_ = settings.value("nozzle_radius", -1.0);
+            if (nozzle_radius_ > 0. && !settings.contains("nozzle_position"))
+                throw std::runtime_error(
+                    "nozzle_radius requires nozzle_position [x, y, z]");
+            if (nozzle_radius_ <= 0.)
+                console_->warn(
+                    "3D printing: no nozzle_radius given; every particle "
+                    "above the nozzle tip in the whole domain will be "
+                    "driven by the nozzle (legacy behaviour)");
+
+            // Initialize printing state at t = 0
+            this->update_printing_state(0.0);
+
+            console_->info("3D printing settings: {} printing path segments",
                           nozzle_velocities_.size());
             console_->info("  Extrusion velocity: {}", extrusion_velocity_);
-            console_->info("  Initial nozzle height: {}", nozzle_height_);
+            console_->info("  Initial nozzle height: {}",
+                           nozzle_initial_position_[Tdim - 1]);
+            console_->info("  Nozzle radius: {}", nozzle_radius_);
             
             // Print information for all segments
             for (size_t i = 0; i < nozzle_velocities_.size(); ++i) {
@@ -637,6 +674,22 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
 
     console_->info("Checkpoint resume at step {} of {}", this->step_,
                    this->nsteps_);
+
+    // Re-register particle injection generators. They only define future
+    // injections (no particles are created here); without this, no particles
+    // are injected after a resume. Other generators (e.g. "file") are skipped
+    // because their particles are already in the checkpoint.
+    if (io_->json_object("particles").is_array()) {
+      for (const auto& json_particle : io_->json_object("particles")) {
+        const auto& generator = json_particle["generator"];
+        const auto gen_type = generator["type"].template get<std::string>();
+        if (gen_type == "3dp_inject" || gen_type == "inject") {
+          if (!mesh_->generate_particles(io_, generator))
+            throw std::runtime_error("Failed to register \"" + gen_type +
+                                     "\" generator on resume");
+        }
+      }
+    }
 
   // // Get particles properties
   // auto json_particles = io_->json_object("particles");
@@ -2090,35 +2143,50 @@ void mpm::MPMBase<Tdim>::initialise_nonlocal_mesh(const Json& mesh_props) {
   }
 }
 
-// Update 3D printing state (velocity and nozzle height)
+// Update 3D printing state (segment, nozzle velocity and nozzle position)
+// The nozzle path is piecewise linear: segment i runs from seg_time[i-1]
+// (0 for i = 0) to seg_time[i] with velocity nozzle_velocity[i]. After the
+// last segment the print is finished: the nozzle stops, extrusion stops and
+// no more particles are injected (the feed column is held in place).
+// Everything is computed from current_time, so no error accumulates and the
+// state is correct when the analysis is resumed from a checkpoint.
 template <unsigned Tdim>
-void mpm::MPMBase<Tdim>::update_printing_state(double current_time, double dt) {
+void mpm::MPMBase<Tdim>::update_printing_state(double current_time) {
     if (!three_d_printing_ || nozzle_velocities_.empty()) return;
-    
-    // Update nozzle height based on nozzle z-velocity
-    // nozzle_height += nozzle_velocity_z * dt
-    nozzle_height_ += nozzle_velocity_[2] * dt;
-    
-    // Update last update time
-    last_update_time_ = current_time;
-    
-    // Check if we need to switch to next segment
-    while (current_segment_ < segment_end_times_.size() && 
-            current_time >= segment_end_times_[current_segment_]) {
-        
-        // Move to next segment
-        current_segment_++;
-        
-        if (current_segment_ < nozzle_velocities_.size()) {
-            // Update nozzle velocity for new segment
-            nozzle_velocity_ = nozzle_velocities_[current_segment_];
-            
-            console_->info("Switched to printing segment {} at time {}", 
-                            current_segment_, current_time);
-        } else {
-            // Reached end of all segments
-            console_->info("All printing segments completed at time {}", 
-                            current_time);
-        }
+
+    const unsigned nsegments = nozzle_velocities_.size();
+
+    // Current segment: first segment whose end time is still ahead
+    unsigned segment = 0;
+    while (segment < nsegments &&
+           current_time >= segment_end_times_[segment])
+        ++segment;
+
+    if (segment != current_segment_) {
+        if (segment < nsegments)
+            console_->info("Printing segment {} active at time {}", segment,
+                           current_time);
+        else
+            console_->info("All printing segments completed at time {}",
+                           current_time);
     }
+    current_segment_ = segment;
+    // After the last segment the print is finished: the nozzle stops
+    nozzle_velocity_ = (segment < nsegments)
+                           ? nozzle_velocities_[segment]
+                           : Eigen::Matrix<double, 3, 1>::Zero().eval();
+
+    // Nozzle position: integrate the piecewise-constant velocity exactly
+    nozzle_position_ = nozzle_initial_position_;
+    double seg_start = 0.;
+    for (unsigned i = 0; i < nsegments; ++i) {
+        const double seg_end = segment_end_times_[i];
+        const double duration =
+            std::max(0., std::min(current_time, seg_end) - seg_start);
+        for (unsigned d = 0; d < Tdim; ++d)
+            nozzle_position_[d] += nozzle_velocities_[i][d] * duration;
+        if (current_time <= seg_end) break;
+        seg_start = seg_end;
+    }
+    // Beyond the last segment the nozzle stays where the path ended
 }

@@ -104,12 +104,23 @@ class MPMBase : public MPM {
   void nodal_absorbing_constraints();
 
   /**
-   * \defgroup Implicit Functions dealing with implicit MPM
+   * \defgroup 3DPrinting Functions dealing with 3D concrete printing
    */
   /**@{*/
-  //! Update 3D printing state based on current time
-  void update_printing_state(double current_time, double dt);
-  
+  //! Update 3D printing state (segment, nozzle velocity and position)
+  //! The state is evaluated directly from the current time, so it is
+  //! independent of the step history and remains correct after a resume.
+  //! \param[in] current_time Current analysis time
+  void update_printing_state(double current_time);
+
+  //! Get current nozzle tip position (vertical component is the tip height)
+  Eigen::Matrix<double, Tdim, 1> nozzle_position() const {
+    return nozzle_position_;
+  }
+
+  //! Get nozzle radius (<= 0 means the nozzle is an infinite plane)
+  double nozzle_radius() const { return nozzle_radius_; }
+
   //! Get current nozzle velocity
   Eigen::Matrix<double, 3, 1> current_nozzle_velocity() const { 
       return nozzle_velocity_; 
@@ -125,10 +136,16 @@ class MPMBase : public MPM {
       for (unsigned i = 0; i < Tdim; ++i) {
           total[i] = nozzle_velocity_[i];
       }
-      // Add extrusion velocity in z-direction
-      total[Tdim - 1] += extrusion_velocity_;
+      // Add extrusion velocity in z-direction (only while printing)
+      if (this->printing_active()) total[Tdim - 1] += extrusion_velocity_;
       return total;
     }
+
+  //! Whether the nozzle path is still running (false after last seg_time)
+  bool printing_active() const {
+      return three_d_printing_ &&
+             current_segment_ < segment_end_times_.size();
+  }
   
   //! Get current segment index
   unsigned current_printing_segment() const { 
@@ -136,7 +153,7 @@ class MPMBase : public MPM {
   }
   
   //! Get nozzle height
-  double nozzle_height() const { return nozzle_height_; }
+  double nozzle_height() const { return nozzle_position_[Tdim - 1]; }
   /**@}*/
 
 
@@ -347,10 +364,19 @@ class MPMBase : public MPM {
    */
   //! Flag for 3D printing
   bool three_d_printing_{false};
-  //! Current nozzle height
-  double nozzle_height_{0.0};
+  //! Initial nozzle tip position at t = 0
+  Eigen::Matrix<double, Tdim, 1> nozzle_initial_position_{
+      Eigen::Matrix<double, Tdim, 1>::Zero()};
+  //! Current nozzle tip position
+  Eigen::Matrix<double, Tdim, 1> nozzle_position_{
+      Eigen::Matrix<double, Tdim, 1>::Zero()};
+  //! Nozzle radius: only particles within this horizontal distance of the
+  //! nozzle axis (and above the tip) are driven by the nozzle.
+  //! <= 0 reverts to the legacy behaviour (infinite horizontal plane).
+  double nozzle_radius_{-1.0};
   //! Current segment nozzle velocity
-  Eigen::Matrix<double, 3, 1> nozzle_velocity_;
+  Eigen::Matrix<double, 3, 1> nozzle_velocity_{
+      Eigen::Matrix<double, 3, 1>::Zero()};
   //! Extrusion velocity (z-direction)
   double extrusion_velocity_{0.0};
   //! Nozzle velocities for each segment
@@ -358,9 +384,7 @@ class MPMBase : public MPM {
   //! End times for each segment
   std::vector<double> segment_end_times_;
   //! Current segment index
-  unsigned current_segment_{0}; 
-  //! Last update time for height calculation
-  double last_update_time_{0.0};
+  unsigned current_segment_{0};
   /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING

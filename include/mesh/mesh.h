@@ -518,8 +518,10 @@ class Mesh {
   //! Inject particles
   void inject_particles(double current_time);
 
-  //! Inject 3D printing particles
-  void inject_particles_3dp(double current_time);
+  //! Inject 3D printing particles (copy the top slice of the feed column)
+  //! \param[in] current_time Current analysis time
+  //! \param[in] dt Time step
+  void inject_particles_3dp(double current_time, double dt);
 
   // Create the nodal properties' map
   void create_nodal_properties();

@@ -29,9 +29,19 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assemble_stiffness_matrix() {
     const unsigned nactive_node = active_nodes.size();
 
     // Iterate over cells
+    // Cells with particles: the active-cell list (same order) if available
+    std::vector<std::shared_ptr<mpm::Cell<Tdim>>> cell_list;
+    if (!mesh_->active_region()) {
+      for (auto cell_itr = cells.cbegin(); cell_itr != cells.cend(); ++cell_itr)
+        if ((*cell_itr)->status()) cell_list.emplace_back(*cell_itr);
+    }
+    const auto& active_cells =
+        mesh_->active_region() ? mesh_->active_cells() : cell_list;
+
     mpm::Index cid = 0;
-    for (auto cell_itr = cells.cbegin(); cell_itr != cells.cend(); ++cell_itr) {
-      if ((*cell_itr)->status()) {
+    for (auto cell_itr = active_cells.cbegin(); cell_itr != active_cells.cend();
+         ++cell_itr) {
+      {
         // Node ids in each cell
         const auto nids = global_node_indices_.at(cid);
 

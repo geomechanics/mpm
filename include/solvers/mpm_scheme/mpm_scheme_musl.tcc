@@ -25,7 +25,16 @@ inline void mpm::MPMSchemeMUSL<Tdim>::postcompute_nodal_kinematics(
   // momentum of the first mapping on ranks where they are inactive. They must
   // be reset as well, otherwise that stale total is added again in the halo
   // exchange below (wrong nodal velocity, typically after load balancing).
-  if (mpi_size_ > 1) {
+  if (mpi_size_ > 1 && mesh_->active_region()) {
+    // Active nodes and nodes shared between ranks are the only nodes that can
+    // hold mass / momentum
+    auto zero = [phase](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+      node->update_mass(false, phase, 0.0);
+      node->update_momentum(false, phase, VectorDim::Zero());
+    };
+    mesh_->iterate_over_status_nodes(zero);
+    mesh_->iterate_over_domain_shared_nodes(zero);
+  } else if (mpi_size_ > 1) {
     mesh_->iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::update_mass,
                                         std::placeholders::_1, false, phase,
                                         0.0));
@@ -33,15 +42,13 @@ inline void mpm::MPMSchemeMUSL<Tdim>::postcompute_nodal_kinematics(
                                         std::placeholders::_1, false, phase,
                                         VectorDim::Zero()));
   } else {
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::update_mass, std::placeholders::_1,
-                  false, phase, 0.0),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    mesh_->iterate_over_status_nodes(
+      std::bind(&mpm::NodeBase<Tdim>::update_mass, std::placeholders::_1,
+                  false, phase, 0.0));
 
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::update_momentum, std::placeholders::_1,
-                  false, phase, VectorDim::Zero()),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    mesh_->iterate_over_status_nodes(
+      std::bind(&mpm::NodeBase<Tdim>::update_momentum, std::placeholders::_1,
+                  false, phase, VectorDim::Zero()));
   }
 
   this->compute_nodal_kinematics(velocity_update, phase);

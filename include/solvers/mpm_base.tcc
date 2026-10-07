@@ -1895,6 +1895,9 @@ void mpm::MPMBase<Tdim>::mpi_domain_decompose(bool initial_step) {
       mesh_->transfer_nonrank_particles(exchange_cells);
 
 #endif
+    // Halo nodes and particle ownership changed: reset all nodes next step
+    mesh_->request_full_node_reset();
+
     auto mpi_domain_end = std::chrono::steady_clock::now();
     console_->info("Rank {}, Domain decomposition: {} ms", mpi_rank,
                    std::chrono::duration_cast<std::chrono::milliseconds>(

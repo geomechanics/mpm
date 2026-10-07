@@ -580,6 +580,49 @@ unsigned mpm::Mesh<Tdim>::assign_active_nodes_id() {
   return active_id;
 }
 
+//! Assign active (and global active) node ids from the active node list
+//! Equivalent to assign_active_nodes_id() + assign_global_active_nodes_id()
+//! (same numbering: node order, and node order over all ranks globally),
+//! without looping over all nodes of the mesh.
+template <unsigned Tdim>
+unsigned mpm::Mesh<Tdim>::assign_active_nodes_id_active_region(
+    unsigned* nglobal_active) {
+  this->active_nodes_.clear();
+  Index active_id = 0;
+  for (const auto& node : active_node_list_) {
+    this->active_nodes_.add(node, false);
+    node->assign_active_id(active_id);
+    // Single rank: global id = local id (overwritten below for MPI)
+    node->assign_global_active_id(active_id);
+    ++active_id;
+  }
+  unsigned nglobal = active_id;
+
+#ifdef USE_MPI
+  int mpi_size = 1;
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  if (mpi_size > 1) {
+    // Global active status of every node (node order = id order)
+    std::vector<unsigned char> send(nodes_.size(), 0), recv(nodes_.size(), 0);
+    for (const auto& node : active_node_list_) send[node->id()] = 1;
+    MPI_Allreduce(send.data(), recv.data(), static_cast<int>(nodes_.size()),
+                  MPI_UNSIGNED_CHAR, MPI_MAX, MPI_COMM_WORLD);
+    // Global active id = number of globally active nodes before this node
+    std::vector<Index> global_id(nodes_.size(), 0);
+    Index gid = 0;
+    for (std::size_t i = 0; i < recv.size(); ++i)
+      if (recv[i]) global_id[i] = gid++;
+    for (const auto& node : active_node_list_) {
+      node->assign_global_active_id(global_id[node->id()]);
+      node->assign_solving_status(true);
+    }
+    nglobal = gid;
+  }
+#endif
+  if (nglobal_active != nullptr) *nglobal_active = nglobal;
+  return active_id;
+}
+
 //! Assign active node id (globally in All MPI ranks)
 template <unsigned Tdim>
 unsigned mpm::Mesh<Tdim>::assign_global_active_nodes_id() {
@@ -606,10 +649,17 @@ std::vector<Eigen::VectorXi> mpm::Mesh<Tdim>::global_node_indices() const {
   // Vector of node_pairs
   std::vector<Eigen::VectorXi> node_indices;
   try {
-    // Iterate over cells
-    for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
-      if ((*citr)->status()) {
-        node_indices.emplace_back((*citr)->local_node_indices());
+    if (active_region_) {
+      // Cells with particles, in cell order (same as the loop below)
+      node_indices.reserve(active_cells_.size());
+      for (const auto& cell : active_cells_)
+        node_indices.emplace_back(cell->local_node_indices());
+    } else {
+      // Iterate over cells
+      for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr) {
+        if ((*citr)->status()) {
+          node_indices.emplace_back((*citr)->local_node_indices());
+        }
       }
     }
 

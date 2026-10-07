@@ -12,12 +12,17 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
     // Spawn a task for initialising nodes and cells
 #pragma omp section
     {
-      // Initialise nodes
-      mesh_->iterate_over_nodes(std::bind(
-          &mpm::NodeBase<Tdim>::initialise_implicit, std::placeholders::_1));
+      if (mesh_->active_region()) {
+        // Reset / activate only where particles are
+        mesh_->initialise_active_region(true);
+      } else {
+        // Initialise nodes
+        mesh_->iterate_over_nodes(std::bind(
+            &mpm::NodeBase<Tdim>::initialise_implicit, std::placeholders::_1));
 
-      mesh_->iterate_over_cells(
-          std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
+        mesh_->iterate_over_cells(std::bind(&mpm::Cell<Tdim>::activate_nodes,
+                                            std::placeholders::_1));
+      }
     }
     // Spawn a task for particles
 #pragma omp section
@@ -65,10 +70,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_nodal_kinematics(
 #endif
 
   // Compute nodal velocity and acceleration
-  mesh_->iterate_over_nodes_predicate(
+  mesh_->iterate_over_status_nodes(
       std::bind(&mpm::NodeBase<Tdim>::compute_velocity_acceleration,
-                std::placeholders::_1),
-      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+                std::placeholders::_1));
 }
 
 //! Update nodal kinematics by Newmark scheme
@@ -77,10 +81,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::update_nodal_kinematics_newmark(
     unsigned phase, double newmark_beta, double newmark_gamma) {
 
   // Update nodal velocity and acceleration
-  mesh_->iterate_over_nodes_predicate(
+  mesh_->iterate_over_status_nodes(
       std::bind(&mpm::NodeBase<Tdim>::update_velocity_acceleration_newmark,
-                std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_),
-      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+                std::placeholders::_1, phase, newmark_beta, newmark_gamma, dt_));
 }
 
 //! Compute stress and strain by Newmark scheme

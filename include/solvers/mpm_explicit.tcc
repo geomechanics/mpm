@@ -104,6 +104,13 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Initialise loading conditions
   this->initialise_loads();
 
+  // Restrict per-step node / cell loops to the region with particles
+  // ("active_region": false in analysis reverts to whole-mesh loops)
+  mesh_->enable_active_region(analysis_.value("active_region", true));
+  // Features that write to nodes outside that region need a full reset
+  mesh_->always_full_node_reset(interface_ || this->set_node_concentrated_force_ ||
+                                this->absorbing_boundary_);
+
   // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
 

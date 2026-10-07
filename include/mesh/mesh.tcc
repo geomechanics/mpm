@@ -119,6 +119,114 @@ void mpm::Mesh<Tdim>::iterate_over_active_nodes(Toper oper) {
     oper(*nitr);
 }
 
+//! Iterate over cells containing particles
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_active_cells(Toper oper) {
+#pragma omp parallel for schedule(runtime)
+  for (auto citr = active_cells_.cbegin(); citr != active_cells_.cend(); ++citr)
+    oper(*citr);
+}
+
+//! Iterate over nodes of cells containing particles
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_active_node_list(Toper oper) {
+#pragma omp parallel for schedule(runtime)
+  for (auto nitr = active_node_list_.cbegin(); nitr != active_node_list_.cend();
+       ++nitr)
+    oper(*nitr);
+}
+
+//! Iterate over nodes shared between MPI ranks
+template <unsigned Tdim>
+template <typename Toper>
+void mpm::Mesh<Tdim>::iterate_over_domain_shared_nodes(Toper oper) {
+#pragma omp parallel for schedule(runtime)
+  for (auto nitr = domain_shared_nodes_.cbegin();
+       nitr != domain_shared_nodes_.cend(); ++nitr)
+    oper(*nitr);
+}
+
+//! Reset nodes, collect cells with particles and activate their nodes
+//! Only the nodes touched in the previous step (nodes of cells that had
+//! particles) and the nodes shared between MPI ranks (written by the halo
+//! exchange) can hold non-zero nodal values, so only those are reset. All
+//! other nodes are left untouched, which avoids looping over the whole mesh.
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::initialise_active_region(bool implicit) {
+  // Check once that node / cell ids are 0..n-1 in container order
+  if (ids_contiguous_ < 0) {
+    bool ok = true;
+    for (mpm::Index i = 0; i < nodes_.size() && ok; ++i)
+      ok = (nodes_[i]->id() == i);
+    for (mpm::Index i = 0; i < cells_.size() && ok; ++i)
+      ok = (cells_[i]->id() == i);
+    ids_contiguous_ = ok ? 1 : 0;
+    if (!ok)
+      console_->warn(
+          "Node / cell ids are not contiguous: active-region optimisation "
+          "disabled, looping over the whole mesh");
+  }
+
+  auto reset = [implicit](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+    if (implicit)
+      node->initialise_implicit();
+    else
+      node->initialise();
+  };
+
+  // 1. Reset nodes
+  if (full_node_reset_ || always_full_node_reset_ || ids_contiguous_ == 0) {
+    this->iterate_over_nodes(reset);
+    full_node_reset_ = false;
+  } else {
+#pragma omp parallel for schedule(runtime)
+    for (auto nitr = touched_nodes_.cbegin(); nitr != touched_nodes_.cend();
+         ++nitr)
+      reset(*nitr);
+    this->iterate_over_domain_shared_nodes(reset);
+  }
+
+  // Fallback: whole-mesh activation
+  if (ids_contiguous_ == 0) {
+    this->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
+    active_cells_.clear();
+    for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr)
+      if ((*citr)->status()) active_cells_.emplace_back(*citr);
+    active_node_list_.clear();
+    for (auto nitr = nodes_.cbegin(); nitr != nodes_.cend(); ++nitr)
+      if ((*nitr)->status()) active_node_list_.emplace_back(*nitr);
+    touched_nodes_.clear();
+    return;
+  }
+
+  // 2. Cells containing particles (in cell order)
+  cell_mark_.assign(cells_.size(), 0);
+  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr) {
+    const mpm::Index cid = (*pitr)->cell_id();
+    if (cid < cell_mark_.size()) cell_mark_[cid] = 1;
+  }
+  active_cells_.clear();
+  for (mpm::Index i = 0; i < cell_mark_.size(); ++i)
+    if (cell_mark_[i] && cells_[i]->status())
+      active_cells_.emplace_back(cells_[i]);
+
+  // 3. Activate their nodes and list them (in node order)
+  this->iterate_over_active_cells(
+      std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
+  node_mark_.assign(nodes_.size(), 0);
+  for (const auto& cell : active_cells_)
+    for (const auto& node : cell->nodes_ref()) node_mark_[node->id()] = 1;
+  active_node_list_.clear();
+  for (mpm::Index i = 0; i < node_mark_.size(); ++i)
+    if (node_mark_[i]) active_node_list_.emplace_back(nodes_[i]);
+
+  // These nodes will be written in this step: reset them at the next one
+  touched_nodes_ = active_node_list_;
+}
+
 #ifdef USE_MPI
 #ifdef USE_HALO_EXCHANGE
 //! Nodal halo exchange

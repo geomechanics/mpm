@@ -142,6 +142,56 @@ class Mesh {
   //! Create a list of active nodes in mesh
   void find_active_nodes();
 
+  /**
+   * \defgroup ActiveRegion Loops restricted to the region with particles
+   * When enabled, the nodes are reset and activated per step only where
+   * particles are (plus nodes touched in the previous step and nodes shared
+   * between MPI ranks), instead of looping over the whole mesh.
+   */
+  /**@{*/
+  //! Enable / disable active-region bookkeeping
+  void enable_active_region(bool enable) {
+    active_region_ = enable;
+    full_node_reset_ = true;
+  }
+  //! Whether active-region bookkeeping is enabled
+  bool active_region() const { return active_region_; }
+  //! Reset all nodes at the next initialisation (e.g. after repartitioning)
+  void request_full_node_reset() { full_node_reset_ = true; }
+  //! Always reset all nodes (e.g. concentrated nodal forces are applied)
+  void always_full_node_reset(bool value) { always_full_node_reset_ = value; }
+  //! Reset nodes, collect cells with particles and activate their nodes
+  //! \param[in] implicit Use the implicit nodal initialisation
+  void initialise_active_region(bool implicit);
+  //! Cells containing particles (in cell order)
+  const std::vector<std::shared_ptr<mpm::Cell<Tdim>>>& active_cells() const {
+    return active_cells_;
+  }
+  //! Iterate over cells containing particles
+  template <typename Toper>
+  void iterate_over_active_cells(Toper oper);
+  //! Iterate over nodes of cells containing particles (status == true)
+  template <typename Toper>
+  void iterate_over_active_node_list(Toper oper);
+  //! Iterate over nodes shared between MPI ranks
+  template <typename Toper>
+  void iterate_over_domain_shared_nodes(Toper oper);
+  //! Iterate over active nodes (status == true): the active node list when
+  //! active-region bookkeeping is enabled, otherwise a loop over all nodes
+  template <typename Toper>
+  void iterate_over_status_nodes(Toper oper) {
+    if (active_region_)
+      this->iterate_over_active_node_list(oper);
+    else
+      this->iterate_over_nodes_predicate(
+          oper, std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  }
+  //! Assign active (and, with MPI, global active) node ids from the active
+  //! node list; returns the number of local active nodes
+  //! \param[out] nglobal_active Number of active nodes over all ranks
+  unsigned assign_active_nodes_id_active_region(unsigned* nglobal_active);
+  /**@}*/
+
   //! Iterate over active nodes
   //! \tparam Toper Callable object typically a baseclass functor
   template <typename Toper>
@@ -722,6 +772,22 @@ class Mesh {
   tsl::robin_map<unsigned, Vector<NodeBase<Tdim>>> node_sets_;
   //! Vector of active nodes
   Vector<NodeBase<Tdim>> active_nodes_;
+  //! Active-region bookkeeping enabled
+  bool active_region_{false};
+  //! Reset all nodes at the next initialisation
+  bool full_node_reset_{true};
+  //! Always reset all nodes
+  bool always_full_node_reset_{false};
+  //! Node / cell ids are 0..n-1 in container order (checked once)
+  int ids_contiguous_{-1};
+  //! Cells containing particles
+  std::vector<std::shared_ptr<mpm::Cell<Tdim>>> active_cells_;
+  //! Nodes of cells containing particles
+  std::vector<std::shared_ptr<mpm::NodeBase<Tdim>>> active_node_list_;
+  //! Nodes touched in the previous step (reset at the next initialisation)
+  std::vector<std::shared_ptr<mpm::NodeBase<Tdim>>> touched_nodes_;
+  //! Work arrays (marks by cell / node id)
+  std::vector<char> cell_mark_, node_mark_;
   //! Map of nodes for fast retrieval
   Map<NodeBase<Tdim>> map_nodes_;
   //! Map of cells for fast retrieval

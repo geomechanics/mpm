@@ -95,6 +95,11 @@ class Cell {
   }
 
   //! Return nodes id in a cell
+  //! Node pointers of the cell (by reference, no copy)
+  const std::vector<std::shared_ptr<NodeBase<Tdim>>>& nodes_ref() const {
+    return nodes_;
+  }
+
   std::set<mpm::Index> nodes_id() const {
     std::set<mpm::Index> nodes_id_lists;
     for (const auto& node : nodes_) nodes_id_lists.insert(node->id());

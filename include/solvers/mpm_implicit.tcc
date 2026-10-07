@@ -153,6 +153,13 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   // Initialise loading conditions
   this->initialise_loads();
 
+  // Restrict per-step node / cell loops to the region with particles
+  // ("active_region": false in analysis reverts to whole-mesh loops)
+  mesh_->enable_active_region(analysis_.value("active_region", true));
+  // Features that write to nodes outside that region need a full reset
+  mesh_->always_full_node_reset(this->set_node_concentrated_force_ ||
+                                this->absorbing_boundary_);
+
   // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
 
@@ -392,14 +399,22 @@ template <unsigned Tdim>
 bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
   bool status = true;
   try {
-    // Assigning matrix id (in each MPI rank)
-    const auto nactive_node = mesh_->assign_active_nodes_id();
+    unsigned nactive_node = 0;
+    unsigned nglobal_active_node = 0;
+    if (mesh_->active_region()) {
+      // Local and global active node ids from the active node list
+      nactive_node =
+          mesh_->assign_active_nodes_id_active_region(&nglobal_active_node);
+    } else {
+      // Assigning matrix id (in each MPI rank)
+      nactive_node = mesh_->assign_active_nodes_id();
 
-    // Assigning matrix id globally (required for rank-to-global mapping)
-    unsigned nglobal_active_node = nactive_node;
+      // Assigning matrix id globally (required for rank-to-global mapping)
+      nglobal_active_node = nactive_node;
 #ifdef USE_MPI
-    nglobal_active_node = mesh_->assign_global_active_nodes_id();
+      nglobal_active_node = mesh_->assign_global_active_nodes_id();
 #endif
+    }
 
     // Assign global node indice
     assembler_->assign_global_node_indices(nactive_node, nglobal_active_node);
@@ -408,9 +423,14 @@ bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
     assembler_->assign_displacement_constraints(this->step_ * this->dt_);
 
     // Initialise element matrix
-    mesh_->iterate_over_cells(
-        std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
-                  std::placeholders::_1));
+    if (mesh_->active_region())
+      mesh_->iterate_over_active_cells(
+          std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                    std::placeholders::_1));
+    else
+      mesh_->iterate_over_cells(
+          std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                    std::placeholders::_1));
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
@@ -423,14 +443,18 @@ bool mpm::MPMImplicit<Tdim>::reinitialise_matrix() {
 template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::reinitialise_system_equation() {
   // Initialise element matrix
-  mesh_->iterate_over_cells(
-      std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
-                std::placeholders::_1));
+  if (mesh_->active_region())
+    mesh_->iterate_over_active_cells(
+        std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                  std::placeholders::_1));
+  else
+    mesh_->iterate_over_cells(
+        std::bind(&mpm::Cell<Tdim>::initialise_element_stiffness_matrix,
+                  std::placeholders::_1));
 
   // Initialise nodal forces
-  mesh_->iterate_over_nodes_predicate(
-      std::bind(&mpm::NodeBase<Tdim>::initialise_force, std::placeholders::_1),
-      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  mesh_->iterate_over_status_nodes(
+      std::bind(&mpm::NodeBase<Tdim>::initialise_force, std::placeholders::_1));
 }
 
 // Assemble equilibrium equation
@@ -514,11 +538,10 @@ bool mpm::MPMImplicit<Tdim>::solve_system_equation() {
             assembler_->residual_force_rhs_vector()));
 
     // Assign displacement increment to nodes
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::update_displacement_increment,
+    mesh_->iterate_over_status_nodes(
+      std::bind(&mpm::NodeBase<Tdim>::update_displacement_increment,
                   std::placeholders::_1, assembler_->displacement_increment(),
-                  phase_, assembler_->active_dof()),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+                  phase_, assembler_->active_dof()));
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

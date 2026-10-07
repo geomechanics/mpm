@@ -22,12 +22,17 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
     // Spawn a task for initialising nodes and cells
 #pragma omp section
     {
-      // Initialise nodes
-      mesh_->iterate_over_nodes(
-          std::bind(&mpm::NodeBase<Tdim>::initialise, std::placeholders::_1));
+      if (mesh_->active_region()) {
+        // Reset / activate only where particles are
+        mesh_->initialise_active_region(false);
+      } else {
+        // Initialise nodes
+        mesh_->iterate_over_nodes(std::bind(&mpm::NodeBase<Tdim>::initialise,
+                                            std::placeholders::_1));
 
-      mesh_->iterate_over_cells(
-          std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
+        mesh_->iterate_over_cells(std::bind(&mpm::Cell<Tdim>::activate_nodes,
+                                            std::placeholders::_1));
+      }
     }
     // Spawn a task for particles
 #pragma omp section
@@ -65,9 +70,8 @@ inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
 #endif
 
   // Compute nodal velocity
-  mesh_->iterate_over_nodes_predicate(
-      std::bind(&mpm::NodeBase<Tdim>::compute_velocity, std::placeholders::_1),
-      std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+  mesh_->iterate_over_status_nodes(
+      std::bind(&mpm::NodeBase<Tdim>::compute_velocity, std::placeholders::_1));
 }
 
 //! Compute stress and strain
@@ -212,15 +216,13 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
   if (damping_type == "Cundall")
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
-                  std::placeholders::_1, phase, dt_, damping_factor),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    mesh_->iterate_over_status_nodes(
+      std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
+                  std::placeholders::_1, phase, dt_, damping_factor));
   else
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
-                  std::placeholders::_1, phase, dt_),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+    mesh_->iterate_over_status_nodes(
+      std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
+                  std::placeholders::_1, phase, dt_));
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

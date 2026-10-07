@@ -1236,13 +1236,17 @@ std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>>
 
   std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> particles;
 
-  std::for_each(particles_.cbegin(), particles_.cend(),
-                [=, &particles](
-                    const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle) {
-                  // If particle is not found in mesh add to a list of particles
-                  if (!this->locate_particle_cells(particle))
-                    particles.emplace_back(particle);
-                });
+  // Particles are located independently (cell particle lists are protected
+  // by a mutex), so the loop is threaded; particles that are not found are
+  // collected afterwards in container order
+  const auto nparticles = particles_.size();
+  std::vector<char> found(nparticles, 1);
+#pragma omp parallel for schedule(runtime)
+  for (std::size_t i = 0; i < nparticles; ++i)
+    found[i] = this->locate_particle_cells(*(particles_.cbegin() + i)) ? 1 : 0;
+
+  for (std::size_t i = 0; i < nparticles; ++i)
+    if (!found[i]) particles.emplace_back(*(particles_.cbegin() + i));
 
   return particles;
 }

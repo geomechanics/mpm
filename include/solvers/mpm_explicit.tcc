@@ -152,8 +152,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
         mesh_->inject_particles_3dp(step_ * dt_, dt_, this->nozzle_position(),
                                     this->nozzle_radius());
 
-      // Locate particles
-      mpm_scheme_->locate_particles(this->locate_particles_);
+      // The particles were located at the end of the previous step and new
+      // particles are injected with their cell, so no search is needed here
 
       // Interlayer contact: layer (and velocity field) of each particle
       if (this->layer_contact_) {

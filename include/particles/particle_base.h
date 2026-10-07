@@ -376,6 +376,19 @@ class ParticleBase {
   virtual void update_layer_contact_weld() noexcept {}
   /**@}*/
 
+  //! Particle-driven nozzle (explicit): if the particle is inside the nozzle,
+  //! mark it, set its velocity to the nozzle velocity and remember its
+  //! position at the start of the step
+  virtual void begin_3D_printing_kinematics(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius,
+      const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept {}
+
+  //! Particle-driven nozzle (explicit): a marked particle moves exactly with
+  //! the nozzle velocity during the step (overrides the grid update)
+  virtual void end_3D_printing_kinematics(
+      const Eigen::Matrix<double, Tdim, 1>& velocity, double dt) noexcept {}
+
   //! Compute updated position
   virtual void compute_updated_position(
       double dt,

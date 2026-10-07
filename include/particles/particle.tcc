@@ -1055,6 +1055,31 @@ void mpm::Particle<Tdim>::assign_3D_printing_kinematics(
   this->acceleration_.setZero();
 }
 
+//! Particle-driven nozzle: mark, set velocity, remember start position
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::begin_3D_printing_kinematics(
+    const Eigen::Matrix<double, Tdim, 1>& nozzle_position, double nozzle_radius,
+    const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept {
+  nozzle_kinematic_ =
+      this->inside_3D_printing_nozzle(nozzle_position, nozzle_radius);
+  if (!nozzle_kinematic_) return;
+  this->velocity_ = velocity;
+  this->acceleration_.setZero();
+  nozzle_start_coordinates_ = coordinates_;
+  nozzle_start_displacement_ = displacement_;
+}
+
+//! Particle-driven nozzle: move a marked particle with the nozzle
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::end_3D_printing_kinematics(
+    const Eigen::Matrix<double, Tdim, 1>& velocity, double dt) noexcept {
+  if (!nozzle_kinematic_) return;
+  coordinates_ = nozzle_start_coordinates_ + velocity * dt;
+  displacement_ = nozzle_start_displacement_ + velocity * dt;
+  this->velocity_ = velocity;
+  this->acceleration_.setZero();
+}
+
 // Compute updated position of the particle
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::compute_updated_position(

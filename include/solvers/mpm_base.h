@@ -401,6 +401,9 @@ class MPMBase : public MPM {
   double layer_height_{0.};
   //! Bottom of the first layer (initial nozzle tip - layer height)
   double layer_bed_{0.};
+  //! Nozzle driven through the particles inside it ("nozzle_drive":
+  //! "particles") instead of the grid nodes of those particles ("nodes")
+  bool nozzle_drive_particles_{false};
   //! Interlayer contact (two velocity fields by layer parity)
   bool layer_contact_{false};
   //! Interlayer contact: gap tolerance

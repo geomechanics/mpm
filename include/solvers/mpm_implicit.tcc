@@ -110,6 +110,13 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   // Pressure smoothing
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
 
+  // The implicit solver always drives the nozzle through both the particles
+  // and the grid nodes
+  if (this->three_d_printing_ && this->nozzle_drive_particles_)
+    console_->warn(
+        "3D printing nozzle_drive \"particles\" is only available in the "
+        "explicit solver; the implicit solver drives particles and nodes");
+
   // Interlayer contact is only implemented in the explicit solver
   if (this->three_d_printing_ && this->layer_contact_)
     console_->warn(

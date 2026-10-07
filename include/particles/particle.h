@@ -275,6 +275,16 @@ class Particle : public ParticleBase<Tdim> {
       double nozzle_radius,
       const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept override;
 
+  //! Particle-driven nozzle: mark, set velocity, remember start position
+  void begin_3D_printing_kinematics(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius,
+      const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept override;
+
+  //! Particle-driven nozzle: move a marked particle with the nozzle
+  void end_3D_printing_kinematics(const Eigen::Matrix<double, Tdim, 1>& velocity,
+                                  double dt) noexcept override;
+
   //! Whether the particle is inside the nozzle (above the tip and within
   //! nozzle_radius of the axis; radius <= 0: anywhere above the tip)
   bool inside_3D_printing_nozzle(
@@ -656,6 +666,12 @@ class Particle : public ParticleBase<Tdim> {
                ? nodes_[i]->acceleration(phase)
                : nodes_[i]->contact_acceleration(phase, layer_field_);
   }
+
+  //! Particle-driven nozzle: particle is in the nozzle in this step
+  bool nozzle_kinematic_{false};
+  //! Particle-driven nozzle: coordinates / displacement at the step start
+  VectorDim nozzle_start_coordinates_{VectorDim::Zero()};
+  VectorDim nozzle_start_displacement_{VectorDim::Zero()};
 
   //! Layer contact: layer of the particle (0: not assigned)
   int layer_{0};

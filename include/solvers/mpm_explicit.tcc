@@ -177,7 +177,18 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     // Initialise nodal properties and append material ids to node
     contact_->initialise();
 
-    if (this->three_d_printing_) {
+    if (this->three_d_printing_ && this->nozzle_drive_particles_) {
+      // Particles inside the nozzle move with the nozzle (travel + extrusion);
+      // the grid is not constrained
+      const Eigen::Matrix<double, Tdim, 1> nozzle_pos = this->nozzle_position();
+      const Eigen::Matrix<double, Tdim, 1> nozzle_vel = this->total_velocity();
+      const double nozzle_r = this->nozzle_radius();
+      mesh_->iterate_over_particles(
+          [&nozzle_pos, &nozzle_vel,
+           nozzle_r](std::shared_ptr<mpm::ParticleBase<Tdim>> ptr) {
+            ptr->begin_3D_printing_kinematics(nozzle_pos, nozzle_r, nozzle_vel);
+          });
+    } else if (this->three_d_printing_) {
       // Drive the nodes of particles inside the nozzle with the nozzle
       // velocity (nozzle travel + extrusion)
       const Eigen::Matrix<double, Tdim, 1> nozzle_pos = this->nozzle_position();
@@ -215,6 +226,16 @@ bool mpm::MPMExplicit<Tdim>::solve() {
     mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
                                              phase, "Cundall", damping_factor_,
                                              step_);
+
+    // Particle-driven nozzle: particles in the nozzle move with it
+    if (this->three_d_printing_ && this->nozzle_drive_particles_) {
+      const Eigen::Matrix<double, Tdim, 1> nozzle_vel = this->total_velocity();
+      const double dt = dt_;
+      mesh_->iterate_over_particles(
+          [&nozzle_vel, dt](std::shared_ptr<mpm::ParticleBase<Tdim>> ptr) {
+            ptr->end_3D_printing_kinematics(nozzle_vel, dt);
+          });
+    }
 
     // Mass momentum and compute velocity at nodes
     mpm_scheme_->postcompute_nodal_kinematics(velocity_update_, phase);

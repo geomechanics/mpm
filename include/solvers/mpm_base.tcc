@@ -230,6 +230,18 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
                     outlet_offset,
                     nozzle_initial_position_[Tdim - 1] - outlet_offset);
 
+            // Nozzle drive: "nodes" (default) fixes the velocity of the
+            // grid nodes of the particles in the nozzle; "particles" moves
+            // those particles with the nozzle velocity and leaves the grid
+            // free, so material below the tip is not driven
+            const std::string nozzle_drive =
+                settings.value("nozzle_drive", std::string("nodes"));
+            if (nozzle_drive != "nodes" && nozzle_drive != "particles")
+                throw std::runtime_error(
+                    "nozzle_drive must be \"nodes\" or \"particles\"");
+            nozzle_drive_particles_ = (nozzle_drive == "particles");
+            console_->info("3D printing: nozzle drive {}", nozzle_drive);
+
             // Layers: a segment that moves the nozzle up (and not
             // horizontally) starts the next layer
             vertical_segment_.assign(nozzle_velocities_.size(), false);

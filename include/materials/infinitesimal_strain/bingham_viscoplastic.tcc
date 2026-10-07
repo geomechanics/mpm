@@ -153,7 +153,12 @@ template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6>
     mpm::BinghamViscoPlastic<Tdim>::compute_elastic_tensor(double vol_strain) {
   // Compute bulk modulus from equation of state
-  const double K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
+  // Equation of state: stiffening in compression only. In tension the bulk
+  // modulus is kept at rho c^2 (the exponential form would make it vanish,
+  // which lets the material expand freely and makes the implicit tangent
+  // singular).
+  const double K =
+      density_ * c_ * c_ * std::exp(-gamma_ * std::min(vol_strain, 0.));
   // Shear modulus
   const double G = shear_modulus_;
   const double a1 = K + (4.0 / 3.0) * G;
@@ -221,7 +226,12 @@ Eigen::Matrix<double, 6, 6>
 
   // Compute the elasto-plastic stiffness matrix
   const double vol_strain = (*state_vars).at("volumetric_strain");
-  const double K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
+  // Equation of state: stiffening in compression only. In tension the bulk
+  // modulus is kept at rho c^2 (the exponential form would make it vanish,
+  // which lets the material expand freely and makes the implicit tangent
+  // singular).
+  const double K =
+      density_ * c_ * c_ * std::exp(-gamma_ * std::min(vol_strain, 0.));
   const double den = -(dynamic_viscosity_ + dt * shear_modulus_) +
                      dt * tau0_ * alpha_ * (*state_vars).at("lambda");
   const double d_1 = 2.0 * shear_modulus_ * tau_ratio;

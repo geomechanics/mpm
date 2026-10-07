@@ -2335,12 +2335,15 @@ void mpm::Mesh<Tdim>::inject_particles_3dp(
                         MPI_COMM_WORLD);
 #endif
         if (ztop == std::numeric_limits<double>::lowest()) {
-          if (mpi_rank == 0)
-            console_->warn(
-                "3DP injection at time {}: no particles found inside the "
-                "nozzle (check nozzle_position / nozzle_radius)",
-                current_time);
-          break;
+          // The feed column has been lost (e.g. particles left the mesh after
+          // a diverged step, or wrong nozzle_position / nozzle_radius):
+          // continuing would print nothing, so stop the analysis
+          const std::string msg =
+              "3DP injection at time " + std::to_string(current_time) +
+              ": no particles found inside the nozzle (feed column lost, or "
+              "check nozzle_position / nozzle_radius). Analysis stopped.";
+          if (mpi_rank == 0) console_->error("{}", msg);
+          throw std::runtime_error(msg);
         }
         for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr)
           if (in_column(*pitr) &&

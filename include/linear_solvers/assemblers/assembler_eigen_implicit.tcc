@@ -170,16 +170,26 @@ void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {
         -stiffness_matrix_ * displacement_constraints_;
 
     // Apply displacement constraints
+    // (single pass over the nonzeros: zeroing rows/columns one constrained
+    // dof at a time costs O(nnz) per dof on a column-major sparse matrix)
+    std::vector<char> constrained(stiffness_matrix_.rows(), 0);
     for (Eigen::SparseVector<double>::InnerIterator it(
              displacement_constraints_);
          it; ++it) {
       // Modify residual force_rhs_vector
       residual_force_rhs_vector_(it.index()) = it.value();
-      // Modify stiffness_matrix
-      stiffness_matrix_.row(it.index()) *= 0;
-      stiffness_matrix_.col(it.index()) *= 0;
-      stiffness_matrix_.coeffRef(it.index(), it.index()) = 1;
+      constrained[it.index()] = 1;
     }
+    // Zero the rows and columns of constrained dofs
+    for (int k = 0; k < stiffness_matrix_.outerSize(); ++k)
+      for (Eigen::SparseMatrix<double>::InnerIterator it(stiffness_matrix_, k);
+           it; ++it)
+        if (constrained[it.row()] || constrained[it.col()]) it.valueRef() = 0.;
+    // Unit diagonal for constrained dofs
+    for (Eigen::SparseVector<double>::InnerIterator it(
+             displacement_constraints_);
+         it; ++it)
+      stiffness_matrix_.coeffRef(it.index(), it.index()) = 1;
 
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());

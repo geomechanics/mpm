@@ -56,6 +56,10 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
           relative_residual_tolerance = analysis_["scheme_settings"]
                                             .at("relative_residual_tolerance")
                                             .template get<double>();
+        if (analysis_["scheme_settings"].contains("abort_on_nonconvergence"))
+          abort_on_nonconvergence_ = analysis_["scheme_settings"]
+                                         .at("abort_on_nonconvergence")
+                                         .template get<bool>();
         if (analysis_["scheme_settings"].contains("verbosity"))
           verbosity_ = analysis_["scheme_settings"]
                            .at("verbosity")
@@ -262,6 +266,22 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       // Finalisation of Newton-Raphson iteration
       if (convergence || current_iteration_ == max_iteration_)
         this->finalise_newton_raphson_iteration();
+    }
+
+    // Newton-Raphson did not converge: continuing would build on a wrong
+    // state (typically ending in NaN), so stop the analysis. The decision is
+    // identical on all MPI ranks (global norms), and main() aborts all ranks.
+    if (nonlinear_ && !convergence && abort_on_nonconvergence_) {
+      const std::string msg =
+          "Newton-Raphson did not converge in " +
+          std::to_string(max_iteration_) + " iterations at step " +
+          std::to_string(step_) + " (time " + std::to_string(step_ * dt_) +
+          "). Analysis stopped; the last output/checkpoint is the last "
+          "converged state. Try a smaller dt or a larger max_iteration, or set "
+          "\"abort_on_nonconvergence\": false in scheme_settings to continue "
+          "anyway.";
+      if (mpi_rank == 0) console_->error("{}", msg);
+      throw std::runtime_error(msg);
     }
 
     // Locate particles

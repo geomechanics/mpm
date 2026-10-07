@@ -140,6 +140,8 @@ class MPMImplicit : public MPMBase<Tdim> {
   unsigned current_iteration_;
   //! Max number of Newton-Raphson iteration
   unsigned max_iteration_{20};
+  //! Stop the analysis if Newton-Raphson does not converge
+  bool abort_on_nonconvergence_{true};
   //! Verbosity for Newton-Raphson iteration
   unsigned verbosity_{0};
   //! Assembler object

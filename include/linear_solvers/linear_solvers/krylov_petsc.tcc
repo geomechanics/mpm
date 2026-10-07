@@ -33,8 +33,23 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
     VecDuplicate(petsc_b, &petsc_x);
 
     // Initialize Matrix A across the ranks
+    // Preallocate: without it PETSc reallocates memory during the insertion
+    // below, which is very slow for large systems. The number of nonzeros per
+    // row is bounded by the largest column count of the (structurally
+    // symmetric) local matrix, taken over all ranks.
+    PetscInt max_nnz_local = 1;
+    for (int k = 0; k < A.outerSize(); ++k) {
+      PetscInt nnz = 0;
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it)
+        ++nnz;
+      max_nnz_local = std::max(max_nnz_local, nnz);
+    }
+    PetscInt max_nnz = max_nnz_local;
+    MPI_Allreduce(&max_nnz_local, &max_nnz, 1, MPIU_INT, MPI_MAX,
+                  MPI_COMM_WORLD);
+    max_nnz = std::min<PetscInt>(max_nnz, global_active_dof_);
     MatCreateAIJ(MPI_COMM_WORLD, PETSC_DECIDE, PETSC_DECIDE, global_active_dof_,
-                 global_active_dof_, 0, NULL, 0, NULL, &petsc_A);
+                 global_active_dof_, max_nnz, NULL, max_nnz, NULL, &petsc_A);
     MatSetOption(petsc_A, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 
     // Copying Eigen vector b to petsc b vector
@@ -53,6 +68,8 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
     // Copying Eigen matrix A to petsc A matrix
     for (int k = 0; k < A.outerSize(); ++k) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(A, k); it; ++it) {
+        // Entries zeroed by the constraint treatment are not needed
+        if (it.value() == 0.) continue;
         MatSetValue(petsc_A, rank_global_mapper_[it.row()],
                     rank_global_mapper_[k], it.value(), ADD_VALUES);
       }
@@ -105,7 +122,13 @@ Eigen::VectorXd mpm::KrylovPETSC<Traits>::solve(
       if (preconditioner_type_ == "asm") PCSetType(pc, PCASM);
       if (preconditioner_type_ == "eisenstat") PCSetType(pc, PCEISENSTAT);
       if (preconditioner_type_ == "icc") PCSetType(pc, PCICC);
+      // Algebraic multigrid: robust for the implicit MPM elasticity systems
+      if (preconditioner_type_ == "gamg") PCSetType(pc, PCGAMG);
     }
+
+    // Allow run-time PETSc options to override / extend the settings above,
+    // e.g. PETSC_OPTIONS="-pc_type gamg -ksp_gmres_restart 200"
+    KSPSetFromOptions(solver);
 
     // Solve linear system of equation x = A^(-1) b
     KSPSolve(solver, petsc_b, petsc_x);

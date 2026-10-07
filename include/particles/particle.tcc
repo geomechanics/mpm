@@ -166,6 +166,12 @@ bool mpm::Particle<Tdim>::initialise_particle(
           ++i;
         }
       }
+      // Layer contact (3D printing): layer and weld state are kept in the
+      // last two state-variable slots of the checkpoint (0 = not stored)
+      if (particle.nstate_vars <= 18 && particle.svars[18] >= 1.) {
+        layer_ = static_cast<int>(particle.svars[18] + 0.5);
+        layer_welded_ = (particle.svars[19] > 0.5);
+      }
     } else {
       status = false;
       throw std::runtime_error("Material is invalid to assign to particle!");
@@ -300,6 +306,12 @@ std::shared_ptr<void> mpm::Particle<Tdim>::pod() const {
           state_variables_[mpm::ParticlePhase::Solid].at(state_var);
       ++i;
     }
+    // Layer contact (3D printing): layer and weld state in the last two
+    // state-variable slots (unused by materials with <= 18 state variables)
+    if (particle_data->nstate_vars <= 18 && layer_ > 0) {
+      particle_data->svars[18] = static_cast<double>(layer_);
+      particle_data->svars[19] = layer_welded_ ? 1. : 0.;
+    }
   }
 
   return particle_data;
@@ -334,6 +346,12 @@ void mpm::Particle<Tdim>::initialise() {
   this->scalar_properties_["mass"] = [&]() { return mass(); };
   this->scalar_properties_["volume"] = [&]() { return volume(); };
   this->scalar_properties_["mass_density"] = [&]() { return mass_density(); };
+  this->scalar_properties_["layer"] = [&]() {
+    return static_cast<double>(layer_);
+  };
+  this->scalar_properties_["welded"] = [&]() {
+    return layer_welded_ ? 1. : 0.;
+  };
   this->vector_properties_["displacements"] = [&]() { return displacement(); };
   this->vector_properties_["velocities"] = [&]() { return velocity(); };
   this->vector_properties_["accelerations"] = [&]() { return acceleration(); };
@@ -806,7 +824,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<1>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 1, 1> vel = nodes_[i]->velocity(phase);
+    Eigen::Matrix<double, 1, 1> vel = this->node_velocity(i, phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
   }
 
@@ -822,7 +840,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<2>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+    Eigen::Matrix<double, 2, 1> vel = this->node_velocity(i, phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
     strain_rate[1] += dn_dx(i, 1) * vel[1];
     strain_rate[3] += dn_dx(i, 1) * vel[0] + dn_dx(i, 0) * vel[1];
@@ -842,7 +860,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::Particle<3>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+    Eigen::Matrix<double, 3, 1> vel = this->node_velocity(i, phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
     strain_rate[1] += dn_dx(i, 1) * vel[1];
     strain_rate[2] += dn_dx(i, 2) * vel[2];
@@ -892,9 +910,12 @@ void mpm::Particle<Tdim>::compute_stress(double dt) noexcept {
 template <unsigned Tdim>
 void mpm::Particle<Tdim>::map_body_force(const VectorDim& pgravity) noexcept {
   // Compute nodal body forces
-  for (unsigned i = 0; i < nodes_.size(); ++i)
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
                                      (pgravity * mass_ * shapefn_(i)));
+    if (layer_field_ == 1)
+      nodes_[i]->map_layer_contact_force(pgravity * mass_ * shapefn_(i));
+  }
 }
 
 //! Map internal force
@@ -907,6 +928,7 @@ inline void mpm::Particle<1>::map_internal_force() noexcept {
     force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    if (this->layer_field_ == 1) nodes_[i]->map_layer_contact_force(force);
   }
 }
 
@@ -923,6 +945,7 @@ inline void mpm::Particle<2>::map_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    if (this->layer_field_ == 1) nodes_[i]->map_layer_contact_force(force);
   }
 }
 
@@ -945,6 +968,7 @@ inline void mpm::Particle<3>::map_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    if (this->layer_field_ == 1) nodes_[i]->map_layer_contact_force(force);
   }
 }
 
@@ -1070,9 +1094,9 @@ void mpm::Particle<Tdim>::compute_updated_position_flip(
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodal_velocity.noalias() +=
-        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+        shapefn_[i] * this->node_velocity(i, mpm::ParticlePhase::Solid);
     nodal_acceleration.noalias() +=
-        shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
+        shapefn_[i] * this->node_acceleration(i, mpm::ParticlePhase::Solid);
   }
 
   // Update particle velocity from interpolated nodal acceleration
@@ -1098,7 +1122,7 @@ void mpm::Particle<Tdim>::compute_updated_position_pic(double dt) noexcept {
 
   for (unsigned i = 0; i < nodes_.size(); ++i)
     nodal_velocity.noalias() +=
-        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+        shapefn_[i] * this->node_velocity(i, mpm::ParticlePhase::Solid);
 
   // New velocity
   this->velocity_ = nodal_velocity;
@@ -1127,9 +1151,9 @@ void mpm::Particle<Tdim>::compute_updated_position_asflip(
 
   for (unsigned i = 0; i < nodes_.size(); ++i) {
     nodal_velocity.noalias() +=
-        shapefn_[i] * nodes_[i]->velocity(mpm::ParticlePhase::Solid);
+        shapefn_[i] * this->node_velocity(i, mpm::ParticlePhase::Solid);
     nodal_acceleration.noalias() +=
-        shapefn_[i] * nodes_[i]->acceleration(mpm::ParticlePhase::Solid);
+        shapefn_[i] * this->node_acceleration(i, mpm::ParticlePhase::Solid);
   }
 
   // Compute particle ASFLIP beta parameter
@@ -1367,6 +1391,12 @@ int mpm::Particle<Tdim>::compute_pack_size() const {
   // state variables
   MPI_Pack_size(nstate_vars, MPI_DOUBLE, MPI_COMM_WORLD, &partial_size);
   total_size += partial_size;
+
+  // Layer contact: layer, field and weld state
+  MPI_Pack_size(2, MPI_INT, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
+  MPI_Pack_size(1, MPI_C_BOOL, MPI_COMM_WORLD, &partial_size);
+  total_size += partial_size;
 #endif
   return total_size;
 }
@@ -1472,6 +1502,13 @@ std::vector<uint8_t> mpm::Particle<Tdim>::serialize() {
     MPI_Pack(&svars[0], nstate_vars, MPI_DOUBLE, data_ptr, data.size(),
              &position, MPI_COMM_WORLD);
   }
+
+  // Layer contact: layer, field and weld state
+  int layer_data[2] = {layer_, layer_field_};
+  MPI_Pack(layer_data, 2, MPI_INT, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
+  MPI_Pack(&layer_welded_, 1, MPI_C_BOOL, data_ptr, data.size(), &position,
+           MPI_COMM_WORLD);
 #endif
   return data;
 }
@@ -1593,6 +1630,14 @@ void mpm::Particle<Tdim>::deserialize(
     }
   }
 
+  // Layer contact: layer, field and weld state
+  int layer_data[2] = {0, -1};
+  MPI_Unpack(data_ptr, data.size(), &position, layer_data, 2, MPI_INT,
+             MPI_COMM_WORLD);
+  layer_ = layer_data[0];
+  layer_field_ = layer_data[1];
+  MPI_Unpack(data_ptr, data.size(), &position, &layer_welded_, 1, MPI_C_BOOL,
+             MPI_COMM_WORLD);
 #endif
 }
 
@@ -1607,7 +1652,7 @@ inline Eigen::Matrix<double, 3, 3>
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const auto& velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = this->node_velocity(i, phase);
     deformation_gradient_rate(0, 0) += dn_dx(i, 0) * velocity[0] * dt;
   }
 
@@ -1627,7 +1672,7 @@ inline Eigen::Matrix<double, 3, 3>
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const auto& velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = this->node_velocity(i, phase);
     deformation_gradient_rate.block(0, 0, 2, 2).noalias() +=
         velocity * dn_dx.row(i) * dt;
   }
@@ -1654,7 +1699,7 @@ inline Eigen::Matrix<double, 3, 3>
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const auto& velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = this->node_velocity(i, phase);
     deformation_gradient_rate.noalias() += velocity * dn_dx.row(i) * dt;
   }
 
@@ -1710,7 +1755,7 @@ inline Eigen::Matrix<double, Tdim, Tdim>
 
   // Reference configuration is the beginning of the time step
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    const auto& velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = this->node_velocity(i, phase);
     velocity_gradient.noalias() += velocity * dn_dx.row(i);
   }
 
@@ -1735,7 +1780,7 @@ inline Eigen::Matrix<double, Tdim, Tdim>
   // Compute B matrix
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
     const auto& n_coord = nodes_[i]->coordinates();
-    const auto& velocity = nodes_[i]->velocity(phase);
+    const auto& velocity = this->node_velocity(i, phase);
     b_matrix.noalias() +=
         shapefn(i) * velocity * (n_coord - this->coordinates_).transpose();
   }
@@ -1769,4 +1814,83 @@ inline double mpm::Particle<Tdim>::compute_asflip_beta(double dt) noexcept {
   if (new_J < 1.0) beta = 0.0;
 
   return beta;
+}
+
+/**
+ * Interlayer contact for 3D printing
+ */
+//! Update the layer and velocity field of the particle
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::update_layer_contact_layer(
+    const Eigen::Matrix<double, Tdim, 1>& nozzle_position, double nozzle_radius,
+    int current_layer, double z_bed, double layer_height) noexcept {
+  int layer = layer_;
+  if (this->inside_3D_printing_nozzle(nozzle_position, nozzle_radius)) {
+    // Material in the nozzle belongs to the layer being printed
+    layer = current_layer;
+  } else if (layer == 0) {
+    // Unknown (initial particles outside the nozzle, or after a restart):
+    // layer from the height of the particle
+    layer = 1;
+    if (layer_height > 0.)
+      layer = std::max(1, static_cast<int>(std::floor(
+                              (coordinates_(Tdim - 1) - z_bed) / layer_height)) +
+                              1);
+  }
+  // A particle that changes layer (in the nozzle) welds again on contact
+  if (layer != layer_) layer_welded_ = false;
+  layer_ = layer;
+  layer_field_ = (layer_ + 1) % 2;
+}
+
+//! Map field mass, momentum, mass gradient and weld state to nodes
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_layer_contact_properties() noexcept {
+  if (layer_field_ < 0) return;
+  const unsigned field = static_cast<unsigned>(layer_field_);
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const double mass = mass_ * shapefn_[i];
+    const VectorDim gradient = mass_ * dn_dx_.row(i).transpose();
+    nodes_[i]->map_layer_contact(field, mass, mass * velocity_, gradient,
+                                 layer_welded_);
+  }
+}
+
+//! Map field mass and momentum to nodes (second MUSL mapping)
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_layer_contact_momentum() noexcept {
+  if (layer_field_ != 1) return;
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    const double mass = mass_ * shapefn_[i];
+    nodes_[i]->map_layer_contact_momentum(1, mass, mass * velocity_);
+  }
+}
+
+//! Map the extent of the particle along the nodal contact normals
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_layer_contact_extent() noexcept {
+  if (layer_field_ < 0) return;
+  // Half size of the particle (cube of the same volume)
+  const double radius = 0.5 * std::pow(volume_, 1. / Tdim);
+  for (unsigned i = 0; i < nodes_.size(); ++i) {
+    if (!nodes_[i]->layer_contact_two_fields()) continue;
+    const double s = coordinates_.dot(nodes_[i]->layer_contact_normal());
+    // Field 0: highest surface along n; field 1: lowest surface along n
+    // (stored as a maximum of its negative)
+    const double extent = (layer_field_ == 0) ? (s + radius) : (radius - s);
+    nodes_[i]->map_layer_contact_extent(static_cast<unsigned>(layer_field_),
+                                        extent);
+  }
+}
+
+//! Weld the particle if one of its nodes is in contact
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::update_layer_contact_weld() noexcept {
+  if (layer_field_ < 0 || layer_welded_) return;
+  for (unsigned i = 0; i < nodes_.size(); ++i)
+    if (shapefn_[i] > 0. &&
+        nodes_[i]->layer_contact_state() == NodeBase<Tdim>::LCContact) {
+      layer_welded_ = true;
+      return;
+    }
 }

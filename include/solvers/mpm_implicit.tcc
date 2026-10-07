@@ -110,6 +110,12 @@ bool mpm::MPMImplicit<Tdim>::solve() {
   // Pressure smoothing
   pressure_smoothing_ = io_->analysis_bool("pressure_smoothing");
 
+  // Interlayer contact is only implemented in the explicit solver
+  if (this->three_d_printing_ && this->layer_contact_)
+    console_->warn(
+        "3D printing layer_contact is only available in the explicit solver; "
+        "it is ignored here (layers share one velocity field)");
+
   // Initialise material
   this->initialise_materials();
 

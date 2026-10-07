@@ -23,6 +23,17 @@ class MPMScheme {
   //! Intialize
   virtual inline void initialise();
 
+  //! Enable interlayer contact for 3D printing (explicit solver): two
+  //! velocity fields by layer parity, welded on contact
+  //! \param[in] gap_tolerance Gap below which the fields are in contact
+  void enable_layer_contact(double gap_tolerance) {
+    layer_contact_ = true;
+    lc_gap_tolerance_ = gap_tolerance;
+  }
+
+  //! Whether interlayer contact is enabled
+  bool layer_contact() const { return layer_contact_; }
+
   //! Compute nodal kinematics - map mass and momentum to nodes
   //! \param[in] velocity_update Method to update nodal velocity
   //! \param[in] phase Phase to smooth pressure
@@ -141,6 +152,20 @@ class MPMScheme {
   int mpi_size_ = 1;
   //! MPI rank
   int mpi_rank_ = 0;
+
+  //! Layer contact: contact between layers enabled
+  bool layer_contact_{false};
+  //! Layer contact: gap tolerance
+  double lc_gap_tolerance_{0.};
+  //! Layer contact: next nodal mapping is the first one of the step
+  bool lc_first_mapping_{true};
+
+  //! Layer contact: fields, normals, gaps and node states (first mapping)
+  inline void layer_contact_first_mapping();
+  //! Layer contact: field momentum and velocities (later mappings)
+  inline void layer_contact_remapping();
+  //! Layer contact: reset field mass / momentum before a later mapping
+  inline void layer_contact_reset_momentum();
 };  // MPMScheme class
 }  // namespace mpm
 

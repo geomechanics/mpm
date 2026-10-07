@@ -17,6 +17,8 @@ mpm::MPMScheme<Tdim>::MPMScheme(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh,
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::initialise() {
+  // Next nodal mapping is the first one of the step
+  lc_first_mapping_ = true;
 #pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
@@ -48,6 +50,11 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
     mpm::VelocityUpdate velocity_update, unsigned phase) {
+  // Layer contact: a later mapping in the step (MUSL) rebuilds the field
+  // momentum
+  if (layer_contact_ && !lc_first_mapping_)
+    this->layer_contact_reset_momentum();
+
   // Assign mass and momentum to nodes
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::map_mass_momentum_to_nodes,
@@ -72,6 +79,118 @@ inline void mpm::MPMScheme<Tdim>::compute_nodal_kinematics(
   // Compute nodal velocity
   mesh_->iterate_over_status_nodes(
       std::bind(&mpm::NodeBase<Tdim>::compute_velocity, std::placeholders::_1));
+
+  // Layer contact: field quantities and node states
+  if (layer_contact_) {
+    if (lc_first_mapping_) {
+      this->layer_contact_first_mapping();
+      lc_first_mapping_ = false;
+    } else {
+      this->layer_contact_remapping();
+    }
+  }
+}
+
+//! Layer contact: fields, normals, gaps and node states (first mapping)
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::layer_contact_first_mapping() {
+  // Field-1 mass / momentum, mass gradients and welded mass of both fields
+  mesh_->iterate_over_particles(
+      [](const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle) {
+        particle->map_layer_contact_properties();
+      });
+#ifdef USE_MPI
+  if (mpi_size_ > 1) {
+    using Sums = typename mpm::NodeBase<Tdim>::LayerContactSums;
+    mesh_->template nodal_halo_reduce<Sums, 3 + 3 * Tdim>(
+        [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+          return node->layer_contact_sums();
+        },
+        [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node, const Sums& sums) {
+          node->assign_layer_contact_sums(sums);
+        },
+        Sums::Zero(), MPI_SUM);
+  }
+#endif
+
+  // Contact normal at nodes holding both fields
+  mesh_->iterate_over_status_nodes(
+      [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+        node->compute_layer_contact_normal();
+      });
+
+  // Surfaces of the two fields along the normal
+  mesh_->iterate_over_particles(
+      [](const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle) {
+        particle->map_layer_contact_extent();
+      });
+#ifdef USE_MPI
+  if (mpi_size_ > 1) {
+    using Extent = typename mpm::NodeBase<Tdim>::LayerContactExtent;
+    mesh_->template nodal_halo_reduce<Extent, 2>(
+        [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+          return node->layer_contact_extent();
+        },
+        [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node,
+           const Extent& extent) { node->assign_layer_contact_extent(extent); },
+        Extent::Constant(-std::numeric_limits<double>::max()), MPI_MAX);
+  }
+#endif
+
+  // Node state from the gap; field velocities at separate nodes
+  const double gap_tolerance = lc_gap_tolerance_;
+  mesh_->iterate_over_status_nodes(
+      [gap_tolerance](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+        node->decide_layer_contact(gap_tolerance);
+        node->compute_layer_contact_velocity();
+      });
+
+  // Particles next to a contact weld (the layers merge)
+  mesh_->iterate_over_particles(
+      [](const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle) {
+        particle->update_layer_contact_weld();
+      });
+}
+
+//! Layer contact: reset field mass / momentum before a later mapping
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::layer_contact_reset_momentum() {
+  auto reset = [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+    node->reset_layer_contact_momentum();
+  };
+  if (mpi_size_ > 1 && mesh_->active_region()) {
+    mesh_->iterate_over_status_nodes(reset);
+    mesh_->iterate_over_domain_shared_nodes(reset);
+  } else if (mpi_size_ > 1) {
+    mesh_->iterate_over_nodes(reset);
+  } else {
+    mesh_->iterate_over_status_nodes(reset);
+  }
+}
+
+//! Layer contact: field momentum and velocities (later mappings)
+template <unsigned Tdim>
+inline void mpm::MPMScheme<Tdim>::layer_contact_remapping() {
+  mesh_->iterate_over_particles(
+      [](const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle) {
+        particle->map_layer_contact_momentum();
+      });
+#ifdef USE_MPI
+  if (mpi_size_ > 1) {
+    using Momentum = typename mpm::NodeBase<Tdim>::LayerContactMomentum;
+    mesh_->template nodal_halo_reduce<Momentum, Tdim + 1>(
+        [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+          return node->layer_contact_momentum();
+        },
+        [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node,
+           const Momentum& mp) { node->assign_layer_contact_momentum(mp); },
+        Momentum::Zero(), MPI_SUM);
+  }
+#endif
+  mesh_->iterate_over_status_nodes(
+      [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+        node->compute_layer_contact_velocity();
+      });
 }
 
 //! Compute stress and strain
@@ -180,6 +299,17 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
                   phase),
         std::bind(&mpm::NodeBase<Tdim>::update_internal_force,
                   std::placeholders::_1, false, phase, std::placeholders::_2));
+    // Layer contact: field-1 force
+    if (layer_contact_)
+      mesh_->template nodal_halo_exchange<Eigen::Matrix<double, Tdim, 1>,
+                                          Tdim>(
+          [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+            return node->layer_contact_force();
+          },
+          [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node,
+             const Eigen::Matrix<double, Tdim, 1>& force) {
+            node->assign_layer_contact_force(force);
+          });
   }
 #endif
 }
@@ -223,6 +353,16 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
     mesh_->iterate_over_status_nodes(
       std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
                   std::placeholders::_1, phase, dt_));
+
+  // Layer contact: independent field velocities at separate nodes
+  if (layer_contact_) {
+    const double dt = dt_;
+    const double damping = (damping_type == "Cundall") ? damping_factor : 0.;
+    mesh_->iterate_over_status_nodes(
+        [dt, damping](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) {
+          node->compute_layer_contact_acceleration_velocity(dt, damping);
+        });
+  }
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

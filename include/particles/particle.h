@@ -281,6 +281,30 @@ class Particle : public ParticleBase<Tdim> {
       const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
       double nozzle_radius) const noexcept;
 
+  /**
+   * \defgroup LayerContact Interlayer contact for 3D printing
+   */
+  /**@{*/
+  void update_layer_contact_layer(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius, int current_layer, double z_bed,
+      double layer_height) noexcept override;
+
+  int layer() const override { return layer_; }
+
+  int layer_field() const override { return layer_field_; }
+
+  bool layer_welded() const override { return layer_welded_; }
+
+  void map_layer_contact_properties() noexcept override;
+
+  void map_layer_contact_momentum() noexcept override;
+
+  void map_layer_contact_extent() noexcept override;
+
+  void update_layer_contact_weld() noexcept override;
+  /**@}*/
+
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity
@@ -618,6 +642,27 @@ class Particle : public ParticleBase<Tdim> {
   inline double compute_asflip_beta(double dt) noexcept;
 
   /**@}*/
+
+  //! Nodal velocity seen by the particle (its own field at separate
+  //! layer-contact nodes)
+  inline VectorDim node_velocity(unsigned i, unsigned phase) const {
+    return (layer_field_ < 0)
+               ? nodes_[i]->velocity(phase)
+               : nodes_[i]->contact_velocity(phase, layer_field_);
+  }
+  //! Nodal acceleration seen by the particle
+  inline VectorDim node_acceleration(unsigned i, unsigned phase) const {
+    return (layer_field_ < 0)
+               ? nodes_[i]->acceleration(phase)
+               : nodes_[i]->contact_acceleration(phase, layer_field_);
+  }
+
+  //! Layer contact: layer of the particle (0: not assigned)
+  int layer_{0};
+  //! Layer contact: velocity field (-1: layer contact off, 0/1: parity)
+  int layer_field_{-1};
+  //! Layer contact: particle has welded to the neighbouring layer
+  bool layer_welded_{false};
 
   //! particle id
   using ParticleBase<Tdim>::id_;

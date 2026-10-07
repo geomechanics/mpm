@@ -336,6 +336,46 @@ class ParticleBase {
       double nozzle_radius,
       const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept = 0;
 
+  /**
+   * \defgroup LayerContact Interlayer contact for 3D printing
+   */
+  /**@{*/
+  //! Update the layer of the particle: inside the nozzle it belongs to the
+  //! layer being printed; outside it keeps the layer it left the nozzle with
+  //! (or, if unknown, e.g. after a restart, the layer from its height).
+  //! The velocity field is the layer parity.
+  //! \param[in] nozzle_position Nozzle tip position
+  //! \param[in] nozzle_radius Nozzle radius
+  //! \param[in] current_layer Layer being printed (1, 2, ...)
+  //! \param[in] z_bed Bottom of the first layer
+  //! \param[in] layer_height Layer height
+  virtual void update_layer_contact_layer(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius, int current_layer, double z_bed,
+      double layer_height) noexcept {}
+
+  //! Layer of the particle (0: not assigned)
+  virtual int layer() const { return 0; }
+
+  //! Velocity field of the particle (-1: layer contact off)
+  virtual int layer_field() const { return -1; }
+
+  //! Whether the particle has welded to the neighbouring layer
+  virtual bool layer_welded() const { return false; }
+
+  //! Map field mass, momentum, mass gradient and weld state to nodes
+  virtual void map_layer_contact_properties() noexcept {}
+
+  //! Map field mass and momentum to nodes (second MUSL mapping)
+  virtual void map_layer_contact_momentum() noexcept {}
+
+  //! Map the extent of the particle along the nodal contact normals
+  virtual void map_layer_contact_extent() noexcept {}
+
+  //! Weld the particle if one of its nodes is in contact
+  virtual void update_layer_contact_weld() noexcept {}
+  /**@}*/
+
   //! Compute updated position
   virtual void compute_updated_position(
       double dt,

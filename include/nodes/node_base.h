@@ -562,6 +562,116 @@ class NodeBase {
   //! Velocity imposed by the 3D printing nozzle
   virtual Eigen::Matrix<double, Tdim, 1> three_dp_velocity() const = 0;
 
+  /**
+   * \defgroup LayerContact Interlayer contact for 3D printing
+   * The printed material is split into two velocity fields by layer parity
+   * (field 0: odd layers, field 1: even layers). Where both fields meet at a
+   * node they move independently until their particles touch; from then on
+   * (or once both sides are welded) the node uses the common velocity.
+   * Field-1 quantities are stored explicitly, field 0 = total - field 1.
+   */
+  /**@{*/
+  //! Packed sums exchanged between MPI ranks:
+  //! [m1, p1 (Tdim), grad m0 (Tdim), grad m1 (Tdim), welded m0, welded m1]
+  using LayerContactSums =
+      Eigen::Matrix<double, 3 + 3 * Tdim, 1, Eigen::DontAlign>;
+  //! Field-1 mass and momentum [m1, p1]
+  using LayerContactMomentum = Eigen::Matrix<double, Tdim + 1, 1, Eigen::DontAlign>;
+  //! Extents of the two fields
+  using LayerContactExtent = Eigen::Matrix<double, 2, 1, Eigen::DontAlign>;
+
+  //! State of a node
+  enum LayerContactState : int {
+    LCSingle = 0,    //!< one field (or none): ordinary node
+    LCStick = 1,     //!< both fields, welded: common velocity
+    LCContact = 2,   //!< both fields, touching in this step: common velocity
+    LCSeparate = 3   //!< both fields, apart: independent velocities
+  };
+
+  //! Map a particle's mass, momentum, mass gradient and weld state
+  virtual void map_layer_contact(unsigned field, double mass,
+                                 const VectorDim& momentum,
+                                 const VectorDim& mass_gradient,
+                                 bool welded) noexcept {}
+
+  //! Map a particle's mass and momentum only (second MUSL mapping)
+  virtual void map_layer_contact_momentum(unsigned field, double mass,
+                                          const VectorDim& momentum) noexcept {}
+
+  //! Map a field-1 particle force (internal + body)
+  virtual void map_layer_contact_force(const VectorDim& force) noexcept {}
+
+  //! Map the extent of a particle along the contact normal
+  //! field 0: max(x.n + r), field 1: max(-(x.n - r))
+  virtual void map_layer_contact_extent(unsigned field,
+                                        double extent) noexcept {}
+
+  //! Reset field-1 mass and momentum (before the second MUSL mapping)
+  virtual void reset_layer_contact_momentum() noexcept {}
+
+  //! Packed sums (for MPI exchange)
+  virtual LayerContactSums layer_contact_sums() const {
+    return LayerContactSums::Zero();
+  }
+  //! Assign packed sums
+  virtual void assign_layer_contact_sums(const LayerContactSums& sums) {}
+
+  //! Field-1 mass and momentum [m1, p1]
+  virtual LayerContactMomentum layer_contact_momentum() const {
+    return LayerContactMomentum::Zero();
+  }
+  //! Assign field-1 mass and momentum
+  virtual void assign_layer_contact_momentum(
+      const LayerContactMomentum& mp) {}
+
+  //! Field-1 force
+  virtual VectorDim layer_contact_force() const { return VectorDim::Zero(); }
+  //! Assign field-1 force
+  virtual void assign_layer_contact_force(const VectorDim& force) {}
+
+  //! Extents [field 0, field 1]
+  virtual LayerContactExtent layer_contact_extent() const {
+    return LayerContactExtent::Constant(
+        -std::numeric_limits<double>::max());
+  }
+  //! Assign extents
+  virtual void assign_layer_contact_extent(
+      const LayerContactExtent& extent) {}
+
+  //! Compute the contact normal (from field 0 to field 1) if both fields
+  //! are present; returns true if the node holds both fields
+  virtual bool compute_layer_contact_normal() noexcept { return false; }
+
+  //! Contact normal
+  virtual VectorDim layer_contact_normal() const { return VectorDim::Zero(); }
+
+  //! Whether both fields are present at the node
+  virtual bool layer_contact_two_fields() const { return false; }
+
+  //! Decide the node state from the gap between the fields
+  virtual void decide_layer_contact(double gap_tolerance) noexcept {}
+
+  //! Node state (LayerContactState)
+  virtual int layer_contact_state() const { return LCSingle; }
+
+  //! Field velocities from momentum (separate nodes only)
+  virtual void compute_layer_contact_velocity() noexcept {}
+
+  //! Field accelerations and velocities (separate nodes only)
+  virtual void compute_layer_contact_acceleration_velocity(
+      double dt, double damping_factor) noexcept {}
+
+  //! Velocity seen by a particle of a field
+  virtual VectorDim contact_velocity(unsigned phase, unsigned field) const {
+    return this->velocity(phase);
+  }
+
+  //! Acceleration seen by a particle of a field
+  virtual VectorDim contact_acceleration(unsigned phase, unsigned field) const {
+    return this->acceleration(phase);
+  }
+  /**@}*/
+
 };  // NodeBase class
 }  // namespace mpm
 

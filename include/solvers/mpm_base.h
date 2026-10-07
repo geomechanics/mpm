@@ -154,6 +154,16 @@ class MPMBase : public MPM {
   
   //! Get nozzle height
   double nozzle_height() const { return nozzle_position_[Tdim - 1]; }
+
+  //! Layer being printed (1, 2, ...): one more after each vertical move of
+  //! the nozzle path (a vertical move starts the next layer)
+  int current_layer() const {
+      int layer = 1;
+      const unsigned nsegments = nozzle_velocities_.size();
+      for (unsigned i = 0; i < nsegments && i <= current_segment_; ++i)
+          if (vertical_segment_[i]) ++layer;
+      return layer;
+  }
   /**@}*/
 
 
@@ -385,6 +395,16 @@ class MPMBase : public MPM {
   std::vector<double> segment_end_times_;
   //! Current segment index
   unsigned current_segment_{0};
+  //! Whether each segment is a vertical move (layer change)
+  std::vector<bool> vertical_segment_;
+  //! Layer height (mean vertical move of the nozzle path)
+  double layer_height_{0.};
+  //! Bottom of the first layer (initial nozzle tip - layer height)
+  double layer_bed_{0.};
+  //! Interlayer contact (two velocity fields by layer parity)
+  bool layer_contact_{false};
+  //! Interlayer contact: gap tolerance
+  double layer_contact_gap_tolerance_{0.};
   /**@}*/
 
 #ifdef USE_GRAPH_PARTITIONING

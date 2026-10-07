@@ -27,7 +27,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleBbar<1>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 1, 1> vel = nodes_[i]->velocity(phase);
+    Eigen::Matrix<double, 1, 1> vel = this->node_velocity(i, phase);
     strain_rate[0] += dn_dx(i, 0) * vel[0];
   }
 
@@ -43,7 +43,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleBbar<2>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 2, 1> vel = nodes_[i]->velocity(phase);
+    Eigen::Matrix<double, 2, 1> vel = this->node_velocity(i, phase);
     // clang-format off
     strain_rate[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 2.) * vel[0] +
                       (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 2. * vel[1];
@@ -67,7 +67,7 @@ inline Eigen::Matrix<double, 6, 1> mpm::ParticleBbar<3>::compute_strain_rate(
   Eigen::Matrix<double, 6, 1> strain_rate = Eigen::Matrix<double, 6, 1>::Zero();
 
   for (unsigned i = 0; i < this->nodes_.size(); ++i) {
-    Eigen::Matrix<double, 3, 1> vel = nodes_[i]->velocity(phase);
+    Eigen::Matrix<double, 3, 1> vel = this->node_velocity(i, phase);
     // clang-format off
     strain_rate[0] += (dn_dx(i, 0) + (dn_dx_centroid_(i, 0) - dn_dx(i, 0)) / 3.) * vel[0] +
                       (dn_dx_centroid_(i, 1) - dn_dx(i, 1)) / 3. * vel[1] +
@@ -99,6 +99,7 @@ inline void mpm::ParticleBbar<1>::map_internal_force() noexcept {
     force[0] = -1. * dn_dx_(i, 0) * volume_ * stress_[0];
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    if (this->layer_field_ == 1) nodes_[i]->map_layer_contact_force(force);
   }
 }
 
@@ -121,6 +122,7 @@ inline void mpm::ParticleBbar<2>::map_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    if (this->layer_field_ == 1) nodes_[i]->map_layer_contact_force(force);
   }
 }
 
@@ -151,6 +153,7 @@ inline void mpm::ParticleBbar<3>::map_internal_force() noexcept {
     force *= -1. * this->volume_;
 
     nodes_[i]->update_internal_force(true, mpm::ParticlePhase::Solid, force);
+    if (this->layer_field_ == 1) nodes_[i]->map_layer_contact_force(force);
   }
 }
 

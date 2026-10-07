@@ -207,6 +207,20 @@ class Mesh {
   template <typename Ttype, unsigned Tnparam, typename Tgetfunctor,
             typename Tsetfunctor>
   void nodal_halo_exchange(Tgetfunctor getter, Tsetfunctor setter);
+
+  //! All-reduce of a nodal property over MPI ranks with a given operation
+  //! \tparam Ttype Type of property (double or unaligned fixed-size Eigen
+  //! vector)
+  //! \tparam Tnparam Size of individual property
+  //! \param[in] getter Getter function
+  //! \param[in] setter Setter function
+  //! \param[in] identity Value of a node not held by a rank (0 for MPI_SUM,
+  //! lowest value for MPI_MAX)
+  //! \param[in] op MPI operation (MPI_SUM, MPI_MAX)
+  template <typename Ttype, unsigned Tnparam, typename Tgetfunctor,
+            typename Tsetfunctor>
+  void nodal_halo_reduce(Tgetfunctor getter, Tsetfunctor setter,
+                         const Ttype& identity, MPI_Op op);
 #endif
 
   //! Create cells from list of nodes

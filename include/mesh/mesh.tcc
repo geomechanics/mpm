@@ -311,6 +311,32 @@ void mpm::Mesh<Tdim>::nodal_halo_exchange(Tgetfunctor getter,
     setter((*nitr), prop_set.at((*nitr)->ghost_id()));
 }
 #endif
+
+//! All-reduce of a nodal property over MPI ranks with a given operation
+template <unsigned Tdim>
+template <typename Ttype, unsigned Tnparam, typename Tgetfunctor,
+          typename Tsetfunctor>
+void mpm::Mesh<Tdim>::nodal_halo_reduce(Tgetfunctor getter,
+                                        Tsetfunctor setter,
+                                        const Ttype& identity, MPI_Op op) {
+  static_assert(sizeof(Ttype) == Tnparam * sizeof(double),
+                "nodal_halo_reduce: property must be Tnparam doubles");
+  std::vector<Ttype> prop_get(nhalo_nodes_, identity);
+  std::vector<Ttype> prop_set(nhalo_nodes_, identity);
+
+#pragma omp parallel for schedule(runtime) shared(prop_get)
+  for (auto nitr = domain_shared_nodes_.cbegin();
+       nitr != domain_shared_nodes_.cend(); ++nitr)
+    prop_get.at((*nitr)->ghost_id()) = getter((*nitr));
+
+  MPI_Allreduce(prop_get.data(), prop_set.data(), nhalo_nodes_ * Tnparam,
+                MPI_DOUBLE, op, MPI_COMM_WORLD);
+
+#pragma omp parallel for schedule(runtime)
+  for (auto nitr = domain_shared_nodes_.cbegin();
+       nitr != domain_shared_nodes_.cend(); ++nitr)
+    setter((*nitr), prop_set.at((*nitr)->ghost_id()));
+}
 #endif
 
 //! Create cells from node lists

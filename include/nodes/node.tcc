@@ -41,6 +41,18 @@ void mpm::Node<Tdim, Tdof, Tnphases>::initialise() noexcept {
   material_ids_.clear();
   three_dp_nozzle_ = false;
   three_dp_velocity_.setZero();
+  // Layer contact
+  lc_mass_ = 0.;
+  lc_momentum_.setZero();
+  lc_force_.setZero();
+  lc_mass_gradient_.setZero();
+  lc_welded_mass_.setZero();
+  lc_extent_.setConstant(-std::numeric_limits<double>::max());
+  lc_normal_.setZero();
+  lc_two_fields_ = false;
+  lc_state_ = 0;
+  lc_velocity_.setZero();
+  lc_acceleration_.setZero();
 }
 
 //! Initialise shared pointer to nodal properties pool
@@ -1109,5 +1121,205 @@ void mpm::Node<Tdim, Tdof, Tnphases>::apply_3dp_velocity_constraints() {
     // Set velocity constraint
     this->velocity_.col(0) = this->three_dp_velocity_;
     this->acceleration_.col(0) = Eigen::Matrix<double, Tdim, 1>::Zero();
+  }
+}
+
+/**
+ * Interlayer contact for 3D printing (two velocity fields by layer parity)
+ */
+//! Map a particle's mass, momentum, mass gradient and weld state
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::map_layer_contact(
+    unsigned field, double mass, const VectorDim& momentum,
+    const VectorDim& mass_gradient, bool welded) noexcept {
+  node_mutex_.lock();
+  if (field == 1) {
+    lc_mass_ += mass;
+    lc_momentum_.noalias() += momentum;
+  }
+  lc_mass_gradient_.col(field).noalias() += mass_gradient;
+  if (welded) lc_welded_mass_(field) += mass;
+  node_mutex_.unlock();
+}
+
+//! Map a particle's mass and momentum (second MUSL mapping)
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::map_layer_contact_momentum(
+    unsigned field, double mass, const VectorDim& momentum) noexcept {
+  if (field != 1) return;
+  node_mutex_.lock();
+  lc_mass_ += mass;
+  lc_momentum_.noalias() += momentum;
+  node_mutex_.unlock();
+}
+
+//! Map a field-1 particle force
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::map_layer_contact_force(
+    const VectorDim& force) noexcept {
+  node_mutex_.lock();
+  lc_force_.noalias() += force;
+  node_mutex_.unlock();
+}
+
+//! Map the extent of a particle along the contact normal
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::map_layer_contact_extent(
+    unsigned field, double extent) noexcept {
+  node_mutex_.lock();
+  if (extent > lc_extent_(field)) lc_extent_(field) = extent;
+  node_mutex_.unlock();
+}
+
+//! Packed sums for MPI exchange
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+typename mpm::Node<Tdim, Tdof, Tnphases>::LayerContactSums
+    mpm::Node<Tdim, Tdof, Tnphases>::layer_contact_sums() const {
+  LayerContactSums sums;
+  sums(0) = lc_mass_;
+  sums.segment(1, Tdim) = lc_momentum_;
+  sums.segment(1 + Tdim, Tdim) = lc_mass_gradient_.col(0);
+  sums.segment(1 + 2 * Tdim, Tdim) = lc_mass_gradient_.col(1);
+  sums(1 + 3 * Tdim) = lc_welded_mass_(0);
+  sums(2 + 3 * Tdim) = lc_welded_mass_(1);
+  return sums;
+}
+
+//! Assign packed sums
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::assign_layer_contact_sums(
+    const LayerContactSums& sums) {
+  lc_mass_ = sums(0);
+  lc_momentum_ = sums.segment(1, Tdim);
+  lc_mass_gradient_.col(0) = sums.segment(1 + Tdim, Tdim);
+  lc_mass_gradient_.col(1) = sums.segment(1 + 2 * Tdim, Tdim);
+  lc_welded_mass_(0) = sums(1 + 3 * Tdim);
+  lc_welded_mass_(1) = sums(2 + 3 * Tdim);
+}
+
+//! Contact normal from field 0 to field 1
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+bool mpm::Node<Tdim, Tdof, Tnphases>::compute_layer_contact_normal() noexcept {
+  lc_two_fields_ = false;
+  lc_normal_.setZero();
+  const double mass = mass_(0);
+  const double m1 = lc_mass_;
+  const double m0 = mass - m1;
+  // Both fields must carry a non-negligible share of the nodal mass
+  const double tolerance = 1.E-6 * mass + 1.E-15;
+  if (m0 > tolerance && m1 > tolerance) {
+    // Mass gradient of a field points away from that field's material at the
+    // node, so the normal from field 0 to field 1 is grad m0 - grad m1
+    const VectorDim normal = lc_mass_gradient_.col(0) - lc_mass_gradient_.col(1);
+    const double norm = normal.norm();
+    if (norm > 1.E-15) {
+      lc_normal_ = normal / norm;
+      lc_two_fields_ = true;
+    }
+  }
+  return lc_two_fields_;
+}
+
+//! Decide the node state from the gap between the fields
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::decide_layer_contact(
+    double gap_tolerance) noexcept {
+  if (!lc_two_fields_) {
+    lc_state_ = NodeBase<Tdim>::LCSingle;
+  } else if (three_dp_nozzle_ ||
+             (lc_welded_mass_(0) > 0. && lc_welded_mass_(1) > 0.)) {
+    // Inside the nozzle, or both sides already welded: one material
+    lc_state_ = NodeBase<Tdim>::LCStick;
+  } else {
+    // Gap = lowest surface of field 1 - highest surface of field 0 along n
+    const double gap = -lc_extent_(1) - lc_extent_(0);
+    lc_state_ = (gap <= gap_tolerance) ? NodeBase<Tdim>::LCContact
+                                       : NodeBase<Tdim>::LCSeparate;
+  }
+}
+
+//! Apply velocity constraints to a field velocity / acceleration
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::apply_layer_contact_constraints(
+    VectorDim& velocity, VectorDim& acceleration) const {
+  for (const auto& constraint : this->velocity_constraints_) {
+    const unsigned dir = constraint.first;
+    // Solid phase only
+    if (dir >= Tdim) continue;
+    if (!generic_boundary_constraints_) {
+      velocity(dir) = constraint.second;
+      acceleration(dir) = 0.;
+    } else {
+      const Eigen::Matrix<double, Tdim, Tdim> inverse_rotation_matrix =
+          rotation_matrix_.inverse();
+      VectorDim local_velocity = inverse_rotation_matrix * velocity;
+      VectorDim local_acceleration = inverse_rotation_matrix * acceleration;
+      local_velocity(dir) = constraint.second;
+      local_acceleration(dir) = 0.;
+      velocity = rotation_matrix_ * local_velocity;
+      acceleration = rotation_matrix_ * local_acceleration;
+    }
+  }
+}
+
+//! Field velocities from momentum (separate nodes only)
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::compute_layer_contact_velocity() noexcept {
+  if (lc_state_ != NodeBase<Tdim>::LCSeparate) return;
+  const double m1 = lc_mass_;
+  const double m0 = mass_(0) - m1;
+  const double tolerance = 1.E-15;
+  lc_velocity_.setZero();
+  if (m0 > tolerance)
+    lc_velocity_.col(0) = (momentum_.col(0) - lc_momentum_) / m0;
+  if (m1 > tolerance) lc_velocity_.col(1) = lc_momentum_ / m1;
+  for (unsigned f = 0; f < 2; ++f) {
+    VectorDim vel = lc_velocity_.col(f);
+    VectorDim acc = lc_acceleration_.col(f);
+    this->apply_layer_contact_constraints(vel, acc);
+    for (unsigned i = 0; i < Tdim; ++i)
+      if (std::abs(vel(i)) < 1.E-15) vel(i) = 0.;
+    lc_velocity_.col(f) = vel;
+    lc_acceleration_.col(f) = acc;
+  }
+}
+
+//! Field accelerations and velocities (separate nodes only)
+template <unsigned Tdim, unsigned Tdof, unsigned Tnphases>
+void mpm::Node<Tdim, Tdof, Tnphases>::compute_layer_contact_acceleration_velocity(
+    double dt, double damping_factor) noexcept {
+  if (lc_state_ != NodeBase<Tdim>::LCSeparate) return;
+  const double tolerance = 1.0E-15;
+  const double m1 = lc_mass_;
+  const double m0 = mass_(0) - m1;
+  const VectorDim force = external_force_.col(0) + internal_force_.col(0);
+  const VectorDim f1 = lc_force_;
+  const VectorDim f0 = force - f1;
+  const VectorDim p1 = lc_momentum_;
+  const VectorDim p0 = momentum_.col(0) - p1;
+
+  for (unsigned f = 0; f < 2; ++f) {
+    const double m = (f == 0) ? m0 : m1;
+    if (m <= tolerance) {
+      lc_velocity_.col(f).setZero();
+      lc_acceleration_.col(f).setZero();
+      continue;
+    }
+    const VectorDim& unbalanced = (f == 0) ? f0 : f1;
+    VectorDim vel = ((f == 0) ? p0 : p1) / m;
+    // Cundall damping (same form as compute_acceleration_velocity_cundall)
+    VectorDim acc = (unbalanced - damping_factor * unbalanced.norm() *
+                                      vel.cwiseSign()) /
+                    m;
+    // Constraints on the field velocity before the update (as for the total)
+    this->apply_layer_contact_constraints(vel, acc);
+    vel.noalias() += acc * dt;
+    this->apply_layer_contact_constraints(vel, acc);
+    for (unsigned i = 0; i < Tdim; ++i) {
+      if (std::abs(vel(i)) < tolerance) vel(i) = 0.;
+      if (std::abs(acc(i)) < tolerance) acc(i) = 0.;
+    }
+    lc_velocity_.col(f) = vel;
+    lc_acceleration_.col(f) = acc;
   }
 }

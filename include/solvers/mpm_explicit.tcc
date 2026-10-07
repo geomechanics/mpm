@@ -104,6 +104,18 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Initialise loading conditions
   this->initialise_loads();
 
+  // Interlayer contact for 3D printing
+  if (this->three_d_printing_ && this->layer_contact_) {
+    if (velocity_update_ != mpm::VelocityUpdate::FLIP &&
+        velocity_update_ != mpm::VelocityUpdate::PIC)
+      throw std::runtime_error(
+          "3D printing layer_contact requires the FLIP or PIC velocity update");
+    if (interface_)
+      throw std::runtime_error(
+          "3D printing layer_contact cannot be combined with interface");
+    mpm_scheme_->enable_layer_contact(this->layer_contact_gap_tolerance_);
+  }
+
   // Restrict per-step node / cell loops to the region with particles
   // ("active_region": false in analysis reverts to whole-mesh loops)
   mesh_->enable_active_region(analysis_.value("active_region", true));
@@ -142,6 +154,21 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
       // Locate particles
       mpm_scheme_->locate_particles(this->locate_particles_);
+
+      // Interlayer contact: layer (and velocity field) of each particle
+      if (this->layer_contact_) {
+        const Eigen::Matrix<double, Tdim, 1> nozzle_pos = this->nozzle_position();
+        const double nozzle_r = this->nozzle_radius();
+        const int layer = this->current_layer();
+        const double z_bed = this->layer_bed_;
+        const double height = this->layer_height_;
+        mesh_->iterate_over_particles(
+            [&nozzle_pos, nozzle_r, layer, z_bed,
+             height](std::shared_ptr<mpm::ParticleBase<Tdim>> ptr) {
+              ptr->update_layer_contact_layer(nozzle_pos, nozzle_r, layer,
+                                              z_bed, height);
+            });
+      }
     }
 
     // Initialise nodes, cells and shape functions

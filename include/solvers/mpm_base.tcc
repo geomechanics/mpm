@@ -29,6 +29,8 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
       {"mass", VariableType::Scalar},
       {"volume", VariableType::Scalar},
       {"mass_density", VariableType::Scalar},
+      {"layer", VariableType::Scalar},
+      {"welded", VariableType::Scalar},
       // Vector variables
       {"displacements", VariableType::Vector},
       {"velocities", VariableType::Vector},
@@ -211,6 +213,61 @@ mpm::MPMBase<Tdim>::MPMBase(const std::shared_ptr<IO>& io) : mpm::MPM(io) {
                     "3D printing: no nozzle_radius given; every particle "
                     "above the nozzle tip in the whole domain will be "
                     "driven by the nozzle (legacy behaviour)");
+
+            // Outlet offset: the nozzle velocity is imposed on grid nodes, so
+            // its influence reaches about one cell below the nozzle tip and
+            // the layers are pressed too hard. "outlet_offset" raises the
+            // nozzle (all layers) to compensate; typically one cell size.
+            // The bed and the layer numbering keep the nominal heights.
+            const double outlet_offset = settings.value("outlet_offset", 0.);
+            if (outlet_offset < 0.)
+                throw std::runtime_error("outlet_offset must be >= 0");
+            nozzle_initial_position_[Tdim - 1] += outlet_offset;
+            if (outlet_offset > 0.)
+                console_->info(
+                    "3D printing: nozzle outlet raised by {} m (outlet_offset); "
+                    "nominal initial nozzle height {} m",
+                    outlet_offset,
+                    nozzle_initial_position_[Tdim - 1] - outlet_offset);
+
+            // Layers: a segment that moves the nozzle up (and not
+            // horizontally) starts the next layer
+            vertical_segment_.assign(nozzle_velocities_.size(), false);
+            double vertical_travel = 0.;
+            unsigned nvertical = 0;
+            for (unsigned i = 0; i < nozzle_velocities_.size(); ++i) {
+                double horizontal = 0.;
+                for (unsigned d = 0; d + 1 < Tdim; ++d)
+                    horizontal += std::abs(nozzle_velocities_[i][d]);
+                const double vz = nozzle_velocities_[i][Tdim - 1];
+                if (vz > 0. && horizontal < 1.E-12) {
+                    vertical_segment_[i] = true;
+                    const double start = (i == 0) ? 0. : segment_end_times_[i - 1];
+                    vertical_travel += vz * (segment_end_times_[i] - start);
+                    ++nvertical;
+                }
+            }
+            layer_height_ = (nvertical > 0) ? vertical_travel / nvertical : 0.;
+            layer_bed_ = nozzle_initial_position_[Tdim - 1] - outlet_offset -
+                         layer_height_;
+
+            // Interlayer contact (explicit solver): "layer_contact": true or
+            // {"enabled": true, "gap_tolerance": 0.0}
+            layer_contact_ = false;
+            if (settings.contains("layer_contact")) {
+                const auto& lc = settings["layer_contact"];
+                if (lc.is_boolean())
+                    layer_contact_ = lc.template get<bool>();
+                else if (lc.is_object()) {
+                    layer_contact_ = lc.value("enabled", true);
+                    layer_contact_gap_tolerance_ = lc.value("gap_tolerance", 0.);
+                }
+            }
+            if (layer_contact_)
+                console_->info(
+                    "3D printing: interlayer contact on ({} layers of {} m, "
+                    "gap tolerance {} m)",
+                    nvertical + 1, layer_height_, layer_contact_gap_tolerance_);
 
             // Initialize printing state at t = 0
             this->update_printing_state(0.0);

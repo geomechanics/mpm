@@ -611,6 +611,93 @@ class Node : public NodeBase<Tdim> {
     return three_dp_velocity_;
   }
 
+  /**
+   * \defgroup LayerContact Interlayer contact for 3D printing
+   */
+  /**@{*/
+  using LayerContactSums = typename NodeBase<Tdim>::LayerContactSums;
+  using LayerContactMomentum = typename NodeBase<Tdim>::LayerContactMomentum;
+  using LayerContactExtent = typename NodeBase<Tdim>::LayerContactExtent;
+
+  void map_layer_contact(unsigned field, double mass, const VectorDim& momentum,
+                         const VectorDim& mass_gradient,
+                         bool welded) noexcept override;
+
+  void map_layer_contact_momentum(unsigned field, double mass,
+                                  const VectorDim& momentum) noexcept override;
+
+  void map_layer_contact_force(const VectorDim& force) noexcept override;
+
+  void map_layer_contact_extent(unsigned field,
+                                double extent) noexcept override;
+
+  void reset_layer_contact_momentum() noexcept override {
+    lc_mass_ = 0.;
+    lc_momentum_.setZero();
+  }
+
+  LayerContactSums layer_contact_sums() const override;
+  void assign_layer_contact_sums(const LayerContactSums& sums) override;
+
+  LayerContactMomentum layer_contact_momentum() const override {
+    LayerContactMomentum mp;
+    mp(0) = lc_mass_;
+    mp.tail(Tdim) = lc_momentum_;
+    return mp;
+  }
+  void assign_layer_contact_momentum(
+      const LayerContactMomentum& mp) override {
+    lc_mass_ = mp(0);
+    lc_momentum_ = mp.tail(Tdim);
+  }
+
+  VectorDim layer_contact_force() const override { return lc_force_; }
+  void assign_layer_contact_force(const VectorDim& force) override {
+    lc_force_ = force;
+  }
+
+  LayerContactExtent layer_contact_extent() const override {
+    return lc_extent_;
+  }
+  void assign_layer_contact_extent(
+      const LayerContactExtent& extent) override {
+    lc_extent_ = extent;
+  }
+
+  bool compute_layer_contact_normal() noexcept override;
+
+  VectorDim layer_contact_normal() const override { return lc_normal_; }
+
+  bool layer_contact_two_fields() const override { return lc_two_fields_; }
+
+  void decide_layer_contact(double gap_tolerance) noexcept override;
+
+  int layer_contact_state() const override { return lc_state_; }
+
+  void compute_layer_contact_velocity() noexcept override;
+
+  void compute_layer_contact_acceleration_velocity(
+      double dt, double damping_factor) noexcept override;
+
+  VectorDim contact_velocity(unsigned phase, unsigned field) const override {
+    if (lc_state_ == NodeBase<Tdim>::LCSeparate && phase == 0)
+      return lc_velocity_.col(field);
+    return velocity_.col(phase);
+  }
+
+  VectorDim contact_acceleration(unsigned phase,
+                                 unsigned field) const override {
+    if (lc_state_ == NodeBase<Tdim>::LCSeparate && phase == 0)
+      return lc_acceleration_.col(field);
+    return acceleration_.col(phase);
+  }
+  /**@}*/
+
+ private:
+  //! Apply velocity constraints to a field velocity / acceleration
+  void apply_layer_contact_constraints(VectorDim& velocity,
+                                       VectorDim& acceleration) const;
+
  private:
   //! Mutex
   SpinMutex node_mutex_;
@@ -727,6 +814,30 @@ class Node : public NodeBase<Tdim> {
   // 3D printing nozzle velocity
   Eigen::Matrix<double, Tdim, 1> three_dp_velocity_{
       Eigen::Matrix<double, Tdim, 1>::Zero()};
+
+  //! Layer contact: field-1 mass, momentum and force
+  double lc_mass_{0.};
+  VectorDim lc_momentum_{VectorDim::Zero()};
+  VectorDim lc_force_{VectorDim::Zero()};
+  //! Layer contact: mass gradient of each field (columns)
+  Eigen::Matrix<double, Tdim, 2, Eigen::DontAlign> lc_mass_gradient_{
+      Eigen::Matrix<double, Tdim, 2, Eigen::DontAlign>::Zero()};
+  //! Layer contact: welded mass of each field
+  LayerContactExtent lc_welded_mass_{LayerContactExtent::Zero()};
+  //! Layer contact: extents along the normal (see map_layer_contact_extent)
+  LayerContactExtent lc_extent_{
+      LayerContactExtent::Constant(-std::numeric_limits<double>::max())};
+  //! Layer contact: normal from field 0 to field 1
+  VectorDim lc_normal_{VectorDim::Zero()};
+  //! Layer contact: both fields present
+  bool lc_two_fields_{false};
+  //! Layer contact: node state
+  int lc_state_{0};
+  //! Layer contact: field velocities and accelerations (separate nodes)
+  Eigen::Matrix<double, Tdim, 2, Eigen::DontAlign> lc_velocity_{
+      Eigen::Matrix<double, Tdim, 2, Eigen::DontAlign>::Zero()};
+  Eigen::Matrix<double, Tdim, 2, Eigen::DontAlign> lc_acceleration_{
+      Eigen::Matrix<double, Tdim, 2, Eigen::DontAlign>::Zero()};
 
 };  // Node class
 }  // namespace mpm

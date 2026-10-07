@@ -325,6 +325,17 @@ class ParticleBase {
       double nozzle_radius,
       const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept = 0;
 
+  //! Assign the nozzle kinematics (velocity, zero acceleration) to the
+  //! particle if it is inside the nozzle (used by the implicit solver, where
+  //! particle velocities are integrated from nodal accelerations)
+  //! \param[in] nozzle_position Nozzle tip position (vertical = tip height)
+  //! \param[in] nozzle_radius Nozzle radius (<= 0: infinite plane, legacy)
+  //! \param[in] velocity Nozzle velocity
+  virtual void assign_3D_printing_kinematics(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius,
+      const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept = 0;
+
   //! Compute updated position
   virtual void compute_updated_position(
       double dt,

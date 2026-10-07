@@ -130,7 +130,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
 
       // Inject particles (only while the nozzle path is running)
       if (this->printing_active())
-        mesh_->inject_particles_3dp(step_ * dt_, dt_);
+        mesh_->inject_particles_3dp(step_ * dt_, dt_, this->nozzle_position(),
+                                    this->nozzle_radius());
 
       // Locate particles
       mpm_scheme_->locate_particles(this->locate_particles_);
@@ -153,6 +154,8 @@ bool mpm::MPMExplicit<Tdim>::solve() {
            nozzle_r](std::shared_ptr<mpm::ParticleBase<Tdim>> ptr) {
             ptr->map_3D_printing_velocity(nozzle_pos, nozzle_r, nozzle_vel);
           });
+      // Nodes shared between MPI ranks: nozzle node if any rank flagged it
+      mesh_->sync_3dp_nozzle_nodes(nozzle_vel);
     }
 
     // Mass momentum and compute velocity at nodes

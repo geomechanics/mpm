@@ -50,6 +50,10 @@ class AssemblerEigenImplicit : public AssemblerBase<Tdim> {
   //! \ingroup Implicit
   void apply_displacement_constraints() override;
 
+  //! Add the 3D printing nozzle constraints (prescribed displacement
+  //! increment nozzle_velocity * dt on nozzle nodes)
+  bool assign_3dp_displacement_constraints(double dt, unsigned phase) override;
+
   //! Return displacement increment
   //! \ingroup Implicit
   Eigen::VectorXd& displacement_increment() override {

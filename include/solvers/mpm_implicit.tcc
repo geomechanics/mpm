@@ -175,8 +175,41 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     // Inject particles
     mesh_->inject_particles(step_ * dt_);
 
+    if (this->three_d_printing_) {
+      // Update printing state (segment, nozzle velocity and position)
+      this->update_printing_state(step_ * dt_);
+
+      // Inject particles (only while the nozzle path is running)
+      if (this->printing_active())
+        mesh_->inject_particles_3dp(step_ * dt_, dt_, this->nozzle_position(),
+                                    this->nozzle_radius());
+
+      // Locate particles
+      mpm_scheme_->locate_particles(this->locate_particles_);
+    }
+
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
+
+    if (this->three_d_printing_) {
+      // Flag the nodes of particles inside the nozzle; they move with the
+      // nozzle (nozzle travel + extrusion)
+      const Eigen::Matrix<double, Tdim, 1> nozzle_pos = this->nozzle_position();
+      const Eigen::Matrix<double, Tdim, 1> nozzle_vel = this->total_velocity();
+      const double nozzle_r = this->nozzle_radius();
+      // Particles inside the nozzle move with it: assign their velocity and
+      // zero acceleration, so that the Newmark update with the prescribed
+      // nodal displacement increment (nozzle_velocity * dt) is consistent
+      mesh_->iterate_over_particles(
+          [&nozzle_pos, &nozzle_vel,
+           nozzle_r](std::shared_ptr<mpm::ParticleBase<Tdim>> ptr) {
+            ptr->assign_3D_printing_kinematics(nozzle_pos, nozzle_r,
+                                               nozzle_vel);
+            ptr->map_3D_printing_velocity(nozzle_pos, nozzle_r, nozzle_vel);
+          });
+      // Nodes shared between MPI ranks: nozzle node if any rank flagged it
+      mesh_->sync_3dp_nozzle_nodes(nozzle_vel);
+    }
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
@@ -399,6 +432,14 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
 
     // Assemble global residual force RHS vector
     assembler_->assemble_residual_force_right();
+
+    // 3D printing: prescribe the nozzle displacement increment. The
+    // constraint vector is rebuilt at every assembly because the nozzle value
+    // is the remaining correction for the current Newton-Raphson iteration.
+    if (this->three_d_printing_) {
+      assembler_->assign_displacement_constraints(this->step_ * this->dt_);
+      assembler_->assign_3dp_displacement_constraints(this->dt_, phase_);
+    }
 
     // Apply displacement constraints
     assembler_->apply_displacement_constraints();

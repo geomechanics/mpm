@@ -556,6 +556,12 @@ class NodeBase {
   //! Apply velocity constraints for 3D printing nozzle
   virtual void apply_3dp_velocity_constraints() = 0;
 
+  //! Whether this node is driven by the 3D printing nozzle in this step
+  virtual bool three_dp_nozzle() const = 0;
+
+  //! Velocity imposed by the 3D printing nozzle
+  virtual Eigen::Matrix<double, Tdim, 1> three_dp_velocity() const = 0;
+
 };  // NodeBase class
 }  // namespace mpm
 

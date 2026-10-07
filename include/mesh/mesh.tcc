@@ -742,8 +742,12 @@ void mpm::Mesh<Tdim>::transfer_halo_particles() {
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 
   if (mpi_size > 1) {
-    std::vector<MPI_Request> send_requests;
-    send_requests.reserve(ghost_cells_.size());
+    // NOTE: the send buffers of non-blocking sends must stay valid until the
+    // send completes, so the particle counts are kept in a vector (sending
+    // the address of a loop-local variable could deliver a wrong count and
+    // leave the receiver waiting forever in MPI_Probe)
+    std::vector<MPI_Request> send_requests(ghost_cells_.size());
+    std::vector<unsigned> send_nparticles(ghost_cells_.size(), 0);
 
     unsigned i = 0;
     unsigned np = 0;
@@ -753,9 +757,8 @@ void mpm::Mesh<Tdim>::transfer_halo_particles() {
          citr != this->ghost_cells_.cend(); ++citr, ++i) {
 
       // Send number of particles to receiver rank
-      auto particle_ids = (*citr)->particles();
-      unsigned nparticles = particle_ids.size();
-      MPI_Isend(&nparticles, 1, MPI_UNSIGNED, (*citr)->rank(), 1,
+      send_nparticles[i] = (*citr)->particles().size();
+      MPI_Isend(&send_nparticles[i], 1, MPI_UNSIGNED, (*citr)->rank(), 1,
                 MPI_COMM_WORLD, &send_requests[i]);
     }
 
@@ -2199,25 +2202,48 @@ void mpm::Mesh<Tdim>::inject_particles(double current_time) {
   }
 }
 
-// Inject particles for 3D concrete printing: copy the last N particles
+// Inject particles for 3D concrete printing: copy the top slice of the
+// feed column one slice (cell_height / particles_per_cell) higher.
 //
-// Injection k (k = 0, 1, 2, ...) is due at start_time + k * injection_interval
-// and is performed at the first step whose time has reached it. Because the
-// schedule is defined by this counter (and not by the time of the previous
-// injection), the long-run injection rate is exactly extrusion_velocity /
-// (cell_height / particles_per_cell), even when the interval is not a multiple
-// of dt; the feed column therefore neither drifts nor loses volume. The
-// counter is initialised from the current time on the first call, so a run
-// resumed from a checkpoint continues the schedule without a gap.
+// Schedule: injection k (k = 0, 1, 2, ...) is due at
+// start_time + k * injection_interval and is performed at the first step whose
+// time has reached it. The schedule is defined by this counter (not by the time
+// of the previous injection), so the long-run injection rate is exact even if
+// the interval is not a multiple of dt, and a resumed run continues the
+// schedule without a gap (the counter is initialised from the current time).
+//
+// Source slice: with nozzle_radius > 0 the feed column is identified
+// geometrically (particles above the nozzle tip and within nozzle_radius of the
+// nozzle axis) and its top slice is gathered from all MPI ranks. Each new
+// particle is created only on the rank that owns its cell, with a globally
+// unique id. With nozzle_radius <= 0 (legacy input) the last n_copies particles
+// of the container are copied; this only works in serial.
 template <unsigned Tdim>
-void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time, double dt) {
-  // Container for newly injected particles
-  std::vector<std::shared_ptr<ParticleBase<Tdim>>> injected_particles;
+void mpm::Mesh<Tdim>::inject_particles_3dp(
+    double current_time, double dt,
+    const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+    double nozzle_radius) {
+  int mpi_rank = 0;
+  int mpi_size = 1;
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+#endif
+  // Particles are distributed over ranks only with graph partitioning;
+  // otherwise every rank holds the whole problem
+  bool distributed = false;
+#if defined(USE_MPI) && defined(USE_GRAPH_PARTITIONING)
+  distributed = (mpi_size > 1);
+#endif
 
-  // Next free particle id (ids may not be contiguous after particle removal)
-  mpm::Index next_pid = 0;
-  for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr)
-    next_pid = std::max(next_pid, static_cast<mpm::Index>((*pitr)->id() + 1));
+  if (distributed && nozzle_radius <= 0.)
+    throw std::runtime_error(
+        "3D printing with MPI requires \"nozzle_radius\" and "
+        "\"nozzle_position\" in 3D_printing_settings");
+
+  // Record per source particle: coordinates, velocity, mass, volume, cell id
+  const unsigned nrec = 2 * Tdim + 3;
+  unsigned long ninjected_local = 0;
 
   // Iterate over all 3DP injection configurations
   for (auto& injection : particle_injections_3dp_) {
@@ -2240,7 +2266,7 @@ void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time, double dt) {
     // First call (fresh start or resume): count what was already injected
     if (injection.n_injected < 0) {
       injection.n_injected = n_due(current_time - dt);
-      if (injection.n_injected > 0)
+      if (injection.n_injected > 0 && mpi_rank == 0)
         console_->info(
             "3DP injection: resuming at time {} after {} injections",
             current_time, injection.n_injected);
@@ -2254,14 +2280,11 @@ void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time, double dt) {
     std::vector<std::shared_ptr<mpm::Material<Tdim>>> materials;
     for (auto m_id : injection.material_ids) {
       auto material_iter = materials_.find(m_id);
-      if (material_iter != materials_.end()) {
+      if (material_iter != materials_.end())
         materials.emplace_back(material_iter->second);
-      } else {
+      else
         console_->error("Material ID {} not found for 3DP injection", m_id);
-        continue;
-      }
     }
-
     if (materials.empty()) {
       console_->error("No valid materials found for 3DP injection");
       continue;
@@ -2272,91 +2295,202 @@ void mpm::Mesh<Tdim>::inject_particles_3dp(double current_time, double dt) {
         injection.cell_height /
         static_cast<double>(injection.particles_per_cell);
 
+    // Is the particle inside the nozzle (feed column)?
+    const double r2 = nozzle_radius * nozzle_radius;
+    auto in_column =
+        [&nozzle_position, r2](
+            const std::shared_ptr<mpm::ParticleBase<Tdim>>& particle) -> bool {
+      const auto& x = particle->coordinates();
+      if (x(Tdim - 1) <= nozzle_position(Tdim - 1)) return false;
+      double d2 = 0.;
+      for (unsigned i = 0; i < Tdim - 1; ++i)
+        d2 += (x(i) - nozzle_position(i)) * (x(i) - nozzle_position(i));
+      return d2 <= r2;
+    };
+
+    // Append a source particle record
+    auto append = [nrec](std::vector<double>& records,
+                         const std::shared_ptr<mpm::ParticleBase<Tdim>>& p) {
+      const auto x = p->coordinates();
+      const auto v = p->velocity();
+      for (unsigned i = 0; i < Tdim; ++i) records.emplace_back(x(i));
+      for (unsigned i = 0; i < Tdim; ++i) records.emplace_back(v(i));
+      records.emplace_back(p->mass());
+      records.emplace_back(p->volume());
+      records.emplace_back(static_cast<double>(p->cell_id()));
+    };
+
     for (long slice = 0; slice < n_inject; ++slice) {
-      // Get total number of particles
-      const unsigned nparticles_total = this->nparticles();
-
-      // If particle count is insufficient for copying
-      if (nparticles_total < injection.n_copies) {
-        console_->warn(
-            "Insufficient particles: currently have {} particles, "
-            "need to copy last {} particles",
-            nparticles_total, injection.n_copies);
-        break;
+      // 1. Local source particles: top slice of the feed column
+      std::vector<double> local;
+      if (nozzle_radius > 0.) {
+        double ztop_local = std::numeric_limits<double>::lowest();
+        for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr)
+          if (in_column(*pitr))
+            ztop_local = std::max(ztop_local, (*pitr)->coordinates()(Tdim - 1));
+        double ztop = ztop_local;
+#ifdef USE_MPI
+        if (distributed)
+          MPI_Allreduce(&ztop_local, &ztop, 1, MPI_DOUBLE, MPI_MAX,
+                        MPI_COMM_WORLD);
+#endif
+        if (ztop == std::numeric_limits<double>::lowest()) {
+          if (mpi_rank == 0)
+            console_->warn(
+                "3DP injection at time {}: no particles found inside the "
+                "nozzle (check nozzle_position / nozzle_radius)",
+                current_time);
+          break;
+        }
+        for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr)
+          if (in_column(*pitr) &&
+              (*pitr)->coordinates()(Tdim - 1) > ztop - 0.5 * height_increment)
+            append(local, *pitr);
+      } else {
+        // Legacy: last n_copies particles in the container (serial only)
+        if (this->nparticles() < injection.n_copies) {
+          console_->warn(
+              "Insufficient particles: currently have {} particles, "
+              "need to copy last {} particles",
+              this->nparticles(), injection.n_copies);
+          break;
+        }
+        std::vector<std::shared_ptr<mpm::ParticleBase<Tdim>>> last;
+        auto pitr = particles_.cend();
+        for (unsigned i = 0; i < injection.n_copies; ++i) last.emplace_back(*(--pitr));
+        for (auto ritr = last.rbegin(); ritr != last.rend(); ++ritr)
+          append(local, *ritr);
       }
 
-      // Get IDs of the last N particles
-      // Note: assumes particles_ are stored in insertion order, so the last
-      // n_copies particles are the top slice of the feed column
-      std::vector<mpm::Index> last_particle_ids;
-      last_particle_ids.reserve(injection.n_copies);
-      auto pitr = particles_.cend();
-      for (unsigned i = 0; i < injection.n_copies; ++i) {
-        --pitr;
-        last_particle_ids.push_back((*pitr)->id());
+      // 2. Gather the source slice from all ranks (same order on every rank)
+      std::vector<double> global = local;
+#ifdef USE_MPI
+      if (distributed) {
+        int nlocal = static_cast<int>(local.size());
+        std::vector<int> counts(mpi_size, 0), displs(mpi_size, 0);
+        MPI_Allgather(&nlocal, 1, MPI_INT, counts.data(), 1, MPI_INT,
+                      MPI_COMM_WORLD);
+        for (int r = 1; r < mpi_size; ++r)
+          displs[r] = displs[r - 1] + counts[r - 1];
+        global.assign(displs[mpi_size - 1] + counts[mpi_size - 1], 0.);
+        MPI_Allgatherv(local.data(), nlocal, MPI_DOUBLE, global.data(),
+                       counts.data(), displs.data(), MPI_DOUBLE,
+                       MPI_COMM_WORLD);
       }
-      // Keep the original insertion order for the new slice
-      std::reverse(last_particle_ids.begin(), last_particle_ids.end());
+#endif
+      const unsigned nsource = global.size() / nrec;
+      if (nsource == 0) break;
+      if (nsource != injection.n_copies && !injection.count_warning_issued) {
+        if (mpi_rank == 0)
+          console_->warn(
+              "3DP injection: the top slice of the feed column has {} "
+              "particles but n_copies is {}; copying {} particles",
+              nsource, injection.n_copies, nsource);
+        injection.count_warning_issued = true;
+      }
 
-      const bool checks = false;  // Don't check for duplicates
-      unsigned ninjected_slice = 0;
+      // 3. First free particle id (globally unique)
+      mpm::Index next_pid_local = 0;
+      for (auto pitr = particles_.cbegin(); pitr != particles_.cend(); ++pitr)
+        next_pid_local = std::max(next_pid_local,
+                                  static_cast<mpm::Index>((*pitr)->id() + 1));
+      mpm::Index next_pid = next_pid_local;
+#ifdef USE_MPI
+      if (distributed)
+        MPI_Allreduce(&next_pid_local, &next_pid, 1, MPI_UNSIGNED_LONG_LONG,
+                      MPI_MAX, MPI_COMM_WORLD);
+#endif
 
-      for (const auto& source_pid : last_particle_ids) {
-        // Get source particle
-        auto source_particle = map_particles_[source_pid];
-        if (!source_particle) {
-          console_->error("Source particle ID not found: {}", source_pid);
+      // 4. Create the new particles (only on the rank owning their cell)
+      unsigned noutside = 0;
+      for (unsigned s = 0; s < nsource; ++s) {
+        const double* rec = &global[s * nrec];
+        Eigen::Matrix<double, Tdim, 1> coords, velocity;
+        for (unsigned i = 0; i < Tdim; ++i) coords(i) = rec[i];
+        for (unsigned i = 0; i < Tdim; ++i) velocity(i) = rec[Tdim + i];
+        coords(Tdim - 1) += height_increment;
+        const double mass = rec[2 * Tdim];
+        const double volume = rec[2 * Tdim + 1];
+        const auto hint_cell = static_cast<mpm::Index>(rec[2 * Tdim + 2]);
+
+        // Locate the cell: source cell and its neighbours first
+        std::shared_ptr<mpm::Cell<Tdim>> cell = nullptr;
+        Eigen::Matrix<double, Tdim, 1> xi;
+        if (hint_cell != std::numeric_limits<mpm::Index>::max() &&
+            map_cells_.find(hint_cell) != map_cells_.end()) {
+          if (map_cells_[hint_cell]->is_point_in_cell(coords, &xi))
+            cell = map_cells_[hint_cell];
+          else
+            for (auto nid : map_cells_[hint_cell]->neighbours())
+              if (map_cells_.find(nid) != map_cells_.end() &&
+                  map_cells_[nid]->is_point_in_cell(coords, &xi)) {
+                cell = map_cells_[nid];
+                break;
+              }
+        }
+        if (cell == nullptr)
+          for (auto citr = cells_.cbegin(); citr != cells_.cend(); ++citr)
+            if ((*citr)->is_point_in_cell(coords, &xi)) {
+              cell = *citr;
+              break;
+            }
+        if (cell == nullptr) {
+          ++noutside;
           continue;
         }
+        // Another rank owns this cell
+        if (distributed && cell->rank() != static_cast<unsigned>(mpi_rank))
+          continue;
 
-        // New coordinates: one slice above the source particle
-        Eigen::Matrix<double, Tdim, 1> new_coords =
-            source_particle->coordinates();
-        new_coords[Tdim - 1] += height_increment;
-
-        // Create new particle
+        const mpm::Index pid = next_pid + s;
         auto new_particle =
             Factory<mpm::ParticleBase<Tdim>, mpm::Index,
                     const Eigen::Matrix<double, Tdim, 1>&>::instance()
-                ->create(injection.particle_type,
-                         static_cast<mpm::Index>(next_pid), new_coords);
-
+                ->create(injection.particle_type, static_cast<mpm::Index>(pid),
+                         coords);
         if (!new_particle) continue;
 
-        // Copy velocity, materials, volume and mass from the source particle
-        new_particle->assign_velocity(source_particle->velocity());
+        new_particle->assign_velocity(velocity);
         for (unsigned phase = 0; phase < materials.size(); ++phase)
           new_particle->assign_material(materials[phase], phase);
-        new_particle->assign_volume(source_particle->volume());
-        new_particle->assign_mass(source_particle->mass());
+        new_particle->assign_volume(volume);
+        new_particle->assign_mass(mass);
+        if (!new_particle->assign_cell_xi(cell, xi)) continue;
 
-        // Add new particle to mesh
-        if (this->add_particle(new_particle, checks)) {
-          map_particles_[next_pid] = new_particle;
-
-          // Locate the cell of the new particle
-          if (!this->locate_particle_cells(new_particle))
-            console_->warn(
-                "New particle ID {} at height {} cannot be located in any "
-                "cell (outside the mesh?)",
-                next_pid, new_coords[Tdim - 1]);
-
-          ++next_pid;
-          ++ninjected_slice;
-          injected_particles.emplace_back(new_particle);
-        }
+        if (this->add_particle(new_particle, false)) ++ninjected_local;
       }
+      if (noutside > 0 && mpi_rank == 0)
+        console_->warn(
+            "3DP injection at time {}: {} new particles are outside the "
+            "mesh and were not created (mesh too low for the feed column?)",
+            current_time, noutside);
 
       ++injection.n_injected;
-      console_->debug("3DP injection #{}: {} particles at time {}",
-                      injection.n_injected, ninjected_slice, current_time);
     }
   }
 
-  if (!injected_particles.empty()) {
-    console_->info("3DP injection at time {}: {} new particles injected",
-                   current_time, injected_particles.size());
-  }
+  if (ninjected_local > 0)
+    console_->info("3DP injection at time {}: {} new particles on rank {}",
+                   current_time, ninjected_local, mpi_rank);
+}
+
+// Make the 3D printing nozzle flag consistent on nodes shared between ranks
+template <unsigned Tdim>
+void mpm::Mesh<Tdim>::sync_3dp_nozzle_nodes(
+    const Eigen::Matrix<double, Tdim, 1>& velocity) {
+#if defined(USE_MPI) && defined(USE_GRAPH_PARTITIONING)
+  int mpi_size = 1;
+  MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+  if (mpi_size > 1)
+    this->template nodal_halo_exchange<double, 1>(
+        [](const std::shared_ptr<mpm::NodeBase<Tdim>>& node) -> double {
+          return node->three_dp_nozzle() ? 1. : 0.;
+        },
+        [velocity](const std::shared_ptr<mpm::NodeBase<Tdim>>& node,
+                   double flag) {
+          if (flag > 0.5) node->assign_3D_printing_velocity(true, velocity);
+        });
+#endif
 }
 
 // Read particles file

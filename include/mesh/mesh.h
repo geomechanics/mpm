@@ -519,9 +519,24 @@ class Mesh {
   void inject_particles(double current_time);
 
   //! Inject 3D printing particles (copy the top slice of the feed column)
+  //! The feed column is the set of particles above the nozzle tip and within
+  //! nozzle_radius of the nozzle axis; its top slice is gathered from all MPI
+  //! ranks and every new particle is created on the rank owning its cell.
+  //! With nozzle_radius <= 0 (legacy, serial only) the last n_copies particles
+  //! of the container are copied instead.
   //! \param[in] current_time Current analysis time
   //! \param[in] dt Time step
-  void inject_particles_3dp(double current_time, double dt);
+  //! \param[in] nozzle_position Nozzle tip position
+  //! \param[in] nozzle_radius Nozzle radius
+  void inject_particles_3dp(
+      double current_time, double dt,
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius);
+
+  //! Make the 3D printing nozzle flag consistent on nodes shared between MPI
+  //! ranks (a node is a nozzle node if any rank flagged it)
+  //! \param[in] velocity Nozzle velocity imposed on the nozzle nodes
+  void sync_3dp_nozzle_nodes(const Eigen::Matrix<double, Tdim, 1>& velocity);
 
   // Create the nodal properties' map
   void create_nodal_properties();

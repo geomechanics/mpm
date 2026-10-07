@@ -137,6 +137,30 @@ bool mpm::AssemblerEigenImplicit<Tdim>::assign_displacement_constraints(
   return status;
 }
 
+//! Add 3D printing nozzle displacement constraints
+template <unsigned Tdim>
+bool mpm::AssemblerEigenImplicit<Tdim>::assign_3dp_displacement_constraints(
+    double dt, unsigned phase) {
+  bool status = false;
+  try {
+    const auto& nodes = mesh_->active_nodes();
+    for (auto node = nodes.cbegin(); node != nodes.cend(); ++node) {
+      if (!(*node)->three_dp_nozzle()) continue;
+      const auto velocity = (*node)->three_dp_velocity();
+      const auto displacement = (*node)->displacement(phase);
+      for (unsigned i = 0; i < Tdim; ++i)
+        // Remaining correction to reach the prescribed increment
+        displacement_constraints_.coeffRef(active_dof_ * i +
+                                           (*node)->active_id()) =
+            velocity(i) * dt - displacement(i);
+    }
+    status = true;
+  } catch (std::exception& exception) {
+    console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
+  }
+  return status;
+}
+
 //! Apply displacement constraints vector
 template <unsigned Tdim>
 void mpm::AssemblerEigenImplicit<Tdim>::apply_displacement_constraints() {

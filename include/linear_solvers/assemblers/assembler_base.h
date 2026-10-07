@@ -146,6 +146,20 @@ class AssemblerBase {
     return 0;
   };
 
+  //! Add the 3D printing nozzle constraints: on nozzle nodes the displacement
+  //! increment of the step is prescribed as nozzle_velocity * dt. The value
+  //! inserted is the remaining correction (target - current increment), so
+  //! the constraint is satisfied exactly over the Newton-Raphson iterations.
+  //! \ingroup Implicit
+  //! \param[in] dt Time step
+  //! \param[in] phase Phase
+  virtual bool assign_3dp_displacement_constraints(double dt, unsigned phase) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_3dp_displacement_constraints)"
+        " in AssemblerBase:: illegal operation!");
+    return false;
+  };
+
   //! Apply displacement constraints to equilibrium equation
   //! \ingroup Implicit
   virtual void apply_displacement_constraints() {

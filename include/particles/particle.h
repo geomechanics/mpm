@@ -269,6 +269,18 @@ class Particle : public ParticleBase<Tdim> {
       double nozzle_radius,
       const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept override;
 
+  //! Assign the nozzle kinematics if the particle is inside the nozzle
+  void assign_3D_printing_kinematics(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius,
+      const Eigen::Matrix<double, Tdim, 1>& velocity) noexcept override;
+
+  //! Whether the particle is inside the nozzle (above the tip and within
+  //! nozzle_radius of the axis; radius <= 0: anywhere above the tip)
+  bool inside_3D_printing_nozzle(
+      const Eigen::Matrix<double, Tdim, 1>& nozzle_position,
+      double nozzle_radius) const noexcept;
+
   //! Compute updated position of the particle
   //! \param[in] dt Analysis time step
   //! \param[in] velocity_update Method to update particle velocity

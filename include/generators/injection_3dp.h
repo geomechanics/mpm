@@ -32,6 +32,8 @@ struct Injection3DP {
   //! counter is what keeps the injection rate exact (no drift when the
   //! interval is not a multiple of dt) and restart-safe.
   long n_injected{-1};
+  //! Warning about n_copies mismatch already issued
+  bool count_warning_issued{false};
 };
 }  // namespace mpm
 

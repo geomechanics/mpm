@@ -29,7 +29,7 @@ class IterativeEigen : public SolverBase<Traits> {
   };
 
   //! Destructor
-  ~IterativeEigen() {};
+  ~IterativeEigen(){};
 
   //! Matrix solver with default initial guess
   Eigen::VectorXd solve(const Eigen::SparseMatrix<double>& A,

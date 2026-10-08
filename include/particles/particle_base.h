@@ -60,7 +60,7 @@ class ParticleBase {
   ParticleBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~ParticleBase() {};
+  virtual ~ParticleBase(){};
 
   //! Delete copy constructor
   ParticleBase(const ParticleBase<Tdim>&) = delete;
@@ -244,6 +244,9 @@ class ParticleBase {
 
   //! dvolumetric strain
   virtual double dvolumetric_strain() const = 0;
+
+  //! Return dn_dx
+  virtual Eigen::MatrixXd dn_dx() const = 0;
 
   //! Assign deformation gradient increment
   virtual void assign_deformation_gradient_increment(
@@ -460,6 +463,17 @@ class ParticleBase {
   //! Return mapping matrix
   //! \ingroup AdvancedMapping
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
+
+  //! Return dn_dx_centroid
+  virtual Eigen::MatrixXd dn_dx_centroid() const = 0;
+
+  //! Assign computed averge B matrix as centroid of gradient
+  //! \param[in] avg_B_matrix Computed cell average B matrix
+  virtual void assign_dn_dx_centroid(const Eigen::MatrixXd& avg_B_matrix) {
+    throw std::runtime_error(
+        "Calling the base class function (assign_dn_dx_centroid) in "
+        "ParticleBase:: illegal operation!");
+  }
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle

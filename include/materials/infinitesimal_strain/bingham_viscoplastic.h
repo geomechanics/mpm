@@ -34,7 +34,7 @@ class BinghamViscoPlastic : public InfinitesimalElastoPlastic<Tdim> {
   BinghamViscoPlastic(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~BinghamViscoPlastic() override {};
+  ~BinghamViscoPlastic() override{};
 
   //! Delete copy constructor
   BinghamViscoPlastic(const BinghamViscoPlastic&) = delete;

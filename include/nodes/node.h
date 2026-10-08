@@ -26,7 +26,7 @@ class Node : public NodeBase<Tdim> {
   Node(Index id, const VectorDim& coord);
 
   //! Virtual destructor
-  ~Node() override {};
+  ~Node() override{};
 
   //! Delete copy constructor
   Node(const Node<Tdim, Tdof, Tnphases>&) = delete;

@@ -20,6 +20,7 @@
 #include "node.h"
 #include "partio_writer.h"
 #include "quadrilateral_element.h"
+#include "particle_bbar.h"
 
 //! Check mesh class for 2D case
 TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
@@ -879,7 +880,7 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
 
           SECTION("Check addition of particles to mesh") {
             // Particle type 2D
-            const std::string particle_type = "P2D";
+            const std::string particle_type = "P2DBBAR";
             // Create particles from file
             mesh->create_particles(particle_type, coordinates, mids, 0, false);
             // Check if mesh has added particles
@@ -1157,6 +1158,62 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                           set_id, velocity_constraint) == false);
 
               mesh->apply_particle_velocity_constraints();
+            }
+
+            // Test patch-based average gradient
+            SECTION("Check compute volume-weighted average") {
+              // Check number of particles
+              REQUIRE(mesh->nparticles() == 8);
+
+              // Keep only two particles
+              const std::vector<mpm::Index> pids = {0, 1, 2, 3, 4, 5, 6, 7};
+              mesh->remove_particles(pids);
+              REQUIRE(mesh->nparticles() == 0);
+
+              Eigen::Vector2d coords;
+
+              // Particle 1
+              mpm::Index id1 = 0;
+              coords << 0.125, 0.125;
+              std::shared_ptr<mpm::ParticleBase<Dim>> particle0 =
+                std::make_shared<mpm::ParticleBbar<Dim>>(id1, coords);
+
+              // Particle 2
+              mpm::Index id2 = 1;
+              coords << 0.25, 0.125;
+              std::shared_ptr<mpm::ParticleBase<Dim>> particle1 =
+                std::make_shared<mpm::ParticleBbar<Dim>>(id2, coords);
+
+              REQUIRE(mesh->add_particle(particle0) == true);
+              REQUIRE(mesh->add_particle(particle1) == true);
+
+              // Particle cells
+              std::vector<std::array<mpm::Index, 2>> particles_cells;
+              particles_cells.emplace_back(std::array<mpm::Index, 2>({0, 0}));
+              particles_cells.emplace_back(std::array<mpm::Index, 2>({1, 0}));
+              REQUIRE(mesh->assign_particles_cells(particles_cells) == true);
+
+              std::vector<std::tuple<mpm::Index, double>> particles_volumes;
+              // Volumes
+              particles_volumes.emplace_back(std::make_tuple(0, 10.5));
+              particles_volumes.emplace_back(std::make_tuple(1, 31.5));
+
+              REQUIRE(mesh->assign_particles_volumes(particles_volumes) ==
+                      true);
+
+              mesh->iterate_over_particles(
+                  std::bind(&mpm::ParticleBase<Dim>::compute_shapefn,
+                            std::placeholders::_1));
+
+              mesh->compute_cell_average_dn_dx_centroid();
+              REQUIRE(particle0->dn_dx().rows() == 4);
+              Eigen::MatrixXd dn_dx_centroid0 = particle0->dn_dx_centroid();
+              Eigen::VectorXd check(8);
+              check << -1.5, -1.125, 1.5, -0.875, 0.5, 0.875, -0.5, 1.125;
+              for (unsigned i=0; i<4; i++) {
+                for (unsigned j=0; j<2; j++)
+                  REQUIRE(dn_dx_centroid0(i, j) == Approx(check(i*2+j)).epsilon(Tolerance));
+              }
             }
           }
         }

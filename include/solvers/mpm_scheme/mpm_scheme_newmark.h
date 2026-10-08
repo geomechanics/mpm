@@ -19,7 +19,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   MPMSchemeNewmark(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt);
 
   //! Intialize
-  inline void initialise() override;
+  inline void initialise(bool bbar_patch_average = false) override;
 
   //! Compute nodal kinematics - map mass, momentum and inertia to nodes
   //! \param[in] velocity_update Method to update nodal velocity

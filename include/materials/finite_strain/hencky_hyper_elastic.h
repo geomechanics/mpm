@@ -27,7 +27,7 @@ class HenckyHyperElastic : public Material<Tdim> {
   HenckyHyperElastic(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~HenckyHyperElastic() override {};
+  ~HenckyHyperElastic() override{};
 
   //! Delete copy constructor
   HenckyHyperElastic(const HenckyHyperElastic&) = delete;

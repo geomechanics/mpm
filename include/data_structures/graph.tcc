@@ -135,14 +135,14 @@ void mpm::Graph<Tdim>::create_partitions(MPI_Comm* comm, int mode) {
 
 //! Collect the partitions and store it in the graph
 template <unsigned Tdim>
-std::vector<mpm::Index> mpm::Graph<Tdim>::collect_partitions(int mpi_size,
-                                                             int mpi_rank,
-                                                             MPI_Comm* comm) {
+std::vector<std::vector<mpm::Index>> mpm::Graph<Tdim>::collect_partitions(
+    int mpi_size, int mpi_rank, MPI_Comm* comm) {
   //! allocate space to partition
   mpm::Index ncells = this->cells_.size();
   std::vector<mpm::Index> partition(ncells, 0);
-  // ID of cells, which should transfer particles
-  std::vector<mpm::Index> exchange_cells;
+  // ID of cells, which should transfer (0) particles and (1) points
+  std::vector<std::vector<mpm::Index>> exchange_cells;
+  exchange_cells.resize(2);
   if (mpi_rank == 0) {
     int par = 0;
     for (int i = 0; i < this->vtxdist_[1]; ++i) {
@@ -184,9 +184,11 @@ std::vector<mpm::Index> mpm::Graph<Tdim>::collect_partitions(int mpi_size,
       // Assign current MPI rank
       (*citr)->rank(current_rank);
       // Add cell id to list of cells to transfer particles if there are
-      // particles
+      // particles or points
       if ((*citr)->nglobal_particles() > 0)
-        exchange_cells.emplace_back((*citr)->id());
+        exchange_cells[0].emplace_back((*citr)->id());
+      if ((*citr)->nglobal_points() > 0)
+        exchange_cells[1].emplace_back((*citr)->id());
     }
   }
   return exchange_cells;

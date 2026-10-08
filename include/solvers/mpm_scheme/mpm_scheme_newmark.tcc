@@ -19,6 +19,13 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
       mesh_->iterate_over_cells(
           std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
     }
+  }
+
+  // Apply point velocity constraints
+  mesh_->assign_point_velocity_constraints();
+
+#pragma omp parallel sections
+  {
     // Spawn a task for particles
 #pragma omp section
     {
@@ -31,6 +38,20 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
           std::bind(&mpm::ParticleBase<Tdim>::initialise_constitutive_law,
                     std::placeholders::_1, dt_));
     }
+
+    // Spawn a task for points
+#pragma omp section
+    {
+      // Iterate over each point to compute shapefn
+      mesh_->iterate_over_points(std::bind(
+          &mpm::PointBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+      // Initialise point properties
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::initialise_properties,
+                    std::placeholders::_1, dt_));
+    }
+
   }  // Wait to complete
 }
 
@@ -154,6 +175,15 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::map_internal_force, std::placeholders::_1));
     }
+
+#pragma omp section
+    {
+      // Spawn a task for boundary force
+      // Iterate over each point to compute nodal external force
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::map_boundary_force,
+                    std::placeholders::_1, phase));
+    }
   }  // Wait for tasks to finish
 }
 
@@ -166,6 +196,11 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position_newmark,
+                std::placeholders::_1, dt_));
+
+  // Iterate over each point to compute updated position
+  mesh_->iterate_over_points(
+      std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
                 std::placeholders::_1, dt_));
 }
 

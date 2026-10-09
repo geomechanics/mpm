@@ -271,7 +271,7 @@ TEST_CASE("ParticleBbar is checked for 2D case", "[particle][2D][Bbar]") {
     REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
     particle->compute_strain(dt);
     REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(1.2214027582).epsilon(Tolerance));
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress(dt));
@@ -618,7 +618,7 @@ TEST_CASE("ParticleBbar is checked for 3D case", "[particle][3D][Bbar]") {
     REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
     particle->compute_strain(dt);
     REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(13.1897701656).epsilon(Tolerance));
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress(dt));

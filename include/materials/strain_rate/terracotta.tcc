@@ -259,12 +259,15 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
   if (pe_m < tolerance_) pe_m = tolerance_;
 
   // Initialize transport parameters (a and c are constants, while b changing
-  // over iterations)
-  const double a = std::sqrt(eta_ / alpha_) / p1_ /
+  // over iterations), with P_c = p1 * phi^lambda / (1 - phi^lambda)
+  const double a = std::sqrt(eta_ / alpha_) *
+                   (1.0 - std::pow(current_packing_fraction, lambda_)) / p1_ /
                    std::pow(current_packing_fraction, lambda_);
   Vector6d b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
   Matrix6x6 c = 3. / 2. *
-                (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ /
+                (std::sqrt(eta_ / beta_) *
+                     (1.0 - std::pow(current_packing_fraction, lambda_)) /
+                     m_ / omega_ / p1_ /
                      std::pow(current_packing_fraction, lambda_) +
                  a / m_ / m_) *
                 fourth_order_identity_mandel;
@@ -587,12 +590,15 @@ Eigen::Matrix<double, 6, 6>
       dstress_e_depsv_e * depsv_e_deps_e.transpose() +
       dstress_e_dgamma_e * dgamma_e_deps_e;
 
-  // Transport parameters
-  const double a = std::sqrt(eta_ / alpha_) / p1_ /
+  // Transport parameters, with P_c = p1 * phi^lambda / (1 - phi^lambda)
+  const double a = std::sqrt(eta_ / alpha_) *
+                   (1.0 - std::pow(current_packing_fraction, lambda_)) / p1_ /
                    std::pow(current_packing_fraction, lambda_);
   const Vector6d b = -3. / 2. * a / m_ / m_ / pe * se;
   const Matrix6x6 c = 3. / 2. *
-                      (std::sqrt(eta_ / beta_) / m_ / omega_ / p1_ /
+                      (std::sqrt(eta_ / beta_) *
+                           (1.0 - std::pow(current_packing_fraction, lambda_)) /
+                           m_ / omega_ / p1_ /
                            std::pow(current_packing_fraction, lambda_) +
                        a / m_ / m_) *
                       fourth_order_identity_mandel;

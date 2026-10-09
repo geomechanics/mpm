@@ -121,16 +121,11 @@ Eigen::Matrix<double, 6, 1> mpm::BinghamViscoPlastic<Tdim>::compute_stress(
   // Plastic state: stress point is outside yield surface
   else {
     // Compute gamma_dot
-    if (alpha_ == 0.0) {
-      gamma_dot = f_tr / (dynamic_viscosity_ + shear_modulus_ * dt);
-    } else {
-      // Bingham viscoplastic model
-      const double xi = dynamic_viscosity_ +
-                        dt * (shear_modulus_ + alpha_ * (tau0_ - tau_tr));
-      const double zeta =
-          2.0 * alpha_ * dt * (dt * shear_modulus_ + dynamic_viscosity_);
-      gamma_dot = (std::sqrt(xi * xi + 2.0 * zeta * f_tr) - xi) / zeta;
-    }
+    const double xi =
+        dynamic_viscosity_ + dt * (shear_modulus_ + alpha_ * (tau0_ - tau_tr));
+    const double zeta =
+        2.0 * alpha_ * dt * (dt * shear_modulus_ + dynamic_viscosity_);
+    gamma_dot = 2.0 * f_tr / (std::sqrt(xi * xi + 2.0 * zeta * f_tr) + xi);
 
     // Update parameters
     const double tau_new = tau_tr - shear_modulus_ * dt * gamma_dot;

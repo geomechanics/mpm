@@ -168,7 +168,8 @@ TEST_CASE("Terracotta is checked in 2D (without pore fluid)",
           "elastic_strain4_prev",
           "elastic_strain5_prev",
           "packing_fraction",
-          "pore_pressure"};
+          "pore_pressure",
+          "pgamma_dot"};
 
       const auto actual_state_variables = material->state_variables();
       REQUIRE(actual_state_variables == expected_state_variables);
@@ -530,7 +531,8 @@ TEST_CASE("Terracotta is checked in 2D (with pore fluid)",
           "elastic_strain4_prev",
           "elastic_strain5_prev",
           "packing_fraction",
-          "pore_pressure"};
+          "pore_pressure",
+          "pgamma_dot"};
 
       const auto actual_state_variables = material->state_variables();
       REQUIRE(actual_state_variables == expected_state_variables);
@@ -907,7 +909,8 @@ TEST_CASE("Terracotta is checked in 3D (without pore fluid)",
           "elastic_strain4_prev",
           "elastic_strain5_prev",
           "packing_fraction",
-          "pore_pressure"};
+          "pore_pressure",
+          "pgamma_dot"};
 
       const auto actual_state_variables = material->state_variables();
       REQUIRE(actual_state_variables == expected_state_variables);
@@ -1320,7 +1323,8 @@ TEST_CASE("Terracotta is checked in 3D (with pore fluid)",
           "elastic_strain4_prev",
           "elastic_strain5_prev",
           "packing_fraction",
-          "pore_pressure"};
+          "pore_pressure",
+          "pgamma_dot"};
 
       const auto actual_state_variables = material->state_variables();
       REQUIRE(actual_state_variables == expected_state_variables);

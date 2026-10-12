@@ -19,7 +19,6 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
   double residual_tolerance = 1.0e-10;
   double relative_residual_tolerance = 1.0e-6;
   if (stress_update_ == "newmark") {
-    mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(mesh_, dt_);
     if (analysis_.contains("scheme_settings")) {
       // Read boolean of nonlinear analysis
       if (analysis_["scheme_settings"].contains("nonlinear"))
@@ -62,6 +61,8 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
                            .template get<unsigned>();
       }
     }
+    mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(
+        mesh_, dt_, newmark_beta_, newmark_gamma_);
 
     // Initialise convergence criteria
     if (nonlinear_) {
@@ -182,8 +183,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);
 
     // Predict nodal kinematics -- Predictor step of Newmark scheme
-    mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                 newmark_gamma_);
+    mpm_scheme_->update_nodal_kinematics_newmark(phase_);
 
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
@@ -213,8 +213,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
       this->solve_system_equation();
 
       // Update nodal kinematics -- Corrector step of Newmark scheme
-      mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
-                                                   newmark_gamma_);
+      mpm_scheme_->update_nodal_kinematics_newmark(phase_);
 
       // Update stress and strain
       mpm_scheme_->postcompute_stress_strain(phase_, pressure_smoothing_);

@@ -10,25 +10,38 @@ mpm::BinghamViscoPlastic<Tdim>::BinghamViscoPlastic(
     double youngs_modulus =
         material_properties.at("youngs_modulus").template get<double>();
     // Poisson ratio
-    double poisson_ratio =
+    poisson_ratio_ =
         material_properties.at("poisson_ratio").template get<double>();
     // Bulk modulus
-    bulk_modulus_ = youngs_modulus / (3.0 * (1. - 2. * poisson_ratio));
+    bulk_modulus_ = youngs_modulus / (3.0 * (1. - 2. * poisson_ratio_));
     // Shear modulus
-    shear_modulus_ = youngs_modulus / (2.0 * (1 + poisson_ratio));
+    shear_modulus_ = youngs_modulus / (2.0 * (1 + poisson_ratio_));
 
     // Volumetric terms
     c_ = std::sqrt(bulk_modulus_ / density_);
-    gamma_ = material_properties.at("volumetric_gamma").template get<double>();
+    if (material_properties.contains("volumetric_gamma")) {
+      gamma_ =
+          material_properties.at("volumetric_gamma").template get<double>();
+    } else {
+      gamma_ = 0.0;
+    }
 
-    // Shear terms
+    // Bingham viscoplastic parameters
     dynamic_viscosity_ =
         material_properties.at("dynamic_viscosity").template get<double>();
     tau0_ = material_properties.at("tau0").template get<double>();
+
+    // Aging parameters
+    initial_age_ = material_properties.at("initial_age").template get<double>();
+    ae_ = material_properties.at("aging_rate").template get<double>();
+    kappae_ = material_properties.at("aging_exponent").template get<double>();
+
+    // Thixotropic parameters
     lambda0_ =
         material_properties.at("flocculation_state").template get<double>();
-    athix_ =
-        material_properties.at("flocculation_parameter").template get<double>();
+    athix_ = material_properties.at("flocculation_rate").template get<double>();
+    kappalambda_ =
+        material_properties.at("flocculation_exponent").template get<double>();
     alpha_ =
         material_properties.at("deflocculation_rate").template get<double>();
 
@@ -57,7 +70,9 @@ mpm::dense_map mpm::BinghamViscoPlastic<Tdim>::initialise_state_variables() {
       // Plastic deviatoric strain rate
       {"pgamma_dot", 0.},
       // Plastic deviatoric strain (following p-q stress framework)
-      {"pdstrain", 0.}};
+      {"pdstrain", 0.},
+      // Age of the material
+      {"age", initial_age_}};
   return state_vars;
 }
 
@@ -67,7 +82,7 @@ std::vector<std::string> mpm::BinghamViscoPlastic<Tdim>::state_variables()
     const {
   const std::vector<std::string> state_vars = {
       "yield_state", "pressure",   "volumetric_strain", "shear_stress_ratio",
-      "lambda",      "pgamma_dot", "pdstrain"};
+      "lambda",      "pgamma_dot", "pdstrain",          "age"};
   return state_vars;
 }
 
@@ -81,10 +96,14 @@ Eigen::Matrix<double, 6, 1> mpm::BinghamViscoPlastic<Tdim>::compute_stress(
   const double vol_strain =
       (*state_vars).at("volumetric_strain") + ptr->dvolumetric_strain();
 
+  // Update age of the material
+  const double age = (*state_vars).at("age") + dt;
+  (*state_vars).at("age") = age;
+
   //-------------------------------------------------------------------------
   // Elastic-predictor stage: compute the trial stress
   (*state_vars).at("yield_state") = 0;
-  Matrix6x6 de = this->compute_elastic_tensor(vol_strain);
+  Matrix6x6 de = this->compute_elastic_tensor(vol_strain, age);
   Vector6d trial_stress =
       this->compute_trial_stress(stress, dstrain, de, ptr, state_vars);
 
@@ -101,7 +120,10 @@ Eigen::Matrix<double, 6, 1> mpm::BinghamViscoPlastic<Tdim>::compute_stress(
   const double tau_tr = q_tr / sqrt(3.0);
 
   // Compute static yield stress considering thixotropic effects
-  const double lambda_tr = (*state_vars).at("lambda") + athix_ / tau0_ * dt;
+  double phi_age = this->phi_age(age, kappalambda_);
+  double phi_age_prev = this->phi_age(age - dt, kappalambda_);
+  const double lambda_tr =
+      (*state_vars).at("lambda") + athix_ / tau0_ * (phi_age - phi_age_prev);
   const double static_yield_stress = (1.0 + lambda_tr) * tau0_;
 
   // Compute new stress
@@ -148,14 +170,35 @@ Eigen::Matrix<double, 6, 1> mpm::BinghamViscoPlastic<Tdim>::compute_stress(
   return updated_stress;
 }
 
+//! Compute aging multiplier function phi
+template <unsigned Tdim>
+double mpm::BinghamViscoPlastic<Tdim>::phi_age(double age, double kappa) {
+  double phi = age;
+  if (std::abs(kappa) > std::numeric_limits<double>::epsilon())
+    phi = (std::exp(kappa * age) - 1.0) / kappa;
+  return phi;
+}
+
 //! Compute elastic tensor
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 6>
-    mpm::BinghamViscoPlastic<Tdim>::compute_elastic_tensor(double vol_strain) {
-  // Compute bulk modulus from equation of state
-  const double K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
-  // Shear modulus
-  const double G = shear_modulus_;
+    mpm::BinghamViscoPlastic<Tdim>::compute_elastic_tensor(double vol_strain,
+                                                           double age) {
+  // Constant bulk and shear modulus
+  double K = bulk_modulus_;
+  double G = shear_modulus_;
+  // If K is not constant, compute K and G based on volumetric strain
+  if (gamma_ > std::numeric_limits<double>::epsilon()) {
+    K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
+    G = 3.0 * K * (1.0 - 2.0 * poisson_ratio_) / (2.0 * (1.0 + poisson_ratio_));
+  }
+
+  // Aging moduli update
+  const double phi = this->phi_age(age, kappae_);
+  K += ae_ * phi;
+  G += ae_ * phi;
+
+  // Compute elastic tensor
   const double a1 = K + (4.0 / 3.0) * G;
   const double a2 = K - (2.0 / 3.0) * G;
   // compute elastic stiffness matrix
@@ -182,10 +225,13 @@ Eigen::Matrix<double, 6, 6>
   mpm::bingham_viscoplastic::FailureState yield_type =
       yield_type_.at(int((*state_vars).at("yield_state")));
 
+  // Get age
+  const double age = (*state_vars).at("age");
+
   // Return the elastic consitutive tensor in elastic state
   if (yield_type == mpm::bingham_viscoplastic::FailureState::Elastic) {
-    const Matrix6x6 de =
-        this->compute_elastic_tensor((*state_vars).at("volumetric_strain"));
+    const Matrix6x6 de = this->compute_elastic_tensor(
+        (*state_vars).at("volumetric_strain"), age);
     return de;
   }
 
@@ -221,7 +267,9 @@ Eigen::Matrix<double, 6, 6>
 
   // Compute the elasto-plastic stiffness matrix
   const double vol_strain = (*state_vars).at("volumetric_strain");
-  const double K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
+  double K = bulk_modulus_;
+  if (gamma_ > std::numeric_limits<double>::epsilon())
+    K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
   const double den = -(dynamic_viscosity_ + dt * shear_modulus_) +
                      dt * tau0_ * alpha_ * (*state_vars).at("lambda");
   const double d_1 = 2.0 * shear_modulus_ * tau_ratio;

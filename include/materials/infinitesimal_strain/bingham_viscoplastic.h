@@ -78,7 +78,15 @@ class BinghamViscoPlastic : public InfinitesimalElastoPlastic<Tdim> {
  private:
   //! Compute elastic tensor
   //! \param[in] vol_strain Total volumetric strain
-  Matrix6x6 compute_elastic_tensor(double vol_strain);
+  //! \param[in] age Age of the material
+  //! \retval de Elastic constitutive tensor
+  Matrix6x6 compute_elastic_tensor(double vol_strain, double age);
+
+  //! Aging multiplier function phi
+  // \param[in] age Age of the material
+  // \param[in] kappa Aging exponent
+  // \retval phi Aging multiplier
+  double phi_age(double age, double kappa);
 
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
@@ -103,26 +111,42 @@ class BinghamViscoPlastic : public InfinitesimalElastoPlastic<Tdim> {
     return (val > 1.0e-15 ? val : 1.0e-15);
   }
 
+  //! Elastic parameters
   //! Density
   double density_{std::numeric_limits<double>::max()};
   //! Bulk modulus
   double bulk_modulus_{std::numeric_limits<double>::max()};
   //! Shear modulus
   double shear_modulus_{std::numeric_limits<double>::max()};
-
+  //! Poisson ratio
+  double poisson_ratio_{std::numeric_limits<double>::max()};
   //! Volumetric wave speed
   double c_{std::numeric_limits<double>::max()};
   //! Gamma
   double gamma_{std::numeric_limits<double>::max()};
+
+  //! Bingham parameters
   //! Dynamic viscosity
   double dynamic_viscosity_{std::numeric_limits<double>::max()};
   //! Tau0
   double tau0_{std::numeric_limits<double>::max()};
+
+  //! Aging parameters
+  //! Initial age
+  double initial_age_{std::numeric_limits<double>::max()};
+  //! Aging rate
+  double ae_{std::numeric_limits<double>::max()};
+  //! Aging exponent
+  double kappae_{std::numeric_limits<double>::max()};
+
+  //! Thixotropy parameters
   //! Initial flocculation state
   double lambda0_{std::numeric_limits<double>::max()};
-  //! Flocullation parameter
+  //! Flocullation rate
   double athix_{std::numeric_limits<double>::max()};
-  //! Thixotropy deflocculation rate
+  //! Flocculation exponent
+  double kappalambda_{std::numeric_limits<double>::max()};
+  //! Deflocculation rate
   double alpha_{std::numeric_limits<double>::max()};
 
   //! Failure state map

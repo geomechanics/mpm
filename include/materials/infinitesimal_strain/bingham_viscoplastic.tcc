@@ -268,14 +268,22 @@ Eigen::Matrix<double, 6, 6>
   // Compute the elasto-plastic stiffness matrix
   const double vol_strain = (*state_vars).at("volumetric_strain");
   double K = bulk_modulus_;
-  if (gamma_ > std::numeric_limits<double>::epsilon())
+  double G = shear_modulus_;
+  if (gamma_ > std::numeric_limits<double>::epsilon()) {
     K = density_ * c_ * c_ * std::exp(-gamma_ * vol_strain);
-  const double den = -(dynamic_viscosity_ + dt * shear_modulus_) +
-                     dt * tau0_ * alpha_ * (*state_vars).at("lambda");
-  const double d_1 = 2.0 * shear_modulus_ * tau_ratio;
-  const double d_2 = K - 2.0 / 3.0 * shear_modulus_ * tau_ratio;
-  const double d_3 =
-      2.0 * shear_modulus_ * (1.0 - tau_ratio + shear_modulus_ * dt / den);
+    G = 3.0 * K * (1.0 - 2.0 * poisson_ratio_) / (2.0 * (1.0 + poisson_ratio_));
+  }
+  // Aging moduli update
+  const double phi_e = this->phi_age(age, kappae_);
+  K += ae_ * phi_e;
+  G += ae_ * phi_e;
+  // Compute the elasto-plastic stiffness matrix
+  const double den = dt * G + dynamic_viscosity_ -
+                     (alpha_ * dt * tau0_ * (*state_vars).at("lambda")) /
+                         (1.0 + alpha_ * dt * (*state_vars).at("pgamma_dot"));
+  const double d_1 = 2.0 * G * tau_ratio;
+  const double d_2 = K - 2.0 / 3.0 * G * tau_ratio;
+  const double d_3 = 2.0 * G * (1.0 - tau_ratio - G * dt / den);
 
   //! Elasto-plastic stiffness matrix
   Matrix6x6 d_ep =

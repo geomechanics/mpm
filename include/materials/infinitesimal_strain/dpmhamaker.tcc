@@ -1,29 +1,29 @@
-// Compute Hamaker gap between grains
+// Compute dimensionless Hamaker gap between grains
 template <unsigned Tdim>
-inline double mpm::materials::hamaker_gap(double phi, double phi_contact,
-                                          double grain_diameter) {
+inline double mpm::materials::hamaker_gap(double phi, double phi_contact) {
   // Guard against empty or negative packing fraction
   if (phi <= std::numeric_limits<double>::epsilon() ||
       phi_contact <= std::numeric_limits<double>::epsilon())
     return std::numeric_limits<double>::max();
 
   // Uniform dilation factor
-  const double s = std::pow(phi_contact / phi, 1.0 / Tdim);
+  const double stretch = std::pow(phi_contact / phi, 1.0 / Tdim);
 
-  // Centre distance s*d minus one diameter; clamp to 0 when phi >= phi_contact
-  const double gap = grain_diameter * (s - 1.0);
-  return std::max(gap, 0.0);
+  // Centre distance / d minus one; clamp to 0 when phi >= phi_contact
+  return std::max(stretch - 1.0, 0.0);
 }
 
 // Compute Hamaker force between two grains
-inline double mpm::materials::hamaker_force(double gap, double grain_diameter,
-                                            double hamaker_const,
-                                            double delta_min,
-                                            double delta_max) {
-  if (gap > delta_max) return 0.0;
-  // Regularised separation: finite force at contact
-  const double s = std::max(gap, 0.0) + delta_min;
-  return hamaker_const * grain_diameter / (24.0 * s * s); //paper says 12, but im reading should be 24?
+inline double mpm::materials::hamaker_force(double phi, double phi_min_coh,
+                                            double gap_ratio,
+                                            double grain_diameter,
+                                            double hamaker_constant,
+                                            double epsilon) {
+  if (phi < phi_min_coh) return 0.0;
+  // Regularised dimensionless separation: finite force at contact
+  const double sep = std::max(gap_ratio, 0.0) + epsilon;
+  // Equal spheres: A R / (12 D^2) = (A / d) / (24 (D / d)^2)
+  return hamaker_constant / grain_diameter / (24.0 * sep * sep);
 }
 
 //! Constructor with id and material properties
@@ -105,28 +105,40 @@ mpm::DilatantPlasticHamakerModel<Tdim>::DilatantPlasticHamakerModel(
     else
       console_->warn(
           "hamaker_constant not set, using 0 (no Hamaker cohesion)");
-    // Minimum separation at contact (optional)
-    if (material_properties.contains("hamaker_delta_min"))
-      hamaker_delta_min_ =
-          material_properties.at("hamaker_delta_min").template get<double>();
-    if (hamaker_delta_min_ <= 0.) {
+    // Dimensionless minimum separation, sets maximum force (optional)
+    if (material_properties.contains("hamaker_epsilon")) {
+      const double epsilon =
+          material_properties.at("hamaker_epsilon").template get<double>();
+      if (epsilon <= 0.)
+        throw std::runtime_error("hamaker_epsilon must be greater than 0");
+      hamaker_epsilon_ = epsilon;
+    } else {
+      hamaker_epsilon_ = 4.0e-10 / d_;
       console_->warn(
-          "hamaker_delta_min must be greater than 0 (got {}), using default "
-          "4.0e-10",
-          hamaker_delta_min_);
-      hamaker_delta_min_ = 4.0e-10;
+          "hamaker_epsilon not set, using 0.4 nm / mean_particle_size = {}",
+          hamaker_epsilon_);
     }
-    // Maximum gap for Hamaker force (optional)
-    if (material_properties.contains("hamaker_delta_max"))
-      hamaker_delta_max_ =
-          material_properties.at("hamaker_delta_max").template get<double>();
-    if (hamaker_delta_max_ <= 0.) {
+    // Minimum packing fraction for cohesion
+    // Dimensionless maximum gap for cohesion, sets phi_min_coh (optional)
+    if (material_properties.contains("hamaker_gap_max")) {
+      const double gap_max =
+          material_properties.at("hamaker_gap_max").template get<double>();
+      if (gap_max <= 0.)
+        throw std::runtime_error("hamaker_gap_max must be greater than 0");
+      hamaker_gap_max_ = gap_max;
+    } else {
+      hamaker_gap_max_ = 1.0e-7 / d_;
       console_->warn(
-          "hamaker_delta_max must be greater than 0 (got {}), using default "
-          "1.0e-7",
-          hamaker_delta_max_);
-      hamaker_delta_max_ = 1.0e-7;
+          "hamaker_gap_max not set, using 100 nm / mean_particle_size = {}",
+          hamaker_gap_max_);
     }
+    // Coordination number (optional)
+    if (material_properties.contains("coordination_number"))
+      coordination_number_ =
+          material_properties.at("coordination_number").template get<double>();
+    else
+      console_->warn("coordination_number not set, using {}",
+                     coordination_number_);
 
     // Parameters for rate dependency
     // Rate dependency flag
@@ -263,10 +275,18 @@ Eigen::Matrix<double, 6, 1> mpm::DilatantPlasticHamakerModel<Tdim>::compute_stre
       (*state_vars).at("packing_fraction_dilation");
 
   // Hamaker gap and force between grains
-  const double gap = mpm::materials::hamaker_gap<Tdim>(
-      current_packing_fraction, current_packing_fraction_dilation, d_);
+  // computed with phid^n so is consistent with when regular dpm says in contact
+  const double gap_ratio = mpm::materials::hamaker_gap<Tdim>(
+      current_packing_fraction, current_packing_fraction_dilation);
+  // Minimum packing fraction for cohesion, moves with packing_fraction_dilation
+  const double phi_min_coh = current_packing_fraction_dilation /
+                             std::pow(1.0 + hamaker_gap_max_, Tdim);
   const double f_vdw = mpm::materials::hamaker_force(
-      gap, d_, hamaker_constant_, hamaker_delta_min_, hamaker_delta_max_);
+      current_packing_fraction, phi_min_coh, gap_ratio, d_,
+      hamaker_constant_, hamaker_epsilon_);
+  // Cohesive (tensile) pressure from Hamaker force, Rumpf: phi k_b F / (pi d^2)
+  const double p_coh = current_packing_fraction * coordination_number_ * f_vdw /
+                       (M_PI * d_ * d_);
 
   // Elastic stress
   Vector6d elastic_stress = Vector6d::Zero();
@@ -346,8 +366,11 @@ Eigen::Matrix<double, 6, 1> mpm::DilatantPlasticHamakerModel<Tdim>::compute_stre
     (*state_vars).at("tau") = 0.0;
     (*state_vars).at("shear_stress_ratio") = 0.0;
     reset_elastic_stress = true;
-    reset_phid =
-        (current_packing_fraction < minimum_packing_fraction_) ? true : false;
+    // Reset packing_fraction_dilation only once the Hamaker force would be zero
+    // measured from phi_min, so the reset cannot switch cohesion back on
+    const double phi_reset = minimum_packing_fraction_ /
+                             std::pow(1.0 + hamaker_gap_max_, Tdim);
+    reset_phid = (current_packing_fraction < phi_reset);
     // Recompute gamma_dot for visualization (should not affect simulation)
     gamma_dot = tau_tr / (eff_shear_modulus * dt);
   } else {
@@ -782,7 +805,9 @@ Eigen::Matrix<double, 6, 1> mpm::DilatantPlasticHamakerModel<Tdim>::compute_stre
     (*state_vars).at("packing_fraction_dilation") = minimum_packing_fraction_;
   }
 
-  return updated_stress;
+  // Add cohesive tension after state update so it is not stored in elastic
+  // stress
+  return updated_stress + p_coh * m_voigt;
 }
 
 //! Compute elastic tensor

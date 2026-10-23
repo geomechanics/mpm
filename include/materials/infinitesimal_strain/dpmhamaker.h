@@ -13,29 +13,31 @@
 namespace mpm {
 namespace materials {
 
-//! Nearest-neighbour surface-to-surface gap between grains from the packing
+//! Dimensionless nearest-neighbour gap (gap / grain diameter) from the packing
 //! fraction, assuming uniform dilation from the contact packing fraction
 //! \tparam Tdim Dimension
 //! \param[in] phi Current packing fraction, solved for in dpmhamaker.tcc
 //! \param[in] phi_contact Packing fraction at which grains are in contact
 //! (DPM packing_fraction_dilation)
-//! \param[in] grain_diameter Mean grain diameter
-//! \retval gap Gap (>= 0), or max double if phi or phi_contact is
-//! empty/negative
+//! \retval gap_ratio Gap / grain diameter (>= 0), or max double if phi or
+//! phi_contact is empty/negative
 template <unsigned Tdim>
-inline double hamaker_gap(double phi, double phi_contact,
-                          double grain_diameter);
+inline double hamaker_gap(double phi, double phi_contact);
 
 //! Hamaker (van der Waals) attractive force between two grains
-//! \param[in] gap Surface-to-surface gap
+//! F = (A / d) / (24 (gap_ratio + epsilon)^2), applied when phi >= phi_min_coh
+//! \param[in] phi Current packing fraction
+//! \param[in] phi_min_coh Minimum packing fraction at which cohesion applies,
+//! phi_d / (1 + gap_max)^Tdim
+//! \param[in] gap_ratio Gap / grain diameter
 //! \param[in] grain_diameter Mean grain diameter
-//! \param[in] hamaker_const Hamaker constant A
-//! \param[in] delta_min Minimum separation (contact cutoff, must be > 0)
-//! \param[in] delta_max Maximum gap beyond which the force is zero
+//! \param[in] hamaker_constant Hamaker constant A
+//! \param[in] epsilon Dimensionless minimum separation (delta_min / d, must be
+//! > 0), sets the maximum force (A / d) / (24 epsilon^2)
 //! \retval force Attractive force (>= 0)
-inline double hamaker_force(double gap, double grain_diameter,
-                            double hamaker_const, double delta_min,
-                            double delta_max);
+inline double hamaker_force(double phi, double phi_min_coh, double gap_ratio,
+                            double grain_diameter, double hamaker_constant,
+                            double epsilon);
 
 }  // namespace materials
 }  // namespace mpm
@@ -172,10 +174,14 @@ class DilatantPlasticHamakerModel : public InfinitesimalElastoPlastic<Tdim> {
   //! Hamaker parameters
   //! Hamaker constant A (material specific, 0 means no cohesion)
   double hamaker_constant_{0.0};
-  //! Minimum separation at contact (default 0.4 nm)
-  double hamaker_delta_min_{4.0e-10};
-  //! Maximum gap beyond which the Hamaker force is zero (default 100 nm)
-  double hamaker_delta_max_{1.0e-7};
+  //! Dimensionless minimum separation delta_min / d, sets the maximum cohesive
+  //! force (default 0.4 nm / d)
+  double hamaker_epsilon_{0.0};
+  //! Dimensionless maximum gap delta_max / d beyond which cohesion stops,
+  //! sets phi_min_coh = phi_d / (1 + gap_max)^Tdim (default 100 nm / d)
+  double hamaker_gap_max_{0.0};
+  //! Coordination number k_b, bonds per grain (default 4 in 2D, 6 in 3D)
+  double coordination_number_{Tdim == 2 ? 4.0 : 6.0};
 
   //! Return mapping parameters
   //! Absolute tolerance

@@ -701,7 +701,7 @@ bool mpm::MPMBase<Tdim>::checkpoint_resume() {
 
     // Input particle h5 file for resume
     this->read_hdf5();
-    
+
     // Clear all particle ids
     mesh_->iterate_over_cells(
         std::bind(&mpm::Cell<Tdim>::clear_particle_ids, std::placeholders::_1));
@@ -2075,8 +2075,8 @@ void mpm::MPMBase<Tdim>::particles_velocities(
   try {
     if (mesh_props.find("particles_velocities") != mesh_props.end()) {
       // Get generator type
-      const std::string type =
-          mesh_props["particles_velocities"]["type"].template get<std::string>();
+      const std::string type = mesh_props["particles_velocities"]["type"]
+                                   .template get<std::string>();
       if (type == "file") {
         std::string fparticles_velocities =
             mesh_props["particles_velocities"]["location"]
@@ -2471,7 +2471,8 @@ void mpm::MPMBase<Tdim>::point_joyner_chen_constraints() {
         auto velocity_constraint = std::make_shared<mpm::VelocityConstraint>(
             pset_id, vfunction, dir, velocity);
 
-        mesh_->create_point_joyner_chen_constraint(pset_id, velocity_constraint, normal);
+        mesh_->create_point_joyner_chen_constraint(pset_id, velocity_constraint,
+                                                   normal);
 
         // Set bool for solve loop
         this->joyner_chen_ = true;
@@ -2546,12 +2547,34 @@ bool mpm::MPMBase<Tdim>::initialise_damping(const Json& damping_props) {
   try {
     // Read damping type
     std::string type = damping_props.at("type").template get<std::string>();
-    if (type == "Cundall")
+    if (type == "Cundall") {
       damping_type_ = mpm::Damping::Cundall;
-    else if (type == "Rayleigh")
+      // Read damping factor
+      damping_factor_ =
+          damping_props.at("damping_factor").template get<double>();
+    } else if (type == "Rayleigh") {
       damping_type_ = mpm::Damping::Rayleigh;
-    // Read damping factor
-    damping_factor_ = damping_props.at("damping_factor").template get<double>();
+      rayleigh_damping_ = true;
+      double freq_1 =
+          2.0 * M_PI * damping_props.at("freq_1").template get<double>();
+      double freq_2 =
+          2.0 * M_PI * damping_props.at("freq_2").template get<double>();
+      double damp_1 =
+          damping_props.at("damping_ratio_1").template get<double>();
+      double damp_2 =
+          damping_props.at("damping_ratio_2").template get<double>();
+      // Compute Rayleigh damping coefficients
+      rayleigh_alpha_ = (2.0 * freq_1 * freq_2) *
+                        (damp_1 * freq_2 - damp_2 * freq_1) /
+                        (freq_2 * freq_2 - freq_1 * freq_1);
+      rayleigh_beta_ = 2.0 * (damp_2 * freq_2 - damp_1 * freq_1) /
+                       (freq_2 * freq_2 - freq_1 * freq_1);
+    } else if (type == "PML") {
+      damping_type_ = mpm::Damping::PML;
+      damping_factor_ =
+          damping_props.at("damping_factor").template get<double>();
+    } else
+      throw std::runtime_error("Damping type is not properly specified");
   } catch (std::exception& exception) {
     console_->warn("#{}: Damping parameters are not properly specified; {}",
                    __LINE__, exception.what());

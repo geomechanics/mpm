@@ -117,19 +117,20 @@ void mpm::Particle<Tdim>::map_inertial_force(double bossak_alpha) noexcept {
 template <unsigned Tdim>
 inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
     double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
-    bool quasi_static) {
+    bool quasi_static, double rayleigh_alpha, double rayleigh_beta) {
   bool status = true;
   try {
     // Check if material ptr is valid
     assert(this->material() != nullptr);
 
     // Compute material stiffness matrix
-    this->map_material_stiffness_matrix_to_cell(dt);
+    this->map_material_stiffness_matrix_to_cell(newmark_beta, newmark_gamma, dt,
+                                                rayleigh_beta);
 
     // Compute mass matrix
     if (!quasi_static)
-      this->map_mass_matrix_to_cell(newmark_beta, bossak_alpha, dt);
-
+      this->map_mass_matrix_to_cell(newmark_beta, newmark_gamma, bossak_alpha,
+                                    dt, rayleigh_alpha);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -140,7 +141,8 @@ inline bool mpm::Particle<Tdim>::map_stiffness_matrix_to_cell(
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
 template <unsigned Tdim>
 inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell(
-    double dt) {
+    double newmark_beta, double newmark_gamma, double dt,
+    double rayleigh_beta) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -154,8 +156,9 @@ inline bool mpm::Particle<Tdim>::map_material_stiffness_matrix_to_cell(
     const Eigen::MatrixXd bmatrix = this->compute_bmatrix();
 
     // Compute local material stiffness matrix
-    cell_->compute_local_material_stiffness_matrix(bmatrix, reduced_dmatrix,
-                                                   volume_);
+    cell_->compute_local_material_stiffness_matrix(
+        bmatrix, reduced_dmatrix, volume_,
+        1 + rayleigh_beta * newmark_gamma / (newmark_beta * dt));
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;
@@ -258,9 +261,9 @@ inline Eigen::MatrixXd mpm::Particle<3>::reduce_dmatrix(
 
 //! Map mass matrix to cell (used in poisson equation LHS)
 template <unsigned Tdim>
-inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
-                                                         double bossak_alpha,
-                                                         double dt) {
+inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(
+    double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
+    double rayleigh_alpha) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -269,7 +272,9 @@ inline bool mpm::Particle<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
     // Compute local mass matrix
     cell_->compute_local_mass_matrix(
         shapefn_, volume_,
-        (1 - bossak_alpha) * mass_density_ / (newmark_beta * dt * dt));
+        ((1 - bossak_alpha) / (newmark_beta * dt * dt) +
+         newmark_gamma / (newmark_beta * dt) * rayleigh_alpha) *
+            mass_density_);
   } catch (std::exception& exception) {
     console_->error("{} #{}: {}\n", __FILE__, __LINE__, exception.what());
     status = false;

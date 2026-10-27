@@ -203,6 +203,11 @@ class ParticleBase {
     return state_variables_[phase];
   }
 
+  //! Return tangent matrix of the particle
+  //! \param[in] dt Analysis time step
+  //! \retval tangent_matrix Tangent matrix of the particle
+  virtual Eigen::Matrix<double, 6, 6> get_consistent_tangent_matrix(double dt) noexcept = 0;
+
   //! Assign a state variable
   virtual void assign_state_variable(
       const std::string& var, double value,
@@ -296,9 +301,10 @@ class ParticleBase {
 
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
+
   //! Map body force not gravity
   virtual void map_body_force_not_gravity() noexcept = 0;
-  
+
   //! Map rotation forces (centrifugal and coriolis)
   virtual void map_rotation_force(const VectorDim& rotation_origin,
                                   double rotation_omega,
@@ -432,11 +438,12 @@ class ParticleBase {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
-  virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
-                                                   double newmark_gamma,
-                                                   double bossak_alpha,
-                                                   double dt,
-                                                   bool quasi_static) = 0;
+  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
+  //! damping
+  virtual inline bool map_stiffness_matrix_to_cell(
+      double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
+      bool quasi_static, double rayleigh_alpha, double rayleigh_beta) = 0;
 
   //! Reduce constitutive relations matrix depending on the dimension
   //! \ingroup Implicit
@@ -491,17 +498,26 @@ class ParticleBase {
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor
   //! \param[in] dt Analysis time step
-  virtual void map_rayleigh_damping_force(double damping_factor, double dt) = 0;
+  virtual void map_pml_damping_force(double damping_factor, double dt) = 0;
 
-  //! Map PML rayleigh damping matrix to cell (used in equilibrium
+  //! Map PML damping matrix to cell (used in equilibrium
   //! equation LHS)
   //! \param[in] newmark_gamma parameter gamma of Newmark scheme
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter beta of Newmark scheme
   //! \param[in] damping_factor Rayleigh damping factor
-  virtual inline bool map_rayleigh_damping_matrix_to_cell(
-      double newmark_gamma, double newmark_beta, double dt,
-      double damping_factor) = 0;
+  virtual inline bool map_pml_damping_matrix_to_cell(double newmark_gamma,
+                                                     double newmark_beta,
+                                                     double dt,
+                                                     double damping_factor) = 0;
+
+  //! Map Rayleigh damping force
+  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
+  //! damping
+  //! \param[in] dt Analysis time step
+  virtual void map_rayleigh_damping_force(double rayleigh_alpha,
+                                          double rayleigh_beta, double dt) = 0;
 
   //! Navier-Stokes functions----------------------------------
   //! Assigning beta parameter to particle

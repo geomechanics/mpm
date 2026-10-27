@@ -74,18 +74,20 @@ void mpm::ParticleFiniteStrain<Tdim>::initialise_constitutive_law(
 template <unsigned Tdim>
 inline bool mpm::ParticleFiniteStrain<Tdim>::map_stiffness_matrix_to_cell(
     double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
-    bool quasi_static) {
+    bool quasi_static, double rayleigh_alpha, double rayleigh_beta) {
   bool status = true;
   try {
     // Check if material ptr is valid
     assert(this->material() != nullptr);
 
     // Compute material stiffness matrix
-    this->map_material_stiffness_matrix_to_cell(dt);
+    this->map_material_stiffness_matrix_to_cell(newmark_beta, newmark_gamma, dt,
+                                                rayleigh_beta);
 
     // Compute mass matrix
     if (!quasi_static)
-      this->map_mass_matrix_to_cell(newmark_beta, bossak_alpha, dt);
+      this->map_mass_matrix_to_cell(newmark_beta, newmark_gamma, bossak_alpha,
+                                    dt, rayleigh_alpha);
 
     // Compute geometric stiffness matrix
     this->map_geometric_stiffness_matrix_to_cell();

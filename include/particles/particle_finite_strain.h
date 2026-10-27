@@ -10,6 +10,7 @@
 #include "logger.h"
 #include "math_utility.h"
 #include "particle.h"
+#include "material.h"
 
 namespace mpm {
 
@@ -86,10 +87,12 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
-  inline bool map_stiffness_matrix_to_cell(double newmark_beta,
-                                           double newmark_gamma,
-                                           double bossak_alpha, double dt,
-                                           bool quasi_static) override;
+  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
+  //! damping
+  inline bool map_stiffness_matrix_to_cell(
+      double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
+      bool quasi_static, double rayleigh_alpha, double rayleigh_beta) override;
 
   //! Compute deformation gradient and volume using nodal displacement
   //! \ingroup Implicit

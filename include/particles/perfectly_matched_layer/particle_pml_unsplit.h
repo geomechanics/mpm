@@ -39,7 +39,7 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   ParticleUPML(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~ParticleUPML() override{};
+  ~ParticleUPML() override {};
 
   //! Delete copy constructor
   ParticleUPML(const ParticleUPML<Tdim>&) = delete;
@@ -92,14 +92,20 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] dt time step
-  inline bool map_material_stiffness_matrix_to_cell(double dt) override;
+  inline bool map_material_stiffness_matrix_to_cell(
+      double newmark_beta, double newmark_gamma, double dt,
+      double rayleigh_beta) override;
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] bossak_alpha parameter alpha of Bossak scheme
   //! \param[in] dt time step
-  inline bool map_mass_matrix_to_cell(double newmark_beta, double bossak_alpha,
-                                      double dt) override;
+  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
+  inline bool map_mass_matrix_to_cell(double newmark_beta, double newmark_gamma,
+                                      double bossak_alpha, double dt,
+                                      double rayleigh_alpha) override;
 
   //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)
@@ -108,9 +114,9 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter beta of Newmark scheme
   //! \param[in] damping_factor Rayleigh damping factor
-  inline bool map_rayleigh_damping_matrix_to_cell(
-      double newmark_gamma, double newmark_beta, double dt,
-      double damping_factor) override;
+  inline bool map_pml_damping_matrix_to_cell(double newmark_gamma,
+                                             double newmark_beta, double dt,
+                                             double damping_factor) override;
 
   //! Compute strain increment
   //! \ingroup Implicit
@@ -178,8 +184,8 @@ class ParticleUPML : public mpm::ParticlePML<Tdim> {
   //! \ingroup Implicit
   //! \param[in] damping_factor Rayleigh damping factor
   //! \param[in] dt parameter beta of Newmark scheme
-  void map_rayleigh_damping_force(double damping_factor,
-                                  double dt) noexcept override;
+  void map_pml_damping_force(double damping_factor,
+                             double dt) noexcept override;
 
   //! Compute damping matrix for "rayleigh" damping
   //! \param[in] dt parameter beta of Newmark scheme

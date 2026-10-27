@@ -338,8 +338,8 @@ void mpm::ParticleUPML<Tdim>::map_internal_force_stiffness(double dt) noexcept {
 // Compute internal force from damping
 //! Map PML rayleigh damping force
 template <unsigned Tdim>
-void mpm::ParticleUPML<Tdim>::map_rayleigh_damping_force(double damping_factor,
-                                                         double dt) noexcept {
+void mpm::ParticleUPML<Tdim>::map_pml_damping_force(double damping_factor,
+                                                    double dt) noexcept {
   // Compute local damping matrix
   Eigen::MatrixXd damping_matrix = this->compute_pml_damping_matrix(dt);
   // Velocity vector
@@ -386,7 +386,8 @@ void mpm::ParticleUPML<Tdim>::map_inertial_force(double bossak_alpha) noexcept {
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
 template <unsigned Tdim>
 inline bool mpm::ParticleUPML<Tdim>::map_material_stiffness_matrix_to_cell(
-    double dt) {
+    double newmark_beta, double newmark_gamma, double dt,
+    double rayleigh_beta) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -408,7 +409,8 @@ inline bool mpm::ParticleUPML<Tdim>::map_material_stiffness_matrix_to_cell(
 //! Map mass matrix to cell (used in poisson equation LHS)
 template <unsigned Tdim>
 inline bool mpm::ParticleUPML<Tdim>::map_mass_matrix_to_cell(
-    double newmark_beta, double bossak_alpha, double dt) {
+    double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
+    double rayleigh_alpha) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -447,7 +449,7 @@ inline bool mpm::ParticleUPML<Tdim>::map_mass_matrix_to_cell(
 //! Map PML rayleigh damping matrix to cell (used in equilibrium
 //! equation LHS)damping_matrix
 template <unsigned Tdim>
-inline bool mpm::ParticleUPML<Tdim>::map_rayleigh_damping_matrix_to_cell(
+inline bool mpm::ParticleUPML<Tdim>::map_pml_damping_matrix_to_cell(
     double newmark_gamma, double newmark_beta, double dt,
     double damping_factor) {
   bool status = true;

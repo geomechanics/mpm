@@ -37,7 +37,7 @@ class ParticleFiniteStrain : public mpm::Particle<Tdim> {
   ParticleFiniteStrain(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~ParticleFiniteStrain() override{};
+  ~ParticleFiniteStrain() override {};
 
   //! Delete copy constructor
   ParticleFiniteStrain(const ParticleFiniteStrain<Tdim>&) = delete;

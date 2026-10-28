@@ -18,9 +18,9 @@
 #include "linear_function.h"
 #include "mesh.h"
 #include "node.h"
+#include "particle_bbar.h"
 #include "partio_writer.h"
 #include "quadrilateral_element.h"
-#include "particle_bbar.h"
 
 //! Check mesh class for 2D case
 TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
@@ -1176,13 +1176,13 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
               mpm::Index id1 = 0;
               coords << 0.125, 0.125;
               std::shared_ptr<mpm::ParticleBase<Dim>> particle0 =
-                std::make_shared<mpm::ParticleBbar<Dim>>(id1, coords);
+                  std::make_shared<mpm::ParticleBbar<Dim>>(id1, coords);
 
               // Particle 2
               mpm::Index id2 = 1;
               coords << 0.25, 0.125;
               std::shared_ptr<mpm::ParticleBase<Dim>> particle1 =
-                std::make_shared<mpm::ParticleBbar<Dim>>(id2, coords);
+                  std::make_shared<mpm::ParticleBbar<Dim>>(id2, coords);
 
               REQUIRE(mesh->add_particle(particle0) == true);
               REQUIRE(mesh->add_particle(particle1) == true);
@@ -1210,9 +1210,10 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
               Eigen::MatrixXd dn_dx_centroid0 = particle0->dn_dx_centroid();
               Eigen::VectorXd check(8);
               check << -1.5, -1.125, 1.5, -0.875, 0.5, 0.875, -0.5, 1.125;
-              for (unsigned i=0; i<4; i++) {
-                for (unsigned j=0; j<2; j++)
-                  REQUIRE(dn_dx_centroid0(i, j) == Approx(check(i*2+j)).epsilon(Tolerance));
+              for (unsigned i = 0; i < 4; i++) {
+                for (unsigned j = 0; j < 2; j++)
+                  REQUIRE(dn_dx_centroid0(i, j) ==
+                          Approx(check(i * 2 + j)).epsilon(Tolerance));
               }
             }
           }

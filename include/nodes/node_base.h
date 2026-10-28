@@ -223,6 +223,24 @@ class NodeBase {
   //! Apply velocity constraints
   virtual void apply_velocity_constraints() = 0;
 
+  //! Assign moving velocity constraint
+  //! Directions can take values between 0 and Dim * Nphases
+  //! \param[in] dir Direction of velocity constraint
+  //! \param[in] velocity Applied velocity constraint
+  virtual bool assign_moving_velocity_constraint(unsigned dir,
+                                                 double velocity) = 0;
+
+  //! Apply moving velocity constraints
+  virtual void apply_moving_velocity_constraints() = 0;
+
+  //! Return map of moving velocity constraints
+  virtual const std::map<unsigned, double>& moving_velocity_constraints()
+      const = 0;
+
+  //! Update nodal moving velocity constraints
+  virtual void update_moving_velocity_constraints(
+      const std::map<unsigned, double>& moving_velocity_constraints) = 0;
+
   //! Assign acceleration constraint
   //! Directions can take values between 0 and Dim * Nphases
   //! \param[in] dir Direction of acceleration constraint

@@ -130,21 +130,30 @@ inline void mpm::MPMScheme<Tdim>::pressure_smoothing(unsigned phase) {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-    unsigned step, bool concentrated_nodal_forces) {
+    unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
+    const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
+    double rotation_omega, bool rotation_clockwise) {
   // Spawn a task for external force
 #pragma omp parallel sections
   {
 #pragma omp section
     {
-      // Iterate over each particle to compute nodal body force
+      // Iterate over each particle to compute nodal body force (Gravity)
       mesh_->iterate_over_particles(
           std::bind(&mpm::ParticleBase<Tdim>::map_body_force,
                     std::placeholders::_1, gravity));
 
+      // Apply Rotation Forces (Centrifugal + Coriolis)
+      if (rotation_forces) {
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::map_rotation_force, std::placeholders::_1,
+            rotation_origin, rotation_omega, rotation_clockwise));
+      }
+
       // Apply particle traction and map to nodes
       mesh_->apply_traction_on_particles(step * dt_);
 
-      // Iterate over each node to add concentrated node force to external
+      // Iterate over each node to add concentrated node force to external force
       // force
       if (concentrated_nodal_forces)
         mesh_->iterate_over_nodes(

@@ -23,10 +23,10 @@ std::map<std::string, std::string> ParticlePODTypeName = {
     {"P3DFLUID", "fluid_particles"},
     {"P2D2PHASE", "twophase_particles"},
     {"P3D2PHASE", "twophase_particles"},
-    {"P2DBBAR", "particles"},
-    {"P3DBBAR", "particles"},
-    {"P2DFS", "particles"},
-    {"P3DFS", "particles"}};
+    {"P2DBBAR", "bbar_particles"},
+    {"P3DBBAR", "bbar_particles"},
+    {"P2DFS", "fs_particles"},
+    {"P3DFS", "fs_particles"}};
 }  // namespace mpm
 
 // Particle2D (2 Dim)

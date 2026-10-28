@@ -3,7 +3,9 @@ template <unsigned Tdim>
 mpm::Cell<Tdim>::Cell(Index id, unsigned nnodes,
                       const std::shared_ptr<Element<Tdim>>& elementptr,
                       bool isoparametric)
-    : id_{id}, nnodes_{nnodes}, isoparametric_{isoparametric} {
+    : id_{id},
+      nnodes_{nnodes},
+      isoparametric_{isoparametric} {
   // Check if the dimension is between 1 & 3
   static_assert((Tdim >= 1 && Tdim <= 3), "Invalid global dimension");
 
@@ -978,7 +980,10 @@ bool mpm::Cell<Tdim>::initialiase_nonlocal(
 
       this->element_->initialise_bspline_connectivity_properties(
           this->nodal_coordinates_, nodal_properties,
-          nonlocal_properties.at("kernel_correction"));
+          nonlocal_properties.at("kernel_correction"),
+          static_cast<unsigned>(
+              nonlocal_properties.at("kernel_correction_iteration")),
+          nonlocal_properties.at("kernel_correction_tolerance"));
     } else if (element_->shapefn_type() == mpm::ShapefnType::LME or
                element_->shapefn_type() == mpm::ShapefnType::ALME) {
       this->element_->initialise_lme_connectivity_properties(

@@ -103,6 +103,9 @@ class MPMBase : public MPM {
   //! Apply Absorbing Constraints
   void nodal_absorbing_constraints();
 
+  //! Return mesh for testing
+  std::shared_ptr<mpm::Mesh<Tdim>> mesh() { return mesh_; }
+
  protected:
   //! Initialise implicit solver
   //! \param[in] lin_solver_props Linear solver properties
@@ -113,6 +116,9 @@ class MPMBase : public MPM {
           std::string,
           std::shared_ptr<mpm::SolverBase<Eigen::SparseMatrix<double>>>>&
           linear_solver);
+
+  //! Read HDF5 files
+  void read_hdf5() override;
 
   //! Write HDF5 files
   void write_hdf5(mpm::Index step, mpm::Index max_steps) override;
@@ -267,6 +273,8 @@ class MPMBase : public MPM {
   double blending_ratio_{1.0};
   //! Gravity
   Eigen::Matrix<double, Tdim, 1> gravity_;
+  //! Gravity ramping time
+  double gravity_ramping_time_{0.0};
   //! Mesh object
   std::shared_ptr<mpm::Mesh<Tdim>> mesh_;
   //! Constraints object
@@ -293,7 +301,16 @@ class MPMBase : public MPM {
   bool locate_particles_{true};
   //! Absorbing Boundary Variables
   bool absorbing_boundary_{false};
-
+  //! Boolean to initialize rotation forces
+  bool rotation_forces_{false};
+  //! Origin of the centrifuge rotation
+  Eigen::Matrix<double, Tdim, 1> rotation_origin_;
+  //! Magnitude of the centrifuge angular velocity
+  double rotation_omega_{0.0};
+  //! Rotation ramping time
+  double rotation_ramping_time_{0.0};
+  //! Boolean to set rotation direction
+  bool rotation_clockwise_{false};
   /**
    * \defgroup Nonlocal Variables for nonlocal MPM
    * @{

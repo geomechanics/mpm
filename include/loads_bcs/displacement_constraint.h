@@ -14,7 +14,9 @@ class DisplacementConstraint {
   //! \param[in] dir Direction of displacement constraint load
   //! \param[in] velocity Constraint displacement
   DisplacementConstraint(int setid, unsigned dir, double displacement)
-      : setid_{setid}, dir_{dir}, displacement_{displacement} {};
+      : setid_{setid},
+        dir_{dir},
+        displacement_{displacement} {};
 
   // Set id
   int setid() const { return setid_; }

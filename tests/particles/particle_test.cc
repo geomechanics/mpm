@@ -1174,6 +1174,34 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     // Put stress back to values from Lines 1129-1134
     particle->initial_stress(stress);
 
+    // Check rotation force
+    Eigen::Matrix<double, Dim, 1> rotation_origin;
+    rotation_origin.setZero();
+    double omega = 10.0;
+
+    particle->map_rotation_force(rotation_origin, omega, false);
+
+    Eigen::Matrix<double, 4, Dim> expected_rotation_force;
+    // clang-format off
+    expected_rotation_force << 53437.5, 42187.5,
+                               17812.5, 14062.5,
+                                5937.5,  4687.5,
+                               17812.5, 14062.5;
+    // clang-format on
+
+    // Check nodal rotation force
+    for (unsigned i = 0; i < expected_rotation_force.rows(); ++i) {
+      for (unsigned j = 0; j < expected_rotation_force.cols(); ++j) {
+        REQUIRE(nodes[i]->external_force(phase)[j] ==
+                Approx(expected_rotation_force(i, j)).epsilon(Tolerance));
+      }
+    }
+
+    for (unsigned i = 0; i < nodes.size(); ++i) {
+      nodes[i]->update_external_force(false, phase,
+                                      Eigen::Matrix<double, Dim, 1>::Zero());
+    }
+
     // Check body force
     Eigen::Matrix<double, 2, 1> gravity;
     gravity << 0., -9.81;
@@ -2227,6 +2255,13 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     bool status = true;
     std::shared_ptr<mpm::ParticleBase<Dim>> particle =
         std::make_shared<mpm::Particle<Dim>>(id, coords, status);
+
+    // Assign initial acceleration
+    Eigen::Matrix<double, 3, 1> acceleration =
+        Eigen::Matrix<double, 3, 1>::Constant(3.2);
+    particle->assign_acceleration(acceleration);
+
+    // Check stress initialization
     Eigen::Matrix<double, 6, 1> stress =
         Eigen::Matrix<double, 6, 1>::Constant(5.7);
 
@@ -2235,6 +2270,12 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     auto pstress = particle->stress();
     for (unsigned i = 0; i < pstress.size(); ++i)
       REQUIRE(pstress[i] == Approx(stress[i]).epsilon(Tolerance));
+
+    // Check if acceleration is not assigned after stress is assigned
+    particle->assign_acceleration(Eigen::Matrix<double, 3, 1>::Constant(5.0));
+    auto pacceleration = particle->acceleration();
+    for (unsigned i = 0; i < pacceleration.size(); ++i)
+      REQUIRE(pacceleration(i) == Approx(acceleration(i)).epsilon(Tolerance));
   }
 
   //! Test particles scalar, vector and tensor data
@@ -2685,6 +2726,38 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
 
     // Put stress back to values from Lines 2651-2656
     particle->initial_stress(stress);
+
+    // Check rotation force
+    Eigen::Matrix<double, Dim, 1> rotation_origin;
+    rotation_origin.setZero();
+    double omega = 10.0;
+
+    particle->map_rotation_force(rotation_origin, omega, false);
+
+    Eigen::Matrix<double, 8, Dim> expected_rotation_force;
+    // clang-format off
+    expected_rotation_force <<  21250.,  18750., 0.,
+                                63750.,  56250., 0.,
+                               191250., 168750., 0.,
+                                63750.,  56250., 0.,
+                                63750.,  56250., 0.,
+                               191250., 168750., 0.,
+                               573750., 506250., 0.,
+                               191250., 168750., 0.;
+    // clang-format on
+
+    // Check nodal rotation force
+    for (unsigned i = 0; i < expected_rotation_force.rows(); ++i) {
+      for (unsigned j = 0; j < expected_rotation_force.cols(); ++j) {
+        REQUIRE(nodes[i]->external_force(phase)[j] ==
+                Approx(expected_rotation_force(i, j)).epsilon(Tolerance));
+      }
+    }
+
+    for (unsigned i = 0; i < nodes.size(); ++i) {
+      nodes[i]->update_external_force(false, phase,
+                                      Eigen::Matrix<double, Dim, 1>::Zero());
+    }
 
     // Check body force
     Eigen::Matrix<double, 3, 1> gravity;

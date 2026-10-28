@@ -61,6 +61,8 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::blending_ratio_;
   //! Gravity
   using mpm::MPMBase<Tdim>::gravity_;
+  //! Gravity ramping time
+  using mpm::MPMBase<Tdim>::gravity_ramping_time_;
   //! Mesh object
   using mpm::MPMBase<Tdim>::mesh_;
   //! Materials
@@ -75,6 +77,16 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Constraints Pointer
   using mpm::MPMBase<Tdim>::constraints_;
+  //! Rotation forces
+  using mpm::MPMBase<Tdim>::rotation_forces_;
+  //! Rotation origin
+  using mpm::MPMBase<Tdim>::rotation_origin_;
+  //! Rotation omega
+  using mpm::MPMBase<Tdim>::rotation_omega_;
+  //! Rotation clockwise
+  using mpm::MPMBase<Tdim>::rotation_clockwise_;
+  //! Rotation ramping time
+  using mpm::MPMBase<Tdim>::rotation_ramping_time_;
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
 

@@ -34,7 +34,7 @@ class TwoPhaseParticle : public mpm::Particle<Tdim> {
   TwoPhaseParticle(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  ~TwoPhaseParticle() override{};
+  ~TwoPhaseParticle() override {};
 
   //! Delete copy constructor
   TwoPhaseParticle(const TwoPhaseParticle<Tdim>&) = delete;

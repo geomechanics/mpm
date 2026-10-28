@@ -371,7 +371,8 @@ template <unsigned Tdim>
 bool mpm::Particle<Tdim>::assign_acceleration(
     const Eigen::Matrix<double, Tdim, 1>& acceleration) {
   // Assign acceleration
-  acceleration_ = acceleration;
+  if (stress_.norm() < std::numeric_limits<double>::epsilon())
+    acceleration_ = acceleration;
   return true;
 }
 

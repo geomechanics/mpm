@@ -60,7 +60,7 @@ class ParticleBase {
   ParticleBase(Index id, const VectorDim& coord, bool status);
 
   //! Destructor
-  virtual ~ParticleBase(){};
+  virtual ~ParticleBase() {};
 
   //! Delete copy constructor
   ParticleBase(const ParticleBase<Tdim>&) = delete;
@@ -284,6 +284,11 @@ class ParticleBase {
 
   //! Map body force
   virtual void map_body_force(const VectorDim& pgravity) noexcept = 0;
+
+  //! Map rotation forces (centrifugal and coriolis)
+  virtual void map_rotation_force(const VectorDim& rotation_origin,
+                                  double rotation_omega,
+                                  bool rotation_clockwise) noexcept = 0;
 
   //! Map internal force
   virtual void map_internal_force() noexcept = 0;

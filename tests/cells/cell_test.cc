@@ -769,6 +769,10 @@ TEST_CASE("Cell is checked for 2D case", "[cell][2D]") {
 
     nonlocal_properties.insert(
         std::pair<std::string, bool>("kernel_correction", true));
+    nonlocal_properties.insert(
+        std::pair<std::string, unsigned>("kernel_correction_iteration", 1));
+    nonlocal_properties.insert(
+        std::pair<std::string, double>("kernel_correction_tolerance", 1.e-8));
     REQUIRE(bspline_cell->initialiase_nonlocal(nonlocal_properties) == true);
     REQUIRE(bspline_cell->nfunctions_local() == 4);
 

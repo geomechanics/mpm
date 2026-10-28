@@ -209,9 +209,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (without thixotropy)",
     // Check state variables
     REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
-            Approx(4353.0047581362).epsilon(Tolerance));
+            Approx(4305.6531945081).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0062500000).epsilon(Tolerance));
+            Approx(-0.0046875).epsilon(Tolerance));
     REQUIRE(state_vars.at("shear_stress_ratio") ==
             Approx(0.0085233869).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(0.).epsilon(Tolerance));
@@ -222,9 +222,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (without thixotropy)",
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-4407.6418537463).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-4309.2950816482).epsilon(Tolerance));
-    REQUIRE(updated_stress(2) == Approx(-4342.0773390142).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-4360.2902901182).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-4261.94351802).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-4294.7257753861).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(5) == Approx(0.000e+00).epsilon(Tolerance));
@@ -236,12 +236,12 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (without thixotropy)",
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
     // clang-format off
-    dep_check <<  8710752.2189319357, 8715328.2570913527, 8691948.0727941766,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8715328.2570913527, 8724780.3295102417, 8677919.9622158743,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8691948.0727941766, 8677919.9622158743, 8748160.5138074160,       0.0000000000,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,   32782.2573660535,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   32782.2573660535,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   32782.2573660535;
+    dep_check <<  8616049.09167563, 8620625.12983505, 8597244.94553788,                0,                0,                0,
+                  8620625.12983505, 8630077.20225394, 8583216.83495957,                0,                0,                0,
+                  8597244.94553788, 8583216.83495957, 8653457.38655111,                0,                0,                0,
+                                 0,                0,                0, 32782.2573660532,                0,                0,
+                                 0,                0,                0,                0, 32782.2573660532,                0,
+                                 0,                0,                0,                0,                0, 32782.2573660532;
     // clang-format on
     // Check cell stiffness matrix
     for (unsigned i = 0; i < dep.rows(); ++i)
@@ -446,9 +446,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (with thixotropy)",
     // Check state variables
     REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
-            Approx(4353.0047581362).epsilon(Tolerance));
+            Approx(4305.6531945081).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0062500000).epsilon(Tolerance));
+            Approx(-0.0046875).epsilon(Tolerance));
     REQUIRE(state_vars.at("shear_stress_ratio") ==
             Approx(0.0172038514).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(1.0199846873).epsilon(Tolerance));
@@ -459,9 +459,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (with thixotropy)",
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-4463.2858570077).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-4264.7798790390).epsilon(Tolerance));
-    REQUIRE(updated_stress(2) == Approx(-4330.9485383619).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-4415.9342934026).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-4217.4283153925).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-4283.5969747292).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(5) == Approx(0.000e+00).epsilon(Tolerance));
@@ -473,13 +473,12 @@ TEST_CASE("Bingham Viscoplastic is checked in 2D (with thixotropy)",
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
     // clang-format off
-    dep_check <<  8715521.0978077333, 8724867.7147734538, 8677639.7362362817,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8724867.7147734538, 8743857.8849300370, 8649302.9491139781,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8677639.7362362817, 8649302.9491139781, 8791085.8634672090,       0.0000000000,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,   66168.6593228985,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   66168.6593228985,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   66168.6593228985;
-
+    dep_check <<   8620817.9705534, 8630164.58752109, 8582936.60897407,                0,                0,                0,
+                  8630164.58752109, 8649154.75768162, 8554599.82184585,                0,                0,                0,
+                  8582936.60897407, 8554599.82184585, 8696382.73622865,                0,                0,                0,
+                                 0,                0,                0, 66168.6593366952,                0,                0,
+                                 0,                0,                0,                0, 66168.6593366952,                0,
+                                 0,                0,                0,                0,                0, 66168.6593366952;
     // clang-format on
     // Check cell stiffness matrix
     for (unsigned i = 0; i < dep.rows(); ++i)
@@ -701,9 +700,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (without thixotropy)",
     // Check state variables
     REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
-            Approx(844.3429257361).epsilon(Tolerance));
+            Approx(847.8131628497).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0018750000).epsilon(Tolerance));
+            Approx(-0.0024609375).epsilon(Tolerance));
     REQUIRE(state_vars.at("shear_stress_ratio") ==
             Approx(0.0077634533).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(0.).epsilon(Tolerance));
@@ -714,9 +713,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (without thixotropy)",
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-902.0711678656).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-812.4928611129).epsilon(Tolerance));
-    REQUIRE(updated_stress(2) == Approx(-818.4647482297).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-905.5414049792).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-815.9630982265).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-821.9349853434).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(5) == Approx(0.000e+00).epsilon(Tolerance));
@@ -728,13 +727,12 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (without thixotropy)",
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
     // clang-format off
-    dep_check <<  8443637.2001096904, 8445373.8017463777, 8441276.7702260334,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8445373.8017463777, 8471186.2051602751, 8413727.7651754487,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8441276.7702260334, 8413727.7651754487, 8475283.2366806176,       0.0000000000,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,   29859.4355842311,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   29859.4355842311,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   29859.4355842311;
-
+    dep_check <<  8478339.57124586, 8480076.17288255,  8475979.1413622,                0,                0,                0,
+                  8480076.17288255, 8505888.57629644, 8448430.13631162,                0,                0,                0,
+                   8475979.1413622, 8448430.13631162, 8509985.60781679,                0,                0,                0,
+                                 0,                0,                0, 29859.4355842309,                0,                0,
+                                 0,                0,                0,                0, 29859.4355842309,                0,
+                                 0,                0,                0,                0,                0, 29859.4355842309;
     // clang-format on
     // Check cell stiffness matrix
     for (unsigned i = 0; i < dep.rows(); ++i)
@@ -956,9 +954,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (with thixotropy)",
     // Check state variables
     REQUIRE(state_vars.at("yield_state") == Approx(1.).epsilon(Tolerance));
     REQUIRE(state_vars.at("pressure") ==
-            Approx(844.3429257361).epsilon(Tolerance));
+            Approx(847.8131628497).epsilon(Tolerance));
     REQUIRE(state_vars.at("volumetric_strain") ==
-            Approx(-0.0018750000).epsilon(Tolerance));
+            Approx(-0.0024609375).epsilon(Tolerance));
     REQUIRE(state_vars.at("shear_stress_ratio") ==
             Approx(0.0156687852).epsilon(Tolerance));
     REQUIRE(state_vars.at("lambda") == Approx(1.0199831596).epsilon(Tolerance));
@@ -969,9 +967,9 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (with thixotropy)",
 
     // Check stressees
     REQUIRE(updated_stress.size() == 6);
-    REQUIRE(updated_stress(0) == Approx(-960.8544055815).epsilon(Tolerance));
-    REQUIRE(updated_stress(1) == Approx(-780.0607299593).epsilon(Tolerance));
-    REQUIRE(updated_stress(2) == Approx(-792.1136416674).epsilon(Tolerance));
+    REQUIRE(updated_stress(0) == Approx(-964.3246427223).epsilon(Tolerance));
+    REQUIRE(updated_stress(1) == Approx(-783.5309670579).epsilon(Tolerance));
+    REQUIRE(updated_stress(2) == Approx(-795.5838787689).epsilon(Tolerance));
     REQUIRE(updated_stress(3) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(4) == Approx(0.000e+00).epsilon(Tolerance));
     REQUIRE(updated_stress(5) == Approx(0.000e+00).epsilon(Tolerance));
@@ -983,13 +981,12 @@ TEST_CASE("Bingham Viscoplastic is checked in 3D (with thixotropy)",
     // Values of reduced constitutive relations matrix
     Eigen::Matrix<double, 6, 6> dep_check;
     // clang-format off
-    dep_check <<  8443780.6226642635, 8447391.5770925805, 8439115.5723252594,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8447391.5770925805, 8499429.6202376243, 8383466.5747518986,       0.0000000000,       0.0000000000,       0.0000000000,
-                  8439115.5723252594, 8383466.5747518986, 8507705.6250049453,       0.0000000000,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,   60264.5585407447,       0.0000000000,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   60264.5585407447,       0.0000000000,
-                        0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,       0.0000000000,   60264.5585407447;
-
+    dep_check <<  8478482.9938005, 8482093.94822968, 8473817.94346043,                0,                0,                0,
+                 8482093.94822968, 8534131.99138683, 8418168.94587409,                0,                0,                0,
+                 8473817.94346043, 8418168.94587409, 8542407.99615608,                0,                0,                0,
+                                0,                0,                0, 60264.5585547855,                0,                0,
+                                0,                0,                0,                0, 60264.5585547855,                0,
+                                0,                0,                0,                0,                0, 60264.5585547855;
     // clang-format on
     // Check cell stiffness matrix
     for (unsigned i = 0; i < dep.rows(); ++i)

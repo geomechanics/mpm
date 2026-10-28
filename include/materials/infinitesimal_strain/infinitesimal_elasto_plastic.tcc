@@ -30,10 +30,10 @@ Eigen::Matrix<double, 6, 6>
     mpm::InfinitesimalElastoPlastic<Tdim>::compute_consistent_tangent_matrix(
         const Vector6d& stress, const Vector6d& prev_stress,
         const Vector6d& dstrain, const ParticleBase<Tdim>* ptr,
-        mpm::dense_map* state_vars, double dt) {
+        mpm::dense_map* state_vars, double dt, double lin_v, double lin_a) {
   //! Consistent tangent matrix
   Matrix6x6 const_tangent = this->compute_elasto_plastic_tensor(
-      stress, dstrain, ptr, state_vars, dt, true);
+      stress, dstrain, ptr, state_vars, dt, lin_v, lin_a, true);
 
   return const_tangent;
 }

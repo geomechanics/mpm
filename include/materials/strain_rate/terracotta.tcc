@@ -264,13 +264,13 @@ Eigen::Matrix<double, 6, 1> mpm::Terracotta<Tdim>::compute_stress(
                    (1.0 - std::pow(current_packing_fraction, lambda_)) / p1_ /
                    std::pow(current_packing_fraction, lambda_);
   Vector6d b_m = -3. / 2. * a / m_ / m_ / pe_m * se_m;
-  Matrix6x6 c = 3. / 2. *
-                (std::sqrt(eta_ / beta_) *
-                     (1.0 - std::pow(current_packing_fraction, lambda_)) /
-                     m_ / omega_ / p1_ /
-                     std::pow(current_packing_fraction, lambda_) +
-                 a / m_ / m_) *
-                fourth_order_identity_mandel;
+  Matrix6x6 c =
+      3. / 2. *
+      (std::sqrt(eta_ / beta_) *
+           (1.0 - std::pow(current_packing_fraction, lambda_)) / m_ / omega_ /
+           p1_ / std::pow(current_packing_fraction, lambda_) +
+       a / m_ / m_) *
+      fourth_order_identity_mandel;
 
   // Plastic strain rate
   Vector6d plastic_strain_rate_dev = new_tm * (b_m * pe_m + c * se_m);
@@ -595,13 +595,13 @@ Eigen::Matrix<double, 6, 6>
                    (1.0 - std::pow(current_packing_fraction, lambda_)) / p1_ /
                    std::pow(current_packing_fraction, lambda_);
   const Vector6d b = -3. / 2. * a / m_ / m_ / pe * se;
-  const Matrix6x6 c = 3. / 2. *
-                      (std::sqrt(eta_ / beta_) *
-                           (1.0 - std::pow(current_packing_fraction, lambda_)) /
-                           m_ / omega_ / p1_ /
-                           std::pow(current_packing_fraction, lambda_) +
-                       a / m_ / m_) *
-                      fourth_order_identity_mandel;
+  const Matrix6x6 c =
+      3. / 2. *
+      (std::sqrt(eta_ / beta_) *
+           (1.0 - std::pow(current_packing_fraction, lambda_)) / m_ / omega_ /
+           p1_ / std::pow(current_packing_fraction, lambda_) +
+       a / m_ / m_) *
+      fourth_order_identity_mandel;
 
   // Compute derivatives of transport variables b with respect to stress
   const Vector6d db_dpe = 3. / 2. * a / m_ / m_ / pe / pe * se;

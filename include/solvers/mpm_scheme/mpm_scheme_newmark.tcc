@@ -3,7 +3,9 @@ template <unsigned Tdim>
 mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
     const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt, double beta,
     double gamma)
-    : mpm::MPMScheme<Tdim>(mesh, dt), beta_(beta), gamma_(gamma) {}
+    : mpm::MPMScheme<Tdim>(mesh, dt),
+      beta_(beta),
+      gamma_(gamma) {}
 
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>

@@ -1083,34 +1083,35 @@ void mpm::Mesh<Tdim>::transfer_halo_points() {
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 
   if (mpi_size > 1) {
+    // Stable count buffers + properly sized requests
+    const std::size_t nghost = this->ghost_cells_.size();
+    std::vector<unsigned> send_counts(nghost, 0);
     std::vector<MPI_Request> send_requests;
-    send_requests.reserve(ghost_cells_.size());
+    send_requests.resize(nghost);
 
-    unsigned i = 0;
-    unsigned np = 0;
     std::vector<mpm::Index> remove_pids;
-    // Iterate through the ghost cells and send points
+
+    // Iterate through the ghost cells and send counts (nonblocking)
+    std::size_t i = 0;
     for (auto citr = this->ghost_cells_.cbegin();
          citr != this->ghost_cells_.cend(); ++citr, ++i) {
 
       // Send number of points to receiver rank
-      auto point_ids = (*citr)->points();
-      unsigned npoints = point_ids.size();
-      MPI_Isend(&npoints, 1, MPI_UNSIGNED, (*citr)->rank(), 1, MPI_COMM_WORLD,
-                &send_requests[i]);
+      const auto& point_ids = (*citr)->points();
+      send_counts[i] = static_cast<unsigned>(point_ids.size());
+      MPI_Isend(&send_counts[i], 1, MPI_UNSIGNED, (*citr)->rank(), 3,
+                MPI_COMM_WORLD, &send_requests[i]);
     }
 
     // Iterate through the ghost cells and send points
     for (auto citr = this->ghost_cells_.cbegin();
-         citr != this->ghost_cells_.cend(); ++citr, ++i) {
-      // Send number of points to receiver rank
-      auto point_ids = (*citr)->points();
+         citr != this->ghost_cells_.cend(); ++citr) {
+      const auto& point_ids = (*citr)->points();
       for (auto& id : point_ids) {
         // Create a vector of serialized point
         std::vector<uint8_t> buffer = map_points_[id]->serialize();
-        MPI_Send(buffer.data(), buffer.size(), MPI_UINT8_T, (*citr)->rank(), 0,
-                 MPI_COMM_WORLD);
-        ++np;
+        MPI_Send(buffer.data(), static_cast<int>(buffer.size()), MPI_UINT8_T,
+                 (*citr)->rank(), 2, MPI_COMM_WORLD);
         // Points to be removed from the current rank
         remove_pids.emplace_back(id);
       }
@@ -1119,9 +1120,9 @@ void mpm::Mesh<Tdim>::transfer_halo_points() {
     // Remove all sent points
     this->remove_points(remove_pids);
 
-    // Send complete
-    for (unsigned i = 0; i < this->ghost_cells_.size(); ++i)
-      MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
+    // Wait for all count sends to complete
+    for (std::size_t k = 0; k < nghost; ++k)
+      MPI_Wait(&send_requests[k], MPI_STATUS_IGNORE);
 
     // Point id
     mpm::Index pid = 0;
@@ -1134,32 +1135,31 @@ void mpm::Mesh<Tdim>::transfer_halo_points() {
          citr != this->local_ghost_cells_.cend(); ++citr) {
       std::vector<unsigned> neighbour_ranks =
           ghost_cells_neighbour_ranks_[(*citr)->id()];
-      // Total number of points
+      // Total number of points (one count per neighbour rank)
       std::vector<unsigned> nrank_points(neighbour_ranks.size(), 0);
-      for (unsigned i = 0; i < neighbour_ranks.size(); ++i)
-        MPI_Recv(&nrank_points[i], 1, MPI_UNSIGNED, neighbour_ranks[i], 1,
+      for (unsigned ir = 0; ir < neighbour_ranks.size(); ++ir)
+        MPI_Recv(&nrank_points[ir], 1, MPI_UNSIGNED, neighbour_ranks[ir], 3,
                  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
       // Receive number of points
       unsigned nrecv_points =
-          std::accumulate(nrank_points.begin(), nrank_points.end(), 0);
+          std::accumulate(nrank_points.begin(), nrank_points.end(), 0u);
 
       for (unsigned j = 0; j < nrecv_points; ++j) {
         // Retrieve information about the incoming message
         MPI_Status status;
-        MPI_Probe(MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+        MPI_Probe(MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
 
         // Get buffer size
-        int size;
+        int size = 0;
         MPI_Get_count(&status, MPI_UINT8_T, &size);
 
         // Allocate the buffer now that we know how many elements there are
-        std::vector<uint8_t> buffer;
-        buffer.resize(size);
+        std::vector<uint8_t> buffer(static_cast<std::size_t>(size));
 
-        // Finally receive the message
-        MPI_Recv(buffer.data(), size, MPI_UINT8_T, MPI_ANY_SOURCE, 0,
-                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // Receive from the probed source+tag
+        MPI_Recv(buffer.data(), size, MPI_UINT8_T, status.MPI_SOURCE,
+                 status.MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         uint8_t* bufptr = const_cast<uint8_t*>(&buffer[0]);
         int position = 0;

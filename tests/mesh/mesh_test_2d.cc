@@ -1202,7 +1202,8 @@ TEST_CASE("Mesh is checked for 2D case", "[mesh][2D]") {
                       true);
 
               mesh->iterate_over_particles(
-                  std::bind(&mpm::ParticleBase<Dim>::compute_shapefn, std::placeholders::_1));
+                  std::bind(&mpm::ParticleBase<Dim>::compute_shapefn,
+                            std::placeholders::_1));
 
               mesh->compute_cell_average_dn_dx_centroid();
               REQUIRE(particle0->dn_dx().rows() == 4);

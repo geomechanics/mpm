@@ -3620,5 +3620,12 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE_THROWS(particle->liquid_velocity());
     REQUIRE_THROWS(particle->porosity());
     REQUIRE_THROWS(particle->map_drag_matrix_to_cell());
+
+    //Specific functions for Particle.
+    Eigen::MatrixXd avg_B_matrix;
+    const auto& dn_dx_centroid = particle->dn_dx_centroid();
+    avg_B_matrix.resize(dn_dx_centroid.rows(), dn_dx_centroid.cols());
+    avg_B_matrix.setZero();
+    REQUIRE_THROWS(particle->assign_dn_dx_centroid(avg_B_matrix))
   }
 }

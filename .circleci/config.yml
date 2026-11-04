@@ -99,7 +99,7 @@ jobs:
             export PETSC_ARCH=arch-linux2-c-opt
             export PETSC_DIR=/home/cbgeo/petsc/
             cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_EXPORT_COMPILE_COMMANDS=On -DENABLE_COVERAGE=On -DKAHIP_ROOT=/home/cbgeo/KaHIP/ -DPARTIO_ROOT=/home/cbgeo/partio/ ..
-            make mpmtest_coverage_unit -j4
+            make mpmtest_coverage_unit -j2
             ./mpmtest_coverage_unit
             mpirun -n 4 ./mpmtest_coverage_unit [mpi]
             lcov --directory . --capture --output-file coverage_unit.info

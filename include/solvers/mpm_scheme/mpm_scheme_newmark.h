@@ -16,7 +16,8 @@ template <unsigned Tdim>
 class MPMSchemeNewmark : public MPMScheme<Tdim> {
  public:
   //! Default constructor with mesh class
-  MPMSchemeNewmark(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt);
+  MPMSchemeNewmark(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh, double dt,
+                   double beta, double gamma);
 
   //! Intialize
   inline void initialise() override;
@@ -85,12 +86,8 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
 
   //! Update nodal kinematics by Newmark scheme
   //! \ingroup Implicit
-  //! \param[in] newmark_beta Parameter beta of Newmark scheme
-  //! \param[in] newmark_gamma Parameter gamma of Newmark scheme
   //! \param[in] phase Phase to smooth pressure
-  inline void update_nodal_kinematics_newmark(unsigned phase,
-                                              double newmark_beta,
-                                              double newmark_gamma) override;
+  inline void update_nodal_kinematics_newmark(unsigned phase) override;
 
   // Update particle stress, strain and volume
   //! \ingroup Implicit
@@ -106,6 +103,9 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   using mpm::MPMScheme<Tdim>::mpi_rank_;
   //! Time increment
   using mpm::MPMScheme<Tdim>::dt_;
+  //! Newmark parameters
+  double beta_{0.25};
+  double gamma_{0.5};
 
 };  // MPMSchemeNewmark class
 }  // namespace mpm

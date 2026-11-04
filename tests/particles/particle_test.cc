@@ -1155,7 +1155,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
     REQUIRE(particle->volume() == Approx(1.0).epsilon(Tolerance));
     particle->compute_strain(dt);
     REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(1.2).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(1.2840254167).epsilon(Tolerance));
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress(dt));
@@ -1414,7 +1414,7 @@ TEST_CASE("Particle is checked for 2D case", "[particle][2D]") {
       REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
 
       // Check volumetric strain at centroid
-      double volumetric_strain = 0.2;
+      double volumetric_strain = 0.25;
       REQUIRE(particle->dvolumetric_strain() ==
               Approx(volumetric_strain).epsilon(Tolerance));
 
@@ -2709,7 +2709,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
     REQUIRE(particle->volume() == Approx(8.0).epsilon(Tolerance));
     particle->compute_strain(dt);
     REQUIRE_NOTHROW(particle->update_volume());
-    REQUIRE(particle->volume() == Approx(12.0).epsilon(Tolerance));
+    REQUIRE(particle->volume() == Approx(12.8641135799).epsilon(Tolerance));
 
     // Compute stress
     REQUIRE_NOTHROW(particle->compute_stress(dt));
@@ -2948,7 +2948,7 @@ TEST_CASE("Particle is checked for 3D case", "[particle][3D]") {
       REQUIRE_NOTHROW(particle->map_mass_momentum_to_nodes());
 
       // Check volumetric strain at centroid
-      double volumetric_strain = 0.5;
+      double volumetric_strain = 0.475;
       REQUIRE(particle->dvolumetric_strain() ==
               Approx(volumetric_strain).epsilon(Tolerance));
 

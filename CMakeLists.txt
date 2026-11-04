@@ -268,6 +268,7 @@ if(MPM_BUILD_TESTING)
     ${mpm_SOURCE_DIR}/tests/materials/mohr_coulomb_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/newtonian_test.cc
     ${mpm_SOURCE_DIR}/tests/materials/norsand_test.cc
+    ${mpm_SOURCE_DIR}/tests/materials/terracotta_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_free_surface_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_neighbours_test.cc
     ${mpm_SOURCE_DIR}/tests/mesh/mesh_test_2d.cc

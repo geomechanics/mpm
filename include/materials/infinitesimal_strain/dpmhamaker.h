@@ -25,19 +25,21 @@ template <unsigned Tdim>
 inline double hamaker_gap(double phi, double phi_contact);
 
 //! Hamaker (van der Waals) attractive force between two grains
-//! F = (A / d) / (24 (gap_ratio + epsilon)^2), applied when phi >= phi_min_coh
+//! F = (A / d) / 24 * (1 / (gap_ratio + epsilon)^2 - 1 / (gap_max + epsilon)^2),
+//! applied when phi >= phi_min_coh, shifted so F = 0 at the cutoff
 //! \param[in] phi Current packing fraction
 //! \param[in] phi_min_coh Minimum packing fraction at which cohesion applies,
 //! phi_d / (1 + gap_max)^Tdim
 //! \param[in] gap_ratio Gap / grain diameter
+//! \param[in] gap_max Gap / grain diameter at the cohesion cutoff phi_min_coh
 //! \param[in] grain_diameter Mean grain diameter
 //! \param[in] hamaker_constant Hamaker constant A
 //! \param[in] epsilon Dimensionless minimum separation (delta_min / d, must be
-//! > 0), sets the maximum force (A / d) / (24 epsilon^2)
+//! > 0), sets the maximum force
 //! \retval force Attractive force (>= 0)
 inline double hamaker_force(double phi, double phi_min_coh, double gap_ratio,
-                            double grain_diameter, double hamaker_constant,
-                            double epsilon);
+                            double gap_max, double grain_diameter,
+                            double hamaker_constant, double epsilon);
 
 }  // namespace materials
 }  // namespace mpm

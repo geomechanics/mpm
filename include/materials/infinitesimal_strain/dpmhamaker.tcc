@@ -15,15 +15,19 @@ inline double mpm::materials::hamaker_gap(double phi, double phi_contact) {
 
 // Compute Hamaker force between two grains
 inline double mpm::materials::hamaker_force(double phi, double phi_min_coh,
-                                            double gap_ratio,
+                                            double gap_ratio, double gap_max,
                                             double grain_diameter,
                                             double hamaker_constant,
                                             double epsilon) {
   if (phi < phi_min_coh) return 0.0;
   // Regularised dimensionless separation: finite force at contact
   const double sep = std::max(gap_ratio, 0.0) + epsilon;
-  // Equal spheres: A R / (12 D^2) = (A / d) / (24 (D / d)^2)
-  return hamaker_constant / grain_diameter / (24.0 * sep * sep);
+  const double sep_max = gap_max + epsilon;
+  // Equal spheres: A R / (12 D^2) = (A / d) / (24 (D / d)^2), shifted so the
+  // force goes to zero continuously at gap_max, clamped against round-off
+  return std::max(hamaker_constant / grain_diameter / 24.0 *
+                      (1.0 / (sep * sep) - 1.0 / (sep_max * sep_max)),
+                  0.0);
 }
 
 //! Constructor with id and material properties
@@ -273,20 +277,6 @@ Eigen::Matrix<double, 6, 1> mpm::DilatantPlasticHamakerModel<Tdim>::compute_stre
       current_packing_density / grain_density_;
   const double current_packing_fraction_dilation =
       (*state_vars).at("packing_fraction_dilation");
-
-  // Hamaker gap and force between grains
-  // computed with phid^n so is consistent with when regular dpm says in contact
-  const double gap_ratio = mpm::materials::hamaker_gap<Tdim>(
-      current_packing_fraction, current_packing_fraction_dilation);
-  // Minimum packing fraction for cohesion, moves with packing_fraction_dilation
-  const double phi_min_coh = current_packing_fraction_dilation /
-                             std::pow(1.0 + hamaker_gap_max_, Tdim);
-  const double f_vdw = mpm::materials::hamaker_force(
-      current_packing_fraction, phi_min_coh, gap_ratio, d_,
-      hamaker_constant_, hamaker_epsilon_);
-  // Cohesive (tensile) pressure from Hamaker force, Rumpf: phi k_b F / (pi d^2)
-  const double p_coh = current_packing_fraction * coordination_number_ * f_vdw /
-                       (M_PI * d_ * d_);
 
   // Elastic stress
   Vector6d elastic_stress = Vector6d::Zero();
@@ -804,6 +794,21 @@ Eigen::Matrix<double, 6, 1> mpm::DilatantPlasticHamakerModel<Tdim>::compute_stre
   if (reset_phid) {
     (*state_vars).at("packing_fraction_dilation") = minimum_packing_fraction_;
   }
+
+  // Hamaker gap and force between grains, computed with updated phid^n+1
+  const double updated_packing_fraction_dilation =
+      (*state_vars).at("packing_fraction_dilation");
+  const double gap_ratio = mpm::materials::hamaker_gap<Tdim>(
+      current_packing_fraction, updated_packing_fraction_dilation);
+  // Minimum packing fraction for cohesion, moves with packing_fraction_dilation
+  const double phi_min_coh = updated_packing_fraction_dilation /
+                             std::pow(1.0 + hamaker_gap_max_, Tdim);
+  const double f_vdw = mpm::materials::hamaker_force(
+      current_packing_fraction, phi_min_coh, gap_ratio, hamaker_gap_max_, d_,
+      hamaker_constant_, hamaker_epsilon_);
+  // Cohesive (tensile) pressure from Hamaker force, Rumpf: phi k_b F / (pi d^2)
+  const double p_coh = current_packing_fraction * coordination_number_ * f_vdw /
+                       (M_PI * d_ * d_);
 
   // Add cohesive tension after state update so it is not stored in elastic
   // stress

@@ -398,10 +398,9 @@ void mpm::TwoPhaseParticle<Tdim>::map_liquid_mass_momentum_to_nodes() noexcept {
 
   // Map liquid mass and momentum to nodes
   for (unsigned i = 0; i < nodes_.size(); ++i) {
-    nodes_[i]->update_mass(true, mpm::ParticlePhase::Liquid,
-                           liquid_mass_ * shapefn_[i]);
-    nodes_[i]->update_momentum(true, mpm::ParticlePhase::Liquid,
-                               liquid_mass_ * shapefn_[i] * liquid_velocity_);
+    nodes_[i]->update_mass_momentum(
+        true, true, mpm::ParticlePhase::Liquid, liquid_mass_ * shapefn_[i],
+        liquid_mass_ * shapefn_[i] * liquid_velocity_);
   }
 }
 

@@ -239,7 +239,9 @@ mpm::dense_map mpm::DilatantPlasticHamakerModel<Tdim>::initialise_state_variable
       // Shear stress ratio
       {"shear_stress_ratio", 0.},
       // Plastic deviatoric strain (following p-q stress framework)
-      {"pdstrain", 0.}};
+      {"pdstrain", 0.},
+      // Cohesive (tensile) pressure from Hamaker force
+      {"cohesive_pressure", 0.}};
   return state_vars;
 }
 
@@ -261,7 +263,8 @@ std::vector<std::string> mpm::DilatantPlasticHamakerModel<Tdim>::state_variables
                                                "pressure",
                                                "tau",
                                                "shear_stress_ratio",
-                                               "pdstrain"};
+                                               "pdstrain",
+                                               "cohesive_pressure"};
   return state_vars;
 }
 
@@ -809,6 +812,7 @@ Eigen::Matrix<double, 6, 1> mpm::DilatantPlasticHamakerModel<Tdim>::compute_stre
   // Cohesive (tensile) pressure from Hamaker force, Rumpf: phi k_b F / (pi d^2)
   const double p_coh = current_packing_fraction * coordination_number_ * f_vdw /
                        (M_PI * d_ * d_);
+  (*state_vars).at("cohesive_pressure") = p_coh;
 
   // Add cohesive tension after state update so it is not stored in elastic
   // stress

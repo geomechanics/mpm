@@ -29,12 +29,32 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
       mesh_->iterate_over_cells(
           std::bind(&mpm::Cell<Tdim>::activate_nodes, std::placeholders::_1));
     }
+  }
+
+  // Apply point velocity constraints
+  mesh_->assign_point_velocity_constraints();
+
+#pragma omp parallel sections
+  {
     // Spawn a task for particles
 #pragma omp section
     {
       // Iterate over each particle to compute shapefn
       mesh_->iterate_over_particles(std::bind(
           &mpm::ParticleBase<Tdim>::compute_shapefn, std::placeholders::_1));
+    }
+
+    // Spawn a task for points
+#pragma omp section
+    {
+      // Iterate over each point to compute shapefn
+      mesh_->iterate_over_points(std::bind(
+          &mpm::PointBase<Tdim>::compute_shapefn, std::placeholders::_1));
+
+      // Initialise point properties
+      mesh_->iterate_over_points(
+          std::bind(&mpm::PointBase<Tdim>::initialise_properties,
+                    std::placeholders::_1, dt_));
     }
   }  // Wait to complete
 }
@@ -238,6 +258,11 @@ inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
 
   // Apply particle velocity constraints
   mesh_->apply_particle_velocity_constraints();
+
+  // Iterate over each point to compute updated position
+  mesh_->iterate_over_points(
+      std::bind(&mpm::PointBase<Tdim>::compute_updated_position,
+                std::placeholders::_1, dt_));
 }
 
 // Locate particles
@@ -258,4 +283,19 @@ inline void mpm::MPMScheme<Tdim>::locate_particles(bool locate_particles) {
   if (!unlocatable_particles.empty() && !locate_particles)
     for (const auto& remove_particle : unlocatable_particles)
       mesh_->remove_particle(remove_particle);
+
+  // Locate points
+  auto unlocatable_points = mesh_->locate_points_mesh();
+
+  // Throw error with listed unlocatable points
+  if (!unlocatable_points.empty() && locate_particles) {
+    std::ostringstream unloc_pt;
+    for (const auto& point : unlocatable_points) unloc_pt << point->id() << " ";
+    throw std::runtime_error("Point(s) outside the mesh domain: " +
+                             unloc_pt.str());
+  }
+  // If unable to locate points remove points
+  if (!unlocatable_points.empty() && !locate_particles)
+    for (const auto& remove_point : unlocatable_points)
+      mesh_->remove_point(remove_point);
 }

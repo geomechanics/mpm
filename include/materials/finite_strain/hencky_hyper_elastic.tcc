@@ -100,7 +100,8 @@ Eigen::Matrix<double, 6, 6>
         const Vector6d& stress, const Vector6d& prev_stress,
         const Eigen::Matrix<double, 3, 3>& deformation_gradient,
         const Eigen::Matrix<double, 3, 3>& deformation_gradient_increment,
-        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
+        const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt,
+        double lin_v, double lin_a) {
 
   // Updated deformation gradient
   const Eigen::Matrix<double, 3, 3> updated_deformation_gradient =

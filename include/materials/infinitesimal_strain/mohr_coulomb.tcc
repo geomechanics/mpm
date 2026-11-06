@@ -36,7 +36,11 @@ mpm::MohrCoulomb<Tdim>::MohrCoulomb(unsigned id,
       minimum_packing_fraction_ =
           material_properties.at("packing_fraction_minimum")
               .template get<double>();
-
+    // Max number of iterations of return mapping
+    if (material_properties.contains("rmap_max_iteration")) {
+      max_iter_ =
+          material_properties.at("rmap_max_iteration").template get<unsigned>();
+    }
     // Young's modulus
     youngs_modulus_ =
         material_properties.at("youngs_modulus").template get<double>();

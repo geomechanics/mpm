@@ -330,9 +330,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
     df_dsigma.setZero();
     dp_dsigma.setZero();
     double softening = 0.;
+    double pdstrain = 0.;
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
     // Check plastic correction component based on stress
     // Check dF/dSigma
     REQUIRE(df_dsigma(0) == Approx(0.3618034).epsilon(Tolerance));
@@ -393,10 +394,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -499,10 +501,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -642,9 +645,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
     df_dsigma.setZero();
     dp_dsigma.setZero();
     double softening = 0.;
+    double pdstrain = 0.;
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
     // Check plastic correction component based on stress
     // Check dF/dSigma
     REQUIRE(df_dsigma(0) == Approx(0.5).epsilon(Tolerance));
@@ -705,10 +709,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (cohesion only, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -884,9 +889,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
     df_dsigma.setZero();
     dp_dsigma.setZero();
     double softening = 0.;
+    double pdstrain = 0.;
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
     // Check plastic correction component based on stress
     // Check dF/dSigma
     REQUIRE(df_dsigma(0) == Approx(0.62666187).epsilon(Tolerance));
@@ -947,10 +953,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -1050,10 +1057,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -1192,9 +1200,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
     df_dsigma.setZero();
     dp_dsigma.setZero();
     double softening = 0.;
+    double pdstrain = 0.;
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
     ;
     // Check plastic correction component based on stress
     // Check dF/dSigma
@@ -1256,10 +1265,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -1432,9 +1442,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     df_dsigma.setZero();
     dp_dsigma.setZero();
     double softening = 0.;
+    double pdstrain = 0.;
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
 
     // Check plastic correction component based on stress
     // Check dF/dSigma
@@ -1496,10 +1507,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -1599,10 +1611,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -1740,9 +1753,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
     df_dsigma.setZero();
     dp_dsigma.setZero();
     double softening = 0.;
+    double pdstrain = 0.;
     // Compute plastic correction components
     mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
     ;
     // Check plastic correction component based on stress
     // Check dF/dSigma
@@ -1804,10 +1818,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, without softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -1998,9 +2013,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.60900389).epsilon(Tolerance));
@@ -2060,10 +2076,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -2168,9 +2185,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.62666187).epsilon(Tolerance));
@@ -2221,10 +2239,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -2332,9 +2351,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.5).epsilon(Tolerance));
@@ -2392,10 +2412,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -2554,9 +2575,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.32438701).epsilon(Tolerance));
@@ -2616,10 +2638,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -2725,9 +2748,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.8350549).epsilon(Tolerance));
@@ -2778,10 +2802,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -2889,9 +2914,10 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.5).epsilon(Tolerance));
@@ -2949,10 +2975,11 @@ TEST_CASE("MohrCoulomb is checked in 2D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -3149,9 +3176,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.41269182).epsilon(Tolerance));
@@ -3212,10 +3240,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -3329,9 +3358,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.44409275).epsilon(Tolerance));
@@ -3384,10 +3414,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -3502,9 +3533,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.44026109).epsilon(Tolerance));
@@ -3563,10 +3595,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -3732,9 +3765,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.36180859).epsilon(Tolerance));
@@ -3796,10 +3830,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -3914,9 +3949,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.84706337).epsilon(Tolerance));
@@ -3969,10 +4005,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma
@@ -4087,9 +4124,10 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma.setZero();
       dp_dsigma.setZero();
       double softening = 0.;
+      double pdstrain = 0.;
       // Compute plastic correction components
       mohr_coulomb->compute_df_dp(yield_type, &state_variables, stress,
-                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening);
+                                  &df_dsigma, &dp_dsigma, &dp_dq, &softening, pdstrain);
       // Check plastic correction component based on stress
       // Check dF/dSigma
       REQUIRE(df_dsigma(0) == Approx(0.47410554).epsilon(Tolerance));
@@ -4148,10 +4186,11 @@ TEST_CASE("MohrCoulomb is checked in 3D (c & phi & psi, with softening)",
       df_dsigma_trial.setZero();
       dp_dsigma_trial.setZero();
       double softening_trial = 0.;
+      double pdstrain_trial = 0.;
       // Compute plastic correction components based on trial stress
       mohr_coulomb->compute_df_dp(
           yield_type_trial, &state_variables, trial_stress, &df_dsigma_trial,
-          &dp_dsigma_trial, &dp_dq_trial, &softening_trial);
+          &dp_dsigma_trial, &dp_dq_trial, &softening_trial, pdstrain_trial);
 
       // Check plastic correction component based on trial stress
       // Check dFtrial/dSigma

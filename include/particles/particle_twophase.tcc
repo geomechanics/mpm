@@ -148,8 +148,8 @@ std::shared_ptr<void> mpm::TwoPhaseParticle<Tdim>::pod() const {
   if (this->material() != nullptr) {
     particle_data->nstate_vars =
         state_variables_[mpm::ParticlePhase::Solid].size();
-    if (state_variables_[mpm::ParticlePhase::Solid].size() > 20)
-      throw std::runtime_error("# of state variables cannot be more than 20");
+    if (state_variables_[mpm::ParticlePhase::Solid].size() > 25)
+      throw std::runtime_error("# of state variables cannot be more than 25");
     unsigned i = 0;
     auto state_variables = (this->material())->state_variables();
     for (const auto& state_var : state_variables) {

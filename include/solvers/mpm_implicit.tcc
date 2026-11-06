@@ -60,6 +60,12 @@ mpm::MPMImplicit<Tdim>::MPMImplicit(const std::shared_ptr<IO>& io)
                            .at("verbosity")
                            .template get<unsigned>();
       }
+
+      // Read parameters on patch averaging
+      if (analysis_["scheme_settings"].contains("bbar_patch_average"))
+        bbar_patch_average_ = analysis_["scheme_settings"]
+                                  .at("bbar_patch_average")
+                                  .template get<bool>();
     }
     mpm_scheme_ = std::make_shared<mpm::MPMSchemeNewmark<Tdim>>(
         mesh_, dt_, newmark_beta_, newmark_gamma_);
@@ -177,7 +183,7 @@ bool mpm::MPMImplicit<Tdim>::solve() {
     mesh_->inject_particles(step_ * dt_);
 
     // Initialise nodes, cells and shape functions
-    mpm_scheme_->initialise();
+    mpm_scheme_->initialise(bbar_patch_average_);
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_);

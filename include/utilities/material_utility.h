@@ -79,6 +79,12 @@ inline const Eigen::Matrix<double, 6, 1> dtheta_dsigma(
 //! \retval plastic deviatoric strain
 inline double pdstrain(const Eigen::Matrix<double, 6, 1>& plastic_strain);
 
+//! Compute plastic volumetric strain
+//! \param[in] plastic_strain Plastic strain in Voigt notation where positive is
+//! tension
+//! \retval plastic volumetric strain
+inline double pvstrain(const Eigen::Matrix<double, 6, 1>& plastic_strain);
+
 //! Compute the rotation tensor from a deformation gradient using polar
 //! decomposition
 //! \param[in] deformation_gradient The deformation gradient matrix (3x3)

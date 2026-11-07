@@ -220,6 +220,16 @@ inline double mpm::materials::pdstrain(
   return pdstrain;
 }
 
+//! Compute plastic volumetric strain
+inline double mpm::materials::pvstrain(
+    const Eigen::Matrix<double, 6, 1>& plastic_strain) {
+
+  // Compute pvstrain
+  const double pvstrain = (plastic_strain(0) + plastic_strain(1) + plastic_strain(2));
+
+  return pvstrain;
+}
+
 // Compute rotation tensor from a deformation gradient using polar decomposition
 inline const Eigen::Matrix3d mpm::materials::compute_rotation_tensor(
     const Eigen::Matrix3d& deformation_gradient) {

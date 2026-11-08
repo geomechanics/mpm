@@ -863,6 +863,59 @@ TEST_CASE("IOMeshAscii is checked for 2D", "[IOMesh][IOMeshAscii][2D]") {
     }
   }
 
+  SECTION("Check particles vector properties file") {
+    // Particle vector properties
+    std::map<mpm::Index, Eigen::Matrix<double, dim, 1>> particles_vectors;
+    particles_vectors.emplace(
+        std::make_pair(0, (Eigen::Matrix<double, dim, 1>(10.5, 20.5))));
+    particles_vectors.emplace(
+        std::make_pair(1, (Eigen::Matrix<double, dim, 1>(30.5, -40.5))));
+    particles_vectors.emplace(
+        std::make_pair(2, (Eigen::Matrix<double, dim, 1>(-50.5, -60.5))));
+    particles_vectors.emplace(
+        std::make_pair(3, (Eigen::Matrix<double, dim, 1>(-70.5, 80.5))));
+
+    // Dump particle vector properties as an input file to be read
+    std::ofstream file;
+    file.open("particles-vectors-2d.txt");
+    // Write particle vector properties
+    for (const auto& vectors : particles_vectors) {
+      file << vectors.first << "\t";
+      for (unsigned i = 0; i < dim; ++i) file << (vectors.second)(i) << "\t";
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read particles vector properties file
+    SECTION("Check read particles vector properties file") {
+      // Create a io_mesh object
+      auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read particles vector properties from a non-existant file
+      auto read_particles_vectors = io_mesh->read_particles_vector_properties(
+          "particles-vectors-missing.txt");
+
+      // Check number of particles vector properties
+      REQUIRE(read_particles_vectors.size() == 0);
+
+      // Check particles vector properties
+      read_particles_vectors =
+          io_mesh->read_particles_vector_properties("particles-vectors-2d.txt");
+
+      // Check number of particles
+      REQUIRE(read_particles_vectors.size() == particles_vectors.size());
+
+      // Check particles vector properties
+      for (unsigned i = 0; i < particles_vectors.size(); ++i) {
+        for (unsigned j = 0; j < particles_vectors.at(i).size(); ++j) {
+          REQUIRE(std::get<1>(read_particles_vectors.at(i))[j] ==
+                  Approx(particles_vectors.at(i)[j]).epsilon(Tolerance));
+        }
+      }
+    }
+  }
+
   SECTION("Check math function file") {
     // Vector of math function entries
     std::array<std::vector<double>, 2> entries;
@@ -1808,6 +1861,59 @@ TEST_CASE("IOMeshAscii is checked for 3D", "[IOMesh][IOMeshAscii][3D]") {
       for (unsigned i = 0; i < particles_scalars.size(); ++i) {
         REQUIRE(std::get<1>(read_particles_scalars.at(i)) ==
                 Approx(particles_scalars.at(i)).epsilon(Tolerance));
+      }
+    }
+  }
+
+  SECTION("Check particles vector properties file") {
+    // Particle vector properties
+    std::map<mpm::Index, Eigen::Matrix<double, dim, 1>> particles_vectors;
+    particles_vectors.emplace(
+        std::make_pair(0, (Eigen::Matrix<double, dim, 1>(10.5, 20.5, 30.5))));
+    particles_vectors.emplace(
+        std::make_pair(1, (Eigen::Matrix<double, dim, 1>(40.5, -50.5, -60.5))));
+    particles_vectors.emplace(std::make_pair(
+        2, (Eigen::Matrix<double, dim, 1>(-70.5, -80.5, -90.5))));
+    particles_vectors.emplace(std::make_pair(
+        3, (Eigen::Matrix<double, dim, 1>(-100.5, 110.5, 120.5))));
+
+    // Dump particle vector properties as an input file to be read
+    std::ofstream file;
+    file.open("particles-vectors-3d.txt");
+    // Write particle vector properties
+    for (const auto& vectors : particles_vectors) {
+      file << vectors.first << "\t";
+      for (unsigned i = 0; i < vectors.second.size(); ++i)
+        file << (vectors.second)(i) << "\t";
+      file << "\n";
+    }
+
+    file.close();
+
+    // Check read particles vector properties file
+    SECTION("Check read particles vector properties file") {
+      // Create a io_mesh object
+      auto io_mesh = std::make_unique<mpm::IOMeshAscii<dim>>();
+
+      // Try to read particles vector properties from a non-existant file
+      auto read_particles_vectors = io_mesh->read_particles_vector_properties(
+          "particles-vector-missing.txt");
+      // Check number of particles vector properties
+      REQUIRE(read_particles_vectors.size() == 0);
+
+      // Check particles vector properties
+      read_particles_vectors =
+          io_mesh->read_particles_vector_properties("particles-vectors-3d.txt");
+
+      // Check number of particles
+      REQUIRE(read_particles_vectors.size() == particles_vectors.size());
+
+      // Check particles vector properties
+      for (unsigned i = 0; i < particles_vectors.size(); ++i) {
+        for (unsigned j = 0; j < particles_vectors.at(i).size(); ++j) {
+          REQUIRE(std::get<1>(read_particles_vectors.at(i))[j] ==
+                  Approx(particles_vectors.at(i)[j]).epsilon(Tolerance));
+        }
       }
     }
   }

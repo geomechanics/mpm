@@ -105,10 +105,6 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       // Stress invariants
       // Pressure
       {"pressure", 0.},
-      // Tau
-      {"tau", 0.},
-      // Theta
-      {"theta", 0.},
       // Plastic deviatoric strain
       {"pdstrain", 0.},
       // Plastic tensile strain components
@@ -124,9 +120,7 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       {"plastic_strain_s2", 0.},
       {"plastic_strain_s3", 0.},
       {"plastic_strain_s4", 0.},
-      {"plastic_strain_s5", 0.},
-      // Maximum number of iteration
-      {"max_itr", 0}};
+      {"plastic_strain_s5", 0.}};
   return state_vars;
 }
 
@@ -139,8 +133,6 @@ std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
                                                "cohesion",
                                                "tension_cutoff",
                                                "pressure",
-                                               "tau",
-                                               "theta",
                                                "pdstrain",
                                                "plastic_strain_t0",
                                                "plastic_strain_t1",
@@ -159,20 +151,15 @@ std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
 
 //! Compute stress invariants
 template <unsigned Tdim>
-bool mpm::MohrCoulomb<Tdim>::compute_stress_invariants(
-    const Vector6d& stress, mpm::dense_map* state_vars) {
+void mpm::MohrCoulomb<Tdim>::compute_stress_invariants(
+    const Vector6d& stress, mpm::dense_map* state_vars, Vector3d& invariants) {
   // Compute the mean pressure
+  invariants(0) = -mpm::materials::p(stress);
   (*state_vars).at("pressure") = -mpm::materials::p(stress);
-  // Compute theta value
-  (*state_vars).at("theta") = mpm::materials::lode_angle(stress);
   // Compute tau
-  (*state_vars).at("tau") = std::sqrt(mpm::materials::j2(stress));
-  // Compute epsilon
-  const double epsilon = -(*state_vars).at("pressure") * std::sqrt(3.);
-  // Compute rho
-  const double rho = std::sqrt(2.0) * (*state_vars).at("tau");
-
-  return true;
+  invariants(1) = std::sqrt(mpm::materials::j2(stress));
+  // Compute theta value
+  invariants(2) = mpm::materials::lode_angle(stress);
 }
 
 //! Compute yield function and yield state
@@ -180,12 +167,12 @@ template <unsigned Tdim>
 typename mpm::mohrcoulomb::FailureState
     mpm::MohrCoulomb<Tdim>::compute_yield_state(
         Eigen::Matrix<double, 2, 1>* yield_function,
-        const mpm::dense_map& state_vars) {
+        const mpm::dense_map& state_vars, Vector3d& invariants) {
 
   // Get stress invariants
-  const double epsilon = -state_vars.at("pressure") * std::sqrt(3.);
-  const double rho = std::sqrt(2.0) * state_vars.at("tau");
-  const double theta = state_vars.at("theta");
+  const double epsilon = -invariants(0) * std::sqrt(3.);
+  const double rho = std::sqrt(2.0) * invariants(1);
+  const double theta = invariants(2);
 
   // Get MC parameters
   const double phi = state_vars.at("phi");
@@ -221,12 +208,12 @@ typename mpm::mohrcoulomb::FailureState
 //! Compute dF/dSigma and dP/dSigma
 template <unsigned Tdim>
 void mpm::MohrCoulomb<Tdim>::compute_df_dp(
-    mpm::mohrcoulomb::FailureState yield_type, const mpm::dense_map* state_vars,
+    mpm::mohrcoulomb::FailureState yield_type, const mpm::dense_map* state_vars, Vector3d& invariants,
     const Vector6d& stress, Vector6d* df_dsigma, Vector6d* dp_dsigma,
     double* dp_dq, Matrix6x6* d2p_dsigma2, double* softening, double pdstrain) {
   // Get stress invariants
-  const double rho = std::sqrt(2.0) * (*state_vars).at("tau");
-  const double theta = (*state_vars).at("theta");
+  const double rho = std::sqrt(2.0) * invariants(1);
+  const double theta = invariants(2);
   // Get MC parameters
   const double phi = (*state_vars).at("phi");
   const double psi = (*state_vars).at("psi");
@@ -578,12 +565,13 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     return Vector6d::Zero();
   }
 
+  Vector3d invariants = Vector3d::Zero();
   // Compute stress invariants based on trial stress
-  this->compute_stress_invariants(trial_stress, state_vars);
+  this->compute_stress_invariants(trial_stress, state_vars, invariants);
 
   // Evaluate yield functions at trial stress.
   Eigen::Matrix<double, 2, 1> yield_function;
-  auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
+  auto yield_type = this->compute_yield_state(&yield_function, (*state_vars), invariants);
 
   // Elastic admissibility: if both surfaces are satisfied, accept trial stress.
   if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {
@@ -616,9 +604,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
   plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
 
-  // Start newton raphson return mapping iterations
-  (*state_vars).at("max_itr") = 0;
-
   // Return mapping in the shear-tensile region
   if (yield_type == mpm::mohrcoulomb::FailureState::ShearTensile) {
       Eigen::Matrix<double, 2, 1> dlambda_double = Vector2d::Zero();
@@ -627,16 +612,15 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       pdstrain(1) = mpm::materials::pdstrain(plastic_strain_s);
 
     for (unsigned itr = 0; itr < max_iter_; ++itr) {
-      (*state_vars).at("max_itr") = itr + 1;
       Vector6d stress_correction = Vector6d::Zero();
 
       std::tie(current_stress, dstrain_p_t, dstrain_p_s, local_converged) =
-            this->compute_corner_return(current_stress, trial_stress, de, state_vars,
+            this->compute_corner_return(current_stress, trial_stress, de, state_vars, invariants,
                                         yield_function, dlambda_double, pdstrain);
       if (!local_converged) 
           break;
 
-      this->compute_stress_invariants(current_stress, state_vars);
+      this->compute_stress_invariants(current_stress, state_vars, invariants);
       
       // Update plastic strain state variables
       Vector6d current_plastic_strain_t = plastic_strain_t + dstrain_p_t;
@@ -663,7 +647,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       }
 
       // Re-evaluate invariants and active surface at current stress.
-      this->compute_yield_state(&yield_function, (*state_vars));
+      this->compute_yield_state(&yield_function, (*state_vars), invariants);
       Vector6d R_sigma = current_stress - trial_stress + de * (dstrain_p_t + dstrain_p_s);
 
       // Relative error of stress residual
@@ -672,8 +656,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       // If large negative lambda is detected, pivot to single surface return
       if (dlambda_double(0) < -mandatory_tolerance_ || dlambda_double(1) < -mandatory_tolerance_) {
         current_stress = trial_stress;
-        this->compute_stress_invariants(current_stress, state_vars);
-        this->compute_yield_state(&yield_function, (*state_vars));
+        this->compute_stress_invariants(current_stress, state_vars, invariants);
+        this->compute_yield_state(&yield_function, (*state_vars), invariants);
         if (dlambda_double(0) < -mandatory_tolerance_ && dlambda_double(1) >= -mandatory_tolerance_)
           yield_type = mpm::mohrcoulomb::FailureState::Shear;
         else if (dlambda_double(0) >= -mandatory_tolerance_ && dlambda_double(1) < -mandatory_tolerance_)
@@ -696,8 +680,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       // If negative lambda is detected, pivot to single surface return
       if (dlambda_double(0) < 0.0 || dlambda_double(1) < 0.0) {
         current_stress = trial_stress;
-        this->compute_stress_invariants(current_stress, state_vars);
-        this->compute_yield_state(&yield_function, (*state_vars));
+        this->compute_stress_invariants(current_stress, state_vars, invariants);
+        this->compute_yield_state(&yield_function, (*state_vars), invariants);
         if (dlambda_double(0) < 0.0 && dlambda_double(1) >= 0.0)
           yield_type = mpm::mohrcoulomb::FailureState::Shear;
         else if (dlambda_double(0) >= 0.0 && dlambda_double(1) < 0.0)
@@ -709,9 +693,9 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         // If lamdba are both positive, call enforce_corner_return
         if (!converged) {
           std::tie(current_stress, dstrain_p_t, dstrain_p_s) =
-                this->enforce_corner_return(trial_stress, de, state_vars, yield_function, dlambda, pdstrain);
+                this->enforce_corner_return(trial_stress, de, state_vars, invariants, yield_function, dlambda, pdstrain);
 
-          this->compute_stress_invariants(current_stress, state_vars);
+          this->compute_stress_invariants(current_stress, state_vars, invariants);
       
           // Update plastic strain state variables
           Vector6d current_plastic_strain_t = plastic_strain_t + dstrain_p_t;
@@ -736,7 +720,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     }
 
   if (yield_type == mpm::mohrcoulomb::FailureState::Elastic) {
-            std::cout << ptr->id() << std::endl;
             console_->error("Invalid elastic type for compute_df_dp: {}; Tensile yield function: {}; Shear yield function: {}\n",
                     static_cast<int>(yield_type), yield_function(0), yield_function(1));
             return current_stress;
@@ -748,8 +731,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     pdstrain(0) = mpm::materials::pvstrain(plastic_strain_t);
     pdstrain(1) = mpm::materials::pdstrain(plastic_strain_s);
     for (unsigned itr = 0; itr < max_iter_; ++itr) {
-        (*state_vars).at("max_itr") = itr + 1;
-
         double yield_function_single =
         (yield_type == mpm::mohrcoulomb::FailureState::Tensile)
               ? yield_function(0)
@@ -759,7 +740,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
                                                                   : dlambda(1);
 
         auto [corrected_stress, dp_dsigma_corrected, local_converged] = this->compute_single_surface_return(
-          yield_type, yield_function_single, current_stress, de, state_vars,
+          yield_type, yield_function_single, current_stress, de, state_vars, invariants,
           dlambda_single, pdstrain, trial_stress);
         if (!local_converged) 
             break;
@@ -799,7 +780,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     }
 
     // Re-evaluate invariants and active surface at current stress.
-    this->compute_yield_state(&yield_function, (*state_vars));
+    this->compute_yield_state(&yield_function, (*state_vars), invariants);
 
     Vector6d R_sigma = Vector6d::Zero();
     double other_yield_function = 0.0;
@@ -830,22 +811,23 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
                   yield_function(0) <= tolerance_) {
           (*state_vars).at("yield_state") = 1;  // Shear
         } else {
-          (*state_vars).at("yield_state") = 0;  // Elastic
+              console_->warn(
+                "MohrCoulomb::Single surface return to elastic zone; Final yield functions: f_t = {}, f_s = {}",
+                yield_function(0), yield_function(1));
         }
       }
       else {
             for (unsigned itr = 0; itr < max_iter_; ++itr) {
-              (*state_vars).at("max_itr") = itr + 1;
               Vector6d stress_correction = Vector6d::Zero();
 
               std::tie(current_stress, dstrain_p_t, dstrain_p_s, local_converged) =
-                    this->compute_corner_return(current_stress, trial_stress, de, state_vars,
+                    this->compute_corner_return(current_stress, trial_stress, de, state_vars, invariants,
                                                 yield_function, dlambda,
                                                 pdstrain);
               if (!local_converged) 
                   break;
 
-              this->compute_stress_invariants(current_stress, state_vars);
+              this->compute_stress_invariants(current_stress, state_vars, invariants);
               
               // Update plastic strain state variables
               Vector6d current_plastic_strain_t = plastic_strain_t + dstrain_p_t;
@@ -872,7 +854,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
               }
 
               // Re-evaluate invariants and active surface at current stress.
-              this->compute_yield_state(&yield_function, (*state_vars));
+              this->compute_yield_state(&yield_function, (*state_vars), invariants);
               Vector6d R_sigma = current_stress - trial_stress + de * (dstrain_p_t + dstrain_p_s);
               
               // Relative error of stress residual
@@ -915,7 +897,7 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
     mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
         mpm::mohrcoulomb::FailureState yield_type, double yield_function,
         const Vector6d& current_stress, const Matrix6x6& de,
-        mpm::dense_map* state_vars, double& dlambda_single,
+        mpm::dense_map* state_vars, Vector3d& invariants, double& dlambda_single,
         Eigen::Matrix<double, 2, 1>& pdstrain, const Vector6d& trial_stress) {
 
   // Select active yield-function value on the current surface.
@@ -948,7 +930,7 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
         (yield_type == mpm::mohrcoulomb::FailureState::Tensile) ? pdstrain(0)
                                                                   : pdstrain(1);
 
-  this->compute_df_dp(yield_type, state_vars, current_stress, &df_dsigma,
+  this->compute_df_dp(yield_type, state_vars, invariants, current_stress, &df_dsigma,
                       &dp_dsigma, &dp_dq, &d2p_dsigma2, &softening_modulus, pdstrain_single);
 
   // Assemble system matrix.
@@ -1016,9 +998,9 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
       
       // Call your function that re-evaluates the yield function at trial_stress
       
-      this->compute_stress_invariants(trial_corrected_stress, state_vars);
+      this->compute_stress_invariants(trial_corrected_stress, state_vars, invariants);
 
-      this->compute_df_dp(yield_type, state_vars, trial_corrected_stress, &df_dsigma_trial,
+      this->compute_df_dp(yield_type, state_vars, invariants, trial_corrected_stress, &df_dsigma_trial,
                       &dp_dsigma_trial, &dp_dq_trial, &d2p_dsigma2_trial, &softening_modulus_trial, pdstrain_single);
 
       Vector6d trial_dstrain_p = trial_dlambda * dp_dsigma_trial;
@@ -1037,7 +1019,7 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
       // Recalculate R_sigma and f at this temporary trial position
       Vector6d de_dp_trial = de * dp_dsigma_trial; // Update flow direction if necessary
       Vector6d R_sigma_trial = trial_corrected_stress - trial_stress + trial_dlambda * de_dp_trial;
-      auto trial_yield_type = this->compute_yield_state(&trial_yield_function, (*state_vars));
+      auto trial_yield_type = this->compute_yield_state(&trial_yield_function, (*state_vars), invariants);
       double f_trial=
           (yield_type == mpm::mohrcoulomb::FailureState::Tensile)
               ? trial_yield_function(0)
@@ -1078,9 +1060,9 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
     Matrix6x6 d2p_dsigma2_after = Matrix6x6::Zero();
     double softening_modulus_after = 0.0;
 
-    this->compute_stress_invariants(corrected_stress, state_vars);
+    this->compute_stress_invariants(corrected_stress, state_vars, invariants);
 
-    this->compute_df_dp(yield_type, state_vars, corrected_stress, &df_dsigma_after,
+    this->compute_df_dp(yield_type, state_vars, invariants, corrected_stress, &df_dsigma_after,
                         &dp_dsigma_after, &dp_dq_after, &d2p_dsigma2_after, &softening_modulus_after, pdstrain_single);
 
     Vector6d de_dp_after = de * dp_dsigma_after;
@@ -1097,7 +1079,7 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
            Eigen::Matrix<double, 6, 1>, bool>
     mpm::MohrCoulomb<Tdim>::compute_corner_return(
         const Vector6d& current_stress, const Vector6d& trial_stress, const Matrix6x6& de,
-        mpm::dense_map* state_vars,
+        mpm::dense_map* state_vars, Vector3d& invariants,
         const Eigen::Matrix<double, 2, 1>& yield_function,
         Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain) {
 
@@ -1130,10 +1112,10 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
   plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
   plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
 
-  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars,
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, invariants,
                       current_stress, &df_dsigma_t, &dp_dsigma_t, &dp_dq_t,
                       &d2p_dsigma2_t, &softening_t, pdstrain(0));
-  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars,
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars, invariants,
                       current_stress, &df_dsigma_s, &dp_dsigma_s, &dp_dq_s,
                       &d2p_dsigma2_s, &softening_s, pdstrain(1));
 
@@ -1228,11 +1210,11 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
       
       // Call your function that re-evaluates the yield function at trial_stress
       
-      this->compute_stress_invariants(trial_corrected_stress, state_vars);
+      this->compute_stress_invariants(trial_corrected_stress, state_vars, invariants);
 
-      this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, trial_corrected_stress, &df_dsigma_t_trial,
+      this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, invariants, trial_corrected_stress, &df_dsigma_t_trial,
                       &dp_dsigma_t_trial, &dp_dq_t_trial, &d2p_dsigma2_t_trial, &softening_modulus_t_trial, pdstrain(0));
-      this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars, trial_corrected_stress, &df_dsigma_s_trial,
+      this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars, invariants, trial_corrected_stress, &df_dsigma_s_trial,
                       &dp_dsigma_s_trial, &dp_dq_s_trial, &d2p_dsigma2_s_trial, &softening_modulus_s_trial, pdstrain(1));
 
       Vector6d trial_dstrain_p_t = trial_dlambda(0) * dp_dsigma_t_trial;
@@ -1248,7 +1230,7 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
       Vector6d de_dp_t_trial = de * dp_dsigma_t_trial;
       Vector6d de_dp_s_trial = de * dp_dsigma_s_trial;
       Vector6d R_sigma_trial = trial_corrected_stress - trial_stress + (trial_dlambda(0) * de_dp_t_trial + trial_dlambda(1) * de_dp_s_trial);
-      auto trial_yield_type = this->compute_yield_state(&trial_yield_function, (*state_vars));
+      auto trial_yield_type = this->compute_yield_state(&trial_yield_function, (*state_vars), invariants);
 
       // Compute trial merit error score
       trial_merit = 0.5 * (R_sigma_trial.squaredNorm()+ 0.5 * (std::pow(std::max(0.0, trial_yield_function(0)), 2) + std::pow(std::max(0.0, trial_yield_function(1)), 2)));
@@ -1290,10 +1272,10 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
   Matrix6x6 corrected_d2p_dsigma2_s = Matrix6x6::Zero();
   double corrected_softening_s = 0.0;
 
-  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars,
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, invariants,
                       corrected_stress, &corrected_df_dsigma_t, &corrected_dp_dsigma_t, &corrected_dp_dq_t,
                       &corrected_d2p_dsigma2_t, &corrected_softening_t, pdstrain(0));
-  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars,
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars, invariants,
                       corrected_stress, &corrected_df_dsigma_s, &corrected_dp_dsigma_s, &corrected_dp_dq_s,
                       &corrected_d2p_dsigma2_s, &corrected_softening_s, pdstrain(1));
   
@@ -1315,7 +1297,7 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
            Eigen::Matrix<double, 6, 1>>
 mpm::MohrCoulomb<Tdim>::enforce_corner_return(
     const Vector6d& trial_stress, const Matrix6x6& de,
-    mpm::dense_map* state_vars,
+    mpm::dense_map* state_vars, Vector3d& invariants,
     const Eigen::Matrix<double, 2, 1>& yield_function,
     Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain) {
 
@@ -1456,6 +1438,7 @@ Eigen::Matrix<double, 6, 6>
   pdstrain(0) = mpm::materials::pvstrain(plastic_strain_t);
   pdstrain(1) = mpm::materials::pdstrain(plastic_strain_s);
 
+  Vector3d invariants = Vector3d::Zero();
   mpm::mohrcoulomb::FailureState yield_type =
       yield_type_.at(int((*state_vars).at("yield_state")));
   // Return the updated stress in elastic state
@@ -1482,8 +1465,8 @@ Eigen::Matrix<double, 6, 6>
         (yield_type == mpm::mohrcoulomb::FailureState::Tensile) ? pdstrain(0)
                                                                   : pdstrain(1);
   // Compute stress invariants based on trial stress
-  this->compute_stress_invariants(stress, state_vars);
-  this->compute_df_dp(yield_type, state_vars, stress, &df_dsigma, &dp_dsigma,
+  this->compute_stress_invariants(stress, state_vars, invariants);
+  this->compute_df_dp(yield_type, state_vars, invariants, stress, &df_dsigma, &dp_dsigma,
                       &dp_dq, &d2p_dsigma2, &softening, pdstrain_single);
 
   // Compute the d_ep tensor
@@ -1514,12 +1497,12 @@ Eigen::Matrix<double, 6, 6>
   Vector6d dp_dsigma_tension = Vector6d::Zero();
 
   // Compute stress invariants based on trial stress
-  this->compute_stress_invariants(stress, state_vars);
-  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars,
+  this->compute_stress_invariants(stress, state_vars, invariants);
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, invariants,
                       stress, &df_dsigma_tension, &dp_dsigma_tension,
                       &dp_dq_tension, &d2p_dsigma2_tension, &softening_tension,
                       pdstrain(0));
-  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars, stress,
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars, invariants, stress,
                       &df_dsigma_shear, &dp_dsigma_shear, &dp_dq_shear,
                       &d2p_dsigma2_shear, &softening_shear, pdstrain(1));
 

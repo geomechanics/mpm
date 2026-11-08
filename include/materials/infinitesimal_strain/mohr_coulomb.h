@@ -8,7 +8,7 @@
 #include "Eigen/Dense"
 
 #include "infinitesimal_elasto_plastic.h"
-#include <iostream>
+
 namespace mpm {
 
 namespace mohrcoulomb {
@@ -31,6 +31,8 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
  public:
   //! Define a vector of 2 dof
   using Vector2d = Eigen::Matrix<double, 2, 1>;
+  //! Define a vector of 3 dof
+  using Vector3d = Eigen::Matrix<double, 3, 1>;
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
   //! Define a Matrix of 6 x 6
@@ -79,15 +81,16 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
   //! \retval status of computation of stress invariants
-  bool compute_stress_invariants(const Vector6d& stress,
-                                 mpm::dense_map* state_vars);
+  void compute_stress_invariants(const Vector6d& stress,
+                                 mpm::dense_map* state_vars,
+                                 Vector3d& invariants);
 
   //! Compute yield function and yield state
   //! \param[in] state_vars History-dependent state variables
   //! \retval yield_type Yield type (elastic, shear or tensile)
   mpm::mohrcoulomb::FailureState compute_yield_state(
       Eigen::Matrix<double, 2, 1>* yield_function,
-      const mpm::dense_map& state_vars);
+      const mpm::dense_map& state_vars, Vector3d& invariants);
 
   //! Compute dF/dSigma and dP/dSigma
   //! \param[in] yield_type Yield type (elastic, shear or tensile)
@@ -98,7 +101,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] dp_dq dP / dq
   //! \param[in] softening Softening parameter
   void compute_df_dp(mpm::mohrcoulomb::FailureState yield_type,
-                     const mpm::dense_map* state_vars, const Vector6d& stress,
+                     const mpm::dense_map* state_vars, Vector3d& invariants, const Vector6d& stress,
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
                      Matrix6x6* d2p_dsigma2, double* softening, double pdstrain);
 
@@ -138,20 +141,20 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   std::tuple<Vector6d, Vector6d, bool> compute_single_surface_return(
       mpm::mohrcoulomb::FailureState yield_type, double yield_function,
       const Vector6d& current_stress, const Matrix6x6& de,
-      mpm::dense_map* state_vars, double& dlambda_single,
+      mpm::dense_map* state_vars, Vector3d& invariants, double& dlambda_single,
       Eigen::Matrix<double, 2, 1>& pdstrain, const Vector6d& trial_stress);
 
   //! Compute corner return mapping for multi-surface failure
   std::tuple<Vector6d, Vector6d, Vector6d, bool> compute_corner_return(
       const Vector6d& current_stress, const Vector6d& trial_stress, const Matrix6x6& de,
-      mpm::dense_map* state_vars,
+      mpm::dense_map* state_vars, Vector3d& invariants,
       const Eigen::Matrix<double, 2, 1>& yield_function,
       Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain);
 
   //! Enforce corner return mapping to apex
   std::tuple<Vector6d, Vector6d, Vector6d> enforce_corner_return(
       const Vector6d& trial_stress, const Matrix6x6& de,
-      mpm::dense_map* state_vars,
+      mpm::dense_map* state_vars, Vector3d& invariants,
       const Eigen::Matrix<double, 2, 1>& yield_function,
       Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain);
 

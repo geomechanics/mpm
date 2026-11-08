@@ -9,7 +9,7 @@ mpm::MPMSchemeNewmark<Tdim>::MPMSchemeNewmark(
 
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
-inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
+inline void mpm::MPMSchemeNewmark<Tdim>::initialise(bool bbar_patch_average) {
 #pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
@@ -36,6 +36,9 @@ inline void mpm::MPMSchemeNewmark<Tdim>::initialise() {
                     1.0 / (beta_ * dt_ * dt_)));
     }
   }  // Wait to complete
+
+  // Compute cell average B matrix at the centroid for each particle
+  if (bbar_patch_average) mesh_->compute_cell_average_dn_dx_centroid();
 }
 
 //! Compute nodal kinematics - map mass, momentum and inertia to nodes

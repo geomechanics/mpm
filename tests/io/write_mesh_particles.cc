@@ -8,7 +8,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
-  auto particle_type = "P2D";
+  auto particle_type = "P2DBBAR";
   auto node_type = "N2D";
   auto cell_type = "ED2Q4";
   auto io_type = "Ascii2D";
@@ -22,7 +22,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
   // 3D
   if (dim == 3) {
     dimension = "3d";
-    particle_type = "P3D";
+    particle_type = "P3DBBAR";
     node_type = "N3D";
     cell_type = "ED3H8";
     io_type = "Ascii3D";
@@ -86,6 +86,7 @@ bool write_json(unsigned dim, bool resume, const std::string& analysis,
       {"analysis",
        {{"type", analysis},
         {"mpm_scheme", mpm_scheme},
+        {"scheme_settings", {{"bbar_patch_average", true}}},
         {"locate_particles", true},
         {"velocity_update", true},
         {"dt", 0.001},
@@ -847,7 +848,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
   // Make json object with input files
   // 2D
   std::string dimension = "2d";
-  auto particle_type = "P2D";
+  auto particle_type = "P2DBBAR";
   auto node_type = "N2D";
   auto cell_type = "ED2Q4P2B";
   auto io_type = "Ascii2D";
@@ -862,7 +863,7 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
   // 3D
   if (dim == 3) {
     dimension = "3d";
-    particle_type = "P3D";
+    particle_type = "P3DBBAR";
     node_type = "N3D";
     cell_type = "ED3H8";
     assembler_type = "EigenImplicit3D";
@@ -943,7 +944,8 @@ bool write_json_implicit(unsigned dim, bool resume, const std::string& analysis,
           {"displacement_tolerance", 1.0e-10},
           {"residual_tolerance", 1.0e-10},
           {"relative_residual_tolerance", 1.0e-6},
-          {"verbosity", 0}}},
+          {"verbosity", 0},
+          {"bbar_patch_average", true}}},
         {"locate_particles", true},
         {"pressure_smoothing", true},
         {"dt", 0.0001},

@@ -16,7 +16,7 @@ mpm::MPMScheme<Tdim>::MPMScheme(const std::shared_ptr<mpm::Mesh<Tdim>>& mesh,
 
 //! Initialize nodes, cells and shape functions
 template <unsigned Tdim>
-inline void mpm::MPMScheme<Tdim>::initialise() {
+inline void mpm::MPMScheme<Tdim>::initialise(bool bbar_patch_average) {
 #pragma omp parallel sections
   {
     // Spawn a task for initialising nodes and cells
@@ -57,6 +57,9 @@ inline void mpm::MPMScheme<Tdim>::initialise() {
                     std::placeholders::_1, dt_));
     }
   }  // Wait to complete
+
+  // Compute cell average B matrix at the centroid for each particle
+  if (bbar_patch_average) mesh_->compute_cell_average_dn_dx_centroid();
 }
 
 //! Compute nodal kinematics - map mass and momentum to nodes

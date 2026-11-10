@@ -2555,20 +2555,54 @@ bool mpm::MPMBase<Tdim>::initialise_damping(const Json& damping_props) {
     } else if (type == "Rayleigh") {
       damping_type_ = mpm::Damping::Rayleigh;
       rayleigh_damping_ = true;
-      double freq_1 =
-          2.0 * M_PI * damping_props.at("freq_1").template get<double>();
-      double freq_2 =
-          2.0 * M_PI * damping_props.at("freq_2").template get<double>();
-      double damp_1 =
-          damping_props.at("damping_ratio_1").template get<double>();
-      double damp_2 =
-          damping_props.at("damping_ratio_2").template get<double>();
-      // Compute Rayleigh damping coefficients
-      rayleigh_alpha_ = (2.0 * freq_1 * freq_2) *
-                        (damp_1 * freq_2 - damp_2 * freq_1) /
-                        (freq_2 * freq_2 - freq_1 * freq_1);
-      rayleigh_beta_ = 2.0 * (damp_2 * freq_2 - damp_1 * freq_1) /
-                       (freq_2 * freq_2 - freq_1 * freq_1);
+      // Option 1: Typical Rayleigh Damping inputs.
+      if (damping_props.contains("freq_1") &&
+          damping_props.contains("freq_2")) {
+        // Call relevant damping properties.
+        double freq_1 =
+            2.0 * M_PI * damping_props.at("freq_1").template get<double>();
+        double freq_2 =
+            2.0 * M_PI * damping_props.at("freq_2").template get<double>();
+        double damp_1 =
+            damping_props.at("damping_ratio_1").template get<double>();
+        double damp_2 =
+            damping_props.at("damping_ratio_2").template get<double>();
+
+        if (freq_1 <= 0.0 || freq_2 <= 0.0 ||
+            std::abs(freq_2 - freq_1) < std::numeric_limits<double>::epsilon())
+          throw std::runtime_error(
+              "Rayleigh damping: freq_1 and freq_2 must be positive and "
+              "distinct");
+
+        // Compute Rayleigh damping coefficients
+        rayleigh_alpha_ = (2.0 * freq_1 * freq_2) *
+                          (damp_1 * freq_2 - damp_2 * freq_1) /
+                          (freq_2 * freq_2 - freq_1 * freq_1);
+        rayleigh_beta_ = 2.0 * (damp_2 * freq_2 - damp_1 * freq_1) /
+                         (freq_2 * freq_2 - freq_1 * freq_1);
+
+      } else if (damping_props.contains("freq_c") &&
+                 damping_props.contains("damping_ratio_c")) {
+        // Option 2: FLAC-style central (minimum) frequency and damping ratio
+        double freq_c = 2.0 * M_PI *
+                        damping_props.at("freq_c").template get<double>();
+        double damp_c =
+            damping_props.at("damping_ratio_c").template get<double>();
+
+        if (freq_c <= 0.0 || damp_c < 0.0)
+          throw std::runtime_error(
+              "Rayleigh damping: freq_c must be positive and "
+              "damping_ratio_c non-negative");
+
+        rayleigh_alpha_ = damp_c * freq_c;
+        rayleigh_beta_ = damp_c / freq_c;
+
+      } else {
+        throw std::runtime_error(
+            "Rayleigh damping requires either {freq_1, freq_2, "
+            "damping_ratio_1, damping_ratio_2} or {freq_c, "
+            "damping_ratio_c}");
+      }
     } else if (type == "PML") {
       damping_type_ = mpm::Damping::PML;
       damping_factor_ =

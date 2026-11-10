@@ -163,45 +163,7 @@ inline const Eigen::Matrix<double, 6, 1> mpm::materials::dj3_dsigma(
   return dj3_dsigma;
 }
 
-//! Compute derivative of Lode angle theta in terms of stress sigma
-inline const Eigen::Matrix<double, 6, 1> mpm::materials::dtheta_dsigma(
-    const Eigen::Matrix<double, 6, 1>& stress, const double tolerance) {
 
-  // Compute J2
-  const double j2 = mpm::materials::j2(stress);
-
-  // Compute J3
-  const double j3 = mpm::materials::j3(stress);
-
-  // Compute dj2_dsigma
-  const auto dj2_dsigma = mpm::materials::dj2_dsigma(stress);
-
-  // Compute dj3_dsigma
-  const auto dj3_dsigma = mpm::materials::dj3_dsigma(stress);
-
-  // Define derivatives of R in terms of J2 and J3
-  double dr_dj2 = -9.0 / 4.0 * sqrt(3.0) * j3;
-  double dr_dj3 = 3.0 / 2.0 * sqrt(3.0);
-
-  // Compute derivative of theta in terms of R
-  double dtheta_dr = -1.0 / 3.0;
-
-  // Update when J2 is non zero
-  if (std::abs(j2) > tolerance) {
-    // Declare R defined as R = cos(3 theta)
-    double r = j3 / 2.0 * std::pow(j2 / 3.0, -1.5);
-    // Update derivatives of R
-    dr_dj2 *= std::pow(j2, -2.5);
-    dr_dj3 *= std::pow(j2, -1.5);
-    // Update derivative of theta in terms of R, check for sqrt of zero
-    const double factor =
-        (std::abs(1 - r * r) < tolerance) ? tolerance : std::abs(1 - r * r);
-    dtheta_dr = -1.0 / (3.0 * sqrt(factor));
-  }
-
-  // Compute and return dtheta / dsigma
-  return (dtheta_dr * ((dr_dj2 * dj2_dsigma) + (dr_dj3 * dj3_dsigma)));
-}
 
 //! Compute plastic deviatoric strain
 inline double mpm::materials::pdstrain(

@@ -8,12 +8,18 @@
 #include "Eigen/Dense"
 
 #include "infinitesimal_elasto_plastic.h"
-
+#include <iostream>
 namespace mpm {
 
 namespace mohrcoulomb {
 //! Failure state
-enum FailureState { Elastic = 0, Shear = 1, Tensile = 2, Separated = 3 };
+enum FailureState {
+  Elastic = 0,
+  Shear = 1,
+  Tensile = 2,
+  ShearTensile = 3,
+  Separated = 4
+};
 }  // namespace mohrcoulomb
 
 //! MohrCoulomb class
@@ -23,10 +29,14 @@ enum FailureState { Elastic = 0, Shear = 1, Tensile = 2, Separated = 3 };
 template <unsigned Tdim>
 class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
  public:
+  //! Define a vector of 2 dof
+  using Vector2d = Eigen::Matrix<double, 2, 1>;
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
   //! Define a Matrix of 6 x 6
   using Matrix6x6 = Eigen::Matrix<double, 6, 6>;
+  //! Define a Matrix of 3 x 3
+  using Matrix3x3 = Eigen::Matrix<double, 3, 3>;
 
   //! Constructor with id and material properties
   //! \param[in] material_properties Material properties
@@ -90,7 +100,8 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   void compute_df_dp(mpm::mohrcoulomb::FailureState yield_type,
                      const mpm::dense_map* state_vars, const Vector6d& stress,
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
-                     double* softening);
+                     Matrix6x6* d2p_dsigma2, double* softening,
+                     double pdstrain);
 
  protected:
   //! material id
@@ -124,19 +135,43 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   inline double check_low(double val) {
     return (val > 1.0e-15 ? val : 1.0e-15);
   }
-  void update_softening_parameters(mpm::dense_map* state_vars);
-  std::tuple<Vector6d, double, bool> compute_single_surface_return(
-      mpm::mohrcoulomb::FailureState yield_type,
-      const Eigen::Matrix<double, 2, 1>& yield_function,
-      const Vector6d& current_stress,
-      const Matrix6x6& de,
-      mpm::dense_map* state_vars);
+  void update_softening_parameters(mpm::dense_map* state_vars,
+                                   double pdstrain_tensile,
+                                   double pdstrain_shear);
+  std::tuple<Vector6d, Vector6d> compute_single_surface_return(
+      mpm::mohrcoulomb::FailureState yield_type, double yield_function,
+      const Vector6d& current_stress, const Matrix6x6& de,
+      mpm::dense_map* state_vars, double& dlambda_single, double pdstrain,
+      const Vector6d& trial_stress);
 
   //! Compute corner return mapping for multi-surface failure
-  std::tuple<Vector6d, double, bool> compute_corner_return(
-      const Vector6d& current_stress,
-      const Matrix6x6& de,
-      mpm::dense_map* state_vars);
+  std::tuple<Vector6d, Vector6d, Vector6d> compute_corner_return(
+      const Vector6d& current_stress, const Vector6d& trial_stress,
+      const Matrix6x6& de, mpm::dense_map* state_vars,
+      const Eigen::Matrix<double, 2, 1>& yield_function,
+      Eigen::Matrix<double, 2, 1>& dlambda, double pdstrain_tensile,
+      double pdstrain_shear);
+
+  //! Enforce corner return mapping to apex
+  std::tuple<Vector6d, Vector6d, Vector6d> enforce_corner_return(
+      const Vector6d& trial_stress, const Matrix6x6& de,
+      mpm::dense_map* state_vars,
+      const Eigen::Matrix<double, 2, 1>& yield_function,
+      Eigen::Matrix<double, 2, 1>& dlambda, double pdstrain_tensile,
+      double pdstrain_shear);
+  //! Stress update for a single strain increment (driven by compute_stress)
+  Vector6d compute_stress_increment(const Vector6d& stress,
+                                    const Vector6d& dstrain,
+                                    const ParticleBase<Tdim>* ptr,
+                                    mpm::dense_map* state_vars, double dt,
+                                    bool allow_apex, bool* success);
+
+  //! Minimum hyperbolic smoothing of the plastic potentials (stress units)
+  double apex_smoothing_{0.};
+  // Rounded Rankine Lode Function
+  double R_t(double theta, double et);
+  // Menétrey-Willam Lode Function
+  double R_mw(double theta, double phi);
 
   //! Density
   double density_{std::numeric_limits<double>::max()};
@@ -178,7 +213,21 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
       {0, mpm::mohrcoulomb::FailureState::Elastic},
       {1, mpm::mohrcoulomb::FailureState::Shear},
       {2, mpm::mohrcoulomb::FailureState::Tensile},
-      {3, mpm::mohrcoulomb::FailureState::Separated}};
+      {3, mpm::mohrcoulomb::FailureState::ShearTensile},
+      {4, mpm::mohrcoulomb::FailureState::Separated}};
+
+  // Parameters for return mapping algorithm
+  //! Absolute tolerance
+  double abs_tol_{1.e-10};
+  //! Relative tolerance
+  double rel_tol_{1.e-4};
+  //! Maximum number of iterations
+  unsigned max_iter_{15};
+
+  //! Discrete tolerance
+  double tolerance_{1.0e-6};
+  //!
+  double mandatory_tolerance_{1.0e-2};
 };  // MohrCoulomb class
 }  // namespace mpm
 

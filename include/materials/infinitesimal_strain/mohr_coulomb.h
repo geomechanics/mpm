@@ -2,13 +2,11 @@
 #define MPM_MATERIAL_MOHR_COULOMB_H_
 
 #include <cmath>
-
 #include <limits>
 
 #include "Eigen/Dense"
 
 #include "infinitesimal_elasto_plastic.h"
-#include <iostream>
 namespace mpm {
 
 namespace mohrcoulomb {
@@ -23,8 +21,20 @@ enum FailureState {
 }  // namespace mohrcoulomb
 
 //! MohrCoulomb class
-//! \brief Mohr Coulomb material model
-//! \details Mohr Coulomb material model with softening
+//! \brief Mohr-Coulomb material model with tension cutoff and softening
+//! \details Shear: Mohr-Coulomb yield surface with a hyperbolic
+//! Menetrey-Willam plastic potential. Tension: Rankine cutoff with a
+//! hyperbolic elliptic plastic potential. Stresses are integrated with an
+//! implicit (closest-point) return mapping, with corner (two-surface) returns
+//! and adaptive strain substepping.
+//! Material properties (JSON):
+//!   density, youngs_modulus, poisson_ratio,
+//!   friction, dilation, cohesion (peak values, angles in degrees),
+//!   residual_friction, residual_dilation, residual_cohesion,
+//!   peak_pdstrain, residual_pdstrain, softening (bool),
+//!   tension_cutoff,
+//!   packing_fraction or porosity, packing_fraction_minimum (optional),
+//!   apex_smoothing (optional, stress units, default 0)
 //! \tparam Tdim Dimension
 template <unsigned Tdim>
 class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
@@ -39,16 +49,17 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   using Matrix3x3 = Eigen::Matrix<double, 3, 3>;
 
   //! Constructor with id and material properties
+  //! \param[in] id Material id
   //! \param[in] material_properties Material properties
   MohrCoulomb(unsigned id, const Json& material_properties);
 
   //! Destructor
-  ~MohrCoulomb() override {};
+  ~MohrCoulomb() override = default;
 
   //! Delete copy constructor
   MohrCoulomb(const MohrCoulomb&) = delete;
 
-  //! Delete assignement operator
+  //! Delete assignment operator
   MohrCoulomb& operator=(const MohrCoulomb&) = delete;
 
   //! Initialise history variables
@@ -65,38 +76,43 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
     (*state_vars).at("yield_state") = 0;
   };
 
-  //! Compute stress
-  //! \param[in] stress Stress
-  //! \param[in] dstrain Strain
-  //! \param[in] particle Constant point to particle base
+  //! Compute stress (with adaptive strain substepping)
+  //! \param[in] stress Stress at the start of the step
+  //! \param[in] dstrain Strain increment
+  //! \param[in] ptr Constant pointer to particle base
   //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time step increment
   //! \retval updated_stress Updated value of stress
   Vector6d compute_stress(const Vector6d& stress, const Vector6d& dstrain,
                           const ParticleBase<Tdim>* ptr,
                           mpm::dense_map* state_vars, double dt) override;
 
-  //! Compute stress invariants (j2, j3, rho, theta, and epsilon)
+  //! Compute stress invariants and store them in the state variables
+  //! ("pressure" = -p, "tau" = sqrt(J2), "theta" = Lode angle)
   //! \param[in] stress Stress
   //! \param[in] state_vars History-dependent state variables
   //! \retval status of computation of stress invariants
   bool compute_stress_invariants(const Vector6d& stress,
                                  mpm::dense_map* state_vars);
 
-  //! Compute yield function and yield state
+  //! Compute yield functions and yield state
+  //! \param[out] yield_function Yield functions (0: tension, 1: shear)
   //! \param[in] state_vars History-dependent state variables
-  //! \retval yield_type Yield type (elastic, shear or tensile)
+  //! \retval yield_type Yield type (elastic, shear, tensile or shear-tensile)
   mpm::mohrcoulomb::FailureState compute_yield_state(
       Eigen::Matrix<double, 2, 1>* yield_function,
       const mpm::dense_map& state_vars);
 
-  //! Compute dF/dSigma and dP/dSigma
-  //! \param[in] yield_type Yield type (elastic, shear or tensile)
+  //! Compute yield and flow derivatives for one surface
+  //! \param[in] yield_type Surface (shear or tensile)
   //! \param[in] state_vars History-dependent state variables
   //! \param[in] stress Stress
-  //! \param[in] df_dsigma dF/dSigma
-  //! \param[in] dp_dsigma dP/dSigma
-  //! \param[in] dp_dq dP / dq
-  //! \param[in] softening Softening parameter
+  //! \param[out] df_dsigma dF/dSigma
+  //! \param[out] dp_dsigma dP/dSigma
+  //! \param[out] dp_dq dP/dq
+  //! \param[out] d2p_dsigma2 d2P/dSigma2
+  //! \param[out] softening Softening modulus H
+  //! \param[in] pdstrain Accumulated plastic deviatoric strain (kappa)
   void compute_df_dp(mpm::mohrcoulomb::FailureState yield_type,
                      const mpm::dense_map* state_vars, const Vector6d& stress,
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
@@ -112,6 +128,21 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   using Material<Tdim>::console_;
 
  private:
+  //! Stress update for a single strain increment (driven by compute_stress)
+  //! \param[in] stress Stress at the start of the increment
+  //! \param[in] dstrain Strain increment
+  //! \param[in] ptr Constant pointer to particle base
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] dt Time increment
+  //! \param[in] allow_apex Permit the direct apex return as a last resort
+  //! \param[out] success False if the return mapping did not converge
+  //! \retval updated_stress Updated value of stress
+  Vector6d compute_stress_increment(const Vector6d& stress,
+                                    const Vector6d& dstrain,
+                                    const ParticleBase<Tdim>* ptr,
+                                    mpm::dense_map* state_vars, double dt,
+                                    bool allow_apex, bool* success);
+
   //! Compute elastic tensor
   //! \param[in] state_vars History-dependent state variables
   Matrix6x6 compute_elastic_tensor(mpm::dense_map* state_vars);
@@ -119,12 +150,12 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! Compute constitutive relations matrix for elasto-plastic material
   //! \param[in] stress Stress
   //! \param[in] dstrain Strain
-  //! \param[in] particle Constant point to particle base
+  //! \param[in] ptr Constant pointer to particle base
   //! \param[in] state_vars History-dependent state variables
   //! \param[in] dt Time step increment
   //! \param[in] hardening Boolean to consider hardening, default=true. If
   //! perfect-plastic tensor is needed pass false
-  //! \retval dmatrix Constitutive relations mattrix
+  //! \retval dmatrix Constitutive relations matrix
   Matrix6x6 compute_elasto_plastic_tensor(const Vector6d& stress,
                                           const Vector6d& dstrain,
                                           const ParticleBase<Tdim>* ptr,
@@ -135,16 +166,27 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   inline double check_low(double val) {
     return (val > 1.0e-15 ? val : 1.0e-15);
   }
+
+  //! Update friction, dilation, cohesion and tension cutoff for softening
+  //! \param[in] state_vars History-dependent state variables
+  //! \param[in] pdstrain_tensile Plastic deviatoric strain (tension, unused)
+  //! \param[in] pdstrain_shear Accumulated plastic deviatoric strain (kappa)
   void update_softening_parameters(mpm::dense_map* state_vars,
                                    double pdstrain_tensile,
                                    double pdstrain_shear);
+
+  //! Single-surface return mapping step (Newton step with line search)
+  //! \retval (corrected stress, dP/dSigma at the corrected stress);
+  //! dlambda_single is updated in place
   std::tuple<Vector6d, Vector6d> compute_single_surface_return(
       mpm::mohrcoulomb::FailureState yield_type, double yield_function,
       const Vector6d& current_stress, const Matrix6x6& de,
       mpm::dense_map* state_vars, double& dlambda_single, double pdstrain,
       const Vector6d& trial_stress);
 
-  //! Compute corner return mapping for multi-surface failure
+  //! Corner (two-surface) return mapping step (Newton step with line search)
+  //! \retval (corrected stress, tensile and shear plastic strain increments);
+  //! dlambda is updated in place
   std::tuple<Vector6d, Vector6d, Vector6d> compute_corner_return(
       const Vector6d& current_stress, const Vector6d& trial_stress,
       const Matrix6x6& de, mpm::dense_map* state_vars,
@@ -152,26 +194,15 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
       Eigen::Matrix<double, 2, 1>& dlambda, double pdstrain_tensile,
       double pdstrain_shear);
 
-  //! Enforce corner return mapping to apex
+  //! Direct return to the apex (last resort)
+  //! \retval (apex stress, hydrostatic and deviatoric plastic strain
+  //! increments)
   std::tuple<Vector6d, Vector6d, Vector6d> enforce_corner_return(
       const Vector6d& trial_stress, const Matrix6x6& de,
       mpm::dense_map* state_vars,
       const Eigen::Matrix<double, 2, 1>& yield_function,
       Eigen::Matrix<double, 2, 1>& dlambda, double pdstrain_tensile,
       double pdstrain_shear);
-  //! Stress update for a single strain increment (driven by compute_stress)
-  Vector6d compute_stress_increment(const Vector6d& stress,
-                                    const Vector6d& dstrain,
-                                    const ParticleBase<Tdim>* ptr,
-                                    mpm::dense_map* state_vars, double dt,
-                                    bool allow_apex, bool* success);
-
-  //! Minimum hyperbolic smoothing of the plastic potentials (stress units)
-  double apex_smoothing_{0.};
-  // Rounded Rankine Lode Function
-  double R_t(double theta, double et);
-  // Menétrey-Willam Lode Function
-  double R_mw(double theta, double phi);
 
   //! Density
   double density_{std::numeric_limits<double>::max()};
@@ -206,6 +237,9 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   double pdstrain_residual_{std::numeric_limits<double>::max()};
   //! Tension cutoff
   double tension_cutoff_{std::numeric_limits<double>::max()};
+  //! Minimum hyperbolic smoothing of the plastic potentials near the apex
+  //! (stress units); needed for low or zero cohesion / tension cutoff
+  double apex_smoothing_{0.};
   //! softening
   bool softening_{false};
   //! Failure state map
@@ -217,17 +251,12 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
       {4, mpm::mohrcoulomb::FailureState::Separated}};
 
   // Parameters for return mapping algorithm
-  //! Absolute tolerance
-  double abs_tol_{1.e-10};
-  //! Relative tolerance
+  //! Relative tolerance on the stress residual |R| / |trial stress|
   double rel_tol_{1.e-4};
-  //! Maximum number of iterations
-  unsigned max_iter_{15};
-
-  //! Discrete tolerance
+  //! Maximum number of Newton iterations per return (per substep)
+  unsigned max_iter_{50};
+  //! Absolute tolerance on the yield functions (stress units)
   double tolerance_{1.0e-6};
-  //!
-  double mandatory_tolerance_{1.0e-2};
 };  // MohrCoulomb class
 }  // namespace mpm
 

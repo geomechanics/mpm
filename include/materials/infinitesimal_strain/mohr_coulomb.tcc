@@ -199,7 +199,7 @@ typename mpm::mohrcoulomb::FailureState
   return yield_type;
 }
 
-//! Compute dF/dSigma and dP/dSigma
+//! Compute dF/dSigma, dP/dSigma, d2P/dSigma2 and the softening modulus
 template <unsigned Tdim>
 void mpm::MohrCoulomb<Tdim>::compute_df_dp(
     mpm::mohrcoulomb::FailureState yield_type, const mpm::dense_map* state_vars,
@@ -211,20 +211,18 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
   // Get MC parameters
   const double phi = (*state_vars).at("phi");
   const double psi = (*state_vars).at("psi");
-  const double cohesion = (*state_vars).at("cohesion");
   const double tension_cutoff = (*state_vars).at("tension_cutoff");
-  const double d_theta = 1e-6;
 
-  // Compute dF / dEpsilon,  dF / dRho, dF / dTheta
-  double df_depsilon, df_drho, df_dtheta;
-  // Values in tension yield
+  // -------------------------------------------------------------------------
+  // Yield surface gradient dF/dSigma
+  // -------------------------------------------------------------------------
+  // dF/dEpsilon, dF/dRho, dF/dTheta
+  double df_depsilon = 0., df_drho = 0., df_dtheta = 0.;
   if (yield_type == mpm::mohrcoulomb::FailureState::Tensile) {
     df_depsilon = 1. / std::sqrt(3.);
     df_drho = std::sqrt(2. / 3.) * cos(theta);
     df_dtheta = -std::sqrt(2. / 3.) * rho * sin(theta);
-  }
-  // Values in shear yield / elastic
-  else if (yield_type == mpm::mohrcoulomb::FailureState::Shear) {
+  } else if (yield_type == mpm::mohrcoulomb::FailureState::Shear) {
     df_depsilon = tan(phi) / std::sqrt(3.);
     df_drho = std::sqrt(1.5) *
               ((sin(theta + M_PI / 3.) / (std::sqrt(3.) * cos(phi))) +
@@ -233,76 +231,78 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
                 ((cos(theta + M_PI / 3.) / (std::sqrt(3.) * cos(phi))) -
                  (sin(theta + M_PI / 3.) * tan(phi) / 3.));
   } else {
-    // Throw error for other yield types
     console_->error(
         "compute df dp\n"
         "Invalid yield type for compute_df_dp: {}\n",
         static_cast<int>(yield_type));
   }
 
-  // Compute dEpsilon / dSigma
-  Vector6d depsilon_dsigma = mpm::materials::dp_dsigma() * std::sqrt(3.);
-  // Initialise dRho / dSigma
-  Vector6d drho_dsigma = mpm::materials::dq_dsigma(stress) * std::sqrt(2. / 3.);
-  // Compute dtheta / dsigma
-  Vector6d dtheta_dsigma = mpm::materials::dtheta_dsigma(
-      stress, std::numeric_limits<double>::epsilon());
-  // Compute dF/dSigma
+  // dEpsilon/dSigma, dRho/dSigma, dTheta/dSigma
+  // (rho and theta derivatives are undefined on the hydrostatic axis)
+  const double rho_tol = 1.e-12;
+  const bool on_axis = rho < rho_tol;
+  const Vector6d depsilon_dsigma = mpm::materials::dp_dsigma() * std::sqrt(3.);
+  const Vector6d drho_dsigma =
+      on_axis ? Vector6d::Zero().eval()
+              : (mpm::materials::dq_dsigma(stress) * std::sqrt(2. / 3.)).eval();
+  const Vector6d dtheta_dsigma =
+      on_axis ? Vector6d::Zero().eval()
+              : mpm::materials::dtheta_dsigma(
+                    stress, std::numeric_limits<double>::epsilon());
+
   (*df_dsigma) = (df_depsilon * depsilon_dsigma) + (df_drho * drho_dsigma) +
                  (df_dtheta * dtheta_dsigma);
 
+  // -------------------------------------------------------------------------
+  // Second derivatives of the invariants (d2Theta/dSigma2)
+  // -------------------------------------------------------------------------
+  // Deviatoric projector and Voigt shear scaling
   Matrix6x6 P_dev = Matrix6x6::Identity();
   P_dev.topLeftCorner<3, 3>() -= Matrix3x3::Constant(1.0 / 3.0);
-  Vector6d n_rho = drho_dsigma;
-  // Compute d2rho/dsigma2
   Vector6d T_diag;
   T_diag << 1.0, 1.0, 1.0, 2.0, 2.0, 2.0;
-  Matrix6x6 T = T_diag.asDiagonal();
+  const Matrix6x6 T = T_diag.asDiagonal();
 
-  // Correct d2rho/dsigma2
-  Matrix6x6 d2rho_dsigma2 =
-      (T * P_dev - drho_dsigma * drho_dsigma.transpose()) / rho;
+  const double J2 = mpm::materials::j2(stress);
+  const double J3 = mpm::materials::j3(stress);
+  const Vector6d s = mpm::materials::deviatoric_stress(stress);
 
-  double J2 = mpm::materials::j2(stress);
-  double J3 = mpm::materials::j3(stress);
-  Vector6d s = mpm::materials::deviatoric_stress(stress);
-
+  // dJ2/dSigma
   Vector6d v2;
   v2 << s(0), s(1), s(2), 2.0 * s(3), 2.0 * s(4), 2.0 * s(5);
 
-  // 3. Second derivative of J2 w.r.t stress (d2J2) -> purely analytical
+  // d2J2/dSigma2
   Matrix6x6 d2J2 = Matrix6x6::Zero();
   d2J2.topLeftCorner<3, 3>().setConstant(-1.0 / 3.0);
   d2J2(0, 0) = d2J2(1, 1) = d2J2(2, 2) = 2.0 / 3.0;
   d2J2(3, 3) = d2J2(4, 4) = d2J2(5, 5) = 2.0;
 
-  // Lambda to compute exact analytical 1st derivative of J3 w.r.t full stress
-  auto eval_v3 = [](const Vector6d& sig) -> Vector6d {
-    double I1 = sig(0) + sig(1) + sig(2);
+  // dJ3/dSigma (analytical)
+  const auto eval_v3 = [](const Vector6d& sig) -> Vector6d {
+    const double I1 = sig(0) + sig(1) + sig(2);
     Vector6d dev = sig;
     dev.head(3).array() -= I1 / 3.0;
 
-    double j2 = 0.5 * (dev(0) * dev(0) + dev(1) * dev(1) + dev(2) * dev(2)) +
-                dev(3) * dev(3) + dev(4) * dev(4) + dev(5) * dev(5);
+    const double j2 =
+        0.5 * (dev(0) * dev(0) + dev(1) * dev(1) + dev(2) * dev(2)) +
+        dev(3) * dev(3) + dev(4) * dev(4) + dev(5) * dev(5);
 
-    double s2_11 = dev(0) * dev(0) + dev(3) * dev(3) + dev(5) * dev(5);
-    double s2_22 = dev(3) * dev(3) + dev(1) * dev(1) + dev(4) * dev(4);
-    double s2_33 = dev(5) * dev(5) + dev(4) * dev(4) + dev(2) * dev(2);
-    double s2_12 = dev(0) * dev(3) + dev(3) * dev(1) + dev(5) * dev(4);
-    double s2_23 = dev(3) * dev(5) + dev(1) * dev(4) + dev(4) * dev(2);
-    double s2_13 = dev(0) * dev(5) + dev(3) * dev(4) + dev(5) * dev(2);
+    // Components of s.s
+    const double s2_11 = dev(0) * dev(0) + dev(3) * dev(3) + dev(5) * dev(5);
+    const double s2_22 = dev(3) * dev(3) + dev(1) * dev(1) + dev(4) * dev(4);
+    const double s2_33 = dev(5) * dev(5) + dev(4) * dev(4) + dev(2) * dev(2);
+    const double s2_12 = dev(0) * dev(3) + dev(3) * dev(1) + dev(5) * dev(4);
+    const double s2_23 = dev(3) * dev(5) + dev(1) * dev(4) + dev(4) * dev(2);
+    const double s2_13 = dev(0) * dev(5) + dev(3) * dev(4) + dev(5) * dev(2);
 
     Vector6d v;
     v << s2_11 - 2.0 / 3.0 * j2, s2_22 - 2.0 / 3.0 * j2, s2_33 - 2.0 / 3.0 * j2,
         2.0 * s2_12, 2.0 * s2_23, 2.0 * s2_13;
     return v;
   };
+  const Vector6d v3 = eval_v3(stress);
 
-  // 4. Evaluate v3 at current state
-  Vector6d v3 = eval_v3(stress);
-
-  // 5. Evaluate 2nd derivative of J3 (d2J3) using exact finite difference of
-  // analytical gradient
+  // d2J3/dSigma2 (analytical, projected onto the deviatoric space)
   Matrix6x6 d2J3_raw = Matrix6x6::Zero();
   d2J3_raw(0, 1) = d2J3_raw(1, 0) = s(2);
   d2J3_raw(0, 2) = d2J3_raw(2, 0) = s(1);
@@ -320,47 +320,89 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
   d2J3_raw(3, 5) = d2J3_raw(5, 3) = 2.0 * s(4);
   d2J3_raw(4, 5) = d2J3_raw(5, 4) = 2.0 * s(3);
 
-  Matrix6x6 d2J3 = P_dev.transpose() * d2J3_raw * P_dev;
+  const Matrix6x6 d2J3 = P_dev.transpose() * d2J3_raw * P_dev;
 
-  // 6. Chain rule constructions
-  double c = 1.5 * std::sqrt(3.0);
-  double J2_15 = std::pow(J2, 1.5);
-  double J2_25 = std::pow(J2, 2.5);
-  double J2_35 = std::pow(J2, 3.5);
+  // x = (3 sqrt(3) / 2) J3 / J2^1.5 = cos(3 theta): gradient and Hessian
+  const double c = 1.5 * std::sqrt(3.0);
+  const double J2_15 = std::pow(J2, 1.5);
+  const double J2_25 = std::pow(J2, 2.5);
+  const double J2_35 = std::pow(J2, 3.5);
 
-  // Gradient of x w.r.t stress
-  Vector6d dx_dsig = c * ((1.0 / J2_15) * v3 - (1.5 * J3 / J2_25) * v2);
+  const Vector6d dx_dsig = c * ((1.0 / J2_15) * v3 - (1.5 * J3 / J2_25) * v2);
 
-  // Hessian of x w.r.t stress
-  Matrix6x6 d2x_dsig2 =
+  const Matrix6x6 d2x_dsig2 =
       c *
       ((1.0 / J2_15) * d2J3 -
        (1.5 / J2_25) * (v3 * v2.transpose() + v2 * v3.transpose()) -
        (1.5 * J3 / J2_25) * d2J2 + (3.75 * J3 / J2_35) * (v2 * v2.transpose()));
 
-  // 7. Final assembly of d2(theta)/dsig2
-  double cos_3theta = std::cos(3.0 * theta);
+  // d2Theta/dSigma2 via chain rule through x = cos(3 theta)
+  const double cos_3theta = std::cos(3.0 * theta);
   double sin_3theta = std::sin(3.0 * theta);
+  // Singularity safeguard at the meridians (theta = +/- 30 degrees)
+  if (std::abs(sin_3theta) < 1e-6) sin_3theta = (sin_3theta < 0) ? -1e-6 : 1e-6;
 
-  // Singularity safeguard at meridians (theta = +/- 30 degrees)
-  if (std::abs(sin_3theta) < 1e-6) {
-    sin_3theta = (sin_3theta < 0) ? -1e-6 : 1e-6;
-  }
+  const double dth_dx = -1.0 / (3.0 * sin_3theta);
+  const double d2th_dx2 = -cos_3theta / (3.0 * std::pow(sin_3theta, 3));
 
-  // Compute d2rho/dsigma2
-  double dth_dx = -1.0 / (3.0 * sin_3theta);
-  double d2th_dx2 = -cos_3theta / (3.0 * std::pow(sin_3theta, 3));
+  const Matrix6x6 d2theta_dsigma2 =
+      on_axis
+          ? Matrix6x6::Zero().eval()
+          : (d2th_dx2 * (dx_dsig * dx_dsig.transpose()) + dth_dx * d2x_dsig2)
+                .eval();
 
-  Matrix6x6 d2theta_dsigma2 =
-      d2th_dx2 * (dx_dsig * dx_dsig.transpose()) + dth_dx * d2x_dsig2;
+  // -------------------------------------------------------------------------
+  // Plastic potential: dP/dSigma, dP/dq, d2P/dSigma2
+  // -------------------------------------------------------------------------
+  // Both potentials are hyperbolic in the meridional plane:
+  //   P = sqrt(C0 + 1.5 r(theta)^2 rho^2) + c_eps * epsilon
+  // The rho-part of the Hessian is written in terms of v2 = dJ2/dSigma (no
+  // division by rho), so it stays finite on the hydrostatic axis. The
+  // Lode-angle terms scale with rho and rho^2 and stay bounded as rho -> 0;
+  // only exactly on the axis (theta undefined) is the axisymmetric value
+  // r = r_axi used. This keeps P, dP/dSigma and d2P/dSigma2 continuous.
+  const auto hyperbolic_potential = [&](double r, double dr, double d2r,
+                                        double r_axi, double C0,
+                                        double dp_deps) {
+    const bool axisymmetric = on_axis;
+    if (axisymmetric) {
+      r = r_axi;
+      dr = 0.;
+      d2r = 0.;
+    }
+    const double H = std::max(std::sqrt(C0 + 1.5 * r * r * rho * rho), 1.e-12);
+    // a = (dH/dRho) / rho
+    const double a = 1.5 * r * r / H;
 
-  // Compute dp/dsigma and dp/dj in tension yield
+    (*dp_dsigma) = dp_deps * depsilon_dsigma + a * v2;
+    (*dp_dq) = a * rho * std::sqrt(2. / 3.);
+    // dH/dRho d2Rho/dSigma2 + d2H/dRho2 dRho dRho^T, without 1/rho
+    (*d2p_dsigma2) = a * (T * P_dev) - (a * a / H) * (v2 * v2.transpose());
+
+    if (!axisymmetric) {
+      const double dH_dtheta = 1.5 * rho * rho * r * dr / H;
+      const double d2H_drhodtheta =
+          3.0 * rho * r * dr * (C0 + 0.75 * r * r * rho * rho) / (H * H * H);
+      const double d2H_dtheta2 = (0.75 * rho * rho / (H * H * H)) *
+                                 (2.0 * H * H * (dr * dr + r * d2r) -
+                                  3.0 * rho * rho * r * r * dr * dr);
+
+      (*dp_dsigma) += dH_dtheta * dtheta_dsigma;
+      (*d2p_dsigma2) +=
+          d2H_drhodtheta * (drho_dsigma * dtheta_dsigma.transpose() +
+                            dtheta_dsigma * drho_dsigma.transpose()) +
+          d2H_dtheta2 * (dtheta_dsigma * dtheta_dsigma.transpose()) +
+          dH_dtheta * d2theta_dsigma2;
+    }
+  };
+
   if (yield_type == mpm::mohrcoulomb::FailureState::Tensile) {
-    // Define deviatoric eccentricity
+    // Deviatoric eccentricity
     const double et_value = 0.6;
-    // Define meridional eccentricity
+    // Meridional eccentricity
     const double xit = 0.1;
-    // Compute Rt
+
+    // Rt (elliptic deviatoric shape function) = rt_num / (3 rt_den)
     double sqpart = 4. * (1 - et_value * et_value) * cos(theta) * cos(theta) +
                     5. * et_value * et_value - 4. * et_value;
     if (sqpart < std::numeric_limits<double>::epsilon()) sqpart = 1.E-5;
@@ -371,129 +413,63 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
         (2. * et_value - 1) * (2. * et_value - 1);
     if (fabs(rt_den) < std::numeric_limits<double>::epsilon()) rt_den = 1.E-5;
     const double rt = rt_num / (3. * rt_den);
-    // Compute dP/dRt
-    const double dp_drt =
-        1.5 * rho * rho * rt /
-        check_low(std::sqrt(xit * xit * tension_cutoff * tension_cutoff +
-                            1.5 * rt * rt * rho * rho));
-    // Compute dP/dRho
-    const double dp_drho =
-        1.5 * rho * rt * rt /
-        check_low(std::sqrt(xit * xit * tension_cutoff * tension_cutoff +
-                            1.5 * rt * rt * rho * rho));
-    // Compute dP/dEpsilon
-    const double dp_depsilon = 1. / std::sqrt(3.);
-    // Compute dRt/dThera
-    const double drtden_dtheta =
-        -2. * (1 - et_value * et_value) * sin(theta) -
-        (2. * et_value - 1) * 4. * (1 - et_value * et_value) * cos(theta) *
-            sin(theta) /
-            std::sqrt(4. * (1 - et_value * et_value) * cos(theta) * cos(theta) +
-                      5. * et_value * et_value - 4. * et_value);
+
+    // dRt/dTheta (d(sqpart)/dTheta equals drtnum_dtheta)
     const double drtnum_dtheta =
         -8. * (1 - et_value * et_value) * cos(theta) * sin(theta);
+    const double drtden_dtheta =
+        -2. * (1 - et_value * et_value) * sin(theta) +
+        (2. * et_value - 1) * drtnum_dtheta / (2. * std::sqrt(sqpart));
     const double drt_dtheta =
         (drtnum_dtheta * rt_den - drtden_dtheta * rt_num) /
         (3. * rt_den * rt_den);
-    // Compute dP/dSigma
-    (*dp_dsigma) = (dp_depsilon * depsilon_dsigma) + (dp_drho * drho_dsigma) +
-                   (dp_drt * drt_dtheta * dtheta_dsigma);
-    // Compute dP/dJ
-    (*dp_dq) = dp_drho * std::sqrt(2. / 3.);
 
-    double drt = drt_dtheta;
-
-    // Second derivatives of rt's numerator and denominator components
+    // d2Rt/dTheta2
     const double d2rtnum_dtheta2 =
         -8. * (1. - et_value * et_value) *
         (cos(theta) * cos(theta) - sin(theta) * sin(theta));
-    const double dsqpart_dtheta =
-        drtnum_dtheta;  // Note: d(sqpart)/d(theta) equals drtnum_dtheta
-                        // mathematically
-    const double d2sqpart_dtheta2 = d2rtnum_dtheta2;
     const double d2rtden_dtheta2 =
         -2. * (1. - et_value * et_value) * cos(theta) +
-        (2. * et_value - 1.) * ((d2sqpart_dtheta2) / (2. * std::sqrt(sqpart)) -
-                                (dsqpart_dtheta * dsqpart_dtheta) /
+        (2. * et_value - 1.) * (d2rtnum_dtheta2 / (2. * std::sqrt(sqpart)) -
+                                (drtnum_dtheta * drtnum_dtheta) /
                                     (4. * sqpart * std::sqrt(sqpart)));
+    const double d2rt_dtheta2 =
+        (d2rtnum_dtheta2 * rt_den - d2rtden_dtheta2 * rt_num) /
+            (3. * rt_den * rt_den) -
+        (2. * drtden_dtheta * drt_dtheta) / rt_den;
 
-    // Quotient rule for the second derivative of rt
-    double d2rt = (d2rtnum_dtheta2 * rt_den - d2rtden_dtheta2 * rt_num) /
-                      (3. * rt_den * rt_den) -
-                  (2. * drtden_dtheta * drt_dtheta) / rt_den;
+    // Hyperbolic potential; axisymmetric value rt(pi/3) = 1/3
+    const double C0_t = std::max(std::pow(xit * tension_cutoff, 2),
+                                 apex_smoothing_ * apex_smoothing_);
+    hyperbolic_potential(rt, drt_dtheta, d2rt_dtheta2, 1. / 3., C0_t,
+                         1. / std::sqrt(3.));
 
-    // 3. Compute scalar derivatives of H_t
-    double C0_t = std::pow(xit * tension_cutoff, 2);
-    double H_t_val = std::sqrt(C0_t + 1.5 * rt * rt * rho * rho);
-
-    double dHt_drho = (1.5 * rt * rt * rho) / H_t_val;
-    double dHt_dtheta = (1.5 * rho * rho * rt * drt) / H_t_val;
-    double d2Ht_drho2 = (1.5 * rt * rt * C0_t) / std::pow(H_t_val, 3);
-    double d2Ht_drhodtheta =
-        (3.0 * rho * rt * drt * (C0_t + 0.75 * rt * rt * rho * rho)) /
-        std::pow(H_t_val, 3);
-    double d2Ht_dtheta2 = (0.75 * rho * rho / std::pow(H_t_val, 3)) *
-                          (2.0 * H_t_val * H_t_val * (drt * drt + rt * d2rt) -
-                           3.0 * rho * rho * rt * rt * drt * drt);
-
-    // Compute d2P/dSigma2
-    (*d2p_dsigma2) =
-        d2Ht_drho2 * (drho_dsigma * drho_dsigma.transpose()) +
-        d2Ht_drhodtheta * (drho_dsigma * dtheta_dsigma.transpose() +
-                           dtheta_dsigma * drho_dsigma.transpose()) +
-        d2Ht_dtheta2 * (dtheta_dsigma * dtheta_dsigma.transpose()) +
-        dHt_drho * d2rho_dsigma2 + dHt_dtheta * d2theta_dsigma2;
-
-  }
-  // Compute dp/dsigma and dp/dj in shear yield
-  else if (yield_type == mpm::mohrcoulomb::FailureState::Shear) {
-    // Compute Rmc
+  } else if (yield_type == mpm::mohrcoulomb::FailureState::Shear) {
+    // Rmc
     const double r_mc = (3. - sin(phi)) / (6 * cos(phi));
-    // Compute deviatoric eccentricity
+    // Deviatoric eccentricity
     double e_val = (3. - sin(phi)) / (3. + sin(phi));
     if (e_val <= 0.5) e_val = 0.5 + 1.E-10;
     if (e_val > 1.) e_val = 1.;
-    // Compute Rmw
-    double sqpart = (4. * (1 - e_val * e_val) * std::pow(cos(theta), 2)) +
-                    (5 * e_val * e_val) - (4. * e_val);
-    double m = (2. * (1 - e_val * e_val) * cos(theta)) +
-               ((2. * e_val - 1) * std::sqrt(sqpart));
+
+    // Rmw (Menetrey-Willam deviatoric shape function) = (l / m) Rmc
+    const double sqpart = (4. * (1 - e_val * e_val) * std::pow(cos(theta), 2)) +
+                          (5 * e_val * e_val) - (4. * e_val);
+    const double m = (2. * (1 - e_val * e_val) * cos(theta)) +
+                     ((2. * e_val - 1) * std::sqrt(sqpart));
     const double l = (4. * (1. - e_val * e_val) * std::pow(cos(theta), 2)) +
                      std::pow((2. * e_val - 1.), 2);
-    double r_mw = (l / m) * r_mc;
-    // Initialise meridional eccentricity
-    const double xi = 0.1;
-    const double a0 = 1e-2;
-    double C0_s_min = std::pow(a0 * cohesion_peak_ * std::cos(phi), 2);
-    double C0_s =
-        std::max(std::pow(xi * cohesion_peak_ * std::tan(psi), 2), C0_s_min);
+    const double r_mw = (l / m) * r_mc;
 
-    // Force axisymmetric circle near apex for low cohesion and tension cutoff
-    if (rho * rho < C0_s) {
-      r_mw = r_mc;  // Force axisymmetric circle near apex
-      drmw = 0.0;   // Kill dr_mw/dtheta derivative noise
-      d2rmw = 0.0;  // Kill d2r_mw/dtheta2 derivative noise
-    }
-
-    double omega = C0_s + std::pow((r_mw * std::sqrt(1.5) * rho), 2);
-    if (omega < std::numeric_limits<double>::epsilon()) omega = 1.E-5;
+    // dRmw/dTheta
     const double dl_dtheta =
         -8. * (1. - e_val * e_val) * cos(theta) * sin(theta);
     const double dm_dtheta =
         (-2. * (1. - e_val * e_val) * sin(theta)) +
         (0.5 * (2. * e_val - 1.) * dl_dtheta) / std::sqrt(sqpart);
-    const double dp_depsilon = tan(psi) / std::sqrt(3.);
-    const double dp_drho = 3. * rho * r_mw * r_mw / (2. * std::sqrt(omega));
-    double drmw = ((m * dl_dtheta) - (l * dm_dtheta)) / (m * m) * r_mc;
+    const double drmw = ((m * dl_dtheta) - (l * dm_dtheta)) / (m * m) * r_mc;
 
-    double H_s_val = std::sqrt(omega);
-    const double dp_dtheta = (1.5 * rho * rho * r_mw * drmw) / H_s_val;
-    // compute the value of dp/dsigma and dp/dj in shear yield
-    (*dp_dsigma) = (dp_depsilon * depsilon_dsigma) + (dp_drho * drho_dsigma) +
-                   (dp_dtheta * dtheta_dsigma);
-
-    (*dp_dq) = dp_drho * std::sqrt(2. / 3.);
-
+    // d2Rmw/dTheta2
     const double d2l_dtheta2 =
         -8.0 * (1.0 - e_val * e_val) *
         (cos(theta) * cos(theta) - sin(theta) * sin(theta));
@@ -502,59 +478,53 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
         (dl_dtheta * dl_dtheta) / (2.0 * sqpart * std::sqrt(sqpart));
     const double d2m_dtheta2 = -2.0 * (1.0 - e_val * e_val) * cos(theta) +
                                0.5 * (2.0 * e_val - 1.0) * (term1 - term2);
-    // Exact analytical second derivative
     const double num2 = m * (m * d2l_dtheta2 - l * d2m_dtheta2) -
                         2.0 * dm_dtheta * (m * dl_dtheta - l * dm_dtheta);
-    double d2rmw = (num2 / (m * m * m)) * r_mc;
+    const double d2rmw = (num2 / (m * m * m)) * r_mc;
 
-    double dHs_drho = (1.5 * r_mw * r_mw * rho) / H_s_val;
-    double dHs_dtheta = (1.5 * rho * rho * r_mw * drmw) / H_s_val;
-    double d2Hs_drho2 = (1.5 * r_mw * r_mw * C0_s) / std::pow(H_s_val, 3);
-    double d2Hs_drhodtheta =
-        (3.0 * rho * r_mw * drmw * (C0_s + 0.75 * r_mw * r_mw * rho * rho)) /
-        std::pow(H_s_val, 3);
-    double d2Hs_dtheta2 =
-        (0.75 * rho * rho / std::pow(H_s_val, 3)) *
-        (2.0 * H_s_val * H_s_val * (drmw * drmw + r_mw * d2rmw) -
-         3.0 * rho * rho * r_mw * r_mw * drmw * drmw);
+    // Meridional eccentricity and hyperbolic apex smoothing C0_s
+    const double xi = 0.1;
+    const double a0 = 1e-2;
+    const double C0_s =
+        std::max({std::pow(xi * cohesion_peak_ * std::tan(psi), 2),
+                  std::pow(a0 * cohesion_peak_ * std::cos(phi), 2),
+                  apex_smoothing_ * apex_smoothing_});
 
-    // Compute d2P/dSigma2
-    (*d2p_dsigma2) =
-        d2Hs_drho2 * (drho_dsigma * drho_dsigma.transpose()) +
-        d2Hs_drhodtheta * (drho_dsigma * dtheta_dsigma.transpose() +
-                           dtheta_dsigma * drho_dsigma.transpose()) +
-        d2Hs_dtheta2 * (dtheta_dsigma * dtheta_dsigma.transpose()) +
-        dHs_drho * d2rho_dsigma2 + dHs_dtheta * d2theta_dsigma2;
+    // Hyperbolic potential; axisymmetric value Rmw(pi/3) = Rmc
+    hyperbolic_potential(r_mw, drmw, d2rmw, r_mc, C0_s,
+                         tan(psi) / std::sqrt(3.));
   }
 
-  // Compute softening part
+  // -------------------------------------------------------------------------
+  // Softening modulus (shear only, between peak and residual)
+  // -------------------------------------------------------------------------
   (*softening) = 0.;
-  if (yield_type == mpm::mohrcoulomb::FailureState::Shear) {
-    if (softening_ && pdstrain > pdstrain_peak_ &&
-        pdstrain < pdstrain_residual_) {
-      // Compute dPhi/dPstrain
-      double dphi_dpstrain =
-          (phi_residual_ - phi_peak_) / (pdstrain_residual_ - pdstrain_peak_);
-      // Compute dc/dPstrain
-      double dc_dpstrain = (cohesion_residual_ - cohesion_peak_) /
-                           (pdstrain_residual_ - pdstrain_peak_);
-      // Compute dF/dPstrain
-      double df_dphi =
-          std::sqrt(1.5) * rho *
-              ((sin(phi) * sin(theta + M_PI / 3.) /
-                (std::sqrt(3.) * cos(phi) * cos(phi))) +
-               (cos(theta + M_PI / 3.) / (3. * cos(phi) * cos(phi)))) +
-          (mpm::materials::p(stress) / (cos(phi) * cos(phi)));
-      double df_dc = -1.;
-      const double dkappa_dlambda = mpm::materials::pdstrain(*dp_dsigma);
-      (*softening) = (-1.) *
-                     ((df_dphi * dphi_dpstrain) + (df_dc * dc_dpstrain)) *
-                     dkappa_dlambda;
-    }
+  if (yield_type == mpm::mohrcoulomb::FailureState::Shear && softening_ &&
+      pdstrain > pdstrain_peak_ && pdstrain < pdstrain_residual_) {
+    // dPhi/dPstrain and dc/dPstrain
+    const double dphi_dpstrain =
+        (phi_residual_ - phi_peak_) / (pdstrain_residual_ - pdstrain_peak_);
+    const double dc_dpstrain = (cohesion_residual_ - cohesion_peak_) /
+                               (pdstrain_residual_ - pdstrain_peak_);
+    // dF/dPhi and dF/dc
+    const double df_dphi =
+        std::sqrt(1.5) * rho *
+            ((sin(phi) * sin(theta + M_PI / 3.) /
+              (std::sqrt(3.) * cos(phi) * cos(phi))) +
+             (cos(theta + M_PI / 3.) / (3. * cos(phi) * cos(phi)))) +
+        (mpm::materials::p(stress) / (cos(phi) * cos(phi)));
+    const double df_dc = -1.;
+    // d(kappa)/d(lambda) for kappa = accumulated equivalent plastic strain
+    const double dkappa_dlambda = mpm::materials::pdstrain(*dp_dsigma);
+    (*softening) = (-1.) * ((df_dphi * dphi_dpstrain) + (df_dc * dc_dpstrain)) *
+                   dkappa_dlambda;
   }
 }
 
-//! Compute stress
+//! Compute stress with adaptive strain substepping
+//! A strain increment whose return mapping fails is retried as 2, 4, ...,
+//! max_substeps equal sub-increments from the start-of-step state. The direct
+//! apex return is only allowed on the final (most refined) attempt.
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,

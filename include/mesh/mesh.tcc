@@ -2391,8 +2391,9 @@ bool mpm::Mesh<Tdim>::assign_particles_stresses(
 
 //! Assign particle velocities
 template <unsigned Tdim>
-bool mpm::Mesh<Tdim>::assign_particles_velocities(const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
-          particle_velocities) {
+bool mpm::Mesh<Tdim>::assign_particles_velocities(
+    const std::vector<std::tuple<mpm::Index, Eigen::Matrix<double, Tdim, 1>>>&
+        particle_velocities) {
   bool status = true;
   try {
     if (!particles_.size())
@@ -2404,7 +2405,7 @@ bool mpm::Mesh<Tdim>::assign_particles_velocities(const std::vector<std::tuple<m
       mpm::Index pid = std::get<0>(particle_velocity);
       // Particle Velocity
       Eigen::Matrix<double, Tdim, 1> velocity = std::get<1>(particle_velocity);
-      
+
       if (map_particles_.find(pid) != map_particles_.end()) {
         map_particles_[pid]->assign_velocity(velocity);
       }

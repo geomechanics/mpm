@@ -556,6 +556,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
 
   // Characteristic normalization stress (prevents division by zero at origin)
   const double sig_trial_norm = std::max(trial_stress.norm(), 1.0e-8);
+  const double tolerance = rel_tol_ * sig_trial_norm;
 
   // Separated state: current packing density is less than critical density
   if (current_packing_density <= critical_density) {
@@ -658,6 +659,18 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         current_stress = trial_stress;
         this->compute_stress_invariants(current_stress, state_vars, invariants);
         this->compute_yield_state(&yield_function, (*state_vars), invariants);
+        (*state_vars).at("plastic_strain_t0") = plastic_strain_t(0);
+        (*state_vars).at("plastic_strain_t1") = plastic_strain_t(1);
+        (*state_vars).at("plastic_strain_t2") = plastic_strain_t(2);
+        (*state_vars).at("plastic_strain_t3") = plastic_strain_t(3);
+        (*state_vars).at("plastic_strain_t4") = plastic_strain_t(4);
+        (*state_vars).at("plastic_strain_t5") = plastic_strain_t(5);
+        (*state_vars).at("plastic_strain_s0") = plastic_strain_s(0);
+        (*state_vars).at("plastic_strain_s1") = plastic_strain_s(1);
+        (*state_vars).at("plastic_strain_s2") = plastic_strain_s(2);
+        (*state_vars).at("plastic_strain_s3") = plastic_strain_s(3);
+        (*state_vars).at("plastic_strain_s4") = plastic_strain_s(4);
+        (*state_vars).at("plastic_strain_s5") = plastic_strain_s(5);
         if (dlambda_double(0) < -mandatory_tolerance_ && dlambda_double(1) >= -mandatory_tolerance_)
           yield_type = mpm::mohrcoulomb::FailureState::Shear;
         else if (dlambda_double(0) >= -mandatory_tolerance_ && dlambda_double(1) < -mandatory_tolerance_)
@@ -668,7 +681,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       }
 
       // Convergence check
-      if (std::abs(yield_function(0)) <= tolerance_ && std::abs(yield_function(1)) <= tolerance_ && err_sigma < rel_tol_) {
+      if (std::abs(yield_function(0)) <= tolerance && std::abs(yield_function(1)) <= tolerance && err_sigma < rel_tol_) {
         if (dlambda_double(0) >= 0.0 && dlambda_double(1) >= 0.0) {
           dlambda = dlambda_double;
           converged = true;
@@ -682,6 +695,18 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         current_stress = trial_stress;
         this->compute_stress_invariants(current_stress, state_vars, invariants);
         this->compute_yield_state(&yield_function, (*state_vars), invariants);
+        (*state_vars).at("plastic_strain_t0") = plastic_strain_t(0);
+        (*state_vars).at("plastic_strain_t1") = plastic_strain_t(1);
+        (*state_vars).at("plastic_strain_t2") = plastic_strain_t(2);
+        (*state_vars).at("plastic_strain_t3") = plastic_strain_t(3);
+        (*state_vars).at("plastic_strain_t4") = plastic_strain_t(4);
+        (*state_vars).at("plastic_strain_t5") = plastic_strain_t(5);
+        (*state_vars).at("plastic_strain_s0") = plastic_strain_s(0);
+        (*state_vars).at("plastic_strain_s1") = plastic_strain_s(1);
+        (*state_vars).at("plastic_strain_s2") = plastic_strain_s(2);
+        (*state_vars).at("plastic_strain_s3") = plastic_strain_s(3);
+        (*state_vars).at("plastic_strain_s4") = plastic_strain_s(4);
+        (*state_vars).at("plastic_strain_s5") = plastic_strain_s(5);
         if (dlambda_double(0) < 0.0 && dlambda_double(1) >= 0.0)
           yield_type = mpm::mohrcoulomb::FailureState::Shear;
         else if (dlambda_double(0) >= 0.0 && dlambda_double(1) < 0.0)
@@ -801,14 +826,14 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     // ---------------------------------------------------------------------
     // B. Convergence check
     // ---------------------------------------------------------------------
-    if (std::abs(yield_function_single) <= tolerance_ && err_sigma < rel_tol_) {
-      if (other_yield_function <= tolerance_) {
+    if (std::abs(yield_function_single) <= tolerance && err_sigma < rel_tol_) {
+      if (other_yield_function <= tolerance) {
         converged = true;
         // Assign final yield state near the converged point.
-        if (yield_function(0) > -tolerance_ && yield_function(1) <= tolerance_) {
+        if (yield_function(0) > -tolerance && yield_function(1) <= tolerance) {
           (*state_vars).at("yield_state") = 2;  // Tensile
-        } else if (yield_function(1) > -tolerance_ &&
-                  yield_function(0) <= tolerance_) {
+        } else if (yield_function(1) > -tolerance &&
+                  yield_function(0) <= tolerance) {
           (*state_vars).at("yield_state") = 1;  // Shear
         } else {
               console_->warn(
@@ -863,7 +888,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
               // ---------------------------------------------------------------------
               // B. Convergence check
               // ---------------------------------------------------------------------
-              if ((yield_function(0)) <= tolerance_ && (yield_function(1)) <= tolerance_ && err_sigma < rel_tol_) {
+              if ((yield_function(0)) <= tolerance && (yield_function(1)) <= tolerance && err_sigma < rel_tol_) {
                 converged = true;
                 (*state_vars).at("yield_state") = 3;
                 break;
@@ -881,9 +906,9 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   if (!converged ) {
     // Warn when return mapping fails to converge within the iteration budget.
     console_->warn(
-        "MohrCoulomb::compute_stress: Return mapping did not converge "
-        "after {} iterations. Final yield functions: f_t = {}, f_s = {}",
-        max_iter_, yield_function(0), yield_function(1));
+        "MohrCoulomb::compute_stress: Particle id: {}; Return mapping did not converge; "
+        "Final yield functions: f_t = {}, f_s = {}",
+        ptr->id(), yield_function(0), yield_function(1));
   }
 
   return current_stress;

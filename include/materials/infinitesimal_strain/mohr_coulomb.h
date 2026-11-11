@@ -210,13 +210,11 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! Absolute tolerance
   double abs_tol_{1.e-10};
   //! Relative tolerance
-  double rel_tol_{1.e-3};
+  double rel_tol_{1.e-4};
   //! Maximum number of iterations
-  unsigned max_iter_{20};
+  unsigned max_iter_{15};
 
-  //! Discrete tolerance
-  double tolerance_{1.0e-6};
-  //!
+  //! Mandatory tolerance
   double mandatory_tolerance_{1.0e-2};
 };  // MohrCoulomb class
 }  // namespace mpm

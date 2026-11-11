@@ -193,7 +193,6 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
     // Inject particles
     mesh_->inject_particles(step_ * dt_);
-
     // Initialise nodes, cells and shape functions
     mpm_scheme_->initialise();
 
@@ -202,20 +201,16 @@ bool mpm::MPMImplicit<Tdim>::solve() {
 
     // Mass momentum inertia and compute velocity and acceleration at nodes
     mpm_scheme_->compute_nodal_kinematics(velocity_update_, phase_, step_);
-
     // Apply PML specific routines
     if (pml_boundary_)
       mpm_scheme_->initialise_pml_boundary_properties(pml_type_);
-
     // Apply KV Absorbing Constraints
     if (absorbing_boundary_) {
       mpm_scheme_->absorbing_boundary_properties();
     }
-
     // Predict nodal kinematics -- Predictor step of Newmark scheme
     mpm_scheme_->update_nodal_kinematics_newmark(phase_, newmark_beta_,
                                                  newmark_gamma_, pml_boundary_);
-
     // Reinitialise system matrix to construct equillibrium equation
     bool matrix_reinitialization_status = this->reinitialise_matrix();
     if (!matrix_reinitialization_status) {
@@ -422,10 +417,10 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
 #pragma omp section
       {
         // Compute local cell stiffness matrices
-        mesh_->iterate_over_particles(std::bind(
-            &mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
-            std::placeholders::_1, newmark_beta_, newmark_gamma_, bossak_alpha_,
-            dt_, quasi_static_, rayleigh_alpha_, rayleigh_beta_));
+        mesh_->iterate_over_particles(
+            std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
+                      std::placeholders::_1, newmark_beta_, newmark_gamma_,
+                      bossak_alpha_, dt_, quasi_static_));
       }
 
 #pragma omp section
@@ -443,22 +438,24 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
                     std::placeholders::_1, newmark_gamma_, newmark_beta_, dt_));
     }
 
-    // Compute local residual force
-    mpm_scheme_->compute_forces(
-        gravity_, phase_, step_, set_node_concentrated_force_, quasi_static_,
-        rayleigh_damping_, rayleigh_alpha_, rayleigh_beta_);
+    // Assemble global stiffness matrix
+    assembler_->assemble_stiffness_matrix();
 
-    // Add pml damping to stiffness matrix and force
+    // Compute local residual force
+    mpm_scheme_->compute_forces(gravity_, phase_, step_,
+                                set_node_concentrated_force_, quasi_static_);
+
+    // Add rayleigh damping to stiffness matrix and force
     if (!quasi_static_ && pml_boundary_ &&
-        (!pml_type_ || damping_type_ == mpm::Damping::PML)) {
-      mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::map_pml_damping_matrix_to_cell,
-                    std::placeholders::_1, newmark_gamma_, newmark_beta_, dt_,
-                    damping_factor_));
+        (!pml_type_ || damping_type_ == mpm::Damping::Rayleigh)) {
+      mesh_->iterate_over_particles(std::bind(
+          &mpm::ParticleBase<Tdim>::map_rayleigh_damping_matrix_to_cell,
+          std::placeholders::_1, newmark_gamma_, newmark_beta_, dt_,
+          damping_factor_));
 
       // Iterate over each particle to compute nodal internal force
       mesh_->iterate_over_particles(
-          std::bind(&mpm::ParticleBase<Tdim>::map_pml_damping_force,
+          std::bind(&mpm::ParticleBase<Tdim>::map_rayleigh_damping_force,
                     std::placeholders::_1, damping_factor_, dt_));
     }
 

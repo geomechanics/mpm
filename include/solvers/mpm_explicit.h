@@ -87,12 +87,6 @@ class MPMExplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::rotation_clockwise_;
   //! Rotation ramping time
   using mpm::MPMBase<Tdim>::rotation_ramping_time_;
-  //! Rayleigh damping
-  using mpm::MPMBase<Tdim>::rayleigh_damping_;
-  //! Rayleigh damping mass weighting coefficient
-  using mpm::MPMBase<Tdim>::rayleigh_alpha_;
-  //! Rayleigh damping stiffness weighting coefficient
-  using mpm::MPMBase<Tdim>::rayleigh_beta_;
   //! Absorbing Boundary
   using mpm::MPMBase<Tdim>::absorbing_boundary_;
   //! Perfectly Matched Layer Boundary

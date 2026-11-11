@@ -115,12 +115,6 @@ class MPMImplicit : public MPMBase<Tdim> {
   using mpm::MPMBase<Tdim>::damping_type_;
   //! Damping factor
   using mpm::MPMBase<Tdim>::damping_factor_;
-  //! Rayleigh damping
-  using mpm::MPMBase<Tdim>::rayleigh_damping_;
-  //! Rayleigh damping mass weighting coefficient
-  using mpm::MPMBase<Tdim>::rayleigh_alpha_;
-  //! Rayleigh damping stiffness weighting coefficient
-  using mpm::MPMBase<Tdim>::rayleigh_beta_;
   //! Locate particles
   using mpm::MPMBase<Tdim>::locate_particles_;
   //! Absorbing Boundary

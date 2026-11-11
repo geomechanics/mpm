@@ -255,7 +255,7 @@ class Particle : public ParticleBase<Tdim> {
   void map_body_force(const VectorDim& pgravity) noexcept override;
   //! Map body force not gravity
   void map_body_force_not_gravity() noexcept override;
-
+  
   //! Map rotation forces (centrifugal and coriolis)
   //! \param[in] rotation_origin Origin of rotation
   //! \param[in] rotation_omega Angular velocity of centrifuge
@@ -467,12 +467,10 @@ class Particle : public ParticleBase<Tdim> {
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
-  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
-  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
-  //! damping
-  inline bool map_stiffness_matrix_to_cell(
-      double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
-      bool quasi_static, double rayleigh_alpha, double rayleigh_beta) override;
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                           double newmark_gamma,
+                                           double bossak_alpha, double dt,
+                                           bool quasi_static) override;
 
   //! Reduce constitutive relations matrix depending on the dimension
   //! \ingroup Implicit
@@ -523,31 +521,20 @@ class Particle : public ParticleBase<Tdim> {
   //! Map PML rayleigh damping force
   //! \param[in] damping_factor Rayleigh damping factor
   //! \param[in] dt parameter beta of Newmark scheme
-  void map_pml_damping_force(double damping_factor,
-                             double dt) noexcept override {};
+  void map_rayleigh_damping_force(double damping_factor,
+                                  double dt) noexcept override {};
 
-  //! Map PML damping matrix to cell (used in equilibrium
+  //! Map PML rayleigh damping matrix to cell (used in equilibrium
   //! equation LHS)
   //! \param[in] newmark_gamma parameter gamma of Newmark scheme
   //! \param[in] newmark_beta parameter beta of Newmark scheme
   //! \param[in] dt parameter beta of Newmark scheme
   //! \param[in] damping_factor Rayleigh damping factor
-  inline bool map_pml_damping_matrix_to_cell(double newmark_gamma,
-                                             double newmark_beta, double dt,
-                                             double damping_factor) override {
+  inline bool map_rayleigh_damping_matrix_to_cell(
+      double newmark_gamma, double newmark_beta, double dt,
+      double damping_factor) override {
     return false;
   };
-
-  //! Map Rayleigh damping force
-  //! \param[in] alpha_factor Rayleigh damping factor alpha
-  //! \param[in] beta_factor Rayleigh damping factor beta
-  //! \param[in] dt Analysis time step
-  inline void map_rayleigh_damping_force(double alpha_factor, double beta_factor,
-                                  double dt) noexcept override;
-                        
-  //! Get tangent matrix of the particle
-  //! \retval tangent_matrix Tangent matrix of the particle
-  Eigen::Matrix<double, 6, 6> get_consistent_tangent_matrix(double dt) noexcept override;
 
  protected:
   //! Initialise particle material container
@@ -607,19 +594,14 @@ class Particle : public ParticleBase<Tdim> {
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] dt parameter beta of Newmark scheme
-  virtual inline bool map_material_stiffness_matrix_to_cell(
-      double newmark_beta, double newmark_gamma, double dt,
-      double rayleigh_beta);
+  virtual inline bool map_material_stiffness_matrix_to_cell(double dt);
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
-  //! \param[in] bossak_alpha parameter alpha of Bossak scheme
   //! \param[in] dt parameter beta of Newmark scheme
-  //! \param[in] rayleigh_alpha parameter alpha of Rayleigh damping
-  virtual inline bool map_mass_matrix_to_cell(double newmark_beta, double newmark_gamma,
-                                              double bossak_alpha, double dt, double rayleigh_alpha);
+  virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
+                                              double bossak_alpha, double dt);
   /**@}*/
 
   /**

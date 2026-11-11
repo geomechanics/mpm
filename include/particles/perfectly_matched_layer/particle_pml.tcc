@@ -519,8 +519,7 @@ void mpm::ParticlePML<Tdim>::map_inertial_force(double bossak_alpha) noexcept {
 //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
 template <unsigned Tdim>
 inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell(
-    double newmark_beta, double newmark_gamma, double dt,
-    double rayleigh_beta) {
+    double dt) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -573,9 +572,9 @@ inline bool mpm::ParticlePML<Tdim>::map_material_stiffness_matrix_to_cell(
 
 //! Map mass matrix to cell (used in poisson equation LHS)
 template <unsigned Tdim>
-inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(
-    double newmark_beta, double newmark_gamma, double bossak_alpha, double dt,
-    double rayleigh_alpha) {
+inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(double newmark_beta,
+                                                            double bossak_alpha,
+                                                            double dt) {
   bool status = true;
   try {
     // Check if material ptr is valid
@@ -611,8 +610,8 @@ inline bool mpm::ParticlePML<Tdim>::map_mass_matrix_to_cell(
 
 //! Map PML rayleigh damping force
 template <unsigned Tdim>
-void mpm::ParticlePML<Tdim>::map_pml_damping_force(double damping_factor,
-                                                   double dt) noexcept {
+void mpm::ParticlePML<Tdim>::map_rayleigh_damping_force(double damping_factor,
+                                                        double dt) noexcept {
   // Check if particle has a valid cell ptr
   assert(cell_ != nullptr);
 
@@ -653,9 +652,10 @@ void mpm::ParticlePML<Tdim>::map_pml_damping_force(double damping_factor,
   }
 }
 
-//! Map PML damping matrix to cell (used in equilibrium equation LHS)
+//! Map PML rayleigh damping matrix to cell (used in equilibrium
+//! equation LHS)
 template <unsigned Tdim>
-inline bool mpm::ParticlePML<Tdim>::map_pml_damping_matrix_to_cell(
+inline bool mpm::ParticlePML<Tdim>::map_rayleigh_damping_matrix_to_cell(
     double newmark_gamma, double newmark_beta, double dt,
     double damping_factor) {
   bool status = true;

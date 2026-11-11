@@ -9,7 +9,6 @@
 
 #include "logger.h"
 #include "particle.h"
-#include "particle_base.h"
 
 namespace mpm {
 
@@ -44,16 +43,7 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   ParticleBbar& operator=(const ParticleBbar<Tdim>&) = delete;
 
   //! Map internal force
-  //! \param[in] dt Analysis time step
   inline void map_internal_force(double dt) noexcept override;
-
-  //! Map Rayleigh damping force
-  //! \param[in] alpha_factor Rayleigh damping factor alpha
-  //! \param[in] beta_factor Rayleigh damping factor beta
-  //! \param[in] dt Analysis time step
-  inline void map_rayleigh_damping_force(double alpha_factor, double beta_factor,
-                                  double dt) noexcept override;
-
 
   //! Type of particle
   std::string type() const override {
@@ -95,10 +85,6 @@ class ParticleBbar : public mpm::Particle<Tdim> {
  protected:
   //! Nodes
   using ParticleBase<Tdim>::nodes_;
-  //! State variables
-  using ParticleBase<Tdim>::state_variables_;
-  //! Material
-  using ParticleBase<Tdim>::material_;
   //! Volume
   using Particle<Tdim>::volume_;
   //! Stresses

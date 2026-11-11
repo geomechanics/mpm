@@ -12,8 +12,7 @@
 namespace mpm {
 //! Cundall: Cundall damping
 //! Rayleigh: Rayleigh damping
-//! PML: Perfectly Matched Layer Rayleigh damping
-enum class Damping { None, Cundall, Rayleigh, PML };
+enum class Damping { None, Cundall, Rayleigh };
 
 //! MPMScheme class
 //! \brief Mpmscheme base class to support different stress update schemes
@@ -69,15 +68,11 @@ class MPMScheme {
   //! \param[in] rotation_origin Origin of rotation
   //! \param[in] rotation_omega Angular velocity
   //! \param[in] rotation_clockwise Direction of rotation
-  //! \param[in] rayleigh_damping Boolean of Rayleigh damping
-  //! \param[in] rayleigh_alpha Rayleigh damping coefficient alpha
-  //! \param[in] rayleigh_beta Rayleigh damping coefficient beta
   virtual inline void compute_forces(
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
       unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
       const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
-      double rotation_omega, bool rotation_clockwise, bool rayleigh_damping,
-      double rayleigh_alpha, double rayleigh_beta);
+      double rotation_omega, bool rotation_clockwise);
 
   //! Assign relevant properties for absorbing boundary
   virtual inline void absorbing_boundary_properties();
@@ -125,13 +120,9 @@ class MPMScheme {
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
   //! is applied or not
   //! \param[in] quasi_static Boolean of quasi-static analysis
-  //! \param[in] rayleigh_damping Boolean of Rayleigh damping
-  //! \param[in] rayleigh_alpha Rayleigh damping coefficient alpha
-  //! \param[in] rayleigh_beta Rayleigh damping coefficient beta
   virtual inline void compute_forces(
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-      unsigned step, bool concentrated_nodal_forces, bool quasi_static,
-      bool rayleigh_damping, double rayleigh_alpha, double rayleigh_beta) {
+      unsigned step, bool concentrated_nodal_forces, bool quasi_static) {
     throw std::runtime_error(
         "Calling the base class function (compute_forces) in "
         "MPMScheme:: illegal operation!");

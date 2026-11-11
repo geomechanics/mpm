@@ -7,17 +7,12 @@
 #include "Eigen/Dense"
 
 #include "infinitesimal_elasto_plastic.h"
+
 namespace mpm {
 
 namespace mohrcoulomb {
 //! Failure state
-enum FailureState {
-  Elastic = 0,
-  Shear = 1,
-  Tensile = 2,
-  ShearTensile = 3,
-  Separated = 4
-};
+enum FailureState { Elastic = 0, Shear = 1, Tensile = 2, Separated = 3 };
 }  // namespace mohrcoulomb
 
 //! MohrCoulomb class
@@ -39,14 +34,10 @@ enum FailureState {
 template <unsigned Tdim>
 class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
  public:
-  //! Define a vector of 2 dof
-  using Vector2d = Eigen::Matrix<double, 2, 1>;
   //! Define a vector of 6 dof
   using Vector6d = Eigen::Matrix<double, 6, 1>;
   //! Define a Matrix of 6 x 6
   using Matrix6x6 = Eigen::Matrix<double, 6, 6>;
-  //! Define a Matrix of 3 x 3
-  using Matrix3x3 = Eigen::Matrix<double, 3, 3>;
 
   //! Constructor with id and material properties
   //! \param[in] id Material id
@@ -116,8 +107,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   void compute_df_dp(mpm::mohrcoulomb::FailureState yield_type,
                      const mpm::dense_map* state_vars, const Vector6d& stress,
                      Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
-                     Matrix6x6* d2p_dsigma2, double* softening,
-                     double pdstrain);
+                     double* softening);
 
  protected:
   //! material id
@@ -166,43 +156,19 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   inline double check_low(double val) {
     return (val > 1.0e-15 ? val : 1.0e-15);
   }
-
-  //! Update friction, dilation, cohesion and tension cutoff for softening
-  //! \param[in] state_vars History-dependent state variables
-  //! \param[in] pdstrain_tensile Plastic deviatoric strain (tension, unused)
-  //! \param[in] pdstrain_shear Accumulated plastic deviatoric strain (kappa)
-  void update_softening_parameters(mpm::dense_map* state_vars,
-                                   double pdstrain_tensile,
-                                   double pdstrain_shear);
-
-  //! Single-surface return mapping step (Newton step with line search)
-  //! \retval (corrected stress, dP/dSigma at the corrected stress);
-  //! dlambda_single is updated in place
-  std::tuple<Vector6d, Vector6d> compute_single_surface_return(
-      mpm::mohrcoulomb::FailureState yield_type, double yield_function,
-      const Vector6d& current_stress, const Matrix6x6& de,
-      mpm::dense_map* state_vars, double& dlambda_single, double pdstrain,
-      const Vector6d& trial_stress);
-
-  //! Corner (two-surface) return mapping step (Newton step with line search)
-  //! \retval (corrected stress, tensile and shear plastic strain increments);
-  //! dlambda is updated in place
-  std::tuple<Vector6d, Vector6d, Vector6d> compute_corner_return(
-      const Vector6d& current_stress, const Vector6d& trial_stress,
-      const Matrix6x6& de, mpm::dense_map* state_vars,
+  void update_softening_parameters(mpm::dense_map* state_vars);
+  std::tuple<Vector6d, double, bool> compute_single_surface_return(
+      mpm::mohrcoulomb::FailureState yield_type,
       const Eigen::Matrix<double, 2, 1>& yield_function,
-      Eigen::Matrix<double, 2, 1>& dlambda, double pdstrain_tensile,
-      double pdstrain_shear);
+      const Vector6d& current_stress,
+      const Matrix6x6& de,
+      mpm::dense_map* state_vars);
 
-  //! Direct return to the apex (last resort)
-  //! \retval (apex stress, hydrostatic and deviatoric plastic strain
-  //! increments)
-  std::tuple<Vector6d, Vector6d, Vector6d> enforce_corner_return(
-      const Vector6d& trial_stress, const Matrix6x6& de,
-      mpm::dense_map* state_vars,
-      const Eigen::Matrix<double, 2, 1>& yield_function,
-      Eigen::Matrix<double, 2, 1>& dlambda, double pdstrain_tensile,
-      double pdstrain_shear);
+  //! Compute corner return mapping for multi-surface failure
+  std::tuple<Vector6d, double, bool> compute_corner_return(
+      const Vector6d& current_stress,
+      const Matrix6x6& de,
+      mpm::dense_map* state_vars);
 
   //! Density
   double density_{std::numeric_limits<double>::max()};
@@ -247,16 +213,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
       {0, mpm::mohrcoulomb::FailureState::Elastic},
       {1, mpm::mohrcoulomb::FailureState::Shear},
       {2, mpm::mohrcoulomb::FailureState::Tensile},
-      {3, mpm::mohrcoulomb::FailureState::ShearTensile},
-      {4, mpm::mohrcoulomb::FailureState::Separated}};
-
-  // Parameters for return mapping algorithm
-  //! Relative tolerance on the stress residual |R| / |trial stress|
-  double rel_tol_{1.e-4};
-  //! Maximum number of Newton iterations per return (per substep)
-  unsigned max_iter_{50};
-  //! Absolute tolerance on the yield functions (stress units)
-  double tolerance_{1.0e-6};
+      {3, mpm::mohrcoulomb::FailureState::Separated}};
 };  // MohrCoulomb class
 }  // namespace mpm
 

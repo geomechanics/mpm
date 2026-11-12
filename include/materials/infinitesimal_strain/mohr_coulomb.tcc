@@ -628,19 +628,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
       pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
       pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
-      (*state_vars).at("plastic_strain_t0") = current_plastic_strain_t(0);
-      (*state_vars).at("plastic_strain_t1") = current_plastic_strain_t(1);
-      (*state_vars).at("plastic_strain_t2") = current_plastic_strain_t(2);
-      (*state_vars).at("plastic_strain_t3") = current_plastic_strain_t(3);
-      (*state_vars).at("plastic_strain_t4") = current_plastic_strain_t(4);
-      (*state_vars).at("plastic_strain_t5") = current_plastic_strain_t(5);
-      (*state_vars).at("plastic_strain_s0") = current_plastic_strain_s(0);
-      (*state_vars).at("plastic_strain_s1") = current_plastic_strain_s(1);
-      (*state_vars).at("plastic_strain_s2") = current_plastic_strain_s(2);
-      (*state_vars).at("plastic_strain_s3") = current_plastic_strain_s(3);
-      (*state_vars).at("plastic_strain_s4") = current_plastic_strain_s(4);
-      (*state_vars).at("plastic_strain_s5") = current_plastic_strain_s(5);
-
 
       // Update softening-dependent strength parameters.
       if (softening_) {
@@ -659,18 +646,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         current_stress = trial_stress;
         this->compute_stress_invariants(current_stress, state_vars, invariants);
         this->compute_yield_state(&yield_function, (*state_vars), invariants);
-        (*state_vars).at("plastic_strain_t0") = plastic_strain_t(0);
-        (*state_vars).at("plastic_strain_t1") = plastic_strain_t(1);
-        (*state_vars).at("plastic_strain_t2") = plastic_strain_t(2);
-        (*state_vars).at("plastic_strain_t3") = plastic_strain_t(3);
-        (*state_vars).at("plastic_strain_t4") = plastic_strain_t(4);
-        (*state_vars).at("plastic_strain_t5") = plastic_strain_t(5);
-        (*state_vars).at("plastic_strain_s0") = plastic_strain_s(0);
-        (*state_vars).at("plastic_strain_s1") = plastic_strain_s(1);
-        (*state_vars).at("plastic_strain_s2") = plastic_strain_s(2);
-        (*state_vars).at("plastic_strain_s3") = plastic_strain_s(3);
-        (*state_vars).at("plastic_strain_s4") = plastic_strain_s(4);
-        (*state_vars).at("plastic_strain_s5") = plastic_strain_s(5);
         if (dlambda_double(0) < -mandatory_tolerance_ && dlambda_double(1) >= -mandatory_tolerance_)
           yield_type = mpm::mohrcoulomb::FailureState::Shear;
         else if (dlambda_double(0) >= -mandatory_tolerance_ && dlambda_double(1) < -mandatory_tolerance_)
@@ -686,6 +661,18 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
           dlambda = dlambda_double;
           converged = true;
           (*state_vars).at("yield_state") = 3;
+          (*state_vars).at("plastic_strain_t0") = current_plastic_strain_t(0);
+          (*state_vars).at("plastic_strain_t1") = current_plastic_strain_t(1);
+          (*state_vars).at("plastic_strain_t2") = current_plastic_strain_t(2);
+          (*state_vars).at("plastic_strain_t3") = current_plastic_strain_t(3);
+          (*state_vars).at("plastic_strain_t4") = current_plastic_strain_t(4);
+          (*state_vars).at("plastic_strain_t5") = current_plastic_strain_t(5);
+          (*state_vars).at("plastic_strain_s0") = current_plastic_strain_s(0);
+          (*state_vars).at("plastic_strain_s1") = current_plastic_strain_s(1);
+          (*state_vars).at("plastic_strain_s2") = current_plastic_strain_s(2);
+          (*state_vars).at("plastic_strain_s3") = current_plastic_strain_s(3);
+          (*state_vars).at("plastic_strain_s4") = current_plastic_strain_s(4);
+          (*state_vars).at("plastic_strain_s5") = current_plastic_strain_s(5);
         }
         break;
         }
@@ -695,18 +682,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         current_stress = trial_stress;
         this->compute_stress_invariants(current_stress, state_vars, invariants);
         this->compute_yield_state(&yield_function, (*state_vars), invariants);
-        (*state_vars).at("plastic_strain_t0") = plastic_strain_t(0);
-        (*state_vars).at("plastic_strain_t1") = plastic_strain_t(1);
-        (*state_vars).at("plastic_strain_t2") = plastic_strain_t(2);
-        (*state_vars).at("plastic_strain_t3") = plastic_strain_t(3);
-        (*state_vars).at("plastic_strain_t4") = plastic_strain_t(4);
-        (*state_vars).at("plastic_strain_t5") = plastic_strain_t(5);
-        (*state_vars).at("plastic_strain_s0") = plastic_strain_s(0);
-        (*state_vars).at("plastic_strain_s1") = plastic_strain_s(1);
-        (*state_vars).at("plastic_strain_s2") = plastic_strain_s(2);
-        (*state_vars).at("plastic_strain_s3") = plastic_strain_s(3);
-        (*state_vars).at("plastic_strain_s4") = plastic_strain_s(4);
-        (*state_vars).at("plastic_strain_s5") = plastic_strain_s(5);
         if (dlambda_double(0) < 0.0 && dlambda_double(1) >= 0.0)
           yield_type = mpm::mohrcoulomb::FailureState::Shear;
         else if (dlambda_double(0) >= 0.0 && dlambda_double(1) < 0.0)
@@ -727,18 +702,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
           Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
           pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
           pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
-          (*state_vars).at("plastic_strain_t0") = current_plastic_strain_t(0);
-          (*state_vars).at("plastic_strain_t1") = current_plastic_strain_t(1);
-          (*state_vars).at("plastic_strain_t2") = current_plastic_strain_t(2);
-          (*state_vars).at("plastic_strain_t3") = current_plastic_strain_t(3);
-          (*state_vars).at("plastic_strain_t4") = current_plastic_strain_t(4);
-          (*state_vars).at("plastic_strain_t5") = current_plastic_strain_t(5);
-          (*state_vars).at("plastic_strain_s0") = current_plastic_strain_s(0);
-          (*state_vars).at("plastic_strain_s1") = current_plastic_strain_s(1);
-          (*state_vars).at("plastic_strain_s2") = current_plastic_strain_s(2);
-          (*state_vars).at("plastic_strain_s3") = current_plastic_strain_s(3);
-          (*state_vars).at("plastic_strain_s4") = current_plastic_strain_s(4);
-          (*state_vars).at("plastic_strain_s5") = current_plastic_strain_s(5);
           converged = true;
         }
       }
@@ -785,18 +748,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
       pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
       pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
-      (*state_vars).at("plastic_strain_t0") = current_plastic_strain_t(0);
-      (*state_vars).at("plastic_strain_t1") = current_plastic_strain_t(1);
-      (*state_vars).at("plastic_strain_t2") = current_plastic_strain_t(2);
-      (*state_vars).at("plastic_strain_t3") = current_plastic_strain_t(3);
-      (*state_vars).at("plastic_strain_t4") = current_plastic_strain_t(4);
-      (*state_vars).at("plastic_strain_t5") = current_plastic_strain_t(5);
-      (*state_vars).at("plastic_strain_s0") = current_plastic_strain_s(0);
-      (*state_vars).at("plastic_strain_s1") = current_plastic_strain_s(1);
-      (*state_vars).at("plastic_strain_s2") = current_plastic_strain_s(2);
-      (*state_vars).at("plastic_strain_s3") = current_plastic_strain_s(3);
-      (*state_vars).at("plastic_strain_s4") = current_plastic_strain_s(4);
-      (*state_vars).at("plastic_strain_s5") = current_plastic_strain_s(5);
       (*state_vars).at("pdstrain") = pdstrain(1);
 
     // Update softening-dependent strength parameters.
@@ -829,6 +780,18 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     if (std::abs(yield_function_single) <= tolerance && err_sigma < rel_tol_) {
       if (other_yield_function <= tolerance) {
         converged = true;
+        (*state_vars).at("plastic_strain_t0") = current_plastic_strain_t(0);
+        (*state_vars).at("plastic_strain_t1") = current_plastic_strain_t(1);
+        (*state_vars).at("plastic_strain_t2") = current_plastic_strain_t(2);
+        (*state_vars).at("plastic_strain_t3") = current_plastic_strain_t(3);
+        (*state_vars).at("plastic_strain_t4") = current_plastic_strain_t(4);
+        (*state_vars).at("plastic_strain_t5") = current_plastic_strain_t(5);
+        (*state_vars).at("plastic_strain_s0") = current_plastic_strain_s(0);
+        (*state_vars).at("plastic_strain_s1") = current_plastic_strain_s(1);
+        (*state_vars).at("plastic_strain_s2") = current_plastic_strain_s(2);
+        (*state_vars).at("plastic_strain_s3") = current_plastic_strain_s(3);
+        (*state_vars).at("plastic_strain_s4") = current_plastic_strain_s(4);
+        (*state_vars).at("plastic_strain_s5") = current_plastic_strain_s(5);
         // Assign final yield state near the converged point.
         if (yield_function(0) > -tolerance && yield_function(1) <= tolerance) {
           (*state_vars).at("yield_state") = 2;  // Tensile
@@ -859,18 +822,6 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
               Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
               pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
               pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
-              (*state_vars).at("plastic_strain_t0") = current_plastic_strain_t(0);
-              (*state_vars).at("plastic_strain_t1") = current_plastic_strain_t(1);
-              (*state_vars).at("plastic_strain_t2") = current_plastic_strain_t(2);
-              (*state_vars).at("plastic_strain_t3") = current_plastic_strain_t(3);
-              (*state_vars).at("plastic_strain_t4") = current_plastic_strain_t(4);
-              (*state_vars).at("plastic_strain_t5") = current_plastic_strain_t(5);
-              (*state_vars).at("plastic_strain_s0") = current_plastic_strain_s(0);
-              (*state_vars).at("plastic_strain_s1") = current_plastic_strain_s(1);
-              (*state_vars).at("plastic_strain_s2") = current_plastic_strain_s(2);
-              (*state_vars).at("plastic_strain_s3") = current_plastic_strain_s(3);
-              (*state_vars).at("plastic_strain_s4") = current_plastic_strain_s(4);
-              (*state_vars).at("plastic_strain_s5") = current_plastic_strain_s(5);
               (*state_vars).at("pdstrain") = pdstrain(1);
 
               // Update softening-dependent strength parameters.
@@ -894,6 +845,18 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
                 break;
               }      
         }
+        (*state_vars).at("plastic_strain_t0") = current_plastic_strain_t(0);
+        (*state_vars).at("plastic_strain_t1") = current_plastic_strain_t(1);
+        (*state_vars).at("plastic_strain_t2") = current_plastic_strain_t(2);
+        (*state_vars).at("plastic_strain_t3") = current_plastic_strain_t(3);
+        (*state_vars).at("plastic_strain_t4") = current_plastic_strain_t(4);
+        (*state_vars).at("plastic_strain_t5") = current_plastic_strain_t(5);
+        (*state_vars).at("plastic_strain_s0") = current_plastic_strain_s(0);
+        (*state_vars).at("plastic_strain_s1") = current_plastic_strain_s(1);
+        (*state_vars).at("plastic_strain_s2") = current_plastic_strain_s(2);
+        (*state_vars).at("plastic_strain_s3") = current_plastic_strain_s(3);
+        (*state_vars).at("plastic_strain_s4") = current_plastic_strain_s(4);
+        (*state_vars).at("plastic_strain_s5") = current_plastic_strain_s(5);
       }
       break;
     }
@@ -1038,6 +1001,9 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
         pdstrain(1) = mpm::materials::pdstrain(trial_plastic_strain_s);
       }
 
+      pdstrain_single =
+        (yield_type == mpm::mohrcoulomb::FailureState::Tensile) ? pdstrain(0)
+                                                                  : pdstrain(1);
       if (softening_) {
         this->update_softening_parameters(state_vars, pdstrain);
       }

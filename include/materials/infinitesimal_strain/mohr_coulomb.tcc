@@ -45,21 +45,68 @@ mpm::MohrCoulomb<Tdim>::MohrCoulomb(unsigned id,
         material_properties.at("poisson_ratio").template get<double>();
     // Softening status
     softening_ = material_properties.at("softening").template get<bool>();
-    // Peak friction, dilation and cohesion
+    // Peak  and residual friction, dilation and cohesion
     phi_peak_ =
         material_properties.at("friction").template get<double>() * M_PI / 180.;
-    psi_peak_ =
-        material_properties.at("dilation").template get<double>() * M_PI / 180.;
-    cohesion_peak_ = material_properties.at("cohesion").template get<double>();
-    // Residual friction, dilation and cohesion
     phi_residual_ =
         material_properties.at("residual_friction").template get<double>() *
         M_PI / 180.;
+    // Peak and residual dilation
+    psi_peak_ =
+        material_properties.at("dilation").template get<double>() * M_PI / 180.;
     psi_residual_ =
         material_properties.at("residual_dilation").template get<double>() *
         M_PI / 180.;
-    cohesion_residual_ =
-        material_properties.at("residual_cohesion").template get<double>();
+    // Peak and residual cohesion
+    if (material_properties.find("cohesion") != material_properties.end()) {
+      auto cohesion_properties = material_properties.at("cohesion");
+      std::string cohesion_type =
+          cohesion_properties.at("type").template get<std::string>();
+      if (cohesion_type == "constant") {
+        cohesion_peak_ = cohesion_properties.at("peak").template get<double>();
+        cohesion_residual_ =
+            cohesion_properties.at("residual").template get<double>();
+      } else if (cohesion_type == "linear") {
+        cohesion_initial_ = true;
+        // Minimal requirement: slope and intercept of cohesion relationship
+        // with stress
+        cohesion_intercept_ =
+            cohesion_properties.at("intercept").template get<double>();
+        cohesion_slope_ =
+            cohesion_properties.at("slope").template get<double>();
+        // Optional: min and max cohesion values
+        if (cohesion_properties.contains("min")) {
+          cohesion_min_ = cohesion_properties.at("min").template get<double>();
+        }
+        if (cohesion_properties.contains("max")) {
+          cohesion_max_ = cohesion_properties.at("max").template get<double>();
+        }
+        // Optional: residual cohesion ratio
+        if (cohesion_properties.contains("residual_ratio")) {
+          residual_cohesion_ratio_ =
+              cohesion_properties.at("residual_ratio").template get<double>();
+        }
+        // Phreatic surface consideration
+        if (cohesion_properties.contains("phreatic_surface")) {
+          pore_pressure_correction_ = true;
+          for (const auto& pt : cohesion_properties.at("phreatic_surface"))
+            phreatic_points_.emplace_back(pt.at(0).template get<double>(),
+                                          pt.at(1).template get<double>());
+          std::sort(phreatic_points_.begin(), phreatic_points_.end());
+        } else if (cohesion_properties.contains("phreatic_level")) {
+          pore_pressure_correction_ = true;
+          phreatic_points_ = {
+              {-1.0e30,
+               cohesion_properties.at("phreatic_level").template get<double>()},
+              {1.0e30, cohesion_properties.at("phreatic_level")
+                           .template get<double>()}};
+        }
+
+        // Assume minimum to start
+        cohesion_peak_ = cohesion_intercept_;
+        cohesion_residual_ = cohesion_intercept_ * residual_cohesion_ratio_;
+      }
+    }
     // Peak plastic deviatoric strain
     pdstrain_peak_ =
         material_properties.at("peak_pdstrain").template get<double>();
@@ -106,7 +153,9 @@ mpm::dense_map mpm::MohrCoulomb<Tdim>::initialise_state_variables() {
       // Theta
       {"theta", 0.},
       // Plastic deviatoric strain
-      {"pdstrain", 0.}};
+      {"pdstrain", 0.},
+      {"cohesion_peak", -1.0},
+  };
   return state_vars;
 }
 
@@ -115,7 +164,7 @@ template <unsigned Tdim>
 std::vector<std::string> mpm::MohrCoulomb<Tdim>::state_variables() const {
   const std::vector<std::string> state_vars = {
       "yield_state", "phi", "psi",   "cohesion", "tension_cutoff",
-      "epsilon",     "rho", "theta", "pdstrain"};
+      "epsilon",     "rho", "theta", "pdstrain", "cohesion_peak"};
   return state_vars;
 }
 
@@ -159,7 +208,8 @@ typename mpm::mohrcoulomb::FailureState
           ((sin(theta + M_PI / 3.) / (std::sqrt(3.) * cos(phi))) +
            (cos(theta + M_PI / 3.) * tan(phi) / 3.)) +
       (epsilon / std::sqrt(3.)) * tan(phi) - cohesion;
-  // Initialise yield status (0: elastic, 1: shear failure, 2: tensile failure)
+  // Initialise yield status (0: elastic, 1: shear failure, 2: tensile
+  // failure)
   auto yield_type = mpm::mohrcoulomb::FailureState::Elastic;
   // Check for tension and shear
   if ((*yield_function)(0) > Tolerance && (*yield_function)(1) > Tolerance) {
@@ -190,7 +240,7 @@ typename mpm::mohrcoulomb::FailureState
   return yield_type;
 }
 
-//! Compute dF/dSigma, dP/dSigma, d2P/dSigma2 and the softening modulus
+//! Compute dF/dSigma and dP/dSigma
 template <unsigned Tdim>
 void mpm::MohrCoulomb<Tdim>::compute_df_dp(
     mpm::mohrcoulomb::FailureState yield_type, const mpm::dense_map* state_vars,
@@ -235,12 +285,11 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
                  (df_dtheta * dtheta_dsigma);
   // Compute dp/dsigma and dp/dj in tension yield
   if (yield_type == mpm::mohrcoulomb::FailureState::Tensile) {
-    // Deviatoric eccentricity
+    // Define deviatoric eccentricity
     const double et_value = 0.6;
-    // Meridional eccentricity
+    // Define meridional eccentricity
     const double xit = 0.1;
-
-    // Rt (elliptic deviatoric shape function) = rt_num / (3 rt_den)
+    // Compute Rt
     double sqpart = 4. * (1 - et_value * et_value) * cos(theta) * cos(theta) +
                     5. * et_value * et_value - 4. * et_value;
     if (sqpart < std::numeric_limits<double>::epsilon()) sqpart = 1.E-5;
@@ -251,13 +300,27 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
         (2. * et_value - 1) * (2. * et_value - 1);
     if (fabs(rt_den) < std::numeric_limits<double>::epsilon()) rt_den = 1.E-5;
     const double rt = rt_num / (3. * rt_den);
-
-    // dRt/dTheta (d(sqpart)/dTheta equals drtnum_dtheta)
+    // Compute dP/dRt
+    const double dp_drt =
+        1.5 * rho * rho * rt /
+        check_low(std::sqrt(xit * xit * tension_cutoff * tension_cutoff +
+                            1.5 * rt * rt * rho * rho));
+    // Compute dP/dRho
+    const double dp_drho =
+        1.5 * rho * rt * rt /
+        check_low(std::sqrt(xit * xit * tension_cutoff * tension_cutoff +
+                            1.5 * rt * rt * rho * rho));
+    // Compute dP/dEpsilon
+    const double dp_depsilon = 1. / std::sqrt(3.);
+    // Compute dRt/dThera
+    const double drtden_dtheta =
+        -2. * (1 - et_value * et_value) * sin(theta) -
+        (2. * et_value - 1) * 4. * (1 - et_value * et_value) * cos(theta) *
+            sin(theta) /
+            std::sqrt(4. * (1 - et_value * et_value) * cos(theta) * cos(theta) +
+                      5. * et_value * et_value - 4. * et_value);
     const double drtnum_dtheta =
         -8. * (1 - et_value * et_value) * cos(theta) * sin(theta);
-    const double drtden_dtheta =
-        -2. * (1 - et_value * et_value) * sin(theta) +
-        (2. * et_value - 1) * drtnum_dtheta / (2. * std::sqrt(sqpart));
     const double drt_dtheta =
         (drtnum_dtheta * rt_den - drtden_dtheta * rt_num) /
         (3. * rt_den * rt_den);
@@ -271,7 +334,7 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
   else {
     // Compute Rmc
     const double r_mc = (3. - sin(phi)) / (6 * cos(phi));
-    // Deviatoric eccentricity
+    // Compute deviatoric eccentricity
     double e_val = (3. - sin(phi)) / (3. + sin(phi));
     if (e_val <= 0.5) e_val = 0.5 + 1.E-10;
     if (e_val > 1.) e_val = 1.;
@@ -287,7 +350,7 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
     const double r_mw = (l / m) * r_mc;
     // Initialise meridional eccentricity
     const double xi = 0.1;
-    double omega = std::pow((xi * cohesion_peak_ * tan(psi)), 2) +
+    double omega = std::pow((xi * peak_cohesion(*state_vars) * tan(psi)), 2) +
                    std::pow((r_mw * std::sqrt(1.5) * rho), 2);
     if (omega < std::numeric_limits<double>::epsilon()) omega = 1.E-5;
     const double dl_dtheta =
@@ -315,8 +378,9 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
     dphi_dpstrain =
         (phi_residual_ - phi_peak_) / (pdstrain_residual_ - pdstrain_peak_);
     // Compute dc/dPstrain
-    dc_dpstrain = (cohesion_residual_ - cohesion_peak_) /
-                  (pdstrain_residual_ - pdstrain_peak_);
+    dc_dpstrain =
+        (residual_cohesion(*state_vars) - peak_cohesion(*state_vars)) /
+        (pdstrain_residual_ - pdstrain_peak_);
     // Compute dF/dPstrain
     double df_dphi =
         std::sqrt(1.5) * rho *
@@ -329,18 +393,25 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
         (-1.) * ((df_dphi * dphi_dpstrain) + (df_dc * dc_dpstrain)) * (*dp_dq);
   }
 }
+
 template <unsigned Tdim>
 Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     const Vector6d& stress, const Vector6d& dstrain,
     const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt) {
 
   // =========================================================================
+  // 0. Initialise cohesion if linear cohesion is used
+  // =========================================================================
+  if (cohesion_initial_ && (*state_vars).at("cohesion_peak") < 0.)
+    this->initialise_cohesion(stress, ptr, state_vars);
+
+  // =========================================================================
   // 1. Constants and initialization
   // =========================================================================
-  const double Tolerance = 1E-7;         // Yield-function tolerance
-  const unsigned itr_max = 50;           // Maximum return-mapping iterations
+  const double Tolerance = 1E-7;  // Yield-function tolerance
+  const unsigned itr_max = 50;    // Maximum return-mapping iterations
   const double G = shear_modulus_;
-  
+
   // Check density criterion for tensile separation.
   const double current_packing_density = ptr->mass_density();
   const double critical_density = minimum_packing_fraction_ * grain_density_;
@@ -364,7 +435,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   Eigen::Matrix<double, 2, 1> yield_function;
   auto yield_type = this->compute_yield_state(&yield_function, (*state_vars));
 
-  // Elastic admissibility: if both surfaces are satisfied, accept trial stress.
+  // Elastic admissibility: if both surfaces are satisfied, accept trial
+  // stress.
   if (yield_function(0) <= Tolerance && yield_function(1) <= Tolerance) {
     (*state_vars).at("yield_state") = 0;
     return trial_stress;
@@ -377,7 +449,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // return mapping. A single violated surface uses one plastic multiplier;
   // simultaneous tension/shear violation uses a multi-surface corner return.
   // =========================================================================
-  
+
   Vector6d current_stress = trial_stress;
   bool converged = false;
 
@@ -396,7 +468,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       // Assign final yield state near the converged point.
       if (yield_function(0) > -Tolerance && yield_function(1) <= -Tolerance) {
         (*state_vars).at("yield_state") = 2;  // Tensile
-      } else if (yield_function(1) > -Tolerance && yield_function(0) <= -Tolerance) {
+      } else if (yield_function(1) > -Tolerance &&
+                 yield_function(0) <= -Tolerance) {
         (*state_vars).at("yield_state") = 1;  // Shear
       } else {
         (*state_vars).at("yield_state") = 0;  // Elastic
@@ -418,9 +491,9 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
       // Corner return mapping (multi-surface plasticity)
       // Used when both tension and shear surfaces are violated.
       // =================================================================
-      auto [corner_correction, corner_dpdstrain, corner_success] = 
+      auto [corner_correction, corner_dpdstrain, corner_success] =
           this->compute_corner_return(current_stress, de, state_vars);
-      
+
       if (corner_success) {
         stress_correction = corner_correction;
         dpdstrain_inc = corner_dpdstrain;
@@ -448,7 +521,7 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         yield_type = mpm::mohrcoulomb::FailureState::Shear;
         (*state_vars).at("yield_state") = 1;
       }
-      
+
       const auto single_return = this->compute_single_surface_return(
           yield_type, yield_function, current_stress, de, state_vars);
       stress_correction = std::get<0>(single_return);
@@ -484,42 +557,45 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   return current_stress;
 }
 //! Single-surface return mapping
-//! Returns: (stress correction, plastic deviatoric strain increment, success flag)
+//! Returns: (stress correction, plastic deviatoric strain increment, success
+//! flag)
 template <unsigned Tdim>
 std::tuple<Eigen::Matrix<double, 6, 1>, double, bool>
-mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
-    mpm::mohrcoulomb::FailureState yield_type,
-    const Eigen::Matrix<double, 2, 1>& yield_function,
-    const Vector6d& current_stress,
-    const Matrix6x6& de,
-    mpm::dense_map* state_vars) {
-  
+    mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
+        mpm::mohrcoulomb::FailureState yield_type,
+        const Eigen::Matrix<double, 2, 1>& yield_function,
+        const Vector6d& current_stress, const Matrix6x6& de,
+        mpm::dense_map* state_vars) {
+
   const double Min_Denominator = 1E-15;
-  
+
   // Select active yield-function value on the current surface.
-  double f_current = (yield_type == mpm::mohrcoulomb::FailureState::Tensile) 
-                     ? yield_function(0) : yield_function(1);
-  
+  double f_current = (yield_type == mpm::mohrcoulomb::FailureState::Tensile)
+                         ? yield_function(0)
+                         : yield_function(1);
+
   // Compute flow/yield gradients and softening contribution.
   Vector6d df_dsigma = Vector6d::Zero();
   Vector6d dp_dsigma = Vector6d::Zero();
   double dp_dq = 0.0;
   double softening_modulus = 0.0;
 
-  this->compute_df_dp(yield_type, state_vars, current_stress,
-                      &df_dsigma, &dp_dsigma, &dp_dq, &softening_modulus);
+  this->compute_df_dp(yield_type, state_vars, current_stress, &df_dsigma,
+                      &dp_dsigma, &dp_dq, &softening_modulus);
 
   // Consistency denominator:
   // n^T De m + H, where n = dF/dsigma, m = dP/dsigma, H = softening term.
-  double denominator = (df_dsigma.transpose() * de).dot(dp_dsigma) + softening_modulus;
-  
+  double denominator =
+      (df_dsigma.transpose() * de).dot(dp_dsigma) + softening_modulus;
+
   // =========================================================================
   // Denominator regularization
   // =========================================================================
   bool success = true;
   if (denominator < Min_Denominator) {
     if (denominator < -Min_Denominator) {
-      // Negative denominator indicates local instability due to strong softening.
+      // Negative denominator indicates local instability due to strong
+      // softening.
       console_->warn(
           "MohrCoulomb: Negative denominator detected ({:.6e}). "
           "This indicates material instability (strong softening). "
@@ -540,7 +616,7 @@ mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
 
   // Plastic multiplier increment from first-order consistency.
   double dlambda = f_current / denominator;
-  
+
   // Physical admissibility check.
   if (dlambda < 0.0) {
     // Negative plastic multiplier is non-admissible for this active set.
@@ -550,7 +626,7 @@ mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
     dlambda = 0.0;
     success = false;
   }
-  
+
   // Clamp very large multiplier increments for numerical robustness.
   const double max_dlambda = 1.0;  // Can be tuned per problem class.
   if (dlambda > max_dlambda) {
@@ -570,31 +646,33 @@ mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
 
 //! Corner return mapping (multi-surface)
 //! Applies Koiter's rule when both tension and shear surfaces are active.
-//! Returns: (stress correction, plastic deviatoric strain increment, success flag)
+//! Returns: (stress correction, plastic deviatoric strain increment, success
+//! flag)
 template <unsigned Tdim>
 std::tuple<Eigen::Matrix<double, 6, 1>, double, bool>
-mpm::MohrCoulomb<Tdim>::compute_corner_return(
-    const Vector6d& current_stress,
-    const Matrix6x6& de,
-    mpm::dense_map* state_vars) {
-  
+    mpm::MohrCoulomb<Tdim>::compute_corner_return(
+        const Vector6d& current_stress, const Matrix6x6& de,
+        mpm::dense_map* state_vars) {
+
   const double Min_Denominator = 1E-15;
-  
+
   // Compute gradients for both active surfaces.
   Vector6d df_dsigma_t = Vector6d::Zero();  // Tension
   Vector6d dp_dsigma_t = Vector6d::Zero();
   double dp_dq_t = 0.0;
   double softening_t = 0.0;
-  
+
   Vector6d df_dsigma_s = Vector6d::Zero();  // Shear
   Vector6d dp_dsigma_s = Vector6d::Zero();
   double dp_dq_s = 0.0;
   double softening_s = 0.0;
 
-  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, 
-                      current_stress, &df_dsigma_t, &dp_dsigma_t, &dp_dq_t, &softening_t);
+  this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars,
+                      current_stress, &df_dsigma_t, &dp_dsigma_t, &dp_dq_t,
+                      &softening_t);
   this->compute_df_dp(mpm::mohrcoulomb::FailureState::Shear, state_vars,
-                      current_stress, &df_dsigma_s, &dp_dsigma_s, &dp_dq_s, &softening_s);
+                      current_stress, &df_dsigma_s, &dp_dsigma_s, &dp_dq_s,
+                      &softening_s);
 
   // Recompute yield-function values at the current stress.
   Eigen::Matrix<double, 2, 1> yield_function;
@@ -608,25 +686,25 @@ mpm::MohrCoulomb<Tdim>::compute_corner_return(
   // [A21 A22] [lambda_s] = [f_s]
   // with A_ij = n_i^T De m_j + H_i delta_ij.
   // =========================================================================
-  
+
   Eigen::Matrix<double, 2, 2> A;
   Eigen::Vector2d b;
-  
+
   // Assemble system matrix.
   Vector6d de_dp_t = de * dp_dsigma_t;
   Vector6d de_dp_s = de * dp_dsigma_s;
-  
+
   A(0, 0) = df_dsigma_t.dot(de_dp_t) + softening_t;
   A(0, 1) = df_dsigma_t.dot(de_dp_s);
   A(1, 0) = df_dsigma_s.dot(de_dp_t);
   A(1, 1) = df_dsigma_s.dot(de_dp_s) + softening_s;
-  
+
   b(0) = f_t;
   b(1) = f_s;
 
   // Check determinant for singular/ill-conditioned corner system.
   double det_A = A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
-  
+
   if (std::abs(det_A) < Min_Denominator) {
     // Singular or near-singular system: corner return is not reliable.
     console_->debug(
@@ -638,11 +716,11 @@ mpm::MohrCoulomb<Tdim>::compute_corner_return(
 
   // Solve explicitly via inverse (closed form for 2x2).
   Eigen::Matrix<double, 2, 2> A_inv;
-  A_inv(0, 0) =  A(1, 1) / det_A;
+  A_inv(0, 0) = A(1, 1) / det_A;
   A_inv(0, 1) = -A(0, 1) / det_A;
   A_inv(1, 0) = -A(1, 0) / det_A;
-  A_inv(1, 1) =  A(0, 0) / det_A;
-  
+  A_inv(1, 1) = A(0, 0) / det_A;
+
   Eigen::Vector2d lambdas = A_inv * b;
   double lambda_t = lambdas(0);
   double lambda_s = lambdas(1);
@@ -651,13 +729,14 @@ mpm::MohrCoulomb<Tdim>::compute_corner_return(
   // Plastic multiplier admissibility checks
   // =========================================================================
   bool success = true;
-  
+
   // Check for negative multipliers.
   if (lambda_t < 0.0 || lambda_s < 0.0) {
     if (lambda_t < 0.0 && lambda_s < 0.0) {
       // Both negative: active-set assumption is invalid.
       console_->debug(
-          "MohrCoulomb: Both plastic multipliers negative (λ_t={:.6e}, λ_s={:.6e}). "
+          "MohrCoulomb: Both plastic multipliers negative (λ_t={:.6e}, "
+          "λ_s={:.6e}). "
           "Corner return failed.",
           lambda_t, lambda_s);
       return {Vector6d::Zero(), 0.0, false};
@@ -691,46 +770,107 @@ mpm::MohrCoulomb<Tdim>::compute_corner_return(
   // Stress correction by Koiter's rule:
   // Delta sigma = -De * (lambda_t * m_t + lambda_s * m_s)
   // =========================================================================
-  Vector6d stress_correction = -de * (lambda_t * dp_dsigma_t + lambda_s * dp_dsigma_s);
-  
+  Vector6d stress_correction =
+      -de * (lambda_t * dp_dsigma_t + lambda_s * dp_dsigma_s);
+
   // Equivalent plastic deviatoric strain increment from both mechanisms.
   double dpdstrain = lambda_t * dp_dq_t + lambda_s * dp_dq_s;
 
   return {stress_correction, dpdstrain, success};
 }
 
+//! Set the per-particle cohesion from the initial stress state ("initial"
+//! cohesion type). Runs once, on the particle's first update; afterwards the
+//! cohesion is fixed (apart from softening).
+template <unsigned Tdim>
+void mpm::MohrCoulomb<Tdim>::initialise_cohesion(const Vector6d& stress,
+                                                 const ParticleBase<Tdim>* ptr,
+                                                 mpm::dense_map* state_vars) {
+  // Hydrostatic pore pressure below the phreatic level (vertical coordinate
+  // increasing upwards), for total-stress models
+  // initialise_cohesion: phreatic elevation at the particle's horizontal
+  // position
+
+  double pore_pressure = 0.;
+  if (pore_pressure_correction_ && ptr != nullptr) {
+    const double x = ptr->coordinates()(0);
+    double level = phreatic_points_.front().second;
+    if (x >= phreatic_points_.back().first)
+      level = phreatic_points_.back().second;
+    else
+      for (std::size_t i = 1; i < phreatic_points_.size(); ++i)
+        if (x <= phreatic_points_[i].first) {
+          const auto& a = phreatic_points_[i - 1];
+          const auto& b = phreatic_points_[i];
+          level = a.second +
+                  (b.second - a.second) * (x - a.first) / (b.first - a.first);
+          break;
+        }
+    const double depth = level - ptr->coordinates()(vertical_direction_);
+    if (depth > 0.) pore_pressure = water_unit_weight_ * depth;
+  }
+
+  // Initial mean effective stress (compression positive)
+  const double p_0 = std::max(-mpm::materials::p(stress) - pore_pressure, 0.);
+
+  // Per-particle peak cohesion (stored in the particle, never in the material)
+  const double c_peak = std::min(
+      std::max(cohesion_intercept_ + cohesion_slope_ * p_0, cohesion_min_),
+      cohesion_max_);
+  (*state_vars).at("cohesion_peak") = c_peak;
+
+  // Current cohesion, consistent with the softening state
+  if (softening_)
+    this->update_softening_parameters(state_vars);
+  else
+    (*state_vars).at("cohesion") = c_peak;
+
+  // Tension cutoff limited by the apex c / tan(phi) of the particle
+  const double tan_phi = std::tan((*state_vars).at("phi"));
+  const double apex = (tan_phi > 1.0e-10)
+                          ? (*state_vars).at("cohesion") / tan_phi
+                          : std::numeric_limits<double>::max();
+
+  // Update State Variables
+  (*state_vars).at("tension_cutoff") =
+      check_low(std::min(tension_cutoff_, apex));
+}
+
 //! Update softening parameters
 template <unsigned Tdim>
-void mpm::MohrCoulomb<Tdim>::update_softening_parameters(mpm::dense_map* state_vars) {
+void mpm::MohrCoulomb<Tdim>::update_softening_parameters(
+    mpm::dense_map* state_vars) {
   const double pdstrain = (*state_vars).at("pdstrain");
-  
+
   if (pdstrain <= pdstrain_peak_) {
     // Pre-peak: keep peak strength parameters.
     (*state_vars).at("phi") = phi_peak_;
     (*state_vars).at("psi") = psi_peak_;
-    (*state_vars).at("cohesion") = cohesion_peak_;
+    (*state_vars).at("cohesion") = peak_cohesion(*state_vars);
   } else if (pdstrain >= pdstrain_residual_) {
     // Post-residual: keep residual strength parameters.
     (*state_vars).at("phi") = phi_residual_;
     (*state_vars).at("psi") = psi_residual_;
-    (*state_vars).at("cohesion") = cohesion_residual_;
+    (*state_vars).at("cohesion") = residual_cohesion(*state_vars);
   } else {
     // Linear softening law between peak and residual states.
-    const double ratio = (pdstrain - pdstrain_peak_) / 
-                         (pdstrain_residual_ - pdstrain_peak_);
+    const double ratio =
+        (pdstrain - pdstrain_peak_) / (pdstrain_residual_ - pdstrain_peak_);
     (*state_vars).at("phi") = phi_peak_ + ratio * (phi_residual_ - phi_peak_);
     (*state_vars).at("psi") = psi_peak_ + ratio * (psi_residual_ - psi_peak_);
-    (*state_vars).at("cohesion") = cohesion_peak_ + ratio * (cohesion_residual_ - cohesion_peak_);
+    (*state_vars).at("cohesion") =
+        peak_cohesion(*state_vars) +
+        ratio * (residual_cohesion(*state_vars) - peak_cohesion(*state_vars));
   }
-  
+
   // Enforce apex condition: sigma_t <= c / tan(phi) for MC cone closure.
   const double phi = (*state_vars).at("phi");
   const double cohesion = (*state_vars).at("cohesion");
-  
+
   // Guard against near-zero tan(phi).
   const double tan_phi = std::tan(phi);
   const double min_tan_phi = 1.0e-10;
-  
+
   double apex;
   if (std::abs(tan_phi) < min_tan_phi) {
     // For phi ~= 0, apex tends to a very large value.
@@ -738,12 +878,12 @@ void mpm::MohrCoulomb<Tdim>::update_softening_parameters(mpm::dense_map* state_v
   } else {
     apex = cohesion / tan_phi;
   }
-  
+
   // Clamp tension cutoff by apex.
   if ((*state_vars).at("tension_cutoff") > apex) {
     (*state_vars).at("tension_cutoff") = apex;
   }
-  
+
   // Keep tensile cutoff non-negative.
   if ((*state_vars).at("tension_cutoff") < 0.0) {
     (*state_vars).at("tension_cutoff") = 0.0;

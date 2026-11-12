@@ -85,10 +85,15 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
   //! is applied or not
   //! \param[in] quasi_static Boolean of quasi-static analysis
+  //! \param[in] rayleigh_damping Boolean of Rayleigh damping
+  //! \param[in] rayleigh_alpha Mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta Stiffness weighting coefficient for Rayleigh damping
   inline void compute_forces(const Eigen::Matrix<double, Tdim, 1>& gravity,
                              unsigned phase, unsigned step,
                              bool concentrated_nodal_forces,
-                             bool quasi_static) override;
+                             bool quasi_static, bool rayleigh_damping,
+                             double rayleigh_alpha, double rayleigh_beta) override;
+
 
   //! Update nodal kinematics by Newmark scheme
   //! \ingroup Implicit

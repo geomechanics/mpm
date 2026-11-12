@@ -156,18 +156,41 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   inline double check_low(double val) {
     return (val > 1.0e-15 ? val : 1.0e-15);
   }
+
+  //! Set the per-particle cohesion from the initial stress state ("initial"
+  //! cohesion type); runs once, on the particle's first update
+  //! \param[in] stress Initial (start-of-step) stress
+  //! \param[in] ptr Particle (for the coordinates if a phreatic level is set)
+  //! \param[in] state_vars History-dependent state variables
+  void initialise_cohesion(const Vector6d& stress,
+                           const ParticleBase<Tdim>* ptr,
+                           mpm::dense_map* state_vars);
+
+  //! Peak cohesion of a particle (falls back to the material value until
+  //! captured)
+  double peak_cohesion(const mpm::dense_map& state_vars) const {
+    if (!cohesion_initial_) return cohesion_peak_;
+    const double c = state_vars.at("cohesion_peak");
+    return (c < 0.) ? cohesion_peak_ : c;
+  }
+
+  //! Residual cohesion of a particle
+  double residual_cohesion(const mpm::dense_map& state_vars) const {
+    return cohesion_initial_
+               ? residual_cohesion_ratio_ * peak_cohesion(state_vars)
+               : cohesion_residual_;
+  }
+
   void update_softening_parameters(mpm::dense_map* state_vars);
   std::tuple<Vector6d, double, bool> compute_single_surface_return(
       mpm::mohrcoulomb::FailureState yield_type,
       const Eigen::Matrix<double, 2, 1>& yield_function,
-      const Vector6d& current_stress,
-      const Matrix6x6& de,
+      const Vector6d& current_stress, const Matrix6x6& de,
       mpm::dense_map* state_vars);
 
   //! Compute corner return mapping for multi-surface failure
   std::tuple<Vector6d, double, bool> compute_corner_return(
-      const Vector6d& current_stress,
-      const Matrix6x6& de,
+      const Vector6d& current_stress, const Matrix6x6& de,
       mpm::dense_map* state_vars);
 
   //! Density
@@ -197,6 +220,27 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   double psi_residual_{std::numeric_limits<double>::max()};
   //! Residual cohesion
   double cohesion_residual_{std::numeric_limits<double>::max()};
+  //! Cohesion set per particle from the initial mean effective stress
+  bool cohesion_initial_{false};
+  //! Cohesion at zero reference mean effective stress
+  double cohesion_intercept_{0.};
+  //! Increase of cohesion per unit reference mean effective stress
+  double cohesion_slope_{0.};
+  //! Lower and upper bounds of the per-particle cohesion
+  double cohesion_min_{0.};
+  double cohesion_max_{std::numeric_limits<double>::max()};
+  //! Residual cohesion as a fraction of the per-particle peak cohesion
+  double residual_cohesion_ratio_{1.};
+  //! Subtract hydrostatic pore pressure below a phreatic level
+  bool pore_pressure_correction_{false};
+  //! Phreatic points (x, y coordinates)
+  std::vector<std::pair<double, double>> phreatic_points_;
+  //! Phreatic level (coordinate along vertical_direction_)
+  double phreatic_level_{0.};
+  //! Unit weight of water (stress units per length)
+  double water_unit_weight_{9810.};
+  //! Coordinate index of the vertical (upward) direction
+  unsigned vertical_direction_{Tdim - 1};
   //! Peak plastic deviatoric strain
   double pdstrain_peak_{std::numeric_limits<double>::max()};
   //! Residual plastic deviatoric strain

@@ -361,6 +361,12 @@ class MPMBase : public MPM {
   mpm::Damping damping_type_{mpm::Damping::None};
   //! Damping factor
   double damping_factor_{0.};
+  //! Rayleigh damping
+  bool rayleigh_damping_{false};
+  //! Rayleigh damping mass weighting coefficient
+  double rayleigh_alpha_{0.};
+  //! Rayleigh damping stiffness weighting coefficient
+  double rayleigh_beta_{0.};
   //! Locate particles
   bool locate_particles_{true};
   //! Absorbing Boundary Variables

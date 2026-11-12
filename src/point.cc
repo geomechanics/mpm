@@ -2,25 +2,29 @@
 #include "point_base.h"
 #include "point_dirichlet_direct.h"
 #include "point_dirichlet_penalty.h"
-#include "point_kelvin_voigt.h"
 #include "point_joyner_chen.h"
+#include "point_kelvin_voigt.h"
+#include "point_tracker.h"
 namespace mpm {
 // PointType
 std::map<std::string, int> PointType = {
     {"POINT2DDIRDIRECT", 0}, {"POINT3DDIRDIRECT", 1}, {"POINT2DDIRPEN", 2},
     {"POINT3DDIRPEN", 3},    {"POINT2DKV", 4},        {"POINT3DKV", 5},
-    {"POINT2DJC", 6},        {"POINT3DJC", 7}};
+    {"POINT2DJC", 6},        {"POINT3DJC", 7},        {"POINT2DTRACKER", 8},
+    {"POINT3DTRACKER", 9}};
 
 std::map<int, std::string> PointTypeName = {
     {0, "POINT2DDIRDIRECT"}, {1, "POINT3DDIRDIRECT"}, {2, "POINT2DDIRPEN"},
     {3, "POINT3DDIRPEN"},    {4, "POINT2DKV"},        {5, "POINT3DKV"},
-    {6, "POINT2DJC"},        {7, "POINT3DJC"}};
-    
+    {6, "POINT2DJC"},        {7, "POINT3DJC"},        {8, "POINT2DTRACKER"},
+    {9, "POINT3DTRACKER"}};
+
 std::map<std::string, std::string> PointPODTypeName = {
     {"POINT2DDIRDIRECT", "points"}, {"POINT3DDIRDIRECT", "points"},
     {"POINT2DDIRPEN", "points"},    {"POINT3DDIRPEN", "points"},
     {"POINT2DKV", "points"},        {"POINT3DKV", "points"},
-    {"POINT2DJC", "points"},        {"POINT3DJC", "points"}};
+    {"POINT2DJC", "points"},        {"POINT3DJC", "points"},
+    {"POINT2DTRACKER", "points"},   {"POINT3DTRACKER", "points"}};
 }  // namespace mpm
 
 // PointDirichletDirect2D (2 Dim)
@@ -62,3 +66,13 @@ static Register<mpm::PointBase<2>, mpm::PointJoynerChen<2>, mpm::Index,
 static Register<mpm::PointBase<3>, mpm::PointJoynerChen<3>, mpm::Index,
                 const Eigen::Matrix<double, 3, 1>&>
     point3djc("POINT3DJC");
+
+// PointTracker2D (2 Dim)
+static Register<mpm::PointBase<2>, mpm::PointTracker<2>, mpm::Index,
+                const Eigen::Matrix<double, 2, 1>&>
+    point2dtracker("POINT2DTRACKER");
+
+// PointTracker3D (3 Dim)
+static Register<mpm::PointBase<3>, mpm::PointTracker<3>, mpm::Index,
+                const Eigen::Matrix<double, 3, 1>&>
+    point3dtracker("POINT3DTRACKER");

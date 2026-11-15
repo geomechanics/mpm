@@ -590,42 +590,42 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   Eigen::Matrix<double, 2, 1> dlambda = Vector2d::Zero();
 
   // Plastic strain components
-  Vector6d plastic_strain_t = Vector6d::Zero();
-  Vector6d plastic_strain_s = Vector6d::Zero();
-  plastic_strain_t(0) = (*state_vars).at("plastic_strain_t0");
-  plastic_strain_t(1) = (*state_vars).at("plastic_strain_t1");
-  plastic_strain_t(2) = (*state_vars).at("plastic_strain_t2");
-  plastic_strain_t(3) = (*state_vars).at("plastic_strain_t3");
-  plastic_strain_t(4) = (*state_vars).at("plastic_strain_t4");
-  plastic_strain_t(5) = (*state_vars).at("plastic_strain_t5");
-  plastic_strain_s(0) = (*state_vars).at("plastic_strain_s0");
-  plastic_strain_s(1) = (*state_vars).at("plastic_strain_s1");
-  plastic_strain_s(2) = (*state_vars).at("plastic_strain_s2");
-  plastic_strain_s(3) = (*state_vars).at("plastic_strain_s3");
-  plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
-  plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
+  Vector6d last_plastic_strain_t = Vector6d::Zero();
+  Vector6d last_plastic_strain_s = Vector6d::Zero();
+  last_plastic_strain_t(0) = (*state_vars).at("plastic_strain_t0");
+  last_plastic_strain_t(1) = (*state_vars).at("plastic_strain_t1");
+  last_plastic_strain_t(2) = (*state_vars).at("plastic_strain_t2");
+  last_plastic_strain_t(3) = (*state_vars).at("plastic_strain_t3");
+  last_plastic_strain_t(4) = (*state_vars).at("plastic_strain_t4");
+  last_plastic_strain_t(5) = (*state_vars).at("plastic_strain_t5");
+  last_plastic_strain_s(0) = (*state_vars).at("plastic_strain_s0");
+  last_plastic_strain_s(1) = (*state_vars).at("plastic_strain_s1");
+  last_plastic_strain_s(2) = (*state_vars).at("plastic_strain_s2");
+  last_plastic_strain_s(3) = (*state_vars).at("plastic_strain_s3");
+  last_plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
+  last_plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
 
   // Return mapping in the shear-tensile region
   if (yield_type == mpm::mohrcoulomb::FailureState::ShearTensile) {
       Eigen::Matrix<double, 2, 1> dlambda_double = Vector2d::Zero();
       Eigen::Matrix<double, 2, 1> pdstrain = Vector2d::Zero();
-      pdstrain(0) = mpm::materials::pvstrain(plastic_strain_t);
-      pdstrain(1) = mpm::materials::pdstrain(plastic_strain_s);
+      pdstrain(0) = mpm::materials::pvstrain(last_plastic_strain_t);
+      pdstrain(1) = mpm::materials::pdstrain(last_plastic_strain_s);
 
     for (unsigned itr = 0; itr < max_iter_; ++itr) {
       Vector6d stress_correction = Vector6d::Zero();
 
       std::tie(current_stress, dstrain_p_t, dstrain_p_s, local_converged) =
             this->compute_corner_return(current_stress, trial_stress, de, state_vars, invariants,
-                                        yield_function, dlambda_double, pdstrain);
+                                        yield_function, dlambda_double, pdstrain, last_plastic_strain_t, last_plastic_strain_s);
       if (!local_converged) 
           break;
 
       this->compute_stress_invariants(current_stress, state_vars, invariants);
       
       // Update plastic strain state variables
-      Vector6d current_plastic_strain_t = plastic_strain_t + dstrain_p_t;
-      Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
+      Vector6d current_plastic_strain_t = last_plastic_strain_t + dstrain_p_t;
+      Vector6d current_plastic_strain_s = last_plastic_strain_s + dstrain_p_s;
       pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
       pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
 
@@ -698,8 +698,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
           this->compute_stress_invariants(current_stress, state_vars, invariants);
       
           // Update plastic strain state variables
-          Vector6d current_plastic_strain_t = plastic_strain_t + dstrain_p_t;
-          Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
+          Vector6d current_plastic_strain_t = last_plastic_strain_t + dstrain_p_t;
+          Vector6d current_plastic_strain_s = last_plastic_strain_s + dstrain_p_s;
           pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
           pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
           converged = true;
@@ -716,8 +716,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
     else if (yield_type == mpm::mohrcoulomb::FailureState::Tensile or yield_type == mpm::mohrcoulomb::FailureState::Shear) {
 
     Eigen::Matrix<double, 2, 1> pdstrain = Vector2d::Zero();
-    pdstrain(0) = mpm::materials::pvstrain(plastic_strain_t);
-    pdstrain(1) = mpm::materials::pdstrain(plastic_strain_s);
+    pdstrain(0) = mpm::materials::pvstrain(last_plastic_strain_t);
+    pdstrain(1) = mpm::materials::pdstrain(last_plastic_strain_s);
     for (unsigned itr = 0; itr < max_iter_; ++itr) {
         double yield_function_single =
         (yield_type == mpm::mohrcoulomb::FailureState::Tensile)
@@ -728,8 +728,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
                                                                   : dlambda(1);
 
         auto [corrected_stress, dp_dsigma_corrected, local_converged] = this->compute_single_surface_return(
-          yield_type, yield_function_single, current_stress, de, state_vars, invariants,
-          dlambda_single, pdstrain, trial_stress);
+          yield_type, yield_function_single, current_stress, trial_stress, de, state_vars, invariants,
+          dlambda_single, pdstrain, last_plastic_strain_t, last_plastic_strain_s);
         if (!local_converged) 
             break;
 
@@ -744,8 +744,8 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
         }
 
       // Update plastic strain state variables
-      Vector6d current_plastic_strain_t = plastic_strain_t + dstrain_p_t;
-      Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
+      Vector6d current_plastic_strain_t = last_plastic_strain_t + dstrain_p_t;
+      Vector6d current_plastic_strain_s = last_plastic_strain_s + dstrain_p_s;
       pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
       pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
       (*state_vars).at("pdstrain") = pdstrain(1);
@@ -811,15 +811,15 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
               std::tie(current_stress, dstrain_p_t, dstrain_p_s, local_converged) =
                     this->compute_corner_return(current_stress, trial_stress, de, state_vars, invariants,
                                                 yield_function, dlambda,
-                                                pdstrain);
+                                                pdstrain, last_plastic_strain_t, last_plastic_strain_s);
               if (!local_converged) 
                   break;
 
               this->compute_stress_invariants(current_stress, state_vars, invariants);
               
               // Update plastic strain state variables
-              Vector6d current_plastic_strain_t = plastic_strain_t + dstrain_p_t;
-              Vector6d current_plastic_strain_s = plastic_strain_s + dstrain_p_s;
+              Vector6d current_plastic_strain_t = last_plastic_strain_t + dstrain_p_t;
+              Vector6d current_plastic_strain_s = last_plastic_strain_s + dstrain_p_s;
               pdstrain(0) = mpm::materials::pvstrain(current_plastic_strain_t);
               pdstrain(1) = mpm::materials::pdstrain(current_plastic_strain_s);
               (*state_vars).at("pdstrain") = pdstrain(1);
@@ -884,9 +884,9 @@ template <unsigned Tdim>
 std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
     mpm::MohrCoulomb<Tdim>::compute_single_surface_return(
         mpm::mohrcoulomb::FailureState yield_type, double yield_function,
-        const Vector6d& current_stress, const Matrix6x6& de,
+        const Vector6d& current_stress, const Vector6d& trial_stress, const Matrix6x6& de,
         mpm::dense_map* state_vars, Vector3d& invariants, double& dlambda_single,
-        Eigen::Matrix<double, 2, 1>& pdstrain, const Vector6d& trial_stress) {
+        Eigen::Matrix<double, 2, 1>& pdstrain, const Eigen::Matrix<double, 6, 1>& last_plastic_strain_t, const Eigen::Matrix<double, 6, 1>& last_plastic_strain_s) {
 
   // Select active yield-function value on the current surface.
   double f_current = yield_function;
@@ -897,22 +897,6 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
   double dp_dq = 0.0;
   Matrix6x6 d2p_dsigma2 = Matrix6x6::Zero();
   double softening_modulus = 0.0;
-
-  // Updated state variables for return mapping iterations
-  Vector6d plastic_strain_t = Vector6d::Zero();
-  Vector6d plastic_strain_s = Vector6d::Zero();
-  plastic_strain_t(0) = (*state_vars).at("plastic_strain_t0");
-  plastic_strain_t(1) = (*state_vars).at("plastic_strain_t1");
-  plastic_strain_t(2) = (*state_vars).at("plastic_strain_t2");
-  plastic_strain_t(3) = (*state_vars).at("plastic_strain_t3");
-  plastic_strain_t(4) = (*state_vars).at("plastic_strain_t4");
-  plastic_strain_t(5) = (*state_vars).at("plastic_strain_t5");
-  plastic_strain_s(0) = (*state_vars).at("plastic_strain_s0");
-  plastic_strain_s(1) = (*state_vars).at("plastic_strain_s1");
-  plastic_strain_s(2) = (*state_vars).at("plastic_strain_s2");
-  plastic_strain_s(3) = (*state_vars).at("plastic_strain_s3");
-  plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
-  plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
 
   double pdstrain_single =
         (yield_type == mpm::mohrcoulomb::FailureState::Tensile) ? pdstrain(0)
@@ -994,10 +978,10 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
       Vector6d trial_dstrain_p = trial_dlambda * dp_dsigma_trial;
       if (yield_type == mpm::mohrcoulomb::FailureState::Tensile)
       {
-        Vector6d trial_plastic_strain_t = plastic_strain_t + trial_dstrain_p;
+        Vector6d trial_plastic_strain_t = last_plastic_strain_t + trial_dstrain_p;
         pdstrain(0) = mpm::materials::pvstrain(trial_plastic_strain_t);
       } else {
-        Vector6d trial_plastic_strain_s = plastic_strain_s + trial_dstrain_p;
+        Vector6d trial_plastic_strain_s = last_plastic_strain_s + trial_dstrain_p;
         pdstrain(1) = mpm::materials::pdstrain(trial_plastic_strain_s);
       }
 
@@ -1072,7 +1056,8 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
         const Vector6d& current_stress, const Vector6d& trial_stress, const Matrix6x6& de,
         mpm::dense_map* state_vars, Vector3d& invariants,
         const Eigen::Matrix<double, 2, 1>& yield_function,
-        Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain) {
+        Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain,
+        const Eigen::Matrix<double, 6, 1>& last_plastic_strain_t, const Eigen::Matrix<double, 6, 1>& last_plastic_strain_s) {
 
   // Compute gradients for both active surfaces.
   Vector6d df_dsigma_t = Vector6d::Zero();  // Tension
@@ -1087,21 +1072,6 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
   Matrix6x6 d2p_dsigma2_s = Matrix6x6::Zero();
   double softening_s = 0.0;
 
-  // Updated state variables for return mapping iterations
-  Vector6d plastic_strain_t = Vector6d::Zero();
-  Vector6d plastic_strain_s = Vector6d::Zero();
-  plastic_strain_t(0) = (*state_vars).at("plastic_strain_t0");
-  plastic_strain_t(1) = (*state_vars).at("plastic_strain_t1");
-  plastic_strain_t(2) = (*state_vars).at("plastic_strain_t2");
-  plastic_strain_t(3) = (*state_vars).at("plastic_strain_t3");
-  plastic_strain_t(4) = (*state_vars).at("plastic_strain_t4");
-  plastic_strain_t(5) = (*state_vars).at("plastic_strain_t5");
-  plastic_strain_s(0) = (*state_vars).at("plastic_strain_s0");
-  plastic_strain_s(1) = (*state_vars).at("plastic_strain_s1");
-  plastic_strain_s(2) = (*state_vars).at("plastic_strain_s2");
-  plastic_strain_s(3) = (*state_vars).at("plastic_strain_s3");
-  plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
-  plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
 
   this->compute_df_dp(mpm::mohrcoulomb::FailureState::Tensile, state_vars, invariants,
                       current_stress, &df_dsigma_t, &dp_dsigma_t, &dp_dq_t,
@@ -1210,8 +1180,8 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
 
       Vector6d trial_dstrain_p_t = trial_dlambda(0) * dp_dsigma_t_trial;
       Vector6d trial_dstrain_p_s = trial_dlambda(1) * dp_dsigma_s_trial;
-      Vector6d trial_plastic_strain_t = plastic_strain_t + trial_dstrain_p_t;
-      Vector6d trial_plastic_strain_s = plastic_strain_s + trial_dstrain_p_s;
+      Vector6d trial_plastic_strain_t = last_plastic_strain_t + trial_dstrain_p_t;
+      Vector6d trial_plastic_strain_s = last_plastic_strain_s + trial_dstrain_p_s;
       pdstrain(0) = mpm::materials::pvstrain(trial_plastic_strain_t);
       pdstrain(1) = mpm::materials::pdstrain(trial_plastic_strain_s);
       if (softening_) {
@@ -1410,24 +1380,24 @@ Eigen::Matrix<double, 6, 6>
         const ParticleBase<Tdim>* ptr, mpm::dense_map* state_vars, double dt,
         bool hardening) {
 
-  Vector6d plastic_strain_t = Vector6d::Zero();
-  Vector6d plastic_strain_s = Vector6d::Zero();
-  plastic_strain_t(0) = (*state_vars).at("plastic_strain_t0");
-  plastic_strain_t(1) = (*state_vars).at("plastic_strain_t1");
-  plastic_strain_t(2) = (*state_vars).at("plastic_strain_t2");
-  plastic_strain_t(3) = (*state_vars).at("plastic_strain_t3");
-  plastic_strain_t(4) = (*state_vars).at("plastic_strain_t4");
-  plastic_strain_t(5) = (*state_vars).at("plastic_strain_t5");
-  plastic_strain_s(0) = (*state_vars).at("plastic_strain_s0");
-  plastic_strain_s(1) = (*state_vars).at("plastic_strain_s1");
-  plastic_strain_s(2) = (*state_vars).at("plastic_strain_s2");
-  plastic_strain_s(3) = (*state_vars).at("plastic_strain_s3");
-  plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
-  plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
+  Vector6d last_plastic_strain_t = Vector6d::Zero();
+  Vector6d last_plastic_strain_s = Vector6d::Zero();
+  last_plastic_strain_t(0) = (*state_vars).at("plastic_strain_t0");
+  last_plastic_strain_t(1) = (*state_vars).at("plastic_strain_t1");
+  last_plastic_strain_t(2) = (*state_vars).at("plastic_strain_t2");
+  last_plastic_strain_t(3) = (*state_vars).at("plastic_strain_t3");
+  last_plastic_strain_t(4) = (*state_vars).at("plastic_strain_t4");
+  last_plastic_strain_t(5) = (*state_vars).at("plastic_strain_t5");
+  last_plastic_strain_s(0) = (*state_vars).at("plastic_strain_s0");
+  last_plastic_strain_s(1) = (*state_vars).at("plastic_strain_s1");
+  last_plastic_strain_s(2) = (*state_vars).at("plastic_strain_s2");
+  last_plastic_strain_s(3) = (*state_vars).at("plastic_strain_s3");
+  last_plastic_strain_s(4) = (*state_vars).at("plastic_strain_s4");
+  last_plastic_strain_s(5) = (*state_vars).at("plastic_strain_s5");
   
   Eigen::Matrix<double, 2, 1> pdstrain = Vector2d::Zero();
-  pdstrain(0) = mpm::materials::pvstrain(plastic_strain_t);
-  pdstrain(1) = mpm::materials::pdstrain(plastic_strain_s);
+  pdstrain(0) = mpm::materials::pvstrain(last_plastic_strain_t);
+  pdstrain(1) = mpm::materials::pdstrain(last_plastic_strain_s);
 
   Vector3d invariants = Vector3d::Zero();
   mpm::mohrcoulomb::FailureState yield_type =

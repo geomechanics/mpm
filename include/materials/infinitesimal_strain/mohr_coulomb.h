@@ -140,16 +140,18 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   void update_softening_parameters(mpm::dense_map* state_vars, Eigen::Matrix<double, 2, 1>& pdstrain);
   std::tuple<Vector6d, Vector6d, bool> compute_single_surface_return(
       mpm::mohrcoulomb::FailureState yield_type, double yield_function,
-      const Vector6d& current_stress, const Matrix6x6& de,
-      mpm::dense_map* state_vars, Vector3d& invariants, double& dlambda_single,
-      Eigen::Matrix<double, 2, 1>& pdstrain, const Vector6d& trial_stress);
+      const Vector6d& current_stress, const Vector6d& trial_stress, const Matrix6x6& de,
+      mpm::dense_map* state_vars, Vector3d& invariants,
+      double& dlambda_single, Eigen::Matrix<double, 2, 1>& pdstrain,
+      const Eigen::Matrix<double, 6, 1>& last_plastic_strain_t, const Eigen::Matrix<double, 6, 1>& last_plastic_strain_s);
 
   //! Compute corner return mapping for multi-surface failure
   std::tuple<Vector6d, Vector6d, Vector6d, bool> compute_corner_return(
       const Vector6d& current_stress, const Vector6d& trial_stress, const Matrix6x6& de,
       mpm::dense_map* state_vars, Vector3d& invariants,
       const Eigen::Matrix<double, 2, 1>& yield_function,
-      Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain);
+      Eigen::Matrix<double, 2, 1>& dlambda, Eigen::Matrix<double, 2, 1>& pdstrain,
+      const Eigen::Matrix<double, 6, 1>& last_plastic_strain_t, const Eigen::Matrix<double, 6, 1>& last_plastic_strain_s);
 
   //! Enforce corner return mapping to apex
   std::tuple<Vector6d, Vector6d, Vector6d> enforce_corner_return(

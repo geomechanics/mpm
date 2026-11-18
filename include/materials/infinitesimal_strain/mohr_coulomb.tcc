@@ -349,11 +349,6 @@ void mpm::MohrCoulomb<Tdim>::compute_df_dp(
   double cos_3theta = std::cos(3.0 * theta);
   double sin_3theta = std::sin(3.0 * theta);
 
-  // Singularity safeguard at meridians (theta = +/- 30 degrees)
-  if (std::abs(sin_3theta) < 1e-6) {
-      sin_3theta = (sin_3theta < 0) ? -1e-6 : 1e-6;
-  }
-
   // Compute d2rho/dsigma2
   double dth_dx = -1.0 / (3.0 * sin_3theta);
   double d2th_dx2 = -cos_3theta / (3.0 * std::pow(sin_3theta, 3));
@@ -943,7 +938,13 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>, bool>
   double initial_merit = 0.5 * (R_sigma.squaredNorm() + std::pow(std::max(0.0, f_current), 2));
 
   // --- 3. Line Search Backtracking ---
-  double alpha = 1.0; // Start assuming full Newton step (100%)
+  // Start from a step whose deviatoric part is at most 0.5*rho (the region where
+  // the linearised dp/dsigma is meaningful; the 0.05*|sigma| floor avoids
+  // stalling when rho -> 0). invariants still belongs to current_stress here.
+  double alpha = std::min(
+      1.0, 0.5 * std::max(std::sqrt(2.0) * invariants(1), 0.05 * current_stress.norm()) /
+               std::max(std::sqrt(2.0 * mpm::materials::j2(d_sigma)),
+                        std::numeric_limits<double>::min()));
   double c1 = 5e-2;   // Armijo decrease threshold
 
   Vector6d trial_corrected_stress = current_stress;
@@ -1138,7 +1139,13 @@ std::tuple<Eigen::Matrix<double, 6, 1>, Eigen::Matrix<double, 6, 1>,
   double initial_merit = 0.5 * (R_sigma.squaredNorm() + 0.5 * (std::pow(std::max(0.0, f_t), 2) + std::pow(std::max(0.0, f_s), 2)));
 
   // --- 3. Line Search Backtracking ---
-  double alpha = 1.0; // Start assuming full Newton step (100%)
+  // Start from a step whose deviatoric part is at most 0.5*rho (the region where
+  // the linearised dp/dsigma is meaningful; the 0.05*|sigma| floor avoids
+  // stalling when rho -> 0). invariants still belongs to current_stress here.
+  double alpha = std::min(
+      1.0, 0.5 * std::max(std::sqrt(2.0) * invariants(1), 0.05 * current_stress.norm()) /
+               std::max(std::sqrt(2.0 * mpm::materials::j2(d_sigma)),
+                        std::numeric_limits<double>::min()));
   double c1 = 5e-2;   // Armijo decrease threshold
 
   Vector6d trial_corrected_stress = current_stress;

@@ -252,6 +252,9 @@ class Particle : public ParticleBase<Tdim> {
                           double rotation_omega,
                           bool rotation_clockwise) noexcept override;
 
+  //! Map frame (non-inertial) force
+  void map_frame_force(const mpm::FrameState& frame) noexcept override;
+
   //! Map internal force
   inline void map_internal_force() noexcept override;
 

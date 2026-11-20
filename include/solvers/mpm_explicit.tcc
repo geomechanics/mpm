@@ -111,6 +111,24 @@ bool mpm::MPMExplicit<Tdim>::solve() {
   // Initialise loading conditions
   this->initialise_loads();
 
+    // Hourglass (non-inertial frame) motion table
+  bool hourglass_motion = false;
+  double hourglass_ramping_time = 0.0;
+  mpm::HourglassMotion hourglass_table;
+  if (analysis_.find("hourglass_motion") != analysis_.end()) {
+    if (rotation_forces_)
+      throw std::runtime_error(
+          "hourglass_motion cannot be combined with rotation forces");
+    hourglass_table.load(io_->file_name(
+        analysis_["hourglass_motion"]["file"].template get<std::string>()));
+    hourglass_motion = true;
+    if (analysis_["hourglass_motion"].contains("ramping_time"))
+      hourglass_ramping_time =
+          analysis_["hourglass_motion"]["ramping_time"].template get<double>();
+    console_->info("Hourglass motion table: {} rows, t_end = {} s",
+                   hourglass_table.rows(), hourglass_table.t_end());
+  }
+
   // Write initial outputs
   if (!resume) this->write_outputs(this->step_);
 
@@ -157,13 +175,28 @@ bool mpm::MPMExplicit<Tdim>::solve() {
           1.0, static_cast<double>(step_) * dt_ / this->rotation_ramping_time_);
 
     // Compute forces
-    const auto current_gravity = gravity_multiplier * gravity_;
+    Eigen::Matrix<double, Tdim, 1> current_gravity = gravity_multiplier * gravity_;
     const auto current_rotation = rotation_multiplier * rotation_omega_;
-
+    mpm::FrameState frame;
+    const mpm::FrameState* frame_ptr = nullptr;
+    if (hourglass_motion) {
+      // t = step * dt (C++ steps start at 0; MATLAB's (step-1)*dt was 1-based)
+      frame = hourglass_table.at(static_cast<double>(step_) * dt_);
+      double hourglass_multiplier = 1.0;
+      if (hourglass_ramping_time > 0.0)
+        hourglass_multiplier =
+            std::min(1.0, static_cast<double>(step_) * dt_ / hourglass_ramping_time);
+      frame.M1 *= hourglass_multiplier;
+      frame.M2 *= hourglass_multiplier;
+      frame.c *= hourglass_multiplier;
+      frame.g *= gravity_multiplier;   // gravity ramp from the gravity JSON object
+      frame_ptr = &frame;
+      current_gravity.setZero();  // gravity now comes from frame.g
+    }
     mpm_scheme_->compute_forces(current_gravity, phase, step_,
                                 set_node_concentrated_force_, rotation_forces_,
                                 rotation_origin_, current_rotation,
-                                rotation_clockwise_);
+                                rotation_clockwise_, frame_ptr);
 
     // Apply Absorbing Constraint
     if (absorbing_boundary_) {

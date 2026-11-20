@@ -65,7 +65,8 @@ class MPMScheme {
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
       unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
       const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
-      double rotation_omega, bool rotation_clockwise);
+      double rotation_omega, bool rotation_clockwise,
+      const mpm::FrameState* frame_state = nullptr);
 
   //! Assign relevant properties for absorbing boundary
   virtual inline void absorbing_boundary_properties();

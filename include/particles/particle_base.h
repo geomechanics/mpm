@@ -17,6 +17,7 @@
 #include "material.h"
 #include "pod_particle.h"
 #include "pod_particle_twophase.h"
+#include "hourglass_motion.h"
 
 namespace mpm {
 
@@ -293,6 +294,10 @@ class ParticleBase {
   virtual void map_rotation_force(const VectorDim& rotation_origin,
                                   double rotation_omega,
                                   bool rotation_clockwise) noexcept = 0;
+
+  //! Map frame (non-inertial) force: pseudo force + gravity rotated into frame B
+  //! \param[in] frame Frame state at the current time
+  virtual void map_frame_force(const mpm::FrameState& frame) noexcept {}
 
   //! Map internal force
   virtual void map_internal_force() noexcept = 0;

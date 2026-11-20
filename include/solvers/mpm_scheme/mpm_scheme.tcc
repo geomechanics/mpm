@@ -152,7 +152,8 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
     unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
     const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
-    double rotation_omega, bool rotation_clockwise) {
+    double rotation_omega, bool rotation_clockwise,
+    const mpm::FrameState* frame_state) {
   // Spawn a task for external force
 #pragma omp parallel sections
   {
@@ -168,6 +169,13 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
         mesh_->iterate_over_particles(std::bind(
             &mpm::ParticleBase<Tdim>::map_rotation_force, std::placeholders::_1,
             rotation_origin, rotation_omega, rotation_clockwise));
+      }
+      
+      // Apply frame (non-inertial) forces: pseudo force + gravity in frame B
+      if (frame_state != nullptr) {
+        mesh_->iterate_over_particles(
+            std::bind(&mpm::ParticleBase<Tdim>::map_frame_force,
+                      std::placeholders::_1, std::cref(*frame_state)));
       }
 
       // Apply particle traction and map to nodes

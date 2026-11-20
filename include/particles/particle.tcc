@@ -1755,3 +1755,29 @@ void mpm::Particle<Tdim>::map_rotation_force(const VectorDim& rotation_origin,
                                      f_total * shapefn_[i]);
   }
 }
+//! Frame force: pseudo force of the moving hourglass frame + rotated gravity
+//! a = M1 v + M2 x + c + g   (all terms come from the MATLAB table)
+template <unsigned Tdim>
+void mpm::Particle<Tdim>::map_frame_force(
+    const mpm::FrameState& frame) noexcept {
+  // Check if particle mass is set
+  assert(mass_ != std::numeric_limits<double>::max());
+
+  // Embed position and velocity in 3D
+  Eigen::Matrix<double, 3, 1> x_3d = Eigen::Matrix<double, 3, 1>::Zero();
+  x_3d.head(Tdim) = this->coordinates_;
+  Eigen::Matrix<double, 3, 1> v_3d = Eigen::Matrix<double, 3, 1>::Zero();
+  v_3d.head(Tdim) = this->velocity_;
+
+  // Acceleration of the frame (pseudo part + gravity in frame B)
+  const Eigen::Matrix<double, 3, 1> a_3d =
+      frame.M1 * v_3d + frame.M2 * x_3d + frame.c + frame.g;
+
+  // Body force on the particle
+  const VectorDim f_total = (mass_ * a_3d).head(Tdim);
+
+  // Map force to nodes
+  for (unsigned i = 0; i < nodes_.size(); ++i)
+    nodes_[i]->update_external_force(true, mpm::ParticlePhase::Solid,
+                                     f_total * shapefn_[i]);
+}

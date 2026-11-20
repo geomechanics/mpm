@@ -862,6 +862,9 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
   // 4. Post-convergence handling
   // =========================================================================
   if (!converged ) {
+    // Set to separate state
+    (*state_vars).at("yield_state") = 4;
+    current_stress = Vector6d::Zero();
     // Warn when return mapping fails to converge within the iteration budget.
     console_->warn(
         "MohrCoulomb::compute_stress: Particle id: {}; Return mapping did not converge; "

@@ -732,11 +732,11 @@ Eigen::Matrix<double, 6, 1> mpm::MohrCoulomb<Tdim>::compute_stress(
 
         if (yield_type == mpm::mohrcoulomb::FailureState::Tensile) {
           dlambda(0) = dlambda_single;
-          dstrain_p_t = dlambda(0) * dp_dsigma_corrected;
         } else {
           dlambda(1) = dlambda_single;
-          dstrain_p_s = dlambda(1) * dp_dsigma_corrected;
         }
+        dstrain_p_t = dlambda(0) * dp_dsigma_corrected;
+        dstrain_p_s = dlambda(1) * dp_dsigma_corrected;
 
       // Update plastic strain state variables
       Vector6d current_plastic_strain_t = last_plastic_strain_t + dstrain_p_t;

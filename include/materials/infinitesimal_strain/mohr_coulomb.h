@@ -90,7 +90,7 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! \retval yield_type Yield type (elastic, shear or tensile)
   mpm::mohrcoulomb::FailureState compute_yield_state(
       Eigen::Matrix<double, 2, 1>* yield_function,
-      const mpm::dense_map& state_vars, Vector3d& invariants);
+      const mpm::dense_map& state_vars, Vector3d& invariants, double tolerance);
 
   //! Compute dF/dSigma and dP/dSigma
   //! \param[in] yield_type Yield type (elastic, shear or tensile)
@@ -98,11 +98,10 @@ class MohrCoulomb : public InfinitesimalElastoPlastic<Tdim> {
   //! \param[in] stress Stress
   //! \param[in] df_dsigma dF/dSigma
   //! \param[in] dp_dsigma dP/dSigma
-  //! \param[in] dp_dq dP / dq
   //! \param[in] softening Softening parameter
   void compute_df_dp(mpm::mohrcoulomb::FailureState yield_type,
                      const mpm::dense_map* state_vars, Vector3d& invariants, const Vector6d& stress,
-                     Vector6d* df_dsigma, Vector6d* dp_dsigma, double* dp_dq,
+                     Vector6d* df_dsigma, Vector6d* dp_dsigma,
                      Matrix6x6* d2p_dsigma2, double* softening, double pdstrain);
 
  protected:

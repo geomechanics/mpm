@@ -42,11 +42,6 @@ namespace mpm {
 //! Tensor: Symmetric tensor arranged in voigt notation
 enum class VariableType { Scalar, Vector, Tensor };
 
-//! Damping type
-//! None: No damping is specified
-//! Cundall: Cundall damping
-enum class Damping { None, Cundall };
-
 //! Velocity update type
 extern std::map<std::string, mpm::VelocityUpdate> VelocityUpdateType;
 
@@ -297,6 +292,12 @@ class MPMBase : public MPM {
   mpm::Damping damping_type_{mpm::Damping::None};
   //! Damping factor
   double damping_factor_{0.};
+  //! Rayleigh damping
+  bool rayleigh_damping_{false};
+  //! Rayleigh damping mass weighting coefficient
+  double rayleigh_alpha_{0.};
+  //! Rayleigh damping stiffness weighting coefficient
+  double rayleigh_beta_{0.};
   //! Locate particles
   bool locate_particles_{true};
   //! Absorbing Boundary Variables

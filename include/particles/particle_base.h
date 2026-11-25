@@ -201,6 +201,12 @@ class ParticleBase {
     return state_variables_[phase];
   }
 
+  //! Return tangent matrix of the particle
+  //! \param[in] dt Analysis time step
+  //! \retval tangent_matrix Tangent matrix of the particle
+  virtual Eigen::Matrix<double, 6, 6> get_consistent_tangent_matrix(
+      double dt) noexcept = 0;
+
   //! Assign a state variable
   virtual void assign_state_variable(
       const std::string& var, double value,
@@ -417,11 +423,17 @@ class ParticleBase {
   //! equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
+  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
+  //! damping
   virtual inline bool map_stiffness_matrix_to_cell(double newmark_beta,
-                                                   double dt,
-                                                   bool quasi_static) = 0;
+                                                   double newmark_gamma,
+                                                   double dt, bool quasi_static,
+                                                   double rayleigh_alpha,
+                                                   double rayleigh_beta) = 0;
 
   //! Reduce constitutive relations matrix depending on the dimension
   virtual inline Eigen::MatrixXd reduce_dmatrix(
@@ -477,6 +489,14 @@ class ParticleBase {
   //! Return mapping matrix
   //! \ingroup AdvancedMapping
   virtual Eigen::MatrixXd mapping_matrix() const = 0;
+
+  //! Map Rayleigh damping force
+  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
+  //! damping
+  //! \param[in] dt Analysis time step
+  virtual void map_rayleigh_damping_force(double rayleigh_alpha,
+                                          double rayleigh_beta, double dt) = 0;
 
   //! Return dn_dx_centroid
   virtual Eigen::MatrixXd dn_dx_centroid() const = 0;

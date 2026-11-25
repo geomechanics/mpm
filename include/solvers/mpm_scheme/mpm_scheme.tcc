@@ -135,7 +135,8 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
     unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
     const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
-    double rotation_omega, bool rotation_clockwise) {
+    double rotation_omega, bool rotation_clockwise, bool rayleigh_damping,
+    double rayleigh_alpha, double rayleigh_beta) {
   // Spawn a task for external force
 #pragma omp parallel sections
   {
@@ -151,6 +152,13 @@ inline void mpm::MPMScheme<Tdim>::compute_forces(
         mesh_->iterate_over_particles(std::bind(
             &mpm::ParticleBase<Tdim>::map_rotation_force, std::placeholders::_1,
             rotation_origin, rotation_omega, rotation_clockwise));
+      }
+
+      // Apply Rayleigh Damping Forces
+      if (rayleigh_damping) {
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::map_rayleigh_damping_force,
+            std::placeholders::_1, rayleigh_alpha, rayleigh_beta, dt_));
       }
 
       // Apply particle traction and map to nodes
@@ -216,24 +224,34 @@ inline void mpm::MPMScheme<Tdim>::absorbing_boundary_properties() {
 template <unsigned Tdim>
 inline void mpm::MPMScheme<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step) {
+    const mpm::Damping damping_type, double damping_factor, unsigned step) {
 
   // Update nodal acceleration constraints
   mesh_->update_nodal_acceleration_constraints(step * dt_);
 
   // Check if damping has been specified and accordingly Iterate over
   // active nodes to compute acceleratation and velocity
-  if (damping_type == "Cundall")
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
-                  std::placeholders::_1, phase, dt_, damping_factor),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-  else
-    mesh_->iterate_over_nodes_predicate(
-        std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
-                  std::placeholders::_1, phase, dt_),
-        std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
-
+  switch (damping_type) {
+    case mpm::Damping::None:
+      mesh_->iterate_over_nodes_predicate(
+          std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
+                    std::placeholders::_1, phase, dt_),
+          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+      break;
+    case mpm::Damping::Cundall:
+      mesh_->iterate_over_nodes_predicate(
+          std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity_cundall,
+                    std::placeholders::_1, phase, dt_, damping_factor),
+          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+      break;
+    case mpm::Damping::Rayleigh:
+      mesh_->iterate_over_nodes_predicate(
+          std::bind(&mpm::NodeBase<Tdim>::compute_acceleration_velocity,
+                    std::placeholders::_1, phase, dt_),
+          std::bind(&mpm::NodeBase<Tdim>::status, std::placeholders::_1));
+      break;
+  }
+  
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(
       std::bind(&mpm::ParticleBase<Tdim>::compute_updated_position,

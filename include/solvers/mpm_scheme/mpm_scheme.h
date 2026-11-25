@@ -61,11 +61,15 @@ class MPMScheme {
   //! \param[in] rotation_origin Origin of rotation
   //! \param[in] rotation_omega Angular velocity
   //! \param[in] rotation_clockwise Direction of rotation
+  //! \param[in] rayleigh_damping Boolean of Rayleigh damping
+  //! \param[in] rayleigh_alpha Rayleigh damping coefficient alpha
+  //! \param[in] rayleigh_beta Rayleigh damping coefficient beta
   virtual inline void compute_forces(
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
       unsigned step, bool concentrated_nodal_forces, bool rotation_forces,
       const Eigen::Matrix<double, Tdim, 1>& rotation_origin,
-      double rotation_omega, bool rotation_clockwise);
+      double rotation_omega, bool rotation_clockwise, bool rayleigh_damping,
+      double rayleigh_alpha, double rayleigh_beta);
 
   //! Assign relevant properties for absorbing boundary
   virtual inline void absorbing_boundary_properties();
@@ -78,7 +82,7 @@ class MPMScheme {
   //! \param[in] damping_factor Value of critical damping
   virtual inline void compute_particle_kinematics(
       mpm::VelocityUpdate velocity_update, double blending_ratio,
-      unsigned phase, const std::string& damping_type, double damping_factor,
+      unsigned phase, const mpm::Damping damping_type, double damping_factor,
       unsigned step);
 
   //! Postcompute nodal kinematics - map mass and momentum to nodes
@@ -107,9 +111,13 @@ class MPMScheme {
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
   //! is applied or not
   //! \param[in] quasi_static Boolean of quasi-static analysis
+  //! \param[in] rayleigh_damping Boolean of Rayleigh damping
+  //! \param[in] rayleigh_alpha Rayleigh damping coefficient alpha
+  //! \param[in] rayleigh_beta Rayleigh damping coefficient beta
   virtual inline void compute_forces(
       const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-      unsigned step, bool concentrated_nodal_forces, bool quasi_static) {
+      unsigned step, bool concentrated_nodal_forces, bool quasi_static,
+      bool rayleigh_damping, double rayleigh_alpha, double rayleigh_beta) {
     throw std::runtime_error(
         "Calling the base class function (compute_forces) in "
         "MPMScheme:: illegal operation!");

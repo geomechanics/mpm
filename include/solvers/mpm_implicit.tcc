@@ -393,14 +393,16 @@ bool mpm::MPMImplicit<Tdim>::assemble_system_equation() {
     // Compute local cell stiffness matrices
     mesh_->iterate_over_particles(
         std::bind(&mpm::ParticleBase<Tdim>::map_stiffness_matrix_to_cell,
-                  std::placeholders::_1, newmark_beta_, dt_, quasi_static_));
+                  std::placeholders::_1, newmark_beta_, newmark_gamma_, dt_,
+                  quasi_static_, rayleigh_alpha_, rayleigh_beta_));
 
     // Assemble global stiffness matrix
     assembler_->assemble_stiffness_matrix();
 
     // Compute local residual force
-    mpm_scheme_->compute_forces(gravity_, phase_, step_,
-                                set_node_concentrated_force_, quasi_static_);
+    mpm_scheme_->compute_forces(
+        gravity_, phase_, step_, set_node_concentrated_force_,
+        quasi_static_, rayleigh_damping_, rayleigh_alpha_, rayleigh_beta_);
 
     // Assemble global residual force RHS vector
     assembler_->assemble_residual_force_right();
@@ -515,7 +517,7 @@ template <unsigned Tdim>
 void mpm::MPMImplicit<Tdim>::finalise_newton_raphson_iteration() {
   // Particle kinematics and volume
   mpm_scheme_->compute_particle_kinematics(velocity_update_, blending_ratio_,
-                                           phase_, "Cundall", damping_factor_,
+                                           phase_, damping_type_, damping_factor_,
                                            step_);
 
   // Particle stress, strain and volume

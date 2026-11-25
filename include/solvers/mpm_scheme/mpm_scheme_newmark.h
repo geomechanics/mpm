@@ -54,7 +54,7 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] damping_factor Value of critical damping
   inline void compute_particle_kinematics(mpm::VelocityUpdate velocity_update,
                                           double blending_ratio, unsigned phase,
-                                          const std::string& damping_type,
+                                          const mpm::Damping damping_type,
                                           double damping_factor,
                                           unsigned step) override;
 
@@ -79,10 +79,15 @@ class MPMSchemeNewmark : public MPMScheme<Tdim> {
   //! \param[in] concentrated_nodal_forces Boolean for if a concentrated force
   //! is applied or not
   //! \param[in] quasi_static Boolean of quasi-static analysis
+  //! \param[in] rayleigh_damping Boolean of Rayleigh damping
+  //! \param[in] rayleigh_alpha Mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta Stiffness weighting coefficient for Rayleigh
+  //! damping
   inline void compute_forces(const Eigen::Matrix<double, Tdim, 1>& gravity,
                              unsigned phase, unsigned step,
-                             bool concentrated_nodal_forces,
-                             bool quasi_static) override;
+                             bool concentrated_nodal_forces, bool quasi_static,
+                             bool rayleigh_damping, double rayleigh_alpha,
+                             double rayleigh_beta) override;
 
   //! Update nodal kinematics by Newmark scheme
   //! \ingroup Implicit

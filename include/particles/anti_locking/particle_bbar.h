@@ -45,6 +45,15 @@ class ParticleBbar : public mpm::Particle<Tdim> {
   //! Map internal force
   inline void map_internal_force() noexcept override;
 
+  //! Map Rayleigh damping force
+  //! \param[in] alpha_factor Rayleigh damping factor alpha
+  //! \param[in] beta_factor Rayleigh damping factor beta
+  //! \param[in] dt Analysis time step
+  inline void map_rayleigh_damping_force(double alpha_factor,
+                                         double beta_factor,
+                                         double dt) noexcept override;
+
+
   //! Type of particle
   std::string type() const override {
     return (Tdim == 2) ? "P2DBBAR" : "P3DBBAR";

@@ -126,7 +126,8 @@ inline void mpm::MPMSchemeNewmark<Tdim>::postcompute_stress_strain(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
     const Eigen::Matrix<double, Tdim, 1>& gravity, unsigned phase,
-    unsigned step, bool concentrated_nodal_forces, bool quasi_static) {
+    unsigned step, bool concentrated_nodal_forces, bool quasi_static,
+    bool rayleigh_damping, double rayleigh_alpha, double rayleigh_beta) {
   // Spawn a task for external force
 #pragma omp parallel sections
   {
@@ -142,6 +143,12 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
         mesh_->iterate_over_particles(
             std::bind(&mpm::ParticleBase<Tdim>::map_inertial_force,
                       std::placeholders::_1));
+
+      // Iterate over each particle to compute nodal rayleigh damping force
+      if (rayleigh_damping && !quasi_static)
+        mesh_->iterate_over_particles(std::bind(
+            &mpm::ParticleBase<Tdim>::map_rayleigh_damping_force,
+            std::placeholders::_1, rayleigh_alpha, rayleigh_beta, dt_));
 
       // Apply particle traction and map to nodes
       mesh_->apply_traction_on_particles(step * dt_);
@@ -168,7 +175,7 @@ inline void mpm::MPMSchemeNewmark<Tdim>::compute_forces(
 template <unsigned Tdim>
 inline void mpm::MPMSchemeNewmark<Tdim>::compute_particle_kinematics(
     mpm::VelocityUpdate velocity_update, double blending_ratio, unsigned phase,
-    const std::string& damping_type, double damping_factor, unsigned step) {
+    const mpm::Damping damping_type, double damping_factor, unsigned step) {
 
   // Iterate over each particle to compute updated position
   mesh_->iterate_over_particles(

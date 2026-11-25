@@ -49,6 +49,12 @@ enum class Position { None, Corner, Edge, Face };
 //! Apic: Affine pic
 enum class VelocityUpdate { FLIP, PIC, ASFLIP, TPIC, APIC };
 
+//! Damping type
+//! None: No damping is specified
+//! Cundall: Cundall damping
+//! Rayleigh: Rayleigh damping
+enum class Damping { None, Cundall, Rayleigh };
+
 }  // namespace mpm
 
 #endif  // MPM_DATA_TYPES_H_

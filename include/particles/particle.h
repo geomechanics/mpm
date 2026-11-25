@@ -443,10 +443,17 @@ class Particle : public ParticleBase<Tdim> {
   //! equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
   //! \param[in] quasi_static Boolean of quasi-static analysis
-  inline bool map_stiffness_matrix_to_cell(double newmark_beta, double dt,
-                                           bool quasi_static) override;
+  //! \param[in] rayleigh_alpha mass weighting coefficient for Rayleigh damping
+  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
+  //! damping
+  inline bool map_stiffness_matrix_to_cell(double newmark_beta,
+                                           double newmark_gamma, double dt,
+                                           bool quasi_static,
+                                           double rayleigh_alpha,
+                                           double rayleigh_beta) override;
 
   //! Reduce constitutive relations matrix depending on the dimension
   //! \ingroup Implicit
@@ -503,6 +510,19 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Return dn_dx_centroid
   Eigen::MatrixXd dn_dx_centroid() const override { return dn_dx_centroid_; }
+
+  //! Map Rayleigh damping force
+  //! \param[in] alpha_factor Rayleigh damping factor alpha
+  //! \param[in] beta_factor Rayleigh damping factor beta
+  //! \param[in] dt Analysis time step
+  inline void map_rayleigh_damping_force(double alpha_factor,
+                                         double beta_factor,
+                                         double dt) noexcept override;
+
+  //! Get tangent matrix of the particle
+  //! \retval tangent_matrix Tangent matrix of the particle
+  Eigen::Matrix<double, 6, 6> get_consistent_tangent_matrix(
+      double dt) noexcept override;
 
  protected:
   //! Initialise particle material container
@@ -562,13 +582,23 @@ class Particle : public ParticleBase<Tdim> {
 
   //! Map material stiffness matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
-  inline bool map_material_stiffness_matrix_to_cell();
+  //! \param[in] newmark_beta parameter beta of Newmark scheme
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
+  //! \param[in] rayleigh_beta stiffness weighting coefficient for Rayleigh
+  virtual inline bool map_material_stiffness_matrix_to_cell(
+      double newmark_beta, double newmark_gamma, double dt,
+      double rayleigh_beta);
 
   //! Map mass matrix to cell (used in equilibrium equation LHS)
   //! \ingroup Implicit
   //! \param[in] newmark_beta parameter beta of Newmark scheme
-  //! \param[in] dt parameter beta of Newmark scheme
-  inline bool map_mass_matrix_to_cell(double newmark_beta, double dt);
+  //! \param[in] newmark_gamma parameter gamma of Newmark scheme
+  //! \param[in] dt parameter dt of Newmark scheme
+  //! \param[in] rayleigh_alpha parameter alpha of Rayleigh damping
+  virtual inline bool map_mass_matrix_to_cell(double newmark_beta,
+                                              double newmark_gamma, double dt,
+                                              double rayleigh_alpha);
   /**@}*/
 
   /**

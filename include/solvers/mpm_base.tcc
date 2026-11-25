@@ -1756,23 +1756,86 @@ void mpm::MPMBase<Tdim>::particle_entity_sets(bool check_duplicates) {
 // Initialise Damping
 template <unsigned Tdim>
 bool mpm::MPMBase<Tdim>::initialise_damping(const Json& damping_props) {
-
   // Read damping JSON object
   bool status = true;
   try {
     // Read damping type
     std::string type = damping_props.at("type").template get<std::string>();
-    if (type == "Cundall") damping_type_ = mpm::Damping::Cundall;
+    if (type == "Cundall")
+      damping_type_ = mpm::Damping::Cundall;
+    else if (type == "Rayleigh") {
+      damping_type_ = mpm::Damping::Rayleigh;
+      rayleigh_damping_ = true;
 
-    // Read damping factor
-    damping_factor_ = damping_props.at("damping_factor").template get<double>();
+      // Targeted damping frequencies
+      std::vector<double> frequencies;
+      if (damping_props.at("frequencies").is_array()) {
+        frequencies = damping_props.at("frequencies").template get<std::vector<double>>();
+      } else {
+        frequencies.emplace_back(
+            damping_props.at("frequencies").template get<double>());
+      }
 
+      // Get number of frequencies provided
+      unsigned l_frequencies = frequencies.size();
+
+      // Targeted damping ratios
+      std::vector<double> damping_ratios;
+      if (damping_props.at("damping_ratios").is_array()) {
+        damping_ratios = damping_props.at("damping_ratios").template get<std::vector<double>>();
+      } else {
+        for (unsigned i = 0; i < l_frequencies; ++i) {
+          damping_ratios.emplace_back(
+              damping_props.at("damping_ratios").template get<double>());
+        }
+      }
+      // Get number of damping_ratios provided
+      unsigned l_damping_ratios = damping_ratios.size();
+
+      // Compute Rayleigh damping coefficients
+      if ((l_frequencies == l_damping_ratios) && (l_frequencies == 1)) {
+        // For single pair, assume central frequency --> d(\xi)/d(\omega)=0
+        rayleigh_alpha_ = damping_ratios.at(0) * (2.0 * M_PI * frequencies.at(0));
+        rayleigh_beta_ = damping_ratios.at(0) / (2.0 * M_PI * frequencies.at(0));
+      } else if ((l_frequencies == l_damping_ratios) && (l_frequencies == 2)) {
+        // For double pair
+        rayleigh_alpha_ =
+            2.0 * M_PI *
+            (damping_ratios.at(0) * frequencies.at(1) -
+             damping_ratios.at(1) * frequencies.at(0)) *
+            (2.0 * frequencies.at(0) * frequencies.at(1)) /
+            (frequencies.at(1) * frequencies.at(1) - frequencies.at(0) * frequencies.at(0));
+        rayleigh_beta_ = 2.0 *
+                         (damping_ratios.at(1) * frequencies.at(1) -
+                          damping_ratios.at(0) * frequencies.at(0)) /
+                         (2.0 * M_PI *
+                          (frequencies.at(1) * frequencies.at(1) -
+                           frequencies.at(0) * frequencies.at(0)));
+      } else if (l_frequencies > 2) {
+        // No best fit operation yet implemented
+        throw std::runtime_error(
+            "Rayleigh damping: reduce the number of frequencies provided to 2 "
+            "or below.");
+      } else if (l_frequencies != l_damping_ratios) {
+        // If not enough or too many damping ratios are provided.
+        throw std::runtime_error(
+            "Rayleigh damping: Number of provided frequencies and damping "
+            "ratios must match.");
+      }
+
+      // Check that damping ratios are non-negative
+      if ((rayleigh_alpha_ < 0) || (rayleigh_beta_ < 0))
+        std::runtime_error(
+            "Rayleigh damping: provided input leads to negative damping "
+            "coefficients.");
+    } else {
+      throw std::runtime_error("Damping type is not properly specified");
+    }
   } catch (std::exception& exception) {
     console_->warn("#{}: Damping parameters are not properly specified; {}",
                    __LINE__, exception.what());
     status = false;
   }
-
   return status;
 }
 
